@@ -1,0 +1,9 @@
+{
+  "name": "Virtual Game Table",
+  "version": "1.0",
+  "description": "Browser-based, general-purpose game table.",
+  "dependencies": {
+    "express": "^4.10.2",
+    "socket.io": "1.2.0"
+  }
+}
