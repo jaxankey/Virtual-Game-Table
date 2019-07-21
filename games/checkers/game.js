@@ -24,7 +24,7 @@ board.game_name = "checkers";
 // Paint the table
 board.set_background_image('board.png');
 
-// Add some people
+// Add some teams
 board.add_team('observer',  ['hand_white.png', 'fist_white.png'],   '#BBB');
 board.add_team('red',       ['hand_red.png',   'fist_red.png'],     '#F88');
 board.add_team('blue',      ['hand_blue.png',  'fist_blue.png'],    '#88F');
@@ -38,7 +38,7 @@ snappy = board.add_snap_grid(
    w,      0,     // basis vector 1
    0,      w);    // basis vector 2
 
-// Set new piece defaults
+// Set default values for new pieces created below
 board.new_piece_snap_index = snappy; // new pieces will be linked to this grid
 
 // Add all the pieces (no particular place)
@@ -48,7 +48,7 @@ blues  = board.add_pieces(12, ['checker_blue.png','king_blue.png']);
 // define the new game setup
 function setup() {
 
-  // loop over all the pieces
+  // loop over each of the 4 columns, adding 3 rows for each team
   for(i=0; i<4; i++){
   
     // use the basis vectors of the grid for setup, default rotation 0, not kinged
