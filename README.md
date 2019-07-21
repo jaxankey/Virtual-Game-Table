@@ -1,5 +1,5 @@
 # Virtual Game Table
-A general-purpose, browser-based game table for you and your friends. 
+A general-purpose, browser-based board game table, aimed at online game nights and rapid game dev. 
 
 ![Strategy Game Screenshot](https://github.com/jaxankey/Virtual-Game-Table/blob/master/common_images/screenshot.png)
 
