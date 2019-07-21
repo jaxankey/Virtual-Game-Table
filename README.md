@@ -14,8 +14,14 @@ The games I have coded thus far include:
  * My own strategy game
  * Puerto Rico (but I can't publish those images!)
 
-Each of these games illustrates the functionalities of `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented.
+Each of these games illustrate the functionalities of `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented.
 
 Feel free to pester me if something isn't clear. I will be slow to respond, but believe in this project and will gladly update the comments in the code to make life easier.
+
+My next big goals (if I ever find time) include:
+ * Dice
+ * Multi-piece selection box
+ * General-purpose card table
+ * Chess clock
 
 More documentation to come...
