@@ -17,16 +17,18 @@ The client software is currently compatible with Chrome, and the server has been
 
 A successfully booted server should declare something like `listening on port 37777`. Open up a few Chrome windows side-by-side and point them at the address `localhost:37777`. Things moving around in one window should also move around in the other. Push a few buttons, click a few things, see what happens. Click the "controls" link in the upper right to see some of the keyboard shortcuts.
 
+## Games
 The games I have coded thus far include:
  * Checkers
  * Chess
  * Go
  * My own strategy game
- * Puerto Rico (but I can't publish those images!)
+ * Puerto Rico (but I can't publish this one!)
 
 Each of these games illustrate the functionalities of the main workhorse code in `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented. I'd play with `checkers/game.js` first, since it's the simplest!
 
-Feel free to pester me if something isn't clear. I will be slow to respond, but believe in this project and will gladly update the comments in the code to make life easier.
+## Here to Help
+Feel free to pester me if something isn't clear. I will be slow to respond, but I believe in this project and will gladly update the comments in the code or help out within reason.
 
 My next big goals (if I ever find time) include:
  * Dice
