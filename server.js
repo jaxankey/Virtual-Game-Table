@@ -92,28 +92,74 @@ app.get('/images/:image', function(request, response) {
 
 
 // Last known board configuration
-last_indices        = [];
-last_xs             = [];
-last_ys             = [];
-last_rs             = [];
-last_active_images  = [];
 
-// Clients
-client_sockets      = [];
-client_names        = [];
-client_teams        = [];
+// Piece positions. These lists should match in length!
+last_indices        = []; // List of last known piece indices
+last_xs             = []; // list of last known piece x-coordinates
+last_ys             = []; // list of last known piece y-coordinates
+last_rs             = []; // list of last known piece rotations
+last_active_images  = []; // list of last known active image indices
 
-// connection events
+// Client information. These lists should match in length!
+client_sockets      = []; // sockets
+client_names        = []; // names associated with each socket
+client_teams        = []; // team numbers associated with each socket
+client_held_pieces  = []; // lists of last known held piece indices for each socket
+
+/**
+ * Data sent by clients:
+ * 
+ * Disconnecting
+ *  'disconnect' ()
+ * 
+ * User information
+ *  'user' (name, team) 
+ * 
+ * Chat message 
+ *  'chat' (msg)
+ *  
+ * Mouse event
+ *  'm' (n, x, y, h, dx, dy, r)
+ *    n     : index of client or team (forgot)
+ *    x, y  : new mouse location
+ *    h     : index of held piece (or 0 if none)
+ *    dx, dy: location of piece relative to mouse
+ *    r     : rotation of board (hand)  
+ * 
+ * Coordinates of multiple pieces
+ *  'u' (indices, xs, ys, rs, active_images, clear)  
+ * 
+ * Piece selected 
+ *  's' (piece_index, team_number)
+ *    piece_index : index of selected piece (-1 for no selection)
+ *    team_number : team that selected (or deselected) the piece
+ *  On the client side, selected_pieces is a per-team list of indices.
+ *  Meanwhile, the held_pieces data (not implemented) should be a per-client list of indices.
+*/
+
+// Thread for what to do with new client
 io.on('connection', function(client) {
   
-  // update the list of clients
-  client_sockets.push(client);
-  client_names  .push("n00b");
-  client_teams  .push(0);
+  // update the global list of clients
+  client_sockets    .push(client);  // each client gets a socket
+  client_names      .push("n00b");  // each client gets a name string
+  client_teams      .push(0);       // each client gets a team index
+  //client_held_pieces.push([]);      // each client gets a list of held pieces 
   log("New client:", client_sockets.length);
+
+  // send last full update
+  if(last_indices.length) {
+    log('sending last known config:', last_indices.length, "pieces")
+    client.emit('u', last_indices, last_xs, last_ys, last_rs, last_active_images)
+  }
   
+  // tell everyone about the new folk!
+  client.emit('chat', '<b>Server:</b> Welcome!');
   
-  
+
+
+
+
   // handle the disconnect
   client.on('disconnect', function() {
     
@@ -129,17 +175,6 @@ io.on('connection', function(client) {
     // tell the world!
     io.emit("users", client_names, client_teams);
   });
-
-  
-  
-  // send last full update
-  if(last_indices.length) {
-    log('sending last known config:', last_indices.length, "pieces")
-    client.emit('u', last_indices, last_xs, last_ys, last_rs, last_active_images)
-  }
-  
-  // tell everyone about the new folk!
-  client.emit('chat', '<b>Server:</b> Welcome!');
   
   // received a name change
   client.on('user', function(name, team) {
@@ -158,9 +193,7 @@ io.on('connection', function(client) {
     // tell the world!
     io.emit("users", client_names, client_teams);
   });
-  
-  
-  
+
   // received a chat message
   client.on('chat', function(msg) {
 
@@ -171,8 +204,6 @@ io.on('connection', function(client) {
     io.emit('chat', msg);
   });
 
-  
-  
   // someone is moving their mouse on the canvas
   client.on('m', function(n, x, y, h, dx, dy, r) {
 
@@ -238,8 +269,6 @@ io.on('connection', function(client) {
 
   });
 
-  
-
   // someone sent a selection change
   client.on('s', function(piece_index, team_number) {
 
@@ -248,10 +277,9 @@ io.on('connection', function(client) {
 
     // emit to the rest
     client.broadcast.emit('s', piece_index, team_number);
-
   });
 
-});
+}); // end of io
 
 
 

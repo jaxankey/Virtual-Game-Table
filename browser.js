@@ -2084,7 +2084,6 @@ our_socket.on('users', server_users);
 
 server_mousemove = function(n, x, y, i, dx, dy, r){
   // server has sent a "mouse move"
-  
   console.log('received m:', n, x, y, i, dx, dy, r);
 
   // set the hand's target location
@@ -2107,7 +2106,7 @@ server_mousemove = function(n, x, y, i, dx, dy, r){
   // otherwise release the piece
   else board.held_pieces[n] = null;
 }
-our_socket.on('m',    server_mousemove);
+our_socket.on('m', server_mousemove);
 
 server_selectionchange = function(piece_index,team_number){
   // server sent a selection change
