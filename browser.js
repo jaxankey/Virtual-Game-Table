@@ -2123,6 +2123,8 @@ server_selectionchange = function(piece_index,team_number){
 }
 our_socket.on('s',    server_selectionchange);
 
+
+// Function to handle when the server sends a piece update ('u')
 server_update = function(indices, xs, ys, rs, active_images){
   
   // server has sent a pieces update
@@ -2136,8 +2138,9 @@ server_update = function(indices, xs, ys, rs, active_images){
     // loop from top to bottom (most commonly on top) to find the supplied index
     for (var m=board.pieces.length-1; m>=0; m--) {
 
-      // if we've found the right piece
-      if (board.pieces[m].piece_index == indices[n]) {
+      // if we've found the right piece and it's not a held piece
+      if  (board.pieces[m].piece_index == indices[n]
+        && !board.held_pieces.includes[board.pieces[m]]) {
       
         // remove it, update coordinates, and stick it on top
         p = board.pop_piece(m);
@@ -2160,7 +2163,6 @@ server_update = function(indices, xs, ys, rs, active_images){
       } // end of piece check
     } // end of piece search
   } // end of loop over supplied pieces
-
 }
 our_socket.on('u', server_update);
 
