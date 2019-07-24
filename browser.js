@@ -142,20 +142,29 @@ function is_below_line(x,y, x1,y1, x2,y2) {
 // PIECE OBJECT
 ///////////////////
 
-// Constructor
-function PIECE(board, piece_index, image_paths, private_image_paths) {
+/**
+ * Piece constructor. Note the games do not directly use this, rather they
+ * call board.add_piece(['list.png','of.png','images.png'],['private.png','images.png','optional.png'])
+ * which assigns a unique piece_id and creates the images from their paths.
+ * @param {BOARD} board             // board instance 
+ * @param {*} piece_id              // unique id for the piece
+ * @param {*} image_paths           // list of public (visible to everyone) impage path strings
+ * @param {*} private_image_paths   // list of private (visible to team) image path strings
+ *                                  // if not specified, these are identical to the image_paths
+ */
+function PIECE(board, piece_id, image_paths, private_image_paths) {
 
   // by default, use the same set of image paths
   private_image_paths = or_default(private_image_paths, image_paths);
   
-  console.log("Adding piece", String(piece_index), String(image_paths), String(private_image_paths))
+  console.log("Adding piece", String(piece_id), String(image_paths), String(private_image_paths))
 
   // equivalent of storing object properties (or defaults)
-  this.board               = board;
-  this.piece_index         = piece_index;
-  this.image_paths         = image_paths;
-  this.private_image_paths = private_image_paths;
-  this.owners              = this.board.new_piece_owners;
+  this.board               = board;                       // board instance for this piece
+  this.piece_id            = piece_id;                    // unique piece id
+  this.image_paths         = image_paths;                 // list of available images (seen by everyone)
+  this.private_image_paths = private_image_paths;         // list of available private image path strings, e.g. 'pants.png' (seen by team)
+  this.owners              = this.board.new_piece_owners; // list of who owns this piece (private images)
   
   // automatic defaults
   this.x_target         = this.board.new_piece_x_target;
@@ -272,8 +281,8 @@ function PIECE(board, piece_index, image_paths, private_image_paths) {
 PIECE.prototype.send_update     = function() {
 
   // sends information about the piece
-  console.log('sending "u"', [this.piece_index], [this.x_target], [this.y_target], [this.r_target], [this.active_image]);
-  our_socket.emit('u', [this.piece_index], [this.x_target], [this.y_target], [this.r_target], [this.active_image]);
+  console.log('sending "u"', [this.piece_id], [this.x_target], [this.y_target], [this.r_target], [this.active_image]);
+  our_socket.emit('u', [this.piece_id], [this.x_target], [this.y_target], [this.r_target], [this.active_image]);
 }
 
 // Bring the piece to the top of the pile
@@ -831,11 +840,12 @@ function BOARD(canvas) {
   this.context = canvas.getContext('2d');
 
   // lists of pieces and hands
-  this.pieces          = [];    // the collection of things to be drawn
-  this.hands           = [];    // keep the hands separate from the pieces
+  this.pieces       = [];    // the collection of things to be drawn
+  this.piece_lookup = {};    // dictionary to get the piece by id
+  this.hands        = [];    // keep the hands separate from the pieces
   
   // one border, held, and selected piece for each team
-  this.team_colors = [];
+  this.team_colors              = [];
   this.selected_border_width    = 4;
   this.held_pieces              = [];
   this.snap_grids               = [];
@@ -870,7 +880,7 @@ function BOARD(canvas) {
   this.previous_mouse = {x:0, y:0};
   
   // keeps track of the index for new pieces & hands
-  this.next_piece_index = 0;
+  this.next_piece_id = 0;
   this.next_hand_index  = 0;
   
   // background image
@@ -1078,14 +1088,20 @@ BOARD.prototype.add_piece = function(image_paths, private_image_paths) {
   // by default, use the same image paths for public and private images
   immediate = or_default(private_image_paths, image_paths);
   
+  // get the unique id for the piece
+  id = this.next_piece_id;
+
   // create the piece 
-  p = new PIECE(board, this.next_piece_index, image_paths, private_image_paths);
+  p = new PIECE(board, id, image_paths, private_image_paths);
   
   // push the specified piece onto the stack
   this.pieces.push(p);
   
+  // add the index to the lookup table
+  this.piece_lookup[id] = p;
+
   // increment the piece index
-  this.next_piece_index++;
+  this.next_piece_id++;
   
   return p;
 }
@@ -1111,14 +1127,14 @@ BOARD.prototype.push_piece    = function(piece) {
 BOARD.prototype.pop_piece     = function(i) {
   return this.pieces.splice(i,1)[0];
 }
-BOARD.prototype.find_piece    = function(piece_index) {
-  // find a piece by piece_index
+BOARD.prototype.find_piece    = function(piece_id) {
+  // find a piece by piece_id
   
   // loop from top to bottom (most commonly on top) to find the supplied index
   for (var m=this.pieces.length-1; m>=0; m--) {
 
     // if we've found the right piece
-    if (this.pieces[m].piece_index == piece_index) return this.pieces[m];
+    if (this.pieces[m].piece_id == piece_id) return this.pieces[m];
   }
   // otherwise return null
   return null;
@@ -1529,12 +1545,12 @@ BOARD.prototype.event_keydown = function(e) {
 }
 
 // User functions
-event_keydown = function(event_data, piece, piece_index) {
+event_keydown = function(event_data, piece, piece_id) {
   console.log("event_keydown(e,p,i): Feel free to overwrite this function for your game!" );
 }
 
 // called when someone double clicks. Feel free to overwrite this!
-function event_dblclick(event_data, piece, piece_index) {
+function event_dblclick(event_data, piece, piece_id) {
   
   // default behavior: cycle through the piece image
   if(piece != null) piece.increment_active_image();
@@ -1920,7 +1936,7 @@ BOARD.prototype.send_stream_update = function() {
       // emit the selection changed event
       console.log('selection change');
       if (sp == null) i = -1;
-      else            i = sp.piece_index;
+      else            i = sp.piece_id;
       our_socket.emit('s', i, n);
 
       // remember the change
@@ -1943,7 +1959,7 @@ BOARD.prototype.send_stream_update = function() {
     }
       
     else {
-      i  = hp.piece_index;
+      i  = hp.piece_id;
       dx = this.drag_offset_x;
       dy = this.drag_offset_x;
     }
@@ -1960,10 +1976,10 @@ BOARD.prototype.send_stream_update = function() {
   
   
   // loop over all the pieces to see if their coordinates have changed
-  indices = [];
-  xs = [];
-  ys = [];
-  rs = [];
+  ids = [];
+  xs  = [];
+  ys  = [];
+  rs  = [];
   active_images = [];
   for (n=0; n<this.pieces.length; n++) {
     
@@ -1976,7 +1992,7 @@ BOARD.prototype.send_stream_update = function() {
         p.previous_active_image != p.active_image) {
       
       // populate the list
-      indices.push(p.piece_index);
+      ids.push(p.piece_id);
       xs.push(p.x_target);
       ys.push(p.y_target);
       rs.push(p.r_target);
@@ -1993,7 +2009,7 @@ BOARD.prototype.send_stream_update = function() {
   // if we found something, send it
   if (xs.length > 0) {
     console.log('sending "u" with', xs.length, 'pieces');
-    our_socket.emit('u', indices, xs, ys, rs, active_images);
+    our_socket.emit('u', ids, xs, ys, rs, active_images);
   }
 }
 
@@ -2009,7 +2025,7 @@ BOARD.prototype.send_full_update   = function(force) {
   this.last_update_ms = Date.now();
 
   // assemble the data to send to the server
-  var indices       = [];
+  var ids       = [];
   var xs            = [];
   var ys            = [];
   var rs            = [];
@@ -2022,7 +2038,7 @@ BOARD.prototype.send_full_update   = function(force) {
     p = this.pieces[i];
 
     // add to all the arrays
-    indices.       push(p.piece_index);
+    ids.       push(p.piece_id);
     xs.            push(p.x_target);
     ys.            push(p.y_target);
     rs.            push(p.r_target);
@@ -2035,8 +2051,8 @@ BOARD.prototype.send_full_update   = function(force) {
     p.previous_active_image = p.active_image;
   }
 
-  console.log('sending full update:', indices.length, 'pieces');
-  our_socket.emit('u', indices, xs, ys, rs, active_images, true); // true clears the old values from the server's memory
+  console.log('sending full update:', ids.length, 'pieces');
+  our_socket.emit('u', ids, xs, ys, rs, active_images, true); // true clears the old values from the server's memory
 
 }
 
@@ -2108,12 +2124,12 @@ server_mousemove = function(n, x, y, i, dx, dy, r){
 }
 our_socket.on('m', server_mousemove);
 
-server_selectionchange = function(piece_index,team_number){
+server_selectionchange = function(piece_id,team_number){
   // server sent a selection change
   
   // update the selection
-  console.log('s:', piece_index, team_number);
-  p = board.find_piece(piece_index);
+  console.log('s:', piece_id, team_number);
+  p = board.find_piece(piece_id);
   board.selected_pieces[team_number]          = p;
   board.previous_selected_pieces[team_number] = p;
 
@@ -2124,43 +2140,39 @@ our_socket.on('s',    server_selectionchange);
 
 
 // Function to handle when the server sends a piece update ('u')
-server_update = function(indices, xs, ys, rs, active_images){
+server_update = function(ids, xs, ys, rs, active_images){
   
   // server has sent a pieces update
-  console.log('received update:', indices.length, 'pieces');
+  console.log('received update:', ids.length, 'pieces');
   board.last_update_ms = Date.now();
 
-  // run through the partial list, find the pieces by index, and stick them
-  // on top, in order (JACK: This is SLOW, especially for a full update)
-  for(var n=0; n<indices.length; n++) {
+  // run through the list of ids, find the index m in the stack of the pieces by id, 
+  // the pop & stick them on top of the stack, in order
+  for(var n=0; n<ids.length; n++) {
 
-    // loop from top to bottom (most commonly on top) to find the supplied index
-    for (var m=board.pieces.length-1; m>=0; m--) {
+    // find the index, searching from the top (most common update)
+    m = board.pieces.lastIndexOf(board.piece_lookup[ids[n]]);
 
-      // if we've found the right piece and it's not a held piece
-      if  (board.pieces[m].piece_index == indices[n]
-        && !board.held_pieces.includes[board.pieces[m]]) {
+    // If someone isn't holding the piece, do the update (held pieces will update themselves)
+    if (!board.held_pieces.includes[board.pieces[m]]) {
+    
+      // remove it, update coordinates, and stick it on top
+      p = board.pop_piece(m);
       
-        // remove it, update coordinates, and stick it on top
-        p = board.pop_piece(m);
-        
-        // set the new values
-        p.set_target(xs[n], ys[n], rs[n], null, true); // disable snap
-        p.active_image = active_images[n];
-        
-        // store the new coordinates so we don't re-update the server!
-        p.previous_x = p.x_target;
-        p.previous_y = p.y_target;
-        p.previous_r = p.r_target;
-        p.previous_active_image = p.active_image;
-        
-        // place this on top
-        board.push_piece(p);
-
-        // quit the search!
-        break;
-      } // end of piece check
-    } // end of piece search
+      // set the new values
+      p.set_target(xs[n], ys[n], rs[n], null, true); // disable snap
+      p.active_image = active_images[n];
+      
+      // store the new coordinates so we don't re-update the server!
+      p.previous_x            = p.x_target;
+      p.previous_y            = p.y_target;
+      p.previous_r            = p.r_target;
+      p.previous_active_image = p.active_image;
+      
+      // place this on top
+      board.push_piece(p);
+      
+    } // end of "if not held"
   } // end of loop over supplied pieces
 }
 our_socket.on('u', server_update);
