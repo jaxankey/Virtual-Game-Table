@@ -1127,17 +1127,9 @@ BOARD.prototype.push_piece    = function(piece) {
 BOARD.prototype.pop_piece     = function(i) {
   return this.pieces.splice(i,1)[0];
 }
-BOARD.prototype.find_piece    = function(piece_id) {
+BOARD.prototype.find_piece = function(piece_id) {
   // find a piece by piece_id
-  
-  // loop from top to bottom (most commonly on top) to find the supplied index
-  for (var m=this.pieces.length-1; m>=0; m--) {
-
-    // if we've found the right piece
-    if (this.pieces[m].piece_id == piece_id) return this.pieces[m];
-  }
-  // otherwise return null
-  return null;
+  return board.pieces.lastIndexOf(board.piece_lookup[piece_id])
 }
 BOARD.prototype.find_top_piece_at_location = function(x,y) {
   
@@ -2136,7 +2128,7 @@ server_selectionchange = function(piece_id,team_number){
   // trigger a redraw
   board.trigger_redraw = true;
 }
-our_socket.on('s',    server_selectionchange);
+our_socket.on('s', server_selectionchange);
 
 
 // Function to handle when the server sends a piece update ('u')
@@ -2151,7 +2143,7 @@ server_update = function(ids, xs, ys, rs, active_images){
   for(var n=0; n<ids.length; n++) {
 
     // find the index, searching from the top (most common update)
-    m = board.pieces.lastIndexOf(board.piece_lookup[ids[n]]);
+    m = board.find_piece(ids[n]);
 
     // If someone isn't holding the piece, do the update (held pieces will update themselves)
     if (!board.held_pieces.includes[board.pieces[m]]) {
@@ -2171,7 +2163,7 @@ server_update = function(ids, xs, ys, rs, active_images){
       
       // place this on top
       board.push_piece(p);
-      
+
     } // end of "if not held"
   } // end of loop over supplied pieces
 }
