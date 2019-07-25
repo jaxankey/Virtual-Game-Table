@@ -31,6 +31,24 @@ if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera M
  * USEFUL FUNCTIONS
  */
 
+/**
+ * Compares two multidimensional arrays.
+ * @param {array} a1 
+ * @param {array} a2 
+ */
+function array_compare(a1, a2) {
+  if(a1.length != a2.length) return false;
+  
+  for(var i in a1) {
+   // Don't forget to check for arrays in our arrays.
+   if(a1[i] instanceof Array && a2[i] instanceof Array) {
+    if(!array_compare(a1[i], a2[i])) return false;
+   }
+   else if(a1[i] != a2[i]) return false;
+  }
+  return true;
+ }
+
 // get the user's selected team number
 function get_team_number()  {return document.getElementById("teams").selectedIndex;}
 function set_team_number(n) {return document.getElementById("teams").selectedIndex = n;}
@@ -847,7 +865,7 @@ function BOARD(canvas) {
   // one border, held, and selected piece for each team
   this.team_colors              = [];
   this.selected_border_width    = 4;
-  this.held_pieces              = [];
+  this.held_pieces              = []; 
   this.snap_grids               = [];
   this.team_zones               = [];  
   this.selected_pieces          = []; // Jack
@@ -1057,9 +1075,8 @@ BOARD.prototype.add_team = function(name, image_paths, color) {
   
   // add border color, held, selected pieces, and team zones
   this.team_colors.push(color);
-  this.held_pieces.push(null);
-  this.selected_pieces.push([]]); // Jack
-  this.previous_selected_pieces.push([]]); // Jack
+  this.selected_pieces.push([]]);         // Jack
+  this.previous_selected_pieces.push([]); // Jack
   this.team_zones.push(null);
 }
 BOARD.prototype.add_hand = function(image_paths, t_fade_ms) {
@@ -1127,10 +1144,25 @@ BOARD.prototype.push_piece    = function(piece) {
 BOARD.prototype.pop_piece     = function(i) {
   return this.pieces.splice(i,1)[0];
 }
+
+/**
+ * Find the piece by id.
+ */
 BOARD.prototype.find_piece = function(piece_id) {
   // find a piece by piece_id
   return board.pieces.lastIndexOf(board.piece_lookup[piece_id])
 }
+
+/**
+ * Find the pieces associated with the array of piece ids.
+ */
+BOARD.prototype.find_pieces = function(piece_ids) {
+  // find pieces by piece_id
+  pieces = [];
+  for(n in piece_ids) pieces.push(this.find_piece(piece_ids[n])); 
+  return pieces;
+}
+
 BOARD.prototype.find_top_piece_at_location = function(x,y) {
   
   // loop over the list of pieces from top to bottom
@@ -1282,7 +1314,7 @@ BOARD.prototype.event_mousedown = function(e) {
         
         // Select the piece
         this.selected_pieces[team].push(piece); // Jack
-        this.held_pieces          .push(piece); // Jack
+        this.held_pieces          .push(piece); 
         
         // quit out of the loop
         return;
@@ -1293,7 +1325,7 @@ BOARD.prototype.event_mousedown = function(e) {
   // If we got this far, it means we haven't found a selection
   // If there was an object selected, we deselect it
   this.selected_pieces[team] = []; // Jack 
-  this.held_pieces           = []; // Jack
+  this.held_pieces           = []; 
   
   // store the drag offset for canvas motion
   this.drag_offset_x = mouse.x;
@@ -1306,23 +1338,33 @@ BOARD.prototype.event_mousemove = function(e) {
   // trigger redraw to be safe
   this.trigger_redraw = true;
 
-  // if we're holding a piece
-  hp = this.held_pieces[get_team_number()];
-  if(hp != null && (hp.movable_by == null || hp.movable_by.indexOf(get_team_number())>=0) ) {
-      
-      // get the new mouse coordinates; the timer will handle the data sending
-      this.mouse  = this.get_mouse_coordinates(e);
+  // if we're holding pieces
+  if(this.held_pieces.length > 0) { 
 
-      // We want to drag it from where we clicked.
-      hp.set_target(this.mouse.x - this.drag_offset_x,
-                    this.mouse.y - this.drag_offset_y, null, null, true) // disable snap
+    // Loop over held pieces
+    for(n in this.held_pieces) { 
       
-      // make sure it immediately moves there while we're holding it
-      hp.x = hp.x_target;
-      hp.y = hp.y_target;
-  }
+      // Get the held piece
+      hp = this.held_pieces[n]; 
+    
+      // If we're allowed to move this piece and it exists
+      if(hp.movable_by == null || hp.movable_by.indexOf(get_team_number())>=0) {
+          
+          // get the new mouse coordinates; the timer will handle the data sending
+          this.mouse  = this.get_mouse_coordinates(e);
+
+          // We want to drag it from where we clicked.
+          hp.set_target(this.mouse.x - this.drag_offset_x,
+                        this.mouse.y - this.drag_offset_y, null, null, true) // disable snap
+          
+          // make sure it immediately moves there while we're holding it
+          hp.x = hp.x_target;
+          hp.y = hp.y_target;
+      } // End of allowed to move
+    } // end of loop over held pieces
+  } // end of "if holding pieces"
   
-  // if we're dragging the canvas
+  // Otherwise we're dragging the canvas
   else if (this.drag_offset_x != null && this.drag_offset_y != null) {
     
     // update the pan coordinates (immediate=true)
@@ -1331,24 +1373,20 @@ BOARD.prototype.event_mousemove = function(e) {
   
   // otherwise we're just moving around
   else this.mouse  = this.get_mouse_coordinates(e);
-
 }
-BOARD.prototype.event_mouseup         = function(e) {
+
+BOARD.prototype.event_mouseup = function(e) {
   // prevents default
   e.preventDefault();
   
   // trigger redraw to be safe
   this.trigger_redraw = true;
 
-  // set the coordinates (will snap if necessary)
-  hp = this.held_pieces[get_team_number()];
-  if(hp!=null) {
-    // set the target (will snap if necessary)
-    hp.set_target(hp.x_target, hp.y_target);
-  }
+  // set the final coordinates of any held pieces (will snap if necessary)
+  for(n in this.held_pieces) this.held_pieces[n].set_target(hp.x_target, hp.y_target); 
   
   // remove it from our hand
-  this.held_pieces[get_team_number()] = null;
+  this.held_pieces = []; 
   
   // null out the drag offset so we know not to carry the canvas around
   this.drag_offset_x = null;
@@ -1432,7 +1470,7 @@ BOARD.prototype.event_keydown = function(e) {
   if(document.activeElement == document.getElementById('table')) {
     
     // find our selected piece
-    sp = this.selected_pieces[get_team_number()];      
+    sps = this.selected_pieces[get_team_number()]; // Jack  
           
     console.log('KEYCODE',e.keyCode);
     switch (e.keyCode) {
@@ -1452,9 +1490,12 @@ BOARD.prototype.event_keydown = function(e) {
       case 39: // RIGHT
         if(e.ctrlKey || e.shiftKey) this.set_rotation(this.r_target+this.r_step);
         else {
-          // if there is a selected piece, rotate it.
-          if (sp != null) sp.rotate(sp.r_step);
-          
+          // if there are selected pieces, rotate them.
+          if (sps.length > 0) {
+            for(i=0; i<sps.length; i++) {
+              sps[i].rotate(sps[i].r_step);sps[i].rotate(sps[i].r_step);
+            }
+          }
           // otherwise pan
           else this.set_pan(this.px_target-this.p_step, this.py_target);
         }
@@ -1466,9 +1507,12 @@ BOARD.prototype.event_keydown = function(e) {
         if(e.ctrlKey || e.shiftKey) this.set_rotation(this.r_target-this.r_step);
         else {
           
-          // if there is a selected piece, rotate it.
-          if (sp != null) sp.rotate(-sp.r_step);
-          
+          // if there are selected pieces, rotate them.
+          if (sps.length > 0) {
+            for(i=0; i<sps.length; i++) {
+              sps[i].rotate(sps[i].r_step);sps[i].rotate(-sps[i].r_step);
+            }
+          }
           // otherwise pan
           else this.set_pan(this.px_target+this.p_step, this.py_target);
         }
@@ -1495,7 +1539,7 @@ BOARD.prototype.event_keydown = function(e) {
         if (e.ctrlKey || e.shiftKey) this.zoom_in();
         
         // pan
-        else if (sp == null) this.set_pan(this.px_target, this.py_target+this.p_step);
+        else this.set_pan(this.px_target, this.py_target+this.p_step);
         break;
       
       // Pan down or zoom out
@@ -1505,7 +1549,7 @@ BOARD.prototype.event_keydown = function(e) {
         if(e.ctrlKey || e.shiftKey) this.zoom_out();
         
         // pan
-        else if (sp == null) this.set_pan(this.px_target, this.py_target-this.p_step);
+        else this.set_pan(this.px_target, this.py_target-this.p_step);
         break;
       
       case 48:  // 0
@@ -1547,31 +1591,28 @@ BOARD.prototype.event_keydown = function(e) {
         break;
 
       case 32: // SPACE
-        // Find a piece if there is one
-        // By default we use the selected piece
-        piece = this.selected_pieces[get_team_number()];
         
+        // By default we cycle the selected piece
+        // Cycle the piece images
+        if(sps.length>0) {
+          for(i=0; i<sps.length; i++) sps[i].increment_active_image();
+        }
+
         // Otherwise we use the one just under the mouse.
-        if(piece == null)
-        {  
+        else {
+
           // Only do so if we're not in someone else's team zone
           team_zone = this.in_team_zone(this.mouse.x, this.mouse.y);
           if(team_zone < 0 || team_zone == get_team_number()) {
             i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
-            if(i >= 0) piece = this.pieces[i];
+            if(i >= 0) this.pieces[i].increment_active_image();
           }
         }  
       
-        // Cycle the piece if there is one
-        if(piece != null) piece.increment_active_image();
         break;
     }
 
-    // See if there is a piece underneath
-    i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
-    if(i >= 0) piece = this.pieces[i];
-
-    // at this point, we call the user-override function
+    // at this point, we call the user function
     event_keydown(e,p,i);
   } // end of canvas has focus
 }
@@ -1873,54 +1914,59 @@ BOARD.prototype.draw = function() {
       pieces[i].move_and_draw();
     } // end of piece draw loop
 
-    // draw selection rectangles
-    for (i=0; i<this.selected_pieces.length; i++) {
+    // draw selection rectangles for each team
+    for (i=0; i<this.selected_pieces.length; i++) { // Jack
       
-      // get the piece
-      sp = this.selected_pieces[i];
+      // get the selected pieces for this team
+      sps = this.selected_pieces[i]; // Jack
       
-      // if the piece is selected, draw the rectangle
-      if (sp != null && sp.active_image != null) {
-        
-        // get the width and height 
-        var w = sp.images[sp.active_image].width+4;
-        var h = sp.images[sp.active_image].height+4;
-        
-        // if we're not allowed to zoom, adjust the size
-        if(!sp.zooms_with_canvas) {
-          w = w*100.0/this.z;
-          h = h*100.0/this.z;
-        }
-        
-        // shift to piece coordinates
-        context.translate(sp.x, sp.y);
-        
-        // include piece's internal rotation
-        context.rotate(sp.r*Math.PI/180.0);
-        
-        // if we're not allowed to rotate, transform
-        if(!sp.rotates_with_canvas) context.rotate(-this.r*Math.PI/180.0);
-        
-        // draw white background of the border
-        context.lineWidth   = this.selected_border_width*100.0/this.z;
-        context.strokeStyle = "#FFF";
-        sp.draw_selection();
-        
-        // draw the border
-        context.lineWidth   = this.selected_border_width*50.0/this.z;
-        context.strokeStyle = this.team_colors[i];
-        sp.draw_selection();
-        
-        // if we're not allowed to rotate, transform
-        if(!sp.rotates_with_canvas) context.rotate(this.r*Math.PI/180.0);
-        
-        // unrotate
-        context.rotate(-sp.r*Math.PI/180.0);
-        
-        // shift back
-        context.translate(-sp.x, -sp.y);
-      }
-    }
+      // Loop over the selected pieces
+      for(j=0; j<sps.length; j++) {
+        sp = sps[j];
+
+        // if the piece is selected, draw the rectangle
+        if (sp.active_image != null) {
+          
+          // get the width and height 
+          var w = sp.images[sp.active_image].width+4;
+          var h = sp.images[sp.active_image].height+4;
+          
+          // if we're not allowed to zoom, adjust the size
+          if(!sp.zooms_with_canvas) {
+            w = w*100.0/this.z;
+            h = h*100.0/this.z;
+          }
+          
+          // shift to piece coordinates
+          context.translate(sp.x, sp.y);
+          
+          // include piece's internal rotation
+          context.rotate(sp.r*Math.PI/180.0);
+          
+          // if we're not allowed to rotate, transform
+          if(!sp.rotates_with_canvas) context.rotate(-this.r*Math.PI/180.0);
+          
+          // draw white background of the border
+          context.lineWidth   = this.selected_border_width*100.0/this.z;
+          context.strokeStyle = "#FFF";
+          sp.draw_selection();
+          
+          // draw the border
+          context.lineWidth   = this.selected_border_width*50.0/this.z;
+          context.strokeStyle = this.team_colors[i];
+          sp.draw_selection();
+          
+          // if we're not allowed to rotate, transform
+          if(!sp.rotates_with_canvas) context.rotate(this.r*Math.PI/180.0);
+          
+          // unrotate
+          context.rotate(-sp.r*Math.PI/180.0);
+          
+          // shift back
+          context.translate(-sp.x, -sp.y);
+        } // end of if piece selecte, draw rectangle
+      } // end of loop over selected pieces for team
+    } // end of loop over team selected pieces
     
     
     
@@ -1948,31 +1994,33 @@ BOARD.prototype.draw = function() {
   } // end of needs redraw
 }
 
-// Timer: often send changes to the server
+/** 
+ * Timer: sends quick updates every fraction of a second for things like
+ * dragging a piece around, hand movement, etc.
+ */
 BOARD.prototype.send_stream_update = function() {
  
-  // sends quick and small information about mouse movement, etc
-  
-  // get the held and selected piece
-  hp = this.held_pieces    [get_team_number()];
-  
-  // if a selection has changed
-  for (n=0; n<this.previous_selected_pieces.length; n++) {
+  // loop over team numbers to see if selected pieces have changed
+  for (n=0; n<this.previous_selected_pieces.length; n++) { // Jack
     
-    // get the selected piece
-    sp = this.selected_pieces[n];
-    
-    // see if it's changed
-    if (sp != this.previous_selected_pieces[n]) {
+    // Get the selected pieces
+    sps = this.selected_pieces[n]; // Jack
+
+    // If the arrays are different
+    if(!array_compare(sps, this.previous_selected_pieces[n])) { // Jack
+      
+      console.log('selection change');
+      
+      // assemble the array of piece ids
+      ids = [];
+      for(i in sps) ids.push(sp.piece_id);
       
       // emit the selection changed event
-      console.log('selection change');
-      if (sp == null) i = -1;
-      else            i = sp.piece_id;
-      our_socket.emit('s', i, n);
+      our_socket.emit('s', ids, n);
 
-      // remember the change
-      this.previous_selected_pieces[n] = sp;   
+      // Remember the change so this doesn't happen again. 
+      // The splice is to make a copy, not reference.
+      this.previous_selected_pieces[n] = sps.splice(); // Jack
     }
   } // end of selection changes
   
@@ -2156,14 +2204,14 @@ server_mousemove = function(n, x, y, i, dx, dy, r){
 }
 our_socket.on('m', server_mousemove);
 
-server_selectionchange = function(piece_id,team_number){
+server_selectionchange = function(piece_ids,team_number){
   // server sent a selection change
   
   // update the selection
-  console.log('s:', piece_id, team_number);
-  p = board.find_piece(piece_id);
-  board.selected_pieces[team_number]          = p;
-  board.previous_selected_pieces[team_number] = p;
+  console.log('s:', piece_ids, team_number);
+  sps = board.find_pieces(piece_ids);
+  board.selected_pieces[team_number]          = sps;
+  board.previous_selected_pieces[team_number] = sps.splice();
 
   // trigger a redraw
   board.trigger_redraw = true;
