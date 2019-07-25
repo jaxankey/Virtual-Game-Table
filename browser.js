@@ -584,8 +584,7 @@ PIECE.prototype.move_and_draw   = function() {
   if (this.peakable_by != null){ // if this is a peakable piece
     
     // if our team is in the peak list, set the index by the mode
-    if( this.peakable_by.indexOf(get_team_number())>=0 && get_peak()) 
-      this.active_image = 1;
+    if( this.peakable_by.indexOf(get_team_number())>=0 && get_peak()) this.active_image = 1;
     
     // otherwise set to zero
     else this.active_image = 0; 
@@ -865,7 +864,7 @@ function BOARD(canvas) {
   // one border, held, and selected piece for each team
   this.team_colors              = [];
   this.selected_border_width    = 4;
-  this.held_pieces              = []; 
+  this.clients                  = []; 
   this.snap_grids               = [];
   this.team_zones               = [];  
   this.selected_pieces          = []; // Jack
@@ -899,7 +898,7 @@ function BOARD(canvas) {
   
   // keeps track of the index for new pieces & hands
   this.next_piece_id = 0;
-  this.next_hand_index  = 0;
+  this.next_hand_id  = 0;
   
   // background image
   this.background_image        = new Image();
@@ -1062,7 +1061,7 @@ BOARD.prototype.add_snap_grid = function(x_left, y_top, width, height, x0, y0, d
   // return the index
   return this.snap_grids.length-1;
 }
-BOARD.prototype.add_team = function(name, image_paths, color) {
+BOARD.prototype.add_team = function(name, hand_image_paths, color) {
   
   // add team to list
   var teams  = document.getElementById("teams");
@@ -1070,8 +1069,8 @@ BOARD.prototype.add_team = function(name, image_paths, color) {
   option.text = name;
   teams.add(option);
   
-  // add hand
-  this.add_hand(image_paths, this.hand_fade_ms);
+  // Add hand piece for this team. This should be drawn multiple times for multiple users.
+  this.add_hand(hand_image_paths, this.hand_fade_ms);
   
   // add border color, held, selected pieces, and team zones
   this.team_colors.push(color);
@@ -1079,10 +1078,25 @@ BOARD.prototype.add_team = function(name, image_paths, color) {
   this.previous_selected_pieces.push([]); // Jack
   this.team_zones.push(null);
 }
+
+/**
+ * Adds a new client to the stack, containing the name, array of held pieces, and team number.
+ */
+BOARD.prototype.add_client = function() {
+  this.clients.push({'name':'n00b', 'held_pieces':[], 'team': 0});
+}
+
+/**
+ * Pops client at index i from board.clients and returns it.
+ */
+BOARD.prototype.pop_client = function(i) {
+  return this.clients.splice(i,1);
+}
+
 BOARD.prototype.add_hand = function(image_paths, t_fade_ms) {
   
   // create the hand
-  h = new PIECE(this, this.next_hand_index, image_paths);
+  h = new PIECE(this, this.next_hand_id, image_paths);
   h.t_fade_ms           = this.hand_fade_ms;
   h.zooms_with_canvas   = false;
   h.rotates_with_canvas = true;
@@ -1094,7 +1108,7 @@ BOARD.prototype.add_hand = function(image_paths, t_fade_ms) {
   this.hands.push(h);
   
   // increment the piece index
-  this.next_hand_index++;
+  this.next_hand_id++;
   
   return h;
 }
@@ -1280,20 +1294,22 @@ BOARD.prototype.event_mousedown = function(e) {
 
   // get the mouse coordinates & team
   var mouse  = this.get_mouse_coordinates(e);
-  team = get_team_number();
+  team       = get_team_number();
   
   // report the coordinates
   console.log("event_mousedown", mouse);
   
-  // If we're not in someone else's team zone, see if we selected a piece.
+  // If we're not in someone else's team zone, see if we have clicked on a piece.
   team_zone = this.in_team_zone(mouse.x, mouse.y)
+  
+  // Our team or no team
   if(team_zone == team || team_zone < 0) {
     
-    // loop over the list of pieces from top to bottom
+    // loop over all pieces from top to bottom
     for (var i = this.pieces.length-1; i >= 0; i--) {
 
-      // see if the mouse down happened within the piece
-      // on success, quits out of the loop!
+      // See if the mouse down happened within the piece and is movable.
+      // This if statement returns from the function (quits the loop!)
       if (this.pieces[i].contains(mouse.x, mouse.y) && 
          (this.pieces[i].movable_by == null ||
           this.pieces[i].movable_by.indexOf(team)>=0)) {
@@ -1313,19 +1329,19 @@ BOARD.prototype.event_mousedown = function(e) {
         if(team2 >= 0 && team2 != team) this.deselected_piece(p);
         
         // Select the piece
-        this.selected_pieces[team].push(piece); // Jack
-        this.held_pieces          .push(piece); 
+        this.selected_pieces[team] .push(piece); // Jack
+        this.clients[0].held_pieces.push(piece); // Jack
         
         // quit out of the loop
         return;
       }
     } // end of loop over pieces
-  }
+  } // end of "our team zone or no team zone"
 
-  // If we got this far, it means we haven't found a selection
+  // If we got this far, it means we clicked somewhere without a valid piece.
   // If there was an object selected, we deselect it
-  this.selected_pieces[team] = []; // Jack 
-  this.held_pieces           = []; 
+  this.selected_pieces[team]  = []; // Jack 
+  this.clients[0].held_pieces = []; // Jack
   
   // store the drag offset for canvas motion
   this.drag_offset_x = mouse.x;
@@ -1338,14 +1354,17 @@ BOARD.prototype.event_mousemove = function(e) {
   // trigger redraw to be safe
   this.trigger_redraw = true;
 
+  // get the team index
+  team = get_team_number();
+
   // if we're holding pieces
-  if(this.held_pieces.length > 0) { 
+  if(this.clients[0].held_pieces.length > 0) { // Jack
 
     // Loop over held pieces
-    for(n in this.held_pieces) { 
+    for(n in this.clients[0].held_pieces) { // Jack
       
       // Get the held piece
-      hp = this.held_pieces[n]; 
+      hp = this.clients[0].held_pieces[n]; //Jack
     
       // If we're allowed to move this piece and it exists
       if(hp.movable_by == null || hp.movable_by.indexOf(get_team_number())>=0) {
@@ -1360,6 +1379,7 @@ BOARD.prototype.event_mousemove = function(e) {
           // make sure it immediately moves there while we're holding it
           hp.x = hp.x_target;
           hp.y = hp.y_target;
+
       } // End of allowed to move
     } // end of loop over held pieces
   } // end of "if holding pieces"
@@ -1382,11 +1402,15 @@ BOARD.prototype.event_mouseup = function(e) {
   // trigger redraw to be safe
   this.trigger_redraw = true;
 
-  // set the final coordinates of any held pieces (will snap if necessary)
-  for(n in this.held_pieces) this.held_pieces[n].set_target(hp.x_target, hp.y_target); 
+  // get the team index
+  team = get_team_number();
+
+  // set the final coordinates of any of our held pieces (will snap if necessary)
+  for(n in this.clients[0].held_pieces) // Jack
+    this.clients[0].held_pieces[n].set_target(hp.x_target, hp.y_target); // Jack
   
-  // remove it from our hand
-  this.held_pieces = []; 
+  // remove it from our holding
+  this.clients[0].held_pieces = []; // Jack
   
   // null out the drag offset so we know not to carry the canvas around
   this.drag_offset_x = null;
@@ -1974,8 +1998,8 @@ BOARD.prototype.draw = function() {
     for (var i = 0; i < hands.length; i++) {
 
       // see if it's holding something
-      if (this.held_pieces[i] != null) hands[i].active_image = 1;
-      else                             hands[i].active_image = 0;
+      if (this.held_pieces[i].length > 0) hands[i].active_image = 1; 
+      else                                hands[i].active_image = 0;
     
       // otherwise actually do the drawing
       hands[i].move_and_draw();
@@ -2178,29 +2202,44 @@ server_users = function(names, teams){
 }
 our_socket.on('users', server_users);
 
-server_mousemove = function(n, x, y, i, dx, dy, r){
+
+/**
+ * The server has sent a "mousemove" event for
+ *   team:  team number
+ *   user:  user number
+ *   x,y:   mouse position
+ *   ids:   held piece id array
+ *   dx,dy: piece offsets
+ *   r:     hand rotation
+ */
+server_mousemove = function(team, user, x, y, ids, dx, dy, r){
   // server has sent a "mouse move"
-  console.log('received m:', n, x, y, i, dx, dy, r);
+  console.log('received m:', team, user, x, y, ids, dx, dy, r);
 
   // set the hand's target location
   board.hands[n].set_target(x, y, null, null, true); // disable snap
   board.hands[n].set_rotation(-r);
   
-  // set the held piece location (if any)
-  if (i >= 0) {
+  // set the locations of this hand's held pieces (if any)
+  for(j in ids) {
+    
+    // If it's a valid id
+    if (ids[j] >= 0) {
         
-    // find the piece
-    hp = board.find_piece(i);
+      // find the piece
+      hp = board.find_piece(ids[j]);
+      
+      // update the held_pieces array
+      board.held_pieces[n] = hp;
+      
+      // set its coordinates
+      hp.set_target(x-dx, y-dy, null, null, true); // disable snap
+    }
     
-    // update the held_pieces array
-    board.held_pieces[n] = hp;
-    
-    // set its coordinates
-    hp.set_target(x-dx, y-dy, null, null, true); // disable snap
+    // otherwise release the piece
+    else board.held_pieces[n] = null;
   }
   
-  // otherwise release the piece
-  else board.held_pieces[n] = null;
 }
 our_socket.on('m', server_mousemove);
 
