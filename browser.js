@@ -850,8 +850,8 @@ function BOARD(canvas) {
   this.held_pieces              = [];
   this.snap_grids               = [];
   this.team_zones               = [];  
-  this.selected_pieces          = [];
-  this.previous_selected_pieces = [];
+  this.selected_pieces          = []; // Jack
+  this.previous_selected_pieces = []; // Jack
   
   // the box coordinates for all the unused game pieces
   this.box_x = 0;
@@ -1044,7 +1044,7 @@ BOARD.prototype.add_snap_grid = function(x_left, y_top, width, height, x0, y0, d
   // return the index
   return this.snap_grids.length-1;
 }
-BOARD.prototype.add_team      = function(name, image_paths, color) {
+BOARD.prototype.add_team = function(name, image_paths, color) {
   
   // add team to list
   var teams  = document.getElementById("teams");
@@ -1058,11 +1058,11 @@ BOARD.prototype.add_team      = function(name, image_paths, color) {
   // add border color, held, selected pieces, and team zones
   this.team_colors.push(color);
   this.held_pieces.push(null);
-  this.selected_pieces.push(null);
-  this.previous_selected_pieces.push(null);
+  this.selected_pieces.push([]]); // Jack
+  this.previous_selected_pieces.push([]]); // Jack
   this.team_zones.push(null);
 }
-BOARD.prototype.add_hand      = function(image_paths, t_fade_ms) {
+BOARD.prototype.add_hand = function(image_paths, t_fade_ms) {
   
   // create the hand
   h = new PIECE(this, this.next_hand_index, image_paths);
@@ -1205,6 +1205,41 @@ BOARD.prototype.in_team_zone = function(x,y) {
   return -1;
 }
 
+/**
+ * Searches for the supplied piece in BOARD.selected_pieces, returning
+ * the team number if found. Returns -1 if not found.
+ */
+BOARD.prototype.find_selected_piece_team = function(piece) {
+
+  // Loop over the selected piece arrays for each team
+  for(i=0; i<this.selected_pieces.length; i++) {       // Jack
+    if(this.selected_pieces.contains(piece)) return i; // Jack
+  }
+
+  // No soup
+  return -1;
+}
+
+/**
+ * Deselects the specified piece
+ */
+BOARD.prototype.deselected_piece = function(piece) {
+  
+  // Find the team of the piece
+  team = this.find_selected_piece_team(piece);
+  if(team < 0) return;
+
+  // Find the piece in the team's array
+  i = this.selected_pieces[team].indexOf(piece); // Jack
+  if(i < 0) {
+    console.log('OOPS! deselect_piece failed!');
+    return;
+  }
+
+  // Pop the piece out 
+  this.selected_pieces[team].splice(i,1); // Jack
+}
+
 // whenever someone clicks the mouse
 BOARD.prototype.event_mousedown = function(e) {
   
@@ -1240,14 +1275,14 @@ BOARD.prototype.event_mousedown = function(e) {
         this.drag_offset_y  = mouse.y - p.y;
         
         // Check and see if someone else has this piece selected.
-        team2 = this.selected_pieces.indexOf(p);
+        team2 = this.find_selected_piece_team(p);
         
         // If someone else had this selected, remove their selection
-        if(team2 >= 0 && team2 != team) this.selected_pieces[team2] = null;
+        if(team2 >= 0 && team2 != team) this.deselected_piece(p);
         
         // Select the piece
-        this.selected_pieces[team] = p;
-        this.held_pieces    [team] = p;
+        this.selected_pieces[team].push(piece); // Jack
+        this.held_pieces          .push(piece); // Jack
         
         // quit out of the loop
         return;
@@ -1257,8 +1292,8 @@ BOARD.prototype.event_mousedown = function(e) {
 
   // If we got this far, it means we haven't found a selection
   // If there was an object selected, we deselect it
-  this.selected_pieces[get_team_number()] = null;
-  this.held_pieces    [get_team_number()] = null;
+  this.selected_pieces[team] = []; // Jack 
+  this.held_pieces           = []; // Jack
   
   // store the drag offset for canvas motion
   this.drag_offset_x = mouse.x;
@@ -1346,8 +1381,8 @@ BOARD.prototype.event_mousewheel = function(e) {
   // prevents default
   e.preventDefault();
   
-  // find our selected piece
-  sp = this.selected_pieces[get_team_number()];  
+  // find our selected pieces
+  sps = this.selected_pieces[get_team_number()]; // Jack 
     
   // trigger redraw to be safe
   this.trigger_redraw = true;
@@ -1360,7 +1395,7 @@ BOARD.prototype.event_mousewheel = function(e) {
   }
   
   // if ctrl is held, zoom canvas
-  else if (e.ctrlKey || sp == null) {    
+  else if (e.ctrlKey || sps.length == 0) {    
 
     // zoom in
     if(e.wheelDelta > 0) this.zoom_in();
@@ -1369,10 +1404,15 @@ BOARD.prototype.event_mousewheel = function(e) {
     else if(e.wheelDelta < 0) this.zoom_out();
   }
   
-  // otherwise, if a piece is selected, rotate it.
-  else if (sp != null) {
-    if      (e.wheelDelta < 0) sp.rotate( sp.r_step);
-    else if (e.wheelDelta > 0) sp.rotate(-sp.r_step);
+  // otherwise, if pieces are selected, rotate all of them.
+  else if (sps.length > 0) {
+    
+    // Loop over all pieces and rotate them
+    for(i=0; i<sps.length; i++) {
+      if      (e.wheelDelta < 0) sps[i].rotate( sps[i].r_step);
+      else if (e.wheelDelta > 0) sps[i].rotate(-sps[i].r_step);
+    }
+    
   }
   
   // reset the timer
