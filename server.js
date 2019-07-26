@@ -269,6 +269,9 @@ io.on('connection', function(client) {
 
   });
 
+  // Deal with selection changes at the team level, 
+  // and held piece changes at the client level.
+
   // someone sent a selection change
   client.on('s', function(piece_ids, team_number) {
 
