@@ -134,7 +134,7 @@ client_held_pieces  = []; // lists of last known held piece indices for each soc
  * 
  * Piece selected 
  *  's' (piece_ids, team_number)
- *    piece_ids : index of selected piece (-1 for no selection)
+ *    piece_ids   : list of indices of piece ids.
  *    team_number : team that selected (or deselected) the piece
  *  On the client side, selected_pieces is a per-team list of indices.
  *  Meanwhile, the held_pieces data (not implemented) should be a per-client list of indices.
@@ -145,11 +145,12 @@ io.on('connection', function(socket) {
   
   // update the global list of clients
   client_ids        .push(++last_client_id);
-  client_sockets    .push(client);  // each client gets a socket
+  client_sockets    .push(socket);  // each client gets a socket
   client_names      .push("n00b");  // each client gets a name string
   client_teams      .push(0);       // each client gets a team index
   client_held_pieces.push([]);      // each client gets a list of held pieces 
-  log("New client id: ", last_client_id, ', sockets: '+client_sockets.length);
+  
+  log("New client id: ", last_client_id, ', sockets: '+client_sockets.length, client_teams);
 
   // Tell this user their id.
   socket.emit('id', last_client_id);
@@ -165,28 +166,31 @@ io.on('connection', function(socket) {
   
   // INCOMING DATA HANDLING
 
-  // received a name change
+  // received a name or team change triggers a rather large update
   socket.on('user', function(name, team) {
     
     // get the client index
     i = client_sockets.indexOf(socket);
     
+    // Make sure the team is at least 0. Sometimes a -1 comes in from the html initializing.
+    if(team < 0) team = 0;
+
     // update client names & teams
     old_name        = client_names[i];
     old_team        = client_teams[i];
     client_names[i] = name.substring(0,24);
     client_teams[i] = team;
-    log('User change:', old_name + " -> " + client_names[i], old_team, '->', team);
+    log('User index', i, 'change:', old_name + " -> " + client_names[i], ' and ' + old_team, '->', team);
     
     // Send a chat with this information
     if(old_name != client_names[i] && old_name != 'n00b') 
-      io.emit('chat', '<'+old_name+' is now "'+client_names[i]+'">');
+      socket.broadcast.emit('chat', '<b>Server:</b> '+old_name+' is now '+client_names[i]);
     
     if(old_team != client_teams[i]) 
-      io.emit('chat', '<'+client_names[i]+"'s team is now "+String(team)+'>')
+      socket.broadcast.emit('chat', '<b>Server:</b> '+client_names[i]+" joins Team "+String(team));
     
-    // tell the world!
-    io.emit("users", client_names, client_teams);
+    // tell everyone about the current list.
+    io.emit('users', client_ids, client_names, client_teams, client_held_pieces);
   });
 
   // received a chat message
@@ -298,13 +302,14 @@ io.on('connection', function(socket) {
     log("Client", i, "/", client_sockets.length-1, "disconnecting.");
     
     // pop the client
+    client_ids        .splice(i,1);
     client_sockets    .splice(i,1);
     client_names      .splice(i,1);
     client_teams      .splice(i,1);
     client_held_pieces.splice(i,1);
     
     // tell the world!
-    io.emit("users", client_names, client_teams);
+    io.emit('users', client_ids, client_names, client_teams, client_held_pieces);
   });
 
 }); // end of io

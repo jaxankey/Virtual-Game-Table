@@ -54,6 +54,11 @@ function array_compare(a1, a2) {
 function get_team_number()  {return document.getElementById("teams").selectedIndex;}
 function set_team_number(n) {return document.getElementById("teams").selectedIndex = n;}
 
+/**
+ * Use my client_id to find my index for things like client_held_pieces, client_teams, etc...
+ */
+function get_my_client_index() {return board.client_ids.indexOf(board.client_id);}
+
 // get / set your name
 // These set the gui value, which in turn triggers the event name_onchange()
 function get_name()     {return document.getElementById("name").value;}
@@ -177,8 +182,6 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   // by default, use the same set of image paths
   private_image_paths = or_default(private_image_paths, image_paths);
   
-  console.log("Adding piece", String(piece_id), String(image_paths), String(private_image_paths))
-
   // equivalent of storing object properties (or defaults)
   this.board               = board;                       // board instance for this piece
   this.piece_id            = piece_id;                    // unique piece id
@@ -879,7 +882,8 @@ function BOARD(canvas) {
   this.client_names       = []; // List of strings supplied by server.
   this.client_teams       = []; // List of integers supplied by server.
   this.client_held_pieces = []; // List of lists of piece ids sent by server.
-
+  this.client_previous_held_pieces = []; // List of previously held pieces ids (for detecting changes to send to the server)
+  
   // the box coordinates for all the unused game pieces
   this.box_x = 0;
   this.box_y = -3000;
@@ -965,20 +969,15 @@ function BOARD(canvas) {
   //// TIMERS 
   
   // timers for sending updates and redrawing the canvas
-  setInterval(this.send_stream_update .bind(this), stream_interval_ms);
-  setInterval(this.send_full_update   .bind(this), update_interval_ms);
+  //setInterval(this.send_stream_update .bind(this), stream_interval_ms);
+  //setInterval(this.send_full_update   .bind(this), update_interval_ms);
   setInterval(this.draw               .bind(this), draw_interval_ms);
   
   //// COOKIE STUFF
   this.cookie_expire_days = 28;
 }
 
-/**
- * Use my client_id to find my index for things like client_held_pieces, client_teams, etc...
- */
-BOARD.prototype.get_my_client_index = function() {
-  return this.client_ids.indexOf(this.client_id);
-}
+
 
 // cookie stuff
 BOARD.prototype.set_cookie = function(key, value) {
@@ -1120,10 +1119,13 @@ BOARD.prototype.add_hand = function(image_paths, t_fade_ms) {
 BOARD.prototype.add_piece = function(image_paths, private_image_paths) {
   
   // by default, use the same image paths for public and private images
-  immediate = or_default(private_image_paths, image_paths);
+  private_image_paths = or_default(private_image_paths, image_paths);
   
+  // Log it
+  console.log(this.next_piece_id, this.pieces.length, 'add_piece()', image_paths, private_image_paths);
+
   // get the unique id for the piece
-  id = this.next_piece_id;
+  id = this.next_piece_id++;
 
   // create the piece 
   p = new PIECE(board, id, image_paths, private_image_paths);
@@ -1134,13 +1136,11 @@ BOARD.prototype.add_piece = function(image_paths, private_image_paths) {
   // add the index to the lookup table
   this.piece_lookup[id] = p;
 
-  // increment the piece index
-  this.next_piece_id++;
-  
   return p;
 }
 
 // add multiple copies of pieces; arguments are N, [images], N, [images]...
+// This is for users making games.
 BOARD.prototype.add_pieces = function() {
   
   // create an array and add multiple copies of the piece
@@ -1154,18 +1154,19 @@ BOARD.prototype.add_pieces = function() {
   return ps;
 }
 
-
-BOARD.prototype.push_piece    = function(piece) {
+BOARD.prototype.push_piece = function(piece) {
+  console.log('board.push_piece()', piece.piece_id, this.pieces.length);
   this.pieces.push(piece);
 }
-BOARD.prototype.pop_piece     = function(i) {
+BOARD.prototype.pop_piece  = function(i) {
+  console.log('board.pop_piece()', i, this.pieces.length);
   return this.pieces.splice(i,1)[0];
 }
 
 /**
  * Find the piece by id.
  */
-BOARD.prototype.find_piece = function(piece_id) {
+BOARD.prototype.find_piece_index = function(piece_id) {
   // find a piece by piece_id
   return board.pieces.lastIndexOf(board.piece_lookup[piece_id])
 }
@@ -1173,11 +1174,27 @@ BOARD.prototype.find_piece = function(piece_id) {
 /**
  * Find the pieces associated with the array of piece ids.
  */
-BOARD.prototype.find_pieces = function(piece_ids) {
+BOARD.prototype.find_piece_indices = function(piece_ids) {
   // find pieces by piece_id
-  pieces = [];
-  for(n in piece_ids) pieces.push(this.find_piece(piece_ids[n])); 
-  return pieces;
+  pids = [];
+  for(n in piece_ids) pids.push(this.find_piece_index(piece_ids[n])); 
+  return pids;
+}
+
+/**
+ * Finds the actual piece object of this id.
+ */
+BOARD.prototype.find_piece = function(piece_id) {
+  return board.piece_lookup[piece_id];
+}
+
+/**
+ * Finds the list of piece objects from the list of ids.
+ */
+BOARD.prototype.find_pieces = function(piece_ids) {
+  ps = [];
+  for(n in piece_ids) ps.push(this.find_piece(piece_ids[n]));
+  return ps;
 }
 
 BOARD.prototype.find_top_piece_at_location = function(x,y) {
@@ -1185,7 +1202,7 @@ BOARD.prototype.find_top_piece_at_location = function(x,y) {
   // loop over the list of pieces from top to bottom
   for (var i = this.pieces.length-1; i >= 0; i--) {
     // on success, return the index
-    if (this.pieces[i].contains(x, y)) return i;
+    if (this.pieces[i].contains(x,y)) return i;
   }
 
   // FAIL. NOFRIENDS.
@@ -1362,16 +1379,17 @@ BOARD.prototype.event_mousemove = function(e) {
 
   // get the team index
   team     = get_team_number();
-  my_index = this.get_my_client_index();
+  my_index = get_my_client_index();
 
   // if we're holding pieces
+  console.log(my_index, team, this.client_held_pieces, this.client_held_pieces[my_index]);
   if(this.client_held_pieces[my_index].length > 0) { 
 
     // Loop over held pieces
     for(n in this.client_held_pieces[my_index]) { 
       
       // Get the held piece
-      hp = this.clients[0].held_pieces[n]; //Jack
+      hp = this.client_held_pieces[my_index][n]; //Jack
     
       // If we're allowed to move this piece and it exists
       if(hp.movable_by == null || hp.movable_by.indexOf(get_team_number())>=0) {
@@ -1410,14 +1428,15 @@ BOARD.prototype.event_mouseup = function(e) {
   this.trigger_redraw = true;
 
   // get the team index
-  team = get_team_number();
+  team     = get_team_number();
+  my_index = get_my_client_index();
 
   // set the final coordinates of any of our held pieces (will snap if necessary)
-  for(n in this.clients[0].held_pieces) // Jack
-    this.clients[0].held_pieces[n].set_target(hp.x_target, hp.y_target); // Jack
+  for(n in this.client_held_pieces[my_index]) // Jack
+    this.client_held_pieces[my_index][n].set_target(hp.x_target, hp.y_target); // Jack
   
   // remove it from our holding
-  this.clients[0].held_pieces = []; // Jack
+  this.client_held_pieces[my_index] = []; // Jack
   
   // null out the drag offset so we know not to carry the canvas around
   this.drag_offset_x = null;
@@ -1789,7 +1808,7 @@ BOARD.prototype.setup = function() {
 BOARD.prototype.tantrum = function() {
   
   // loop over all pieces and send them in random directions
-  for (n=0; n<this.pieces.length; n++) {
+  for (n in this.pieces) {
   
     u1 = Math.random();
     u2 = Math.random();
@@ -1890,11 +1909,10 @@ BOARD.prototype.draw = function() {
     if ( Math.abs(this.px-pxtarget) < this.transition_snap) this.px = pxtarget;
     if ( Math.abs(this.py-pytarget) < this.transition_snap) this.py = pytarget;
     
-
-    
-    var context = this.context;
-    var pieces  = this.pieces;
-    var hands   = this.hands;
+    var context  = this.context;
+    var pieces   = this.pieces;
+    var hands    = this.hands;
+    var my_index = get_my_client_index();
     
     // set the size to match the window
     context.canvas.width  = window.innerWidth;
@@ -1931,11 +1949,8 @@ BOARD.prototype.draw = function() {
     }
     
     
-    
-    
-    
     // draw all pieces
-    for (var i = 0; i < pieces.length; i++) {
+    for (i in pieces) {
 
       // We can skip the drawing of elements that have moved off the screen:
       if (pieces[i].x > this.width      || pieces[i].y > this.height ||
@@ -1943,6 +1958,7 @@ BOARD.prototype.draw = function() {
 
       // otherwise actually do the drawing
       pieces[i].move_and_draw();
+
     } // end of piece draw loop
 
     // draw selection rectangles for each team
@@ -2002,16 +2018,17 @@ BOARD.prototype.draw = function() {
     
     
     // draw all hands
+    /*
     for (var i = 0; i < hands.length; i++) {
 
       // see if it's holding something
-      if (this.held_pieces[i].length > 0) hands[i].active_image = 1; 
-      else                                hands[i].active_image = 0;
+      if (this.client_held_pieces[my_index][i].length > 0) hands[i].active_image = 1; 
+      else                                          hands[i].active_image = 0;
     
       // otherwise actually do the drawing
       hands[i].move_and_draw();
       
-    } // end of piece draw loop
+    } // end of hand draw loop */
 
     // draw the team zones on top of everything
     for (var i = 0; i < this.team_zones.length; i++) {
@@ -2031,32 +2048,54 @@ BOARD.prototype.draw = function() {
  */
 BOARD.prototype.send_stream_update = function() {
  
-  // loop over team numbers to see if selected pieces have changed
-  for (n=0; n<this.team_previous_selected_pieces.length; n++) { // Jack
+  // Get client index and team
+  my_index = get_my_client_index();
+  my_team  = get_team_number();
+
+  // We should only check / send if our own team's piece selection has changed  
+  // Get the selected pieces
+  sps = this.team_selected_pieces[my_team];
+
+  // If the arrays are different
+  if(!array_compare(sps, this.team_previous_selected_pieces[my_team])) { 
     
-    // Get the selected pieces
-    sps = this.team_selected_pieces[n]; // Jack
+    console.log('selection change');
+    
+    // assemble the array of piece ids
+    ids = [];
+    for(i in sps) ids.push(sps[i].piece_id);
+    
+    // emit the selection changed event
+    our_socket.emit('s', ids, my_team);
 
-    // If the arrays are different
-    if(!array_compare(sps, this.team_previous_selected_pieces[n])) { // Jack
-      
-      console.log('selection change');
-      
-      // assemble the array of piece ids
-      ids = [];
-      for(i in sps) ids.push(sp.piece_id);
-      
-      // emit the selection changed event
-      our_socket.emit('s', ids, n);
-
-      // Remember the change so this doesn't happen again. 
-      // The splice is to make a copy, not reference.
-      this.team_previous_selected_pieces[n] = sps.splice(); // Jack
-    }
-  } // end of selection changes
+    // Remember the change so this doesn't happen again. 
+    // Make a copy, not a reference!
+    this.team_previous_selected_pieces[my_team] = [...sps]; 
   
-
+  } // end of selected pieces have changed
   
+  // We should only check / send if our own held pieces have changed
+  hps = this.client_held_pieces[my_index];
+  console.log(my_index, hps, this.client_previous_held_pieces[my_index]);
+
+  // If the arrays are different
+  if(!array_compare(hps, this.client_previous_held_pieces[my_index])) {
+
+    console.log('held piece change');
+
+    // Assemble the array of held piece ids
+    ids = [];
+    for(i in hps) ids.push(hps[i].piece_id);
+
+    // Emit the held piece change event
+    our_socket.emit('h', ids);
+
+    // Remember the change so this doesn't happen again next time.
+    // The splice is to make a copy, not a reference!
+    this.client_previous_held_pieces[my_team] = [...sps];
+  
+  } // end of held pieces have changed
+
   // updating the mouse coordinates (if they're different!)
   if (this.mouse.x != this.previous_mouse.x || 
       this.mouse.y != this.previous_mouse.y || 
@@ -2083,8 +2122,6 @@ BOARD.prototype.send_stream_update = function() {
     this.previous_r     = this.r_target;
     
   } // end of updating mouse coordinates
-  
-  
   
   // loop over all the pieces to see if their coordinates have changed
   ids = [];
@@ -2124,7 +2161,8 @@ BOARD.prototype.send_stream_update = function() {
   }
 }
 
-// Timer: occasionally sends all piece coordinates to the server
+// Timer: very occasionally sends all piece coordinates to the server, just to be safe.
+// This will be called some time after the last full update.
 BOARD.prototype.send_full_update   = function(force) {
   
   // normally we only send an update if we haven't had one in awhile
@@ -2164,7 +2202,6 @@ BOARD.prototype.send_full_update   = function(force) {
 
   console.log('sending full update:', ids.length, 'pieces');
   our_socket.emit('u', ids, xs, ys, rs, active_images, true); // true clears the old values from the server's memory
-
 }
 
 
@@ -2178,6 +2215,7 @@ our_socket.emit('user', get_name(), get_team_number());
 // functions for handling incoming server messages
 server_chat = function(msg){
   // server sent a "chat"
+  console.log('Received chat:', msg);
 
   // messages div object
   m = $('#messages');
@@ -2187,24 +2225,43 @@ server_chat = function(msg){
 
   // scroll to the bottom of the history
   m.animate({ scrollTop: m.prop("scrollHeight") - m.height() }, 'slow');
-
 }
 our_socket.on('chat', server_chat);
 
-server_users = function(names, teams){
-  console.log("Received users:", names, teams);
+
+// Complete user information from server.
+server_users = function(client_ids, client_names, client_teams, client_held_piece_ids) {
   
-  // loop over them and refill the ul for it.
-  clients = $('#clients');
-  clients.empty();
+  console.log("Received users:", client_ids, client_names, client_teams, client_held_piece_ids);
   
-  for (i=0; i<names.length; i++) {
+  // Clear out the old values
+  board.client_ids         = [];
+  board.client_names       = [];
+  board.client_teams       = [];
+  board.client_held_pieces = [];
+  //board.client_previous_held_pieces = []; // Don't reset this, in case things come back the same!
+
+  // Clear out and refill the html showing who is connected.
+  html_clients = $('#clients');
+  html_clients.empty();
+  
+  // Loop over the supplied clients
+  for (i in client_ids) {
+    console.log(i, client_ids[i], client_names[i], client_teams[i], client_held_piece_ids[i]);
+
+    // Rebuild all the arrays
+    board.client_ids  .push(client_ids[i]);
+    board.client_names.push(client_names[i]);
+    board.client_teams.push(client_teams[i]);
+    hps = board.find_pieces(client_held_piece_ids[i]);
+    board.client_held_pieces.push(hps);
+    board.client_previous_held_pieces.push([...hps]);
+
+    // figure out the team name for this client
+    team_name = document.getElementById("teams").options[client_teams[i]].text;
     
-    // figure out the team name
-    if(teams[i] < 0) teams[i] = 0;
-    team_name = document.getElementById("teams").options[teams[i]].text;
-    
-    clients.append($('<li>').html(names[i]+' ('+team_name+')'));
+    // Update the text next to the name to show the team
+    html_clients.append($('<li>').html(board.client_names[i]+' ('+team_name+')'));
   }
 }
 our_socket.on('users', server_users);
@@ -2212,51 +2269,54 @@ our_socket.on('users', server_users);
 
 /**
  * The server has sent a "mousemove" event for
- *   team:  team number
- *   user:  user number
- *   x,y:   mouse position
- *   ids:   held piece id array
- *   dx,dy: piece offsets
- *   r:     hand rotation
+ *   team:       team number
+ *   client_id:  user number
+ *   x,y:        mouse position
+ *   ids:        held piece id array
+ *   dxs,dys:    piece offsets
+ *   r:          hand rotation
  */
-server_mousemove = function(team, user, x, y, ids, dx, dy, r){
+server_mousemove = function(team, client_id, x, y, ids, dxs, dys, r){
+  
   // server has sent a "mouse move"
-  console.log('received m:', team, user, x, y, ids, dx, dy, r);
+  console.log('received m:', team, client_id, x, y, ids, dxs, dys, r);
+
+  // Get the client index
+  client_index = board.client_ids.indexOf(client_id);
 
   // set the hand's target location
-  board.hands[n].set_target(x, y, null, null, true); // disable snap
-  board.hands[n].set_rotation(-r);
+  //board.hands[n].set_target(x, y, null, null, true); // disable snap
+  //board.hands[n].set_rotation(-r);
   
-  // set the locations of this hand's held pieces (if any)
+  // Reset the client held pieces
+  board.client_previous_held_pieces[client_index] = [];
+  board.client_held_pieces[client_index]          = [];
+
+  // set the locations of this client's held pieces (if any)
   for(j in ids) {
     
-    // If it's a valid id
-    if (ids[j] >= 0) {
-        
-      // find the piece
-      hp = board.find_piece(ids[j]);
-      
-      // update the held_pieces array
-      board.held_pieces[n] = hp;
-      
-      // set its coordinates
-      hp.set_target(x-dx, y-dy, null, null, true); // disable snap
-    }
+    // find the held piece
+    hp = board.piece_lookup[ids[j]];
     
-    // otherwise release the piece
-    else board.held_pieces[n] = null;
+    // add this to the held pieces array
+    board.client_held_pieces[client_id]         .push(hp);
+    board.client_previous_held_pieces[client_id].push(hp);
+    
+    // set its coordinates as displaced from the mouse's
+    hp.set_target(x-dxs[j], y-dys[j], null, null, true); // disable snap
   }
 }
 our_socket.on('m', server_mousemove);
 
 server_selectionchange = function(piece_ids,team_number){
   // server sent a selection change
-  
-  // update the selection
   console.log('s:', piece_ids, team_number);
+  
+  // update the selection, making a copy array for the previous values
+  // so that they're independent.
   sps = board.find_pieces(piece_ids);
   board.team_selected_pieces[team_number]          = sps;
-  board.team_previous_selected_pieces[team_number] = sps.splice();
+  board.team_previous_selected_pieces[team_number] = [...sps];
 
   // trigger a redraw
   board.trigger_redraw = true;
@@ -2267,13 +2327,23 @@ server_heldchange = function(piece_ids,client_id) {
   
   // Server sent a change in held pieces
   console.log('h:', piece_ids, client_id);
+
+  // update the held pieces, making a copy array for the previous values
+  // so that they're independent.
+  hps = board.find_pieces(piece_ids);
+  board.client_held_pieces[client_id]          = hps;
+  board.client_previous_held_pieces[client_id] = [...hps]; 
+
+  // trigger a redraw
+  board.trigger_redraw = true;
 }
 our_socket.on('h', server_heldchange);
 
 server_assigned_id = function(id) {
   
   // Server sent us our id
-  console.log('id:', id);
+  console.log('Received id:', id);
+  board.client_id = id;
 }
 our_socket.on('id', server_assigned_id);
 
@@ -2282,7 +2352,7 @@ our_socket.on('id', server_assigned_id);
 server_update = function(ids, xs, ys, rs, active_images){
   
   // server has sent a pieces update
-  console.log('received update:', ids.length, 'pieces');
+  console.log('Received update:', ids.length, 'pieces');
   board.last_update_ms = Date.now();
 
   // run through the list of ids, find the index m in the stack of the pieces by id, 
@@ -2290,10 +2360,10 @@ server_update = function(ids, xs, ys, rs, active_images){
   for(var n=0; n<ids.length; n++) {
 
     // find the index, searching from the top (most common update)
-    m = board.find_piece(ids[n]);
+    m = board.find_piece_index(ids[n]);
 
     // If someone isn't holding the piece, do the update (held pieces will update themselves)
-    if (!board.held_pieces.includes[board.pieces[m]]) {
+    if (!board.client_held_pieces.includes(board.pieces[m])) {
     
       // remove it, update coordinates, and stick it on top
       p = board.pop_piece(m);
