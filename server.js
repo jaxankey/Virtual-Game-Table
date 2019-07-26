@@ -101,6 +101,9 @@ last_rs             = []; // list of last known piece rotations
 last_active_images  = []; // list of last known active image indices
 
 // Client information. These lists should match in length!
+// We break these into lists so the data is easy to send.
+last_client_id      = 0;
+client_ids          = []; // list of unique ids for each socket
 client_sockets      = []; // sockets
 client_names        = []; // names associated with each socket
 client_teams        = []; // team numbers associated with each socket
@@ -138,64 +141,56 @@ client_held_pieces  = []; // lists of last known held piece indices for each soc
 */
 
 // Thread for what to do with new client
-io.on('connection', function(client) {
+io.on('connection', function(socket) {
   
   // update the global list of clients
+  client_ids        .push(++last_client_id);
   client_sockets    .push(client);  // each client gets a socket
   client_names      .push("n00b");  // each client gets a name string
   client_teams      .push(0);       // each client gets a team index
   client_held_pieces.push([]);      // each client gets a list of held pieces 
-  log("New client:", client_sockets.length);
+  log("New client id: ", last_client_id, ', sockets: '+client_sockets.length);
+
+  // Tell this user their id.
+  socket.emit('id', last_client_id);
 
   // send last full update
   if(last_indices.length) {
     log('sending last known config:', last_indices.length, "pieces")
-    client.emit('u', last_indices, last_xs, last_ys, last_rs, last_active_images)
+    socket.emit('u', last_indices, last_xs, last_ys, last_rs, last_active_images)
   }
   
-  // tell everyone about the new folk!
-  client.emit('chat', '<b>Server:</b> Welcome!');
+  // Welcome them to the server.
+  socket.emit('chat', '<b>Server:</b> Welcome!');
   
+  // INCOMING DATA HANDLING
 
-
-
-
-  // handle the disconnect
-  client.on('disconnect', function() {
-    
-    // find the client index
-    i = client_sockets.indexOf(client);
-    log("Client", i, "/", client_sockets.length-1, "disconnecting.");
-    
-    // pop the client
-    client_sockets.splice(i,1);
-    client_names  .splice(i,1);
-    client_teams  .splice(i,1);
-    
-    // tell the world!
-    io.emit("users", client_names, client_teams);
-  });
-  
   // received a name change
-  client.on('user', function(name, team) {
+  socket.on('user', function(name, team) {
     
     // get the client index
-    i = client_sockets.indexOf(client);
+    i = client_sockets.indexOf(socket);
     
-    // update client names
-    old_name = client_names[i];
-    client_names[i] = name.substring(0,15);
-    log('User change:', old_name + " -> " + client_names[i], team);
-    
-    // update the client teams
+    // update client names & teams
+    old_name        = client_names[i];
+    old_team        = client_teams[i];
+    client_names[i] = name.substring(0,24);
     client_teams[i] = team;
+    log('User change:', old_name + " -> " + client_names[i], old_team, '->', team);
+    
+    // Send a chat with this information
+    if(old_name != client_names[i] && old_name != 'n00b') 
+      io.emit('chat', '<'+old_name+' is now "'+client_names[i]+'">');
+    
+    if(old_team != client_teams[i]) 
+      io.emit('chat', '<'+client_names[i]+"'s team is now "+String(team)+'>')
     
     // tell the world!
     io.emit("users", client_names, client_teams);
   });
 
   // received a chat message
-  client.on('chat', function(msg) {
+  socket.on('chat', function(msg) {
 
     // update log
     log('chat:', msg);
@@ -205,17 +200,17 @@ io.on('connection', function(client) {
   });
 
   // someone is moving their mouse on the canvas
-  client.on('m', function(n, x, y, h, dx, dy, r) {
+  socket.on('m', function(n, x, y, h, dx, dy, r) {
 
     // update log
     log('m:', n, x, y, h, dx, dy, r);
 
-    // emit to the rest
-    client.broadcast.emit('m', n, x, y, h, dx, dy, r);
+    // send messages to everyone but this socket
+    socket.broadcast.emit('m', n, x, y, h, dx, dy, r);
   });
 
   // someone sent the a few pieces to the server for distribution
-  client.on('u', function(indices, xs, ys, rs, active_images, clear) {
+  socket.on('u', function(indices, xs, ys, rs, active_images, clear) {
 
     // get rid of the pieces in memory
     if(clear==true) {
@@ -265,7 +260,7 @@ io.on('connection', function(client) {
     log('u:', indices.length, 'pieces');
 
     // emit to the rest
-    client.broadcast.emit('u', indices, xs, ys, rs, active_images);
+    socket.broadcast.emit('u', indices, xs, ys, rs, active_images);
 
   });
 
@@ -273,13 +268,43 @@ io.on('connection', function(client) {
   // and held piece changes at the client level.
 
   // someone sent a selection change
-  client.on('s', function(piece_ids, team_number) {
+  socket.on('s', function(piece_ids, team_number) {
 
     // pieces is a list
     log('s:', piece_ids, team_number);
 
-    // emit to the rest
-    client.broadcast.emit('s', piece_ids, team_number);
+    // emit to everyone else
+    socket.broadcast.emit('s', piece_ids, team_number);
+  });
+
+  // someone sent a held pieces change
+  socket.on('h', function(piece_ids) {
+
+    // Get the client index
+    client_number = client_sockets.indexOf(socket);
+
+    // pieces is a list
+    log('h:', piece_ids, client_number);
+
+    // emit to everyone else
+    socket.broadcast.emit('h', piece_ids, client_number);
+  });
+  
+  // handle the disconnect
+  socket.on('disconnect', function() {
+    
+    // find the client index
+    i = client_sockets.indexOf(socket);
+    log("Client", i, "/", client_sockets.length-1, "disconnecting.");
+    
+    // pop the client
+    client_sockets    .splice(i,1);
+    client_names      .splice(i,1);
+    client_teams      .splice(i,1);
+    client_held_pieces.splice(i,1);
+    
+    // tell the world!
+    io.emit("users", client_names, client_teams);
   });
 
 }); // end of io
