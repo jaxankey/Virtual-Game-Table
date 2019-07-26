@@ -130,8 +130,8 @@ client_held_pieces  = []; // lists of last known held piece indices for each soc
  *  'u' (indices, xs, ys, rs, active_images, clear)  
  * 
  * Piece selected 
- *  's' (piece_index, team_number)
- *    piece_index : index of selected piece (-1 for no selection)
+ *  's' (piece_ids, team_number)
+ *    piece_ids : index of selected piece (-1 for no selection)
  *    team_number : team that selected (or deselected) the piece
  *  On the client side, selected_pieces is a per-team list of indices.
  *  Meanwhile, the held_pieces data (not implemented) should be a per-client list of indices.
@@ -144,7 +144,7 @@ io.on('connection', function(client) {
   client_sockets    .push(client);  // each client gets a socket
   client_names      .push("n00b");  // each client gets a name string
   client_teams      .push(0);       // each client gets a team index
-  //client_held_pieces.push([]);      // each client gets a list of held pieces 
+  client_held_pieces.push([]);      // each client gets a list of held pieces 
   log("New client:", client_sockets.length);
 
   // send last full update
@@ -270,13 +270,13 @@ io.on('connection', function(client) {
   });
 
   // someone sent a selection change
-  client.on('s', function(piece_index, team_number) {
+  client.on('s', function(piece_ids, team_number) {
 
     // pieces is a list
-    log('s:', piece_index, team_number);
+    log('s:', piece_ids, team_number);
 
     // emit to the rest
-    client.broadcast.emit('s', piece_index, team_number);
+    client.broadcast.emit('s', piece_ids, team_number);
   });
 
 }); // end of io

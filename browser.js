@@ -49,11 +49,13 @@ function array_compare(a1, a2) {
   return true;
  }
 
-// get the user's selected team number
+// get / set your team number
+// These set the gui values, which trigger the event team_onchange()
 function get_team_number()  {return document.getElementById("teams").selectedIndex;}
 function set_team_number(n) {return document.getElementById("teams").selectedIndex = n;}
 
-// get the user's name
+// get / set your name
+// These set the gui value, which in turn triggers the event name_onchange()
 function get_name()     {return document.getElementById("name").value;}
 function set_name(name) {return document.getElementById("name").value = name;}
 
@@ -864,12 +866,15 @@ function BOARD(canvas) {
   // one border, held, and selected piece for each team
   this.team_colors              = [];
   this.selected_border_width    = 4;
-  this.clients                  = []; 
   this.snap_grids               = [];
   this.team_zones               = [];  
   this.selected_pieces          = []; // Jack
   this.previous_selected_pieces = []; // Jack
-  
+
+  // Clients
+  this.clients                  = []; // list of client objects (hold name, team, etc)
+  this.add_client();                  // you are client 0
+
   // the box coordinates for all the unused game pieces
   this.box_x = 0;
   this.box_y = -3000;
