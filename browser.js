@@ -877,18 +877,18 @@ function BOARD(canvas) {
   // one border, zone, selected piece list for each team
   this.team_colors                   = [];
   this.team_zones                    = [];  
-  this.team_selected_pieces          = []; // Jack
-  this.team_previous_selected_pieces = []; // Jack
 
   // Each client has a unique id, name, team index, and list of held pieces.
   // We leave these as separate lists to aid setting to new values from the server.
-  this.client_id          = -1; // Our server-assigned client id.
-  this.client_ids         = []; // List of server-assigned client ids.
-  this.client_names       = []; // List of strings supplied by server.
-  this.client_teams       = []; // List of integers supplied by server.
-  this.client_held_pieces = []; // List of lists of piece ids sent by server.
-  this.client_previous_held_pieces = []; // List of previously held pieces ids (for detecting changes to send to the server)
-  
+  this.client_id                       = -1; // Our server-assigned client id.
+  this.client_ids                      = []; // List of server-assigned client ids.
+  this.client_names                    = []; // List of strings supplied by server.
+  this.client_teams                    = []; // List of integers supplied by server.
+  this.client_held_pieces              = []; // List of lists of held pieces for each client.
+  this.client_previous_held_pieces     = []; // List of previously held pieces (for detecting changes to send to the server)
+  this.client_selected_pieces          = []; // List of selected pieces for each client.
+  this.client_previous_selected_pieces = []; // List of previously selected pieces (for detecting changes)
+
   // Drag offset coordinates for canvas moving
   this.drag_offset_x = null;
   this.drag_offset_y = null;
@@ -1095,8 +1095,6 @@ BOARD.prototype.add_team = function(name, hand_image_paths, color) {
   
   // add border color, selected piece list, and team zones
   this.team_colors.push(color);
-  this.team_selected_pieces.push([]);          // Jack
-  this.team_previous_selected_pieces.push([]); // Jack
   this.team_zones.push(null);
 }
 
@@ -1290,14 +1288,14 @@ BOARD.prototype.in_team_zone = function(x,y) {
 }
 
 /**
- * Searches for the supplied piece in BOARD.team_selected_pieces, returning
- * the team number if found. Returns -1 if not found.
+ * Searches for the supplied piece in BOARD.client_selected_pieces, returning
+ * the client index if found. Returns -1 if not found.
  */
-BOARD.prototype.find_selected_piece_team = function(piece) {
+BOARD.prototype.find_selected_piece_client_index = function(piece) {
 
   // Loop over the selected piece arrays for each team
-  for(i=0; i<this.team_selected_pieces.length; i++) {       // Jack
-    if(this.team_selected_pieces.includes(piece)) return i; // Jack
+  for(i in this.client_selected_pieces) {
+    if(this.client_selected_pieces[i].includes(piece)) return i;
   }
 
   // No soup
@@ -1307,21 +1305,23 @@ BOARD.prototype.find_selected_piece_team = function(piece) {
 /**
  * Deselects the specified piece
  */
-BOARD.prototype.deselecte_piece = function(piece) {
+BOARD.prototype.deselect_piece = function(piece) {
   
-  // Find the team of the piece
-  team = this.find_selected_piece_team(piece);
-  if(team < 0) return;
+  // Find the client index of the piece
+  client_index = this.find_selected_piece_client_index(piece);
+  
+  // Nothing to deselect
+  if(client_index < 0) return;
 
-  // Find the piece in the team's array
-  i = this.team_selected_pieces[team].indexOf(piece); // Jack
+  // Find the piece in the client's array
+  i = this.client_selected_pieces[client_index].indexOf(piece);
   if(i < 0) {
     console.log('OOPS! deselect_piece failed!');
     return;
   }
 
   // Pop the piece out 
-  this.team_selected_pieces[team].splice(i,1); // Jack
+  this.client_selected_pieces[client_index].splice(i,1); // Jack
 }
 
 // whenever someone clicks the mouse
@@ -1343,7 +1343,7 @@ BOARD.prototype.event_mousedown = function(e) {
   // If we're not in someone else's team zone, see if we have clicked on a piece.
   team_zone = this.in_team_zone(mouse.x, mouse.y)
   
-  // Our team or no team
+  // Our team zone or no team zone
   if(team_zone == team || team_zone < 0) {
     
     // loop over all pieces from top to bottom
@@ -1354,34 +1354,43 @@ BOARD.prototype.event_mousedown = function(e) {
       if (this.pieces[i].contains(mouse.x, mouse.y) && 
          (this.pieces[i].movable_by == null ||
           this.pieces[i].movable_by.indexOf(team)>=0)) {
+        
+        // Find out if anyone's holding it
+        holder = this.find_holder(this.pieces[i]);
+        
+        // Only mess with it if someone else is NOT holding it.
+        if(holder < 0 || holder == my_index) {
+          
+          // pull the piece out and put it on top
+          p = this.pop_piece(i);
+          this.push_piece(p);
+        
+          // Check and see if someone else has this piece selected.
+          client2 = this.find_selected_piece_client_index(p);
+          
+          // If someone else had this selected, remove their selection
+          if(client2 >= 0 && client2 != my_index) this.deselect_piece(p);
+          
+          // Select the piece and hold it until mouse-up
+          this.client_selected_pieces[my_index] = [p]; 
+          
+          // TO DO: Add ctrl-click to push instead of overwriting
+          
+          // Grab the piece.
+          this.client_held_pieces[my_index]=[p]; 
 
-        // pull the piece out and put it on top
-        p = this.pop_piece(i);
-        this.push_piece(p);
-      
-        // Check and see if someone else has this piece selected.
-        team2 = this.find_selected_piece_team(p);
-        
-        // If someone else had this selected, remove their selection
-        if(team2 >= 0 && team2 != team) this.deselecte_piece(p);
-        
-        // Select the piece and hold it until mouse-up
-        this.team_selected_pieces[team]  =[p]; // TO DO: Add ctrl-click to push instead of overwriting
-        
-        // Only hold the piece if no one else is already!
-        if(this.find_holder(p) < 0) this.client_held_pieces[my_index]=[p]; 
-
-        // quit out of the loop
-        console.log('  ', this.client_held_pieces[my_index].length, 'held pieces.');
-        return;
-      }
-    } // end of loop over pieces
+          // quit out of the loop
+          console.log('  ', this.client_held_pieces[my_index].length, 'held pieces.');
+          return;
+        } // end of "no one is holding it"
+      } // end of mouse click near movable piece
+    } // end of loop over all pieces
   } // end of "our team zone or no team zone"
 
   // If we got this far, it means we clicked somewhere without a valid piece.
   // If there was an object selected, we deselect it & drop whatever we were holding.
-  this.team_selected_pieces[team]   = [];  
-  this.client_held_pieces[my_index] = [];
+  this.client_selected_pieces[my_index] = [];  
+  this.client_held_pieces[my_index]     = [];
   console.log('  ', this.client_held_pieces[my_index].length, 'held pieces.');
 
   // store the drag offset for canvas motion
@@ -1391,7 +1400,7 @@ BOARD.prototype.event_mousedown = function(e) {
 
 // whenever the mouse moves in the canvas
 BOARD.prototype.event_mousemove = function(e) { 
-  console.log('event_mousemove', e);
+  //console.log('event_mousemove', e);
   
   // trigger redraw to be safe
   this.trigger_redraw = true;
@@ -1492,7 +1501,7 @@ BOARD.prototype.event_mousewheel = function(e) {
   e.preventDefault();
   
   // find our selected pieces
-  sps = this.team_selected_pieces[get_team_number()]; // Jack 
+  sps = this.client_selected_pieces[get_my_client_index()]; 
     
   // trigger redraw to be safe
   this.trigger_redraw = true;
@@ -1540,7 +1549,7 @@ BOARD.prototype.event_keydown = function(e) {
   if(document.activeElement == document.getElementById('table')) {
     
     // find our selected piece
-    sps = this.team_selected_pieces[get_team_number()]; // Jack  
+    sps = this.client_selected_pieces[get_my_client_index()]; 
           
     console.log('event_keydown',e.keyCode);
     switch (e.keyCode) {
@@ -1630,6 +1639,9 @@ BOARD.prototype.event_keydown = function(e) {
         this.set_rotation(this.r_home);
         break;
       
+      // TO DO: After going to a new location or rotating / navigating, fire a mouse move or something so the held piece
+      // follows.
+
       case 49: // 1
       case 50: // 2
       case 51: // 3
@@ -1982,11 +1994,11 @@ BOARD.prototype.draw = function() {
 
     } // end of piece draw loop
 
-    // draw selection rectangles for each team
-    for (i=0; i<this.team_selected_pieces.length; i++) { // Jack
+    // draw selection rectangles for each client
+    for (i in this.client_selected_pieces) {
       
       // get the selected pieces for this team
-      sps = this.team_selected_pieces[i]; // Jack
+      sps = this.client_selected_pieces[i]; 
       
       // Loop over the selected pieces
       for(j=0; j<sps.length; j++) {
@@ -2021,7 +2033,7 @@ BOARD.prototype.draw = function() {
           
           // draw the border
           context.lineWidth   = this.selected_border_width*50.0/this.z;
-          context.strokeStyle = this.team_colors[i];
+          context.strokeStyle = this.team_colors[this.client_teams[i]];
           sp.draw_selection();
           
           // if we're not allowed to rotate, transform
@@ -2071,25 +2083,24 @@ BOARD.prototype.send_stream_update = function() {
  
   // Get client index and team
   my_index = get_my_client_index();
-  my_team  = get_team_number();
-
+  
   // We should only check / send if our own team's piece selection has changed  
   // Get the selected pieces
-  sps = this.team_selected_pieces[my_team];
+  sps = this.client_selected_pieces[my_index];
   sp_ids = [];
   for(i in sps) sp_ids.push(sps[i].piece_id);
   
   // If the arrays are different
-  if(!array_compare(sps, this.team_previous_selected_pieces[my_team])) { 
+  if(!array_compare(sps, this.client_previous_selected_pieces[my_index])) { 
     
     console.log('send_stream_update(): Detected a selection change.');
     
     // emit the selection changed event
-    our_socket.emit('s', sp_ids, my_team);
+    our_socket.emit('s', sp_ids, my_index);
 
     // Remember the change so this doesn't happen again. 
     // Make a copy, not a reference!
-    this.team_previous_selected_pieces[my_team] = [...sps]; 
+    this.client_previous_selected_pieces[my_index] = [...sps]; 
   
   } // end of selected pieces have changed
   
@@ -2112,7 +2123,7 @@ BOARD.prototype.send_stream_update = function() {
 
     // Remember the change so this doesn't happen again next time.
     // Make a copy, not a reference!
-    this.client_previous_held_pieces[my_team] = [...hps];
+    this.client_previous_held_pieces[my_index] = [...hps];
   
   } // end of held pieces have changed
 
@@ -2247,15 +2258,17 @@ our_socket.on('chat', server_chat);
 
 
 // Complete user information from server.
-server_users = function(client_ids, client_names, client_teams, client_held_piece_ids) {
+server_users = function(client_ids, client_names, client_teams, client_held_piece_ids, client_selected_piece_ids) {
   
-  console.log("Received users:", client_ids, client_names, client_teams, client_held_piece_ids);
+  console.log("Received users:", client_ids, client_names, client_teams, client_held_piece_ids, client_selected_piece_ids);
   
   // Clear out the old values
   board.client_ids         = [];
   board.client_names       = [];
   board.client_teams       = [];
   board.client_held_pieces = [];
+  board.client_selected_pieces          = [];
+  board.client_previous_selected_pieces = [];
   //board.client_previous_held_pieces = []; // Don't reset this, in case things come back the same!
 
   // Clear out and refill the html showing who is connected.
@@ -2264,15 +2277,20 @@ server_users = function(client_ids, client_names, client_teams, client_held_piec
   
   // Loop over the supplied clients
   for (i in client_ids) {
-    console.log(i, client_ids[i], client_names[i], client_teams[i], client_held_piece_ids[i]);
+    console.log(i, client_ids[i], client_names[i], client_teams[i], client_held_piece_ids[i], client_selected_piece_ids[i]);
 
     // Rebuild all the arrays
     board.client_ids  .push(client_ids[i]);
     board.client_names.push(client_names[i]);
     board.client_teams.push(client_teams[i]);
+    
     hps = board.find_pieces(client_held_piece_ids[i]);
     board.client_held_pieces.push(hps);
     board.client_previous_held_pieces.push([...hps]);
+    
+    sps = board.find_pieces(client_selected_piece_ids[i]);
+    board.client_selected_pieces.push(sps);
+    board.client_previous_selected_pieces.push([...hps]);
 
     // figure out the team name for this client
     team_name = document.getElementById("teams").options[client_teams[i]].text;
@@ -2303,14 +2321,14 @@ server_mousemove = function(team, client_id, x, y, hp_ids, hp_coords, client_r){
 
   // TO DO: Change how the hands are drawn, so that the same hand can be drawn many times.
   //        This should happen in the draw loop, looping over the clients instead of teams.
-  // TO DO: Selected pieces should probably be per client, not team, and drawn according to 
-  //        client_teams. Otherwise, one person selecting pieces will negate the selection of
-  //        another person on the same team.
-  
   // set the hand's target location
   //board.hands[n].set_target(x, y, null, null, true); // disable snap
   //board.hands[n].set_rotation(-r);
   
+  // TO DO: Selected pieces should probably be per client, not team, and drawn according to 
+  //        client_teams. Otherwise, one person selecting pieces will negate the selection of
+  //        another person on the same team.
+
   // Reset the client held pieces
   board.client_previous_held_pieces[client_index] = [];
   board.client_held_pieces[client_index]          = [];
@@ -2327,35 +2345,44 @@ server_mousemove = function(team, client_id, x, y, hp_ids, hp_coords, client_r){
     
     // set its coordinates, disabling snap because it's still held.
     hp.set_target(hp_coords[j][0], hp_coords[j][1], hp_coords[j][2], null, true);
+
+    // TO DO: disable sending an update somehow
+
   }
 }
 our_socket.on('m', server_mousemove);
 
-server_selectionchange = function(piece_ids,team_number){
+server_selectionchange = function(piece_ids, client_id){
   // server sent a selection change
-  console.log('s:', piece_ids, team_number);
+  console.log('s:', piece_ids, client_id);
   
+  // Get the client index
+  client_index = board.client_ids.indexOf(client_id);
+
   // update the selection, making a copy array for the previous values
   // so that they're independent.
   sps = board.find_pieces(piece_ids);
-  board.team_selected_pieces[team_number]          = sps;
-  board.team_previous_selected_pieces[team_number] = [...sps];
+  board.client_selected_pieces[client_index]          = sps;
+  board.client_previous_selected_pieces[client_index] = [...sps];
 
   // trigger a redraw
   board.trigger_redraw = true;
 }
 our_socket.on('s', server_selectionchange);
 
-server_heldchange = function(piece_ids,client_id) {
+server_heldchange = function(piece_ids, client_id) {
   
   // Server sent a change in held pieces
   console.log('h:', piece_ids, client_id);
 
+  // get the client index
+  client_index = board.client_ids.indexOf(client_id);
+
   // update the held pieces, making a copy array for the previous values
   // so that they're independent.
   hps = board.find_pieces(piece_ids);
-  board.client_held_pieces[client_id]          = hps;
-  board.client_previous_held_pieces[client_id] = [...hps]; 
+  board.client_held_pieces[client_index]          = hps;
+  board.client_previous_held_pieces[client_index] = [...hps]; 
 
   // trigger a redraw
   board.trigger_redraw = true;

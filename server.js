@@ -102,13 +102,14 @@ last_active_image_indices = []; // list of last known active image indices
 
 // Client information. These lists should match in length!
 // We break these into lists so the data is easy to send.
-last_client_id        = 0;
-client_ids            = []; // list of unique ids for each socket
-client_sockets        = []; // sockets
-client_names          = []; // names associated with each socket
-client_teams          = []; // team numbers associated with each socket
-client_held_piece_ids = []; // lists of last known held piece indices for each socket
-client_drag_offsets   = []; // list of [dx,dy] offset coordinates for each held piece
+last_client_id            = 0;
+client_ids                = []; // list of unique ids for each socket
+client_sockets            = []; // sockets
+client_names              = []; // names associated with each socket
+client_teams              = []; // team numbers associated with each socket
+client_held_piece_ids     = []; // lists of last known held piece indices for each socket
+client_selected_piece_ids = []; // Lists of the last known selected pieces for each socket
+client_drag_offsets       = []; // list of [dx,dy] offset coordinates for each held piece
 
 /**
  * Data sent by clients:
@@ -150,6 +151,7 @@ io.on('connection', function(socket) {
   client_names         .push("n00b");  // each client gets a name string
   client_teams         .push(0);       // each client gets a team index
   client_held_piece_ids.push([]);      // each client gets a list of held pieces 
+  client_selected_piece_ids.push([]);  // each client gets a list of selected pieces
   client_drag_offsets  .push([]);      // for each held piece, there is a list of [dx,dy] offsets
 
   log("New client id: ", last_client_id, ', sockets: '+client_sockets.length, client_teams);
@@ -190,7 +192,7 @@ io.on('connection', function(socket) {
       socket.broadcast.emit('chat', '<b>Server:</b> '+client_names[i]+" joins Team "+String(team));
     
     // tell everyone about the current list.
-    io.emit('users', client_ids, client_names, client_teams, client_held_piece_ids);
+    io.emit('users', client_ids, client_names, client_teams, client_held_piece_ids, client_selected_piece_ids);
   });
 
   // received a chat message
@@ -292,26 +294,31 @@ io.on('connection', function(socket) {
   // and held piece changes at the client level.
 
   // someone sent a selection change
-  socket.on('s', function(piece_ids, team_number) {
+  socket.on('s', function(piece_ids) {
+    
+    // get the client id
+    client_index = client_sockets.indexOf(socket);
+    client_id    = client_ids[client_index];
 
     // pieces is a list
-    log('s:', piece_ids, team_number);
+    log('s:', client_id, piece_ids);
 
     // emit to everyone else
-    socket.broadcast.emit('s', piece_ids, team_number);
+    socket.broadcast.emit('s', piece_ids, client_id);
   });
 
   // someone sent a held pieces change
   socket.on('h', function(piece_ids) {
 
-    // Get the client index
+    // get the client id
     client_index = client_sockets.indexOf(socket);
+    client_id    = client_ids[client_index];
 
     // pieces is a list
-    log('h:', piece_ids, client_index);
+    log('h:', client_id, piece_ids);
 
     // emit to everyone else
-    socket.broadcast.emit('h', piece_ids, client_index);
+    socket.broadcast.emit('h', piece_ids, client_id);
   });
   
   // handle the disconnect
@@ -327,9 +334,10 @@ io.on('connection', function(socket) {
     client_names      .splice(i,1);
     client_teams      .splice(i,1);
     client_held_piece_ids.splice(i,1);
+    client_selected_piece_ids.splice(i,1);
     
     // tell the world!
-    io.emit('users', client_ids, client_names, client_teams, client_held_piece_ids);
+    io.emit('users', client_ids, client_names, client_teams, client_held_piece_ids, client_selected_piece_ids);
   });
 
 }); // end of io
