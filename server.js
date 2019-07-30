@@ -219,10 +219,8 @@ io.on('connection', function(socket) {
     // Figure out the client
     client_index = client_sockets.indexOf(socket);
     client_id    = client_ids[client_index];
-
-    // update log
     log('m:', client_id, x, y, hp_ids, hp_coords, client_r);
-    log(client_r);
+    
     // send messages to everyone but this socket
     socket.broadcast.emit('m', client_id, x, y, hp_ids, hp_coords, client_r);
   });

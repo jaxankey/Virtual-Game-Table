@@ -381,7 +381,7 @@ PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate) {
   }
 
   // set the rotation if not null
-  if(r != null) this.set_rotation(r, immediate); // not immediate
+  if(r != null) this.set_rotation(r, immediate);
   
   // reset the clock & trigger a redraw
   this.t_previous_draw = Date.now();
@@ -543,7 +543,7 @@ PIECE.prototype.draw_selection = function() {
   }
 }
 
-PIECE.prototype.move_and_draw   = function() {
+PIECE.prototype.move_and_draw = function() {
   
   // Draws this PIECE to the context
   context = this.board.context;
@@ -607,8 +607,7 @@ PIECE.prototype.move_and_draw   = function() {
   if(this.owners != null && 
      this.owners.indexOf(get_team_number()) > -1) {
 	 images = this.private_images;
-	 //console.log(get_team_number(), this.owners, this.owners.indexOf(get_team_number()));
-  } 
+	} 
   
   // otherwise, loop over the team zones to see if we should use private images.
   else {
@@ -869,7 +868,6 @@ function BOARD(canvas) {
   // lists of pieces and hands
   this.pieces       = [];    // the collection of things to be drawn
   this.piece_lookup = {};    // dictionary to get the piece by id
-  this.hands        = [];    // keep the hands separate from the pieces
   
   this.selected_border_width    = 4;
   this.snap_grids               = [];
@@ -877,6 +875,7 @@ function BOARD(canvas) {
   // one border, zone, selected piece list for each team
   this.team_colors                   = [];
   this.team_zones                    = [];  
+  this.team_hand_images              = [];
 
   // Each client has a unique id, name, team index, and list of held pieces.
   // We leave these as separate lists to aid setting to new values from the server.
@@ -884,6 +883,7 @@ function BOARD(canvas) {
   this.client_ids                      = []; // List of server-assigned client ids.
   this.client_names                    = []; // List of strings supplied by server.
   this.client_teams                    = []; // List of integers supplied by server.
+  this.client_hands                    = []; // List of hand objects (PIECEs)
   this.client_held_pieces              = []; // List of lists of held pieces for each client.
   this.client_previous_held_pieces     = []; // List of previously held pieces (for detecting changes to send to the server)
   this.client_selected_pieces          = []; // List of selected pieces for each client.
@@ -935,9 +935,9 @@ function BOARD(canvas) {
   this.z_step       = Math.pow(2,0.25);
   this.z_target     = 100;
   this.r_step       = 45;
-  this.r_target     = 0;  // setpoint
+  this.r_target     = 0;  // rotation setpoint
   this.r_home       = 0;  // where the escape key will take you
-  this.p_step       = 100;
+  this.pan_step       = 100;
   this.previous_r   = this.r_target;
   
   // current values
@@ -1082,26 +1082,56 @@ BOARD.prototype.add_snap_grid = function(x_left, y_top, width, height, x0, y0, d
   // return the index
   return this.snap_grids.length-1;
 }
+
 BOARD.prototype.add_team = function(name, hand_image_paths, color) {
-  
-  // add team to list
+  console.log('add_team()', name, hand_image_paths, color);
+
+  // add team to GUI list
   var teams  = document.getElementById("teams");
   var option = document.createElement("option");
   option.text = name;
   teams.add(option);
   
-  // Add hand piece for this team. This should be drawn multiple times for multiple users.
-  this.add_hand(hand_image_paths, this.hand_fade_ms);
-  
   // add border color, selected piece list, and team zones
   this.team_colors.push(color);
   this.team_zones.push(null);
+  this.team_hand_images.push([]);
+  team = this.team_hand_images.length-1;
+
+  // loop over the hand image paths and load up the images
+  for (i in hand_image_paths) {
+
+    // Get the path
+    path = hand_image_paths[i];
+
+    // make sure we haven't loaded it already (this.images is a lookup dictionary)
+    if( path in this.images ) {
+      
+      // use the existing image
+      this.team_hand_images[team].push(this.images[path]);
+    
+    // otherwise we need to load it
+    } else {
+    
+      // tell Jack that we're loading it...
+      console.log("  loading /images/"+path);
+
+      // create the image object
+      I = new Image();
+      this.team_hand_images[team].push(I);
+      I.src = '/images/'+path;
+      
+      // store this image for the future
+      this.images[path] = I;
+
+    } // end of if path in images else.
+  } // end of loop over hand image paths
 }
 
-BOARD.prototype.add_hand = function(image_paths, t_fade_ms) {
+BOARD.prototype.new_client_hand = function() {
   
   // create the hand
-  h = new PIECE(this, this.next_hand_id, image_paths);
+  h = new PIECE(this, 0, []);
   h.t_fade_ms           = this.hand_fade_ms;
   h.zooms_with_canvas   = false;
   h.rotates_with_canvas = true;
@@ -1109,14 +1139,9 @@ BOARD.prototype.add_hand = function(image_paths, t_fade_ms) {
   // make sure it starts faded.
   h.t_previous_move   = Date.now()-h.t_fade_ms*2;
   
-  // push the specified piece onto the stack
-  this.hands.push(h);
-  
-  // increment the piece index
-  this.next_hand_id++;
-  
   return h;
 }
+
 
 // add a piece to this.pieces
 BOARD.prototype.add_piece = function(image_paths, private_image_paths) {
@@ -1375,7 +1400,6 @@ BOARD.prototype.event_mousedown = function(e) {
           this.client_selected_pieces[my_index] = [p]; 
           
           // TO DO: Add ctrl-click to push instead of overwriting
-          
           // Grab the piece.
           this.client_held_pieces[my_index]=[p]; 
 
@@ -1407,10 +1431,10 @@ BOARD.prototype.event_mousemove = function(e) {
 
   // get the team index
   team     = get_team_number();
-  my_index = get_my_client_index();
-
+  my_index = get_my_client_index(); // my_index = -1 until the server assigns us one.
+  
   // if we're holding pieces
-  if(this.client_held_pieces[my_index].length > 0) { 
+  if(my_index >= 0 && this.client_held_pieces[my_index].length > 0) { 
 
     // Loop over held pieces
     for(n in this.client_held_pieces[my_index]) { 
@@ -1576,7 +1600,7 @@ BOARD.prototype.event_keydown = function(e) {
             }
           }
           // otherwise pan
-          else this.set_pan(this.px_target-this.p_step, this.py_target);
+          else this.set_pan(this.px_target-this.pan_step, this.py_target);
         }
         break;
       
@@ -1593,7 +1617,7 @@ BOARD.prototype.event_keydown = function(e) {
             }
           }
           // otherwise pan
-          else this.set_pan(this.px_target+this.p_step, this.py_target);
+          else this.set_pan(this.px_target+this.pan_step, this.py_target);
         }
         break;
       
@@ -1618,7 +1642,7 @@ BOARD.prototype.event_keydown = function(e) {
         if (e.ctrlKey || e.shiftKey) this.zoom_in();
         
         // pan
-        else this.set_pan(this.px_target, this.py_target+this.p_step);
+        else this.set_pan(this.px_target, this.py_target+this.pan_step);
         break;
       
       // Pan down or zoom out
@@ -1628,7 +1652,7 @@ BOARD.prototype.event_keydown = function(e) {
         if(e.ctrlKey || e.shiftKey) this.zoom_out();
         
         // pan
-        else this.set_pan(this.px_target, this.py_target-this.p_step);
+        else this.set_pan(this.px_target, this.py_target-this.pan_step);
         break;
       
       case 48:  // 0
@@ -1639,8 +1663,8 @@ BOARD.prototype.event_keydown = function(e) {
         this.set_rotation(this.r_home);
         break;
       
-      // TO DO: After going to a new location or rotating / navigating, fire a mouse move or something so the held piece
-      // follows.
+      // TO DO: After going to a new location or rotating / navigating, 
+      // fire a mouse move or something so the held piece follows.
 
       case 49: // 1
       case 50: // 2
@@ -1866,15 +1890,15 @@ BOARD.prototype.needs_redraw       = function() {
   if (this.trigger_redraw) return (true);
 
   // see if our z etc is off
-  if (this.z  != this.z_target ||
-      this.r  != this.r_target                 ||
-      this.px != this.px_target                ||
+  if (this.z  != this.z_target  ||
+      this.r  != this.r_target  ||
+      this.px != this.px_target ||
       this.py != this.py_target) return true;
 
   
   // see if any of the hands need a redraw
-  for (i=0; i<this.hands.length; i++) {
-    if (this.hands[i].needs_redraw()) return true;
+  for (i in this.client_hands) {
+    if (this.client_hands[i].needs_redraw()) return true;
   }
 
   // see if any of the pieces need a redraw
@@ -1889,12 +1913,20 @@ BOARD.prototype.draw = function() {
   // Redraw the entire canvas. This is only called if something changes
 
   // if our state is invalid, redraw and validate!
-  // Jack: Performance boost by only redrawing a local region?
+  // TO DO: Performance boost by
+  //        Down-convert all images ahead of time to lower def when zoomed out
+  //           Could have a separate lookup table for all images and their
+  //           Lower-def counterparts.
+  //        Ignore drawing pieces outside the view?
   if (this.needs_redraw()) {
     
     // reset the trigger
     this.trigger_redraw = false;
     
+    //////////////////////////////////////////////////////////////
+    // First we calculate the next step in the camera position
+    //////////////////////////////////////////////////////////////
+
     //// Zoom/pan/rotate dynamics
     t  = Date.now();
     dt = t - this.t_previous_draw;
@@ -1942,56 +1974,75 @@ BOARD.prototype.draw = function() {
     if ( Math.abs(this.px-pxtarget) < this.transition_snap) this.px = pxtarget;
     if ( Math.abs(this.py-pytarget) < this.transition_snap) this.py = pytarget;
     
+    
+
+
+    //////////////////////////////////////
+    // Now we actually update the canvas
+    //////////////////////////////////////
     var context  = this.context;
+    var canvas   = this.canvas;
     var pieces   = this.pieces;
-    var hands    = this.hands;
-    var my_index = get_my_client_index();
     
     // set the size to match the window
     context.canvas.width  = window.innerWidth;
     context.canvas.height = window.innerHeight;
     
     // clears the canvas
-    this.context.setTransform(1, 0, 0, 1, 0, 0);
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, canvas.width, canvas.height);
     
     // figure out the center of the board
-    var cx = Math.round(this.canvas.width  / 2);
-    var cy = Math.round(this.canvas.height / 2);
+    var cx = Math.round(canvas.width  / 2);
+    var cy = Math.round(canvas.height / 2);
 
     // set the new z/r/pan
     var sin_r = this.z*0.01*Math.sin(this.r*Math.PI/180.0);
     var cos_r = this.z*0.01*Math.cos(this.r*Math.PI/180.0);
     
     // set the actual transform
-    this.context.setTransform(cos_r, sin_r, -sin_r, cos_r, 
-                              this.px+cx, this.py+cy);
+    this.context.setTransform(cos_r, sin_r, -sin_r, cos_r, this.px+cx, this.py+cy);
     
-    // Jack: also look up requestAnimationFrame API for faster rendering
+    // TO DO: also look up requestAnimationFrame API for faster rendering
 
     // draw the background image
-    if (this.background_image != null) context.drawImage(this.background_image, -this.background_image.width*0.5, -this.background_image.height*0.5);
+    if (this.background_image != null) 
+      context.drawImage(this.background_image, 
+        -this.background_image.width*0.5, -this.background_image.height*0.5);
     
-    // draw the team zones below everything
+    // draw the team zones that are supposed to appear below everything
     for (var i = 0; i < this.team_zones.length; i++) {
+  
       // If the team zone exists and either is the current team number
       // or is mode 0 (supposed to be on the bottom)
       if (this.team_zones[i] != null 
        && (i == get_team_number() 
-          || this.team_zones[i].mode == 0)) this.team_zones[i].draw();
-    }
+       || this.team_zones[i].mode == 0)) 
+            this.team_zones[i].draw();
+  
+    } // end of team zones loop
     
     
     // draw all pieces
     for (i in pieces) {
 
       // We can skip the drawing of elements that have moved off the screen:
-      if (pieces[i].x > this.width      || pieces[i].y > this.height ||
-          pieces[i].x + pieces[i].w < 0 || pieces[i].y + pieces[i].h < 0) continue;
-
-      // otherwise actually do the drawing
+      //max_radius = 1.5*(pieces[i].w - pieces[i].h)
+      //
+      // Translate and rotate and zoom the piece coordinates so they're set up for 
+      // they're matching the window coordinates
+      // x = ...;
+      // y = ...;
+      /* if (pieces[i].x - max_radius < this.width
+       && pieces[i].y - max_radius < this.height 
+       && pieces[i].x + max_radius > 0
+       && pieces[i].y + max_radius > 0) continue; */
+       // Check disabled because piece coordinates are absolute and not related
+       // to the window's pan or rotation.
+      
+      // Draw the piece. This call takes care of finding the piece's next coordinates,
+      // translating and rotating the context.
       pieces[i].move_and_draw();
-
     } // end of piece draw loop
 
     // draw selection rectangles for each client
@@ -2048,20 +2099,26 @@ BOARD.prototype.draw = function() {
       } // end of loop over selected pieces for team
     } // end of loop over team selected pieces
     
-    
-    
-    // draw all hands
-    /*
-    for (var i = 0; i < hands.length; i++) {
+    // Draw hands for each client
+    for(i in this.client_ids) {
 
-      // see if it's holding something
-      if (this.client_held_pieces[my_index][i].length > 0) hands[i].active_image = 1; 
-      else                                          hands[i].active_image = 0;
-    
-      // otherwise actually do the drawing
-      hands[i].move_and_draw();
-      
-    } // end of hand draw loop */
+      // Get the hand and team index
+      team = this.client_teams[i];
+
+      // The move_and_draw() method below requires only hand.images, hand.private_images, 
+      // and the active image index to be set. 
+
+      // Set the hand images based on team index
+      this.client_hands[i].images         = this.team_hand_images[team]
+      this.client_hands[i].private_images = this.team_hand_images[team]      
+      if(this.client_held_pieces[i].length > 0) this.client_hands[i].active_image = 1;
+      else                                      this.client_hands[i].active_image = 0;
+
+      // Actually do the drawing
+      this.client_hands[i].move_and_draw();
+
+    } // end of hand draw loop 
+
 
     // draw the team zones on top of everything
     for (var i = 0; i < this.team_zones.length; i++) {
@@ -2138,7 +2195,7 @@ BOARD.prototype.send_stream_update = function() {
         
     // emit the mouse update event, which includes the held piece ids and their target coordinates,
     // So that the hand and pieces move as a unit. 
-    our_socket.emit('m', this.client_id, this.mouse.x, this.mouse.y, hp_ids, hp_coords, this.r_target); 
+    our_socket.emit('m', this.mouse.x, this.mouse.y, hp_ids, hp_coords, this.r_target); 
   
     // store this info
     this.previous_mouse = this.mouse;
@@ -2263,10 +2320,11 @@ server_users = function(client_ids, client_names, client_teams, client_held_piec
   console.log("Received users:", client_ids, client_names, client_teams, client_held_piece_ids, client_selected_piece_ids);
   
   // Clear out the old values
-  board.client_ids         = [];
-  board.client_names       = [];
-  board.client_teams       = [];
-  board.client_held_pieces = [];
+  board.client_ids                      = [];
+  board.client_names                    = [];
+  board.client_teams                    = [];
+  board.client_hands                    = [];
+  board.client_held_pieces              = [];
   board.client_selected_pieces          = [];
   board.client_previous_selected_pieces = [];
   //board.client_previous_held_pieces = []; // Don't reset this, in case things come back the same!
@@ -2283,7 +2341,8 @@ server_users = function(client_ids, client_names, client_teams, client_held_piec
     board.client_ids  .push(client_ids[i]);
     board.client_names.push(client_names[i]);
     board.client_teams.push(client_teams[i]);
-    
+    board.client_hands.push(board.new_client_hand());
+
     hps = board.find_pieces(client_held_piece_ids[i]);
     board.client_held_pieces.push(hps);
     board.client_previous_held_pieces.push([...hps]);
@@ -2311,27 +2370,20 @@ our_socket.on('users', server_users);
  *   hp_coords:  held piece coordinates
  *   client_r:   hand rotation
  */
-server_mousemove = function(team, client_id, x, y, hp_ids, hp_coords, client_r){
+server_mousemove = function(client_id, x, y, hp_ids, hp_coords, client_r){
   
   // server has sent a "mouse move"
-  console.log('Received m:', team, client_id, x, y, hp_ids, hp_coords, client_r);
+  console.log('Received m:', client_id, x, y, hp_ids, hp_coords, client_r);
 
   // Get the client index whose mouse moved
   client_index = board.client_ids.indexOf(client_id);
 
-  // TO DO: Change how the hands are drawn, so that the same hand can be drawn many times.
-  //        This should happen in the draw loop, looping over the clients instead of teams.
-  // set the hand's target location
-  //board.hands[n].set_target(x, y, null, null, true); // disable snap
-  //board.hands[n].set_rotation(-r);
-  
-  // TO DO: Selected pieces should probably be per client, not team, and drawn according to 
-  //        client_teams. Otherwise, one person selecting pieces will negate the selection of
-  //        another person on the same team.
+  // Set the coordinates of the hand for redrawing.
+  board.client_hands[client_index].set_target(x, y, -client_r, null, true);
 
   // Reset the client held pieces
   board.client_previous_held_pieces[client_index] = [];
-  board.client_held_pieces[client_index]          = [];
+  board.client_held_pieces         [client_index] = [];
 
   // set the locations of this client's held pieces (if any)
   for(j in hp_ids) {
@@ -2346,8 +2398,10 @@ server_mousemove = function(team, client_id, x, y, hp_ids, hp_coords, client_r){
     // set its coordinates, disabling snap because it's still held.
     hp.set_target(hp_coords[j][0], hp_coords[j][1], hp_coords[j][2], null, true);
 
-    // TO DO: disable sending an update somehow
-
+    // set its previous coordinates to the same, so that it doesn't trigger an update
+    hp.previous_x = hp_coords[j][0];
+    hp.previous_y = hp_coords[j][1];
+    hp.previous_r = hp_coords[j][2];
   }
 }
 our_socket.on('m', server_mousemove);
@@ -2381,7 +2435,7 @@ server_heldchange = function(piece_ids, client_id) {
   // update the held pieces, making a copy array for the previous values
   // so that they're independent.
   hps = board.find_pieces(piece_ids);
-  board.client_held_pieces[client_index]          = hps;
+  board.client_held_pieces         [client_index] = hps;
   board.client_previous_held_pieces[client_index] = [...hps]; 
 
   // trigger a redraw
