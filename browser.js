@@ -593,7 +593,7 @@ PIECE.prototype.move_and_draw = function() {
   // change the active image if it's peakable
   if (this.peakable_by != null){ // if this is a peakable piece
     
-    // if our team is in the peak list, set the index by the mode
+    // if our team is in the peak list, set the index by the peak mode
     if( this.peakable_by.indexOf(get_team_number())>=0 && get_peak()) this.active_image = 1;
     
     // otherwise set to zero
@@ -698,15 +698,17 @@ PIECE.prototype.move_and_draw = function() {
  * @param {float} y4 
  * @param {float} r  angle (deg) of team zone
  * @param {float} alpha how opaque to make it (0-1)
- * @param {int} mode draw mode: 0=bottom, 1=top
+ * @param {int} draw_mode draw draw_mode: 0=bottom, 1=top
+ * @param {int} grab_mode piece grabbing: 0=Only team, 1=anyone
  */
-function TEAMZONE(board, team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, mode) {
+function TEAMZONE(board, team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, draw_mode, grab_mode) {
 
   // internal data
   this.board      = board;
   this.team_index = team_index;
-  this.mode       = or_default(mode, 1);  // 0 = draw on bottom (table), 1 = draw on top (opaque)
-  
+  this.draw_mode  = or_default(draw_mode, 1);  // 0 = draw on bottom (table), 1 = draw on top (opaque)
+  this.grab_mode  = or_default(grab_mode, 0);
+
   this.x1 = x1; this.y1 = y1;
   this.x2 = x2; this.y2 = y2;
   this.x3 = x3; this.y3 = y3;
@@ -715,7 +717,7 @@ function TEAMZONE(board, team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, mode)
   this.r     = or_default(r, 0);
   this.alpha = alpha;
   
-  console.log('New Team Zone:', team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, mode);
+  console.log('New Team Zone:', team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, draw_mode);
 }
 TEAMZONE.prototype.contains = function(x,y) {
   
@@ -888,6 +890,8 @@ function BOARD(canvas) {
   this.client_previous_held_pieces     = []; // List of previously held pieces (for detecting changes to send to the server)
   this.client_selected_pieces          = []; // List of selected pieces for each client.
   this.client_previous_selected_pieces = []; // List of previously selected pieces (for detecting changes)
+
+  this.held_piece_coordinates = []; // list of [dx,dy,r] coordinates, one for each held piece
 
   // Drag offset coordinates for canvas moving
   this.drag_offset_x = null;
@@ -1359,8 +1363,8 @@ BOARD.prototype.event_mousedown = function(e) {
   this.trigger_redraw = true;
 
   // get the mouse coordinates & team
-  var mouse  = this.get_mouse_coordinates(e);
-  team       = get_team_number();
+  mouse = this.get_mouse_coordinates(e);
+  team  = get_team_number();
   
   // report the coordinates
   console.log("event_mousedown", mouse);
@@ -1368,8 +1372,8 @@ BOARD.prototype.event_mousedown = function(e) {
   // If we're not in someone else's team zone, see if we have clicked on a piece.
   team_zone = this.in_team_zone(mouse.x, mouse.y)
   
-  // Our team zone or no team zone
-  if(team_zone == team || team_zone < 0) {
+  // Our team zone or no team zone or team zone with grab enabled
+  if(team_zone == team || team_zone < 0 || this.team_zones[team_zone].grab_mode == 1) {
     
     // loop over all pieces from top to bottom
     for (var i = this.pieces.length-1; i >= 0; i--) {
@@ -1402,6 +1406,7 @@ BOARD.prototype.event_mousedown = function(e) {
           // TO DO: Add ctrl-click to push instead of overwriting
           // Grab the piece.
           this.client_held_pieces[my_index]=[p]; 
+          this.held_piece_coordinates.push([p.x-mouse.x, p.y-mouse.y, p.r_target])
 
           // quit out of the loop
           console.log('  ', this.client_held_pieces[my_index].length, 'held pieces.');
@@ -1414,7 +1419,7 @@ BOARD.prototype.event_mousedown = function(e) {
   // If we got this far, it means we clicked somewhere without a valid piece.
   // If there was an object selected, we deselect it & drop whatever we were holding.
   this.client_selected_pieces[my_index] = [];  
-  this.client_held_pieces[my_index]     = [];
+  this.client_held_pieces    [my_index] = [];
   console.log('  ', this.client_held_pieces[my_index].length, 'held pieces.');
 
   // store the drag offset for canvas motion
@@ -1440,7 +1445,7 @@ BOARD.prototype.event_mousemove = function(e) {
     for(n in this.client_held_pieces[my_index]) { 
       
       // Get the held piece
-      hp = this.client_held_pieces[my_index][n]; //Jack
+      hp = this.client_held_pieces[my_index][n];
     
       // If we're allowed to move this piece and it exists
       if(hp.movable_by == null || hp.movable_by.indexOf(get_team_number())>=0) {
@@ -1449,8 +1454,9 @@ BOARD.prototype.event_mousemove = function(e) {
           this.mouse  = this.get_mouse_coordinates(e);
 
           // We want to drag it from where we clicked.
-          hp.set_target(this.mouse.x - this.drag_offset_x,
-                        this.mouse.y - this.drag_offset_y, null, null, true) // disable snap
+          hp.set_target(this.mouse.x + this.held_piece_coordinates[n][0] - this.drag_offset_x,
+                        this.mouse.y + this.held_piece_coordinates[n][1] - this.drag_offset_y, 
+                        null, null, true) // disable snap
           
           // make sure it immediately moves there while we're holding it
           hp.x = hp.x_target;
@@ -1846,10 +1852,10 @@ BOARD.prototype.set_pan = function(px, py, immediate) {
 }
 
 // set the team zone polygon
-BOARD.prototype.set_team_zone = function(team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, mode) {
+BOARD.prototype.set_team_zone = function(team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, draw_mode, grab_mode) {
 
   // create a team zone object
-  this.team_zones[team_index] = new TEAMZONE(this, team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, mode);
+  this.team_zones[team_index] = new TEAMZONE(this, team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, draw_mode, grab_mode);
 }
 function setup() {
   console.log("function setup(): Overwrite me to setup your game's pieces!")
@@ -1909,6 +1915,7 @@ BOARD.prototype.needs_redraw       = function() {
   // nothing needs an update
   return (false);
 }
+
 BOARD.prototype.draw = function() {
   // Redraw the entire canvas. This is only called if something changes
 
@@ -2014,10 +2021,10 @@ BOARD.prototype.draw = function() {
     for (var i = 0; i < this.team_zones.length; i++) {
   
       // If the team zone exists and either is the current team number
-      // or is mode 0 (supposed to be on the bottom)
+      // or is draw_mode 0 (supposed to be on the bottom)
       if (this.team_zones[i] != null 
        && (i == get_team_number() 
-       || this.team_zones[i].mode == 0)) 
+       || this.team_zones[i].draw_mode == 0)) 
             this.team_zones[i].draw();
   
     } // end of team zones loop
@@ -2123,10 +2130,10 @@ BOARD.prototype.draw = function() {
     // draw the team zones on top of everything
     for (var i = 0; i < this.team_zones.length; i++) {
       // If the team zone exists, is not the current team number
-      // and is mode 1 (supposed to be on top)
+      // and is draw_mode 1 (supposed to be on top)
       if (this.team_zones[i] != null 
        && i != get_team_number() 
-       && this.team_zones[i].mode == 1) this.team_zones[i].draw();
+       && this.team_zones[i].draw_mode == 1) this.team_zones[i].draw();
     }
 
   } // end of needs redraw
@@ -2189,13 +2196,17 @@ BOARD.prototype.send_stream_update = function() {
       this.mouse.y  != this.previous_mouse.y || 
       this.r_target != this.previous_r) {
     
-    // assemble a list of held piece coordinates
-    hp_coords = [];
-    for(n in hps) hp_coords.push([hps[n].x_target, hps[n].y_target, hps[n].r_target]);
-        
+    // assemble a list of held piece offsets (relative to the mouse coords) and rotations
+    this.held_piece_coordinates = [];
+    for(n in hps) 
+      this.held_piece_coordinates.push([hps[n].x_target-this.mouse.x, 
+                                        hps[n].y_target-this.mouse.y, 
+                                        hps[n].r_target]);
+    
     // emit the mouse update event, which includes the held piece ids and their target coordinates,
     // So that the hand and pieces move as a unit. 
-    our_socket.emit('m', this.mouse.x, this.mouse.y, hp_ids, hp_coords, this.r_target); 
+    our_socket.emit('m', this.mouse.x, this.mouse.y, hp_ids, 
+                    this.held_piece_coordinates, this.r_target); 
   
     // store this info
     this.previous_mouse = this.mouse;
@@ -2367,7 +2378,7 @@ our_socket.on('users', server_users);
  *   client_id:  user number
  *   x,y:        mouse position
  *   hp_ids:     held piece id array
- *   hp_coords:  held piece coordinates
+ *   hp_coords:  held piece coordinates [dx,dy,r] with dx and dy relative to the mouse.
  *   client_r:   hand rotation
  */
 server_mousemove = function(client_id, x, y, hp_ids, hp_coords, client_r){
@@ -2396,12 +2407,12 @@ server_mousemove = function(client_id, x, y, hp_ids, hp_coords, client_r){
     board.client_previous_held_pieces[client_index].push(hp);
     
     // set its coordinates, disabling snap because it's still held.
-    hp.set_target(hp_coords[j][0], hp_coords[j][1], hp_coords[j][2], null, true);
+    hp.set_target(x+hp_coords[j][0], y+hp_coords[j][1], hp_coords[j][2], null, true);
 
     // set its previous coordinates to the same, so that it doesn't trigger an update
-    hp.previous_x = hp_coords[j][0];
-    hp.previous_y = hp_coords[j][1];
-    hp.previous_r = hp_coords[j][2];
+    hp.previous_x = x+hp_coords[j][0];
+    hp.previous_y = y+hp_coords[j][1];
+    hp.previous_r =   hp_coords[j][2];
   }
 }
 our_socket.on('m', server_mousemove);

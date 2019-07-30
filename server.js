@@ -211,7 +211,7 @@ io.on('connection', function(socket) {
    *  client_id
    *  x,y           Mouse's x and y coordinates
    *  hp_ids        List of this client's held piece ids
-   *  hp_coords     List of [x,y] coordinates, one for each hp_id
+   *  hp_coords     List of [dx,dy,r] coordinates, one for each hp_id. dx and dy are relative to x and y
    *  client_r      Rotation of the client (for drawing the hand orientation)
    */
   socket.on('m', function(x, y, hp_ids, hp_coords, client_r) {
