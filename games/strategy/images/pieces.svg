@@ -2219,92 +2219,6 @@
          result="composite2"
          id="feComposite4613-7-6-8-34" />
     </filter>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath4292-3">
-      <rect
-         style="opacity:0.5;fill:#ececec;stroke:none;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none"
-         id="rect4294-6"
-         width="24.545458"
-         height="24.54546"
-         x="52.727264"
-         y="65.089455" />
-    </clipPath>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Drop Shadow"
-       id="filter4516-7">
-      <feFlood
-         flood-opacity="0.678431"
-         flood-color="rgb(0,0,0)"
-         result="flood"
-         id="feFlood4518-5" />
-      <feComposite
-         in="flood"
-         in2="SourceGraphic"
-         operator="in"
-         result="composite1"
-         id="feComposite4520-3" />
-      <feGaussianBlur
-         in="composite1"
-         stdDeviation="1.5"
-         result="blur"
-         id="feGaussianBlur4522-5" />
-      <feOffset
-         dx="0"
-         dy="0"
-         result="offset"
-         id="feOffset4524-6" />
-      <feComposite
-         in="SourceGraphic"
-         in2="offset"
-         operator="over"
-         result="composite2"
-         id="feComposite4526-2" />
-    </filter>
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath4292-3-7">
-      <rect
-         style="opacity:0.5;fill:#ececec;stroke:none;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none"
-         id="rect4294-6-0"
-         width="24.545458"
-         height="24.54546"
-         x="52.727264"
-         y="65.089455" />
-    </clipPath>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Drop Shadow"
-       id="filter4516-7-9">
-      <feFlood
-         flood-opacity="0.678431"
-         flood-color="rgb(0,0,0)"
-         result="flood"
-         id="feFlood4518-5-3" />
-      <feComposite
-         in="flood"
-         in2="SourceGraphic"
-         operator="in"
-         result="composite1"
-         id="feComposite4520-3-6" />
-      <feGaussianBlur
-         in="composite1"
-         stdDeviation="1.5"
-         result="blur"
-         id="feGaussianBlur4522-5-0" />
-      <feOffset
-         dx="0"
-         dy="0"
-         result="offset"
-         id="feOffset4524-6-6" />
-      <feComposite
-         in="SourceGraphic"
-         in2="offset"
-         operator="over"
-         result="composite2"
-         id="feComposite4526-2-2" />
-    </filter>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -2313,11 +2227,11 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5.6"
-     inkscape:cx="232.1981"
-     inkscape:cy="912.27356"
+     inkscape:zoom="3.959798"
+     inkscape:cx="244.79866"
+     inkscape:cy="811.61245"
      inkscape:document-units="px"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g4312-2"
      showgrid="false"
      inkscape:window-width="1779"
      inkscape:window-height="1001"
@@ -3701,52 +3615,6 @@
          width="40"
          id="rect4487-9-1-2-0"
          style="opacity:1;fill:none;fill-opacity:1;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;" />
-    </g>
-    <g
-       id="g4227-9"
-       style="opacity:1;stroke-width:2.0454545;stroke-miterlimit:4;stroke-dasharray:none;filter:url(#filter4516-7)"
-       clip-path="url(#clipPath4292-3)"
-       transform="matrix(0.73333332,0,0,0.73333332,191.33333,84.62992)"
-       inkscape:export-filename="wall_defense.png"
-       inkscape:export-xdpi="224"
-       inkscape:export-ydpi="224">
-      <circle
-         r="5"
-         cy="77.362183"
-         cx="64.999992"
-         id="path4223-1"
-         style="fill:#0000ff;fill-opacity:1;stroke:#ffffff;stroke-width:1.94804976;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:1.94804976,1.94804976;stroke-dashoffset:0;stroke-opacity:1"
-         transform="matrix(1.4000016,0,0,1.4000016,-26.000095,-30.94499)" />
-      <rect
-         y="62.362183"
-         x="49.999992"
-         height="30"
-         width="30"
-         id="rect4225-2"
-         style="opacity:1;fill:none;fill-opacity:1;stroke:none;stroke-width:2.0454545;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
-    </g>
-    <g
-       id="g4227-9-6"
-       style="opacity:1;stroke-width:2.0454545;stroke-miterlimit:4;stroke-dasharray:none;filter:url(#filter4516-7-9)"
-       clip-path="url(#clipPath4292-3-7)"
-       transform="matrix(0.73333332,0,0,0.73333332,191.33333,62.62992)"
-       inkscape:export-filename="wall_offense.png"
-       inkscape:export-xdpi="224"
-       inkscape:export-ydpi="224">
-      <circle
-         r="5"
-         cy="77.362183"
-         cx="64.999992"
-         id="path4223-1-1"
-         style="fill:#ff0000;fill-opacity:1;stroke:#ffffff;stroke-width:1.94804978;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:1.94804976, 1.94804975999999996;stroke-dashoffset:0;stroke-opacity:1"
-         transform="matrix(1.4000016,0,0,1.4000016,-26.000095,-30.94499)" />
-      <rect
-         y="62.362183"
-         x="49.999992"
-         height="30"
-         width="30"
-         id="rect4225-2-8"
-         style="opacity:1;fill:none;fill-opacity:1;stroke:none;stroke-width:2.0454545;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
     </g>
   </g>
 </svg>
