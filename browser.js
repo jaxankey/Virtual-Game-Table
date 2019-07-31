@@ -16,6 +16,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+// TO DO: select_and_hold_piece(), select_and_hold_pieces(), ctrl-a, ctrl-space 
+// TO DO: context menu disable
+// TO DO: massive overhaul & code simplification:
+//         * all piece lists become piece_id lists; function get_piece_by_id() 
+//         * combine all groups of parallel arrays into a single dictionary
+//         * use these dictionaries to send info to the server and back
+
 
 //// OPTIONS
 
@@ -308,7 +315,7 @@ PIECE.prototype.send_update     = function() {
 
   // sends information about the piece
   console.log('sending "u"', [this.piece_id], [this.x_target], [this.y_target], [this.r_target], [this.active_image]);
-  our_socket.emit('u', [this.piece_id], [this.x_target], [this.y_target], [this.r_target], [this.active_image]);
+  my_socket.emit('u', [this.piece_id], [this.x_target], [this.y_target], [this.r_target], [this.active_image]);
 }
 
 // Bring the piece to the top of the pile
@@ -1070,7 +1077,7 @@ BOARD.prototype.load_cookies = function() {
     } // end of switch
     
     // update server with user info if we're supposed to
-    if (send_user_info == true) our_socket.emit('user', get_name(), get_team_number());
+    if (send_user_info == true) my_socket.emit('user', get_name(), get_team_number());
   }
 }
   
@@ -1291,7 +1298,8 @@ BOARD.prototype.get_mouse_coordinates = function(e) {
     //x: (e.clientX - rect.left - this.px)*100.0/this.z,
     //y: (e.clientY - rect.top  - this.py)*100.0/this.z
     x:  cos_r*xr + sin_r*yr,
-    y: -sin_r*xr + cos_r*yr
+    y: -sin_r*xr + cos_r*yr,
+    e: e,
   };
 }
 BOARD.prototype.event_selectstart     = function(e) { 
@@ -1398,14 +1406,9 @@ BOARD.prototype.event_mousedown = function(e) {
           // If someone else had this selected, remove their selection
           if(client2 >= 0 && client2 != my_index) this.deselect_piece(p);
           
-          // TO DO: Add ctrl-click to push instead of overwriting
-          // Grab the piece.
-          //this.client_held_pieces[my_index]=[p]; 
-          //this.held_piece_coordinates.push([p.x-mouse.x, p.y-mouse.y, p.r_target])
-
           // ctrl-click adds a piece to the list, normal click selects a piece alone
           if(e.ctrlKey) {
-            
+          
             // Add to the selection and held pieces, but only if
             // We haven't already selected it
             if(this.client_selected_pieces[my_index].indexOf(p) < 0)
@@ -1485,8 +1488,8 @@ BOARD.prototype.event_mousemove = function(e) {
       // If we're allowed to move this piece and it exists
       if(hp.movable_by == null || hp.movable_by.indexOf(get_team_number())>=0) {
           
-          // get the new mouse coordinates; the timer will handle the data sending
-          this.mouse  = this.get_mouse_coordinates(e);
+          // get the new mouse coordinates; the timer will handle the data sending if things have changed
+          if(e) this.mouse  = this.get_mouse_coordinates(e);
 
           // We want to drag it from where we clicked.
           hp.set_target(this.mouse.x + this.held_piece_coordinates[n][0] - this.drag_offset_x,
@@ -1710,9 +1713,6 @@ BOARD.prototype.event_keydown = function(e) {
         this.set_rotation(this.r_home);
         break;
       
-      // TO DO: After going to a new location or rotating / navigating, 
-      // fire a mouse move or something so the held piece follows.
-
       case 49: // 1
       case 50: // 2
       case 51: // 3
@@ -1831,7 +1831,7 @@ BOARD.prototype.set_rotation = function(r_deg, immediate) {
   // trigger a redraw
   this.trigger_redraw  = true;
   this.t_previous_draw = Date.now();
-  
+
   // store the setting for next time
   this.set_cookie('r_target', this.r_target);
 }
@@ -2051,6 +2051,10 @@ BOARD.prototype.draw = function() {
     // set the actual transform
     this.context.setTransform(cos_r, sin_r, -sin_r, cos_r, this.px+cx, this.py+cy);
     
+    // Trigger a mouse move event with the last known raw mouse event
+    this.event_mousemove(this.mouse.e);
+
+
     // TO DO: also look up requestAnimationFrame API for faster rendering
 
     // draw the background image
@@ -2201,7 +2205,7 @@ BOARD.prototype.send_stream_update = function() {
     console.log('send_stream_update(): Detected a selection change.');
     
     // emit the selection changed event
-    our_socket.emit('s', sp_ids, my_index);
+    my_socket.emit('s', sp_ids, my_index);
 
     // Remember the change so this doesn't happen again. 
     // Make a copy, not a reference!
@@ -2224,7 +2228,7 @@ BOARD.prototype.send_stream_update = function() {
     console.log('send_stream_update(): Detected held piece change.');
 
     // Emit the held piece change event; no need for coordinates here, just who is holding what.
-    our_socket.emit('h', hp_ids);
+    my_socket.emit('h', hp_ids);
 
     // Remember the change so this doesn't happen again next time.
     // Make a copy, not a reference!
@@ -2246,7 +2250,7 @@ BOARD.prototype.send_stream_update = function() {
     
     // emit the mouse update event, which includes the held piece ids and their target coordinates,
     // So that the hand and pieces move as a unit. 
-    our_socket.emit('m', this.mouse.x, this.mouse.y, hp_ids, 
+    my_socket.emit('m', this.mouse.x, this.mouse.y, hp_ids, 
                     this.held_piece_coordinates, this.r_target); 
   
     // store this info
@@ -2294,7 +2298,7 @@ BOARD.prototype.send_stream_update = function() {
   // if we found something, send it
   if (ids.length > 0) {
     console.log('sending "u" with', ids.length, 'pieces');
-    our_socket.emit('u', ids, xs, ys, rs, active_images);
+    my_socket.emit('u', ids, xs, ys, rs, active_images);
   }
 }
 
@@ -2338,7 +2342,7 @@ BOARD.prototype.send_full_update   = function(force) {
   }
 
   console.log('sending full update:', ids.length, 'pieces');
-  our_socket.emit('u', ids, xs, ys, rs, active_images, true); // true clears the old values from the server's memory
+  my_socket.emit('u', ids, xs, ys, rs, active_images, true); // true clears the old values from the server's memory
 }
 
 
@@ -2346,8 +2350,15 @@ BOARD.prototype.send_full_update   = function(force) {
 //// COMMUNICATION
 
 // socket object for communication
-var our_socket = io();
-our_socket.emit('user', get_name(), get_team_number());
+var my_socket = io();
+my_socket.emit('user', get_name(), get_team_number());
+
+server_test = function(x){
+  // server sent a "chat"
+  console.log('Received test:', x);
+  test_x = x;
+}
+my_socket.on('test', server_test);
 
 // functions for handling incoming server messages
 server_chat = function(msg){
@@ -2363,7 +2374,7 @@ server_chat = function(msg){
   // scroll to the bottom of the history
   m.animate({ scrollTop: m.prop("scrollHeight") - m.height() }, 'slow');
 }
-our_socket.on('chat', server_chat);
+my_socket.on('chat', server_chat);
 
 
 // Complete user information from server.
@@ -2410,7 +2421,7 @@ server_users = function(client_ids, client_names, client_teams, client_held_piec
     html_clients.append($('<li>').html(board.client_names[i]+' ('+team_name+')'));
   }
 }
-our_socket.on('users', server_users);
+my_socket.on('users', server_users);
 
 
 /**
@@ -2456,7 +2467,7 @@ server_mousemove = function(client_id, x, y, hp_ids, hp_coords, client_r){
     hp.previous_r =   hp_coords[j][2];
   }
 }
-our_socket.on('m', server_mousemove);
+my_socket.on('m', server_mousemove);
 
 server_selectionchange = function(piece_ids, client_id){
   // server sent a selection change
@@ -2492,7 +2503,7 @@ server_selectionchange = function(piece_ids, client_id){
   // trigger a redraw
   board.trigger_redraw = true;
 }
-our_socket.on('s', server_selectionchange);
+my_socket.on('s', server_selectionchange);
 
 server_heldchange = function(piece_ids, client_id) {
   
@@ -2511,7 +2522,7 @@ server_heldchange = function(piece_ids, client_id) {
   // trigger a redraw
   board.trigger_redraw = true;
 }
-our_socket.on('h', server_heldchange);
+my_socket.on('h', server_heldchange);
 
 server_assigned_id = function(id) {
   
@@ -2519,7 +2530,7 @@ server_assigned_id = function(id) {
   console.log('Received id:', id);
   board.client_id = id;
 }
-our_socket.on('id', server_assigned_id);
+my_socket.on('id', server_assigned_id);
 
 
 // Function to handle when the server sends a piece update ('u')
@@ -2558,13 +2569,13 @@ server_update = function(ids, xs, ys, rs, active_images){
     } // end of "if not held"
   } // end of loop over supplied pieces
 }
-our_socket.on('u', server_update);
+my_socket.on('u', server_update);
 
 // action when we click "send chat"
 form_submit = function(){
 
   // emit a "chat message" event with the value from the text box "m"
-  our_socket.emit('chat', "<b>"+get_name()+":</b> "+$('#chat-box').val());
+  my_socket.emit('chat', "<b>"+get_name()+":</b> "+$('#chat-box').val());
 
   // clear the text box
   $('#chat-box').val('');
@@ -2583,12 +2594,12 @@ window.onresize = function(event) {
 function name_onchange() {
   console.log("New name:", get_name());
   board.set_cookie('name', get_name());
-  our_socket.emit('user', get_name(), get_team_number());
+  my_socket.emit('user', get_name(), get_team_number());
 }
 function team_onchange() {
   console.log("New team:", get_team_number());
   board.set_cookie('team', get_team_number());
-  our_socket.emit('user', get_name(), get_team_number());
+  my_socket.emit('user', get_name(), get_team_number());
   board.trigger_redraw = true;
 }
 function peak_onchange() { board.trigger_redraw = true; }
