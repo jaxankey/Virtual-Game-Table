@@ -1355,7 +1355,7 @@ BOARD.prototype.deselect_piece = function(piece) {
 
 // whenever someone clicks the mouse
 BOARD.prototype.event_mousedown = function(e) {
-
+  
   // Get my client list index
   my_index = get_my_client_index();
 
@@ -1377,22 +1377,20 @@ BOARD.prototype.event_mousedown = function(e) {
     
     // loop over all pieces from top to bottom
     for (var i = this.pieces.length-1; i >= 0; i--) {
+      // handle on the piece
+      p = this.pieces[i];
 
       // See if the mouse down happened within the piece and is movable.
       // This if statement returns from the function (quits the loop!)
-      if (this.pieces[i].contains(mouse.x, mouse.y) && 
-         (this.pieces[i].movable_by == null ||
-          this.pieces[i].movable_by.indexOf(team)>=0)) {
+      if (p.contains(mouse.x, mouse.y) && 
+         (p.movable_by == null ||
+          p.movable_by.indexOf(team)>=0)) {
         
         // Find out if anyone's holding it
-        holder = this.find_holder(this.pieces[i]);
+        holder = this.find_holder(p);
         
         // Only mess with it if someone else is NOT holding it.
         if(holder < 0 || holder == my_index) {
-          
-          // pull the piece out and put it on top
-          p = this.pop_piece(i);
-          this.push_piece(p);
         
           // Check and see if someone else has this piece selected.
           client2 = this.find_selected_piece_client_index(p);
@@ -1400,16 +1398,53 @@ BOARD.prototype.event_mousedown = function(e) {
           // If someone else had this selected, remove their selection
           if(client2 >= 0 && client2 != my_index) this.deselect_piece(p);
           
-          // Select the piece and hold it until mouse-up
-          this.client_selected_pieces[my_index] = [p]; 
-          
           // TO DO: Add ctrl-click to push instead of overwriting
           // Grab the piece.
-          this.client_held_pieces[my_index]=[p]; 
-          this.held_piece_coordinates.push([p.x-mouse.x, p.y-mouse.y, p.r_target])
+          //this.client_held_pieces[my_index]=[p]; 
+          //this.held_piece_coordinates.push([p.x-mouse.x, p.y-mouse.y, p.r_target])
 
-          // quit out of the loop
-          console.log('  ', this.client_held_pieces[my_index].length, 'held pieces.');
+          // ctrl-click adds a piece to the list, normal click selects a piece alone
+          if(e.ctrlKey) {
+            
+            // Add to the selection and held pieces, but only if
+            // We haven't already selected it
+            if(this.client_selected_pieces[my_index].indexOf(p) < 0)
+               this.client_selected_pieces[my_index].push(p);
+            
+          // Othwerwise we treat it like a new selection
+          } else {
+
+            // Clear out and select the piece only if it's not already selected.
+            if(this.client_selected_pieces[my_index].indexOf(p) < 0) {
+              
+              // Clear out and select this piece only.
+              this.client_selected_pieces[my_index] = [p]; 
+
+              // pull the piece out and put it on top
+              p = this.pop_piece(i);
+              this.push_piece(p);
+            }
+          }
+
+          // Rebuild the held pieces list.
+          this.client_held_pieces[my_index] = [];
+          this.held_piece_coordinates       = [];
+          for(m in this.client_selected_pieces[my_index]) {
+            
+            // Shortcut to the piece
+            hp = this.client_selected_pieces[my_index][m];
+            
+            // Add it to the held pieces
+            this.client_held_pieces[my_index].push(hp);
+            
+            // Update the held piece coordinates
+            this.held_piece_coordinates.push([hp.x-mouse.x, hp.y-mouse.y, hp.r_target]);
+          }
+          
+          // quit out of the whole function
+          console.log('hit', this.client_held_pieces    [my_index].length, 'held', 
+                             this.client_selected_pieces[my_index].length, 'selected');
+          
           return;
         } // end of "no one is holding it"
       } // end of mouse click near movable piece
@@ -1420,8 +1455,8 @@ BOARD.prototype.event_mousedown = function(e) {
   // If there was an object selected, we deselect it & drop whatever we were holding.
   this.client_selected_pieces[my_index] = [];  
   this.client_held_pieces    [my_index] = [];
-  console.log('  ', this.client_held_pieces[my_index].length, 'held pieces.');
-
+  console.log('miss', this.client_held_pieces    [my_index].length, 'held', 
+                      this.client_selected_pieces[my_index].length, 'selected');
   // store the drag offset for canvas motion
   this.drag_offset_x = mouse.x;
   this.drag_offset_y = mouse.y;
@@ -1491,9 +1526,15 @@ BOARD.prototype.event_mouseup = function(e) {
   my_index = get_my_client_index();
 
   // set the final coordinates of any of our held pieces, to trigger a snap
-  for(n in this.client_held_pieces[my_index]) 
+  for(n in this.client_held_pieces[my_index]) {
+    
+    // Triggers a snap locally
     this.client_held_pieces[my_index][n].set_target(); 
   
+    // Triggers a snap for everyone else
+    this.client_held_pieces[my_index][n].previous_x = null;
+  }
+
   // remove it from our holding
   this.client_held_pieces[my_index] = []; 
   
@@ -2173,7 +2214,7 @@ BOARD.prototype.send_stream_update = function() {
   hp_ids = [];
   for(i in hps) hp_ids.push(hps[i].piece_id);
 
-  // TO DO: Since we now have board.piece_lookup, which is super fast, 
+  // TO DO: Overhaul: Since we now have board.piece_lookup, which is super fast, 
   //        we should only remember the piece ids.
   //        This will save a lot of looping like the above!
   
@@ -2427,8 +2468,26 @@ server_selectionchange = function(piece_ids, client_id){
   // update the selection, making a copy array for the previous values
   // so that they're independent.
   sps = board.find_pieces(piece_ids);
-  board.client_selected_pieces[client_index]          = sps;
+  board.client_selected_pieces         [client_index] = sps;
   board.client_previous_selected_pieces[client_index] = [...sps];
+
+  // For each of the sps, make sure they're popped from the other
+  // client's selected pieces
+  for(i in sps) {
+    sp = sps[i];
+    for(c in board.client_selected_pieces) {
+      if(c != client_index)
+      {
+        // If this client's selected pieces contains sp, pop it.
+        j        = board.client_selected_pieces[c].indexOf(sp);        
+        if(j >= 0) board.client_selected_pieces[c].splice(j,1);
+
+        // Do the same for held pieces, just in case
+        j        = board.client_held_pieces[c].indexOf(sp);
+        if(j >= 0) board.client_held_pieces[c].splice(j,1);
+      }
+    }
+  }
 
   // trigger a redraw
   board.trigger_redraw = true;
