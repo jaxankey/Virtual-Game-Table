@@ -225,6 +225,16 @@ io.on('connection', function(socket) {
     socket.broadcast.emit('m', client_id, x, y, hp_ids, hp_coords, client_r);
   });
 
+  socket.on('test', function(x) {
+    
+    // Figure out the client
+    client_index = client_sockets.indexOf(socket);
+    log('test:', x);
+    
+    // send messages to everyone but this socket
+    socket.emit('test', x);
+  });
+
   /**
    * Someone sent information about a bunch of pieces.
    * Data includes
