@@ -923,8 +923,8 @@ function BOARD(canvas) {
 
   // we use this to recognize when the mouse state has changed 
   // (avoids sending too many events too quickly to the server)
-  this.mouse          = {x:0, y:0};
-  this.previous_mouse = {x:0, y:0};
+  this.mouse          = {x:0, y:0, e:{offsetX:0, offsetY:0}};
+  this.previous_mouse = {x:0, y:0, e:{offsetX:0, offsetY:0}};
   
   // keeps track of the index for new pieces & hands
   this.next_piece_id = 0;
@@ -1407,7 +1407,7 @@ BOARD.prototype.event_mousedown = function(e) {
           if(client2 >= 0 && client2 != my_index) this.deselect_piece(p);
           
           // ctrl-click adds a piece to the list, normal click selects a piece alone
-          if(e.ctrlKey) {
+          if(e.ctrlKey || e.shiftKey) {
           
             // Add to the selection and held pieces, but only if
             // We haven't already selected it
