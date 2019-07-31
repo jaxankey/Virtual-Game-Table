@@ -138,7 +138,7 @@ for (n=0; n<6; n++) {
   a.push(board.add_piece(['move_hidden.png', 'attack_1.png'], ['private_attack_1.png', 'attack_1.png']));
   a.push(board.add_piece(['move_hidden.png', 'attack_1.png'], ['private_attack_1.png', 'attack_1.png']));
   a.push(board.add_piece(['move_hidden.png', 'attack_1.png'], ['private_attack_1.png', 'attack_1.png']));
-  a.push(board.add_piece(['move_hidden.png', 'attack_1.png'], ['private_attack_1.png', 'attack_1.png']));
+  a.push(board.add_piece(['move_hidden.png', 'bluff.png'   ], ['private_bluff.png',    'bluff.png'   ]));
   attacks[n] = a;
   
   d = [];
@@ -148,7 +148,7 @@ for (n=0; n<6; n++) {
   d.push(board.add_piece(['move_hidden.png', 'defend_1.png'], ['private_defend_1.png', 'defend_1.png']));
   d.push(board.add_piece(['move_hidden.png', 'defend_1.png'], ['private_defend_1.png', 'defend_1.png']));
   d.push(board.add_piece(['move_hidden.png', 'defend_1.png'], ['private_defend_1.png', 'defend_1.png']));
-  d.push(board.add_piece(['move_hidden.png', 'defend_1.png'], ['private_defend_1.png', 'defend_1.png']));
+  d.push(board.add_piece(['move_hidden.png', 'bluff.png'   ], ['private_bluff.png',    'bluff.png'   ]));
   defends[n] = d;
   
   // add walls
@@ -229,14 +229,14 @@ function collect_pieces(n) {
   
   // Distribute the top row
   for (m=0; m<a.length; m++) {
-    v = rotate_vector((m-3)*42, y1+40, angle);
+    v = rotate_vector((m-3)*42, y1+80, angle);
     a[m].set_target(v.x, v.y, -angle, null, true).send_to_top();
     a[m].active_image = 0;
   }
 
   // Distribute teh bottom row
   for (m=0; m<d.length; m++) {
-    v = rotate_vector((m-3)*42, y1+80, angle);
+    v = rotate_vector((m-3)*42, y1+120, angle);
     d[m].set_target(v.x, v.y, -angle, null, true).send_to_top();
     d[m].active_image = 0;
   }
@@ -285,10 +285,10 @@ function setup() {
     v = rotate_vector(-R*1.15, y1+140, angle);
     bombs[n].set_target(v.x, v.y, 0).send_to_top();
     
-    // CORNERS
+    // CORNER TOWERS
     wa = walls_offense[n];
     for (m=0; m<wa.length; m++) {
-      v = rotate_vector((m-3)*42, y1+120, angle);
+      v = rotate_vector((m-3)*42, y1+40, angle);
       wa[m].set_target(v.x, v.y, -angle).send_to_top();
     }
     wd = walls_defense[n];
