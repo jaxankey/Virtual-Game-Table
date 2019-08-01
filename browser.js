@@ -905,8 +905,10 @@ function BOARD(canvas) {
   this.held_piece_coordinates = []; // list of [dx,dy,r] coordinates, one for each held piece
 
   // Drag offset coordinates for canvas moving
-  this.drag_offset_x = null;
-  this.drag_offset_y = null;
+  this.drag_offset_board_x = null;
+  this.drag_offset_board_y = null;
+  this.drag_offset_screen_x= null;
+  this.drag_offset_screen_y= null;
 
   // the box coordinates for all the unused game pieces
   this.box_x = 0;
@@ -977,12 +979,13 @@ function BOARD(canvas) {
   canvas.addEventListener('selectstart', this.event_selectstart .bind(this), false);
   
   // mouse & keyboard events
-  canvas.addEventListener('mousedown',   this.event_mousedown .bind(this), true); 
-  canvas.addEventListener('mousemove',   this.event_mousemove .bind(this), true); 
-  canvas.addEventListener('mouseup',     this.event_mouseup   .bind(this), true); 
-  canvas.addEventListener('dblclick',    this.event_dblclick  .bind(this), true); 
-  canvas.addEventListener('mousewheel',  this.event_mousewheel.bind(this), true);
-  
+  canvas.addEventListener('mousedown',   this.event_mousedown  .bind(this), true); 
+  canvas.addEventListener('mousemove',   this.event_mousemove  .bind(this), true); 
+  canvas.addEventListener('mouseup',     this.event_mouseup    .bind(this), true); 
+  canvas.addEventListener('dblclick',    this.event_dblclick   .bind(this), true); 
+  canvas.addEventListener('mousewheel',  this.event_mousewheel .bind(this), true);
+  canvas.addEventListener('contextmenu', this.event_contextmenu.bind(this), true);
+
   $(document.body).on('keydown',     this.event_keydown    .bind(this));
   
   //// TIMERS 
@@ -1277,7 +1280,9 @@ BOARD.prototype.set_background_image = function(image_path) {
 
 // Mouse methods
 BOARD.prototype.get_mouse_coordinates = function(e) {
-  // Gets the mouse coordinates with respect to the canvas.
+  // Converts a mouse event into mouse coordinates with respect to the unrotated, unzoomed canvas (x,y), 
+  // and the rotated unzoomed canvas (xr, yr), and the rotated movement (dxr,dyr)
+  // Specifying rotated = true will get coordinates with respect to the rotated, unzoomed canvas.
 
   // get the bounding rectangle of the canvas
   var rect = this.canvas.getBoundingClientRect();
@@ -1295,17 +1300,33 @@ BOARD.prototype.get_mouse_coordinates = function(e) {
     // raw coordinates
     xr = (e.offsetX-cx-this.px)/(this.z*0.01);
     yr = (e.offsetY-cy-this.py)/(this.z*0.01);
+
+    // Raw movement
+    dxr = (e.movementX)/(this.z*0.01);
+    dyr = (e.movementY)/(this.z*0.01);
     
   // return the transformed mouse coordinates
   return {
-    //x: (e.clientX - rect.left - this.px)*100.0/this.z,
-    //y: (e.clientY - rect.top  - this.py)*100.0/this.z
-    x:  cos_r*xr + sin_r*yr,
-    y: -sin_r*xr + cos_r*yr,
+    x:   cos_r* xr + sin_r* yr,
+    y:  -sin_r* xr + cos_r* yr,
+    dx:  cos_r*dxr + sin_r*dyr,
+    dy: -sin_r*dxr + cos_r*dyr,
+    xr: xr,
+    yr: yr,
+    dxr: dxr,
+    dyr: dyr,
     e: e,
   };
 }
-BOARD.prototype.event_selectstart     = function(e) { 
+
+BOARD.prototype.event_contextmenu = function(e) { 
+  // fixes a text-selecting problem with mouse dragging
+  
+  // prevents the default behavior
+  e.preventDefault(); 
+}
+
+BOARD.prototype.event_selectstart = function(e) { 
   // fixes a text-selecting problem with mouse dragging
   
   // prevents the default behavior
@@ -1374,14 +1395,14 @@ BOARD.prototype.event_mousedown = function(e) {
   this.trigger_redraw = true;
 
   // get the mouse coordinates & team
-  mouse = this.get_mouse_coordinates(e);
+  this.mouse = this.get_mouse_coordinates(e);
   team  = get_team_number();
   
   // report the coordinates
-  console.log("event_mousedown", mouse);
+  console.log("event_mousedown", this.mouse);
   
   // If we're not in someone else's team zone, see if we have clicked on a piece.
-  team_zone = this.in_team_zone(mouse.x, mouse.y)
+  team_zone = this.in_team_zone(this.mouse.x, this.mouse.y)
   
   // Our team zone or no team zone or team zone with grab enabled
   if(team_zone == team || team_zone < 0 || this.team_zones[team_zone].grab_mode == 1) {
@@ -1393,7 +1414,7 @@ BOARD.prototype.event_mousedown = function(e) {
 
       // See if the mouse down happened within the piece and is movable.
       // This if statement returns from the function (quits the loop!)
-      if (p.contains(mouse.x, mouse.y) && 
+      if (p.contains(this.mouse.x, this.mouse.y) && 
          (p.movable_by == null ||
           p.movable_by.indexOf(team)>=0)) {
         
@@ -1411,7 +1432,7 @@ BOARD.prototype.event_mousedown = function(e) {
           
           // ctrl-click adds a piece to the list, normal click selects a piece alone
           if(e.ctrlKey || e.shiftKey) {
-          
+            
             // Add to the selection and held pieces, but only if
             // We haven't already selected it
             if(this.client_selected_pieces[my_index].indexOf(p) < 0)
@@ -1426,9 +1447,11 @@ BOARD.prototype.event_mousedown = function(e) {
               // Clear out and select this piece only.
               this.client_selected_pieces[my_index] = [p]; 
 
-              // pull the piece out and put it on top
-              p = this.pop_piece(i);
-              this.push_piece(p);
+              // pull the piece out and put it on top, but only with a left click
+              if(e.button==0) {
+                p = this.pop_piece(i);
+                this.push_piece(p);
+              }
             }
           }
 
@@ -1444,7 +1467,7 @@ BOARD.prototype.event_mousedown = function(e) {
             this.client_held_pieces[my_index].push(hp);
             
             // Update the held piece coordinates
-            this.held_piece_coordinates.push([hp.x-mouse.x, hp.y-mouse.y, hp.r_target]);
+            this.held_piece_coordinates.push([hp.x-this.mouse.x, hp.y-this.mouse.y, hp.r_target]);
           }
           
           // quit out of the whole function
@@ -1463,14 +1486,21 @@ BOARD.prototype.event_mousedown = function(e) {
   this.client_held_pieces    [my_index] = [];
   console.log('miss', this.client_held_pieces    [my_index].length, 'held', 
                       this.client_selected_pieces[my_index].length, 'selected');
+  
   // store the drag offset for canvas motion
-  this.drag_offset_x = mouse.x;
-  this.drag_offset_y = mouse.y;
+  this.drag_offset_board_x = this.mouse.x;
+  this.drag_offset_board_y = this.mouse.y;
+  this.drag_offset_screen_x = e.screenX-this.px;
+  this.drag_offset_screen_y = e.screenY-this.py;
 }
 
 // whenever the mouse moves in the canvas
 BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) { 
-  //console.log('event_mousemove', e);
+  
+  // get the new mouse coordinates
+  if(e) this.mouse  = this.get_mouse_coordinates(e);
+
+  //console.log('event_mousemove', e.screenX-this.drag_offset_screen_x, e.screenY-this.drag_offset_screen_y );
   
   // get the team index
   team     = get_team_number();
@@ -1490,13 +1520,11 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
       // If we're allowed to move this piece and it exists
       if(hp.movable_by == null || hp.movable_by.indexOf(get_team_number())>=0) {
           
-          // get the new mouse coordinates; the timer will handle the data sending if things have changed
-          if(e) this.mouse  = this.get_mouse_coordinates(e);
-
           // We want to drag it from where we clicked.
-          // TO DO: it's probably this call that ruins the rotation
-          hp.set_target(this.mouse.x + this.held_piece_coordinates[n][0] - this.drag_offset_x,
-                        this.mouse.y + this.held_piece_coordinates[n][1] - this.drag_offset_y, 
+          // the timer will handle the data sending if things have changed
+          // Unlike set_pan, these coordinates are relative to the unzoomed, unrotated board.
+          hp.set_target(this.mouse.x + this.held_piece_coordinates[n][0] - this.drag_offset_board_x,
+                        this.mouse.y + this.held_piece_coordinates[n][1] - this.drag_offset_board_y, 
                         null, null, true, keep_t_previous_move) // make the move immediate
           
           // make sure it immediately moves there while we're holding it
@@ -1508,14 +1536,14 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
   } // end of "if holding pieces"
   
   // Otherwise we're dragging the canvas; when the mouse is down, these are not null
-  else if (this.drag_offset_x != null && this.drag_offset_y != null) {
+  else if (this.drag_offset_screen_x && this.drag_offset_screen_y ) {
     
     // update the pan coordinates (immediate=true)
-    this.set_pan(this.px + e.movementX, this.py + e.movementY, true);
-  }
-  
-  // otherwise we're just moving around
-  else this.mouse = this.get_mouse_coordinates(e);
+    // Pan is set in screen coordinates, 
+    // so setting pan=100 when zoomed in will move the board less than zoomed out.
+    // This also triggers a redraw, as one might expect.
+    this.set_pan(e.screenX-this.drag_offset_screen_x, e.screenY-this.drag_offset_screen_y, true); 
+  } 
 }
 
 BOARD.prototype.event_mouseup = function(e) {
@@ -1545,8 +1573,10 @@ BOARD.prototype.event_mouseup = function(e) {
   this.client_held_pieces[my_index] = []; 
   
   // null out the drag offset so we know not to carry the canvas around
-  this.drag_offset_x = null;
-  this.drag_offset_y = null;
+  this.drag_offset_board_x = null;
+  this.drag_offset_board_y = null;
+  this.drag_offset_screen_x= null;
+  this.drag_offset_screen_y= null;
 
 }
 BOARD.prototype.event_dblclick = function(e) {
@@ -2054,7 +2084,7 @@ BOARD.prototype.draw = function() {
     // Trigger a mouse move event with the last known raw mouse event
     // We set keep_t_previous_move=true so it doesn't reset the dynamics t0 every frame.
     // Otherwise the rotation is crazy slow or stopped.
-    this.event_mousemove(this.mouse.e, true);
+    if(this.client_held_pieces.length) this.event_mousemove(this.mouse.e, true);
 
     // TO DO: also look up requestAnimationFrame API for faster rendering
 
