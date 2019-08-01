@@ -348,14 +348,15 @@ PIECE.prototype.increment_active_image = function() {
 }
 
 // set the target location and rotation all then rotated by angle
-PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate) {
+PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate,keep_t_previous_move) {
 
   // Set default argument values
-  x         = or_default(x, this.x_target);
-  y         = or_default(y, this.y_target);
-  r         = or_default(r, null);
-  angle     = or_default(angle, null);
-  immediate = or_default(immediate, false);
+  x            = or_default(x, this.x_target);
+  y            = or_default(y, this.y_target);
+  r            = or_default(r, null);
+  angle        = or_default(angle, null);
+  disable_snap = or_default(disable_snap, false);
+  immediate    = or_default(immediate, false);
   
   // if we're supposed to transform the coordinates
   if(angle != null) {
@@ -364,9 +365,6 @@ PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate) {
     x = v.x;
     y = v.y;
   }
-  
-  // default is to snap
-  disable_snap = or_default(disable_snap, false);
   
   // if we're supposed to snap
   if(this.snap_index != null && !disable_snap) {
@@ -390,11 +388,13 @@ PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate) {
   // set the rotation if not null
   if(r != null) this.set_rotation(r, immediate);
   
-  // reset the clock & trigger a redraw
-  this.t_previous_draw = Date.now();
-  this.t_previous_move = this.t_previous_draw;
+  // reset the clock (if not immediate) & trigger a redraw
+  if(!immediate) {
+    this.t_previous_draw = Date.now();
+    if(!keep_t_previous_move) this.t_previous_move = this.t_previous_draw;
+  }
   this.board.trigger_redraw = true;
-  
+
   // return the handle to the piece
   return this;
 }
@@ -411,7 +411,7 @@ PIECE.prototype.set_target_grid = function(n,m,r_deg) {
   
   return this;
 }
-PIECE.prototype.set_rotation = function(r_deg, immediate) {
+PIECE.prototype.set_rotation = function(r_deg, immediate, keep_t_previous_move) {
   immediate = or_default(immediate, false);
   
   // set the target
@@ -419,8 +419,10 @@ PIECE.prototype.set_rotation = function(r_deg, immediate) {
   if (immediate) this.r = r_deg;
   
   // reset the clock & trigger a redraw
-  this.t_previous_draw = Date.now();
-  this.t_previous_move = this.t_previous_draw;
+  if(!immediate){
+    this.t_previous_draw = Date.now();
+    if(!keep_t_previous_move) this.t_previous_move = this.t_previous_draw;
+  }
   this.board.trigger_redraw = true;
   
   // return the handle to the piece
@@ -595,8 +597,10 @@ PIECE.prototype.move_and_draw = function() {
     this.x = this.x_target;
     this.y = this.y_target;
   }
-  if ( Math.abs(this.r-this.r_target) < snap) this.r = this.r_target;
-  
+  if ( Math.abs(this.r-this.r_target) < snap) {
+    this.r  = this.r_target;
+  }
+
   // change the active image if it's peakable
   if (this.peakable_by != null){ // if this is a peakable piece
     
@@ -979,8 +983,7 @@ function BOARD(canvas) {
   canvas.addEventListener('dblclick',    this.event_dblclick  .bind(this), true); 
   canvas.addEventListener('mousewheel',  this.event_mousewheel.bind(this), true);
   
-  $(document.body).on('keydown', this.event_keydown.bind(this));
-  
+  $(document.body).on('keydown',     this.event_keydown    .bind(this));
   
   //// TIMERS 
   
@@ -1466,19 +1469,18 @@ BOARD.prototype.event_mousedown = function(e) {
 }
 
 // whenever the mouse moves in the canvas
-BOARD.prototype.event_mousemove = function(e) { 
+BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) { 
   //console.log('event_mousemove', e);
   
-  // trigger redraw to be safe
-  this.trigger_redraw = true;
-
   // get the team index
   team     = get_team_number();
   my_index = get_my_client_index(); // my_index = -1 until the server assigns us one.
   
-  // if we're holding pieces
+  // if we're holding pieces, move them with us
   if(my_index >= 0 && this.client_held_pieces[my_index].length > 0) { 
-
+    // Pieces are moving. Better redraw.
+    this.trigger_redraw = true;
+  
     // Loop over held pieces
     for(n in this.client_held_pieces[my_index]) { 
       
@@ -1492,9 +1494,10 @@ BOARD.prototype.event_mousemove = function(e) {
           if(e) this.mouse  = this.get_mouse_coordinates(e);
 
           // We want to drag it from where we clicked.
+          // TO DO: it's probably this call that ruins the rotation
           hp.set_target(this.mouse.x + this.held_piece_coordinates[n][0] - this.drag_offset_x,
                         this.mouse.y + this.held_piece_coordinates[n][1] - this.drag_offset_y, 
-                        null, null, true) // disable snap
+                        null, null, true, keep_t_previous_move) // make the move immediate
           
           // make sure it immediately moves there while we're holding it
           hp.x = hp.x_target;
@@ -1512,7 +1515,7 @@ BOARD.prototype.event_mousemove = function(e) {
   }
   
   // otherwise we're just moving around
-  else this.mouse  = this.get_mouse_coordinates(e);
+  else this.mouse = this.get_mouse_coordinates(e);
 }
 
 BOARD.prototype.event_mouseup = function(e) {
@@ -1783,6 +1786,7 @@ function event_dblclick(event_data, piece, piece_index) {
   if(piece != null) piece.increment_active_image();
 }
 
+
 // set the size of the canvas
 BOARD.prototype.set_size = function(width, height) {
   // sets the dimensions of the board
@@ -1930,19 +1934,18 @@ BOARD.prototype.tantrum = function() {
   this.send_full_update(true);
 }
 
-BOARD.prototype.needs_redraw       = function() {
+BOARD.prototype.needs_redraw = function() {
   // Determine whether any piece requires a redraw
-
+  
   // if we've automatically triggered a redraw
   if (this.trigger_redraw) return (true);
-
+  
   // see if our z etc is off
   if (this.z  != this.z_target  ||
       this.r  != this.r_target  ||
       this.px != this.px_target ||
       this.py != this.py_target) return true;
 
-  
   // see if any of the hands need a redraw
   for (i in this.client_hands) {
     if (this.client_hands[i].needs_redraw()) return true;
@@ -1967,9 +1970,6 @@ BOARD.prototype.draw = function() {
   //           Lower-def counterparts.
   //        Ignore drawing pieces outside the view?
   if (this.needs_redraw()) {
-    
-    // reset the trigger
-    this.trigger_redraw = false;
     
     //////////////////////////////////////////////////////////////
     // First we calculate the next step in the camera position
@@ -2052,8 +2052,9 @@ BOARD.prototype.draw = function() {
     this.context.setTransform(cos_r, sin_r, -sin_r, cos_r, this.px+cx, this.py+cy);
     
     // Trigger a mouse move event with the last known raw mouse event
-    this.event_mousemove(this.mouse.e);
-
+    // We set keep_t_previous_move=true so it doesn't reset the dynamics t0 every frame.
+    // Otherwise the rotation is crazy slow or stopped.
+    this.event_mousemove(this.mouse.e, true);
 
     // TO DO: also look up requestAnimationFrame API for faster rendering
 
@@ -2181,6 +2182,9 @@ BOARD.prototype.draw = function() {
        && this.team_zones[i].draw_mode == 1) this.team_zones[i].draw();
     }
 
+    // reset the trigger
+    this.trigger_redraw = false;
+    
   } // end of needs redraw
 }
 
@@ -2217,11 +2221,7 @@ BOARD.prototype.send_stream_update = function() {
   hps = this.client_held_pieces[my_index];
   hp_ids = [];
   for(i in hps) hp_ids.push(hps[i].piece_id);
-
-  // TO DO: Overhaul: Since we now have board.piece_lookup, which is super fast, 
-  //        we should only remember the piece ids.
-  //        This will save a lot of looping like the above!
-  
+ 
   // If the arrays are different
   if(!array_compare(hps, this.client_previous_held_pieces[my_index])) {
 
