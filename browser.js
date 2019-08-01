@@ -2278,12 +2278,12 @@ BOARD.prototype.draw = function() {
           
           // draw white background of the border
           context.lineWidth   = this.selected_border_width*100.0/this.z;
-          context.strokeStyle = "#FFF";
+          context.strokeStyle = "#FFFFFFAA";
           sp.draw_selection();
           
           // draw the border
           context.lineWidth   = this.selected_border_width*50.0/this.z;
-          context.strokeStyle = this.team_colors[this.client_teams[i]];
+          context.strokeStyle = this.team_colors[this.client_teams[i]]+'AA';
           sp.draw_selection();
           
           // if we're not allowed to rotate, transform
