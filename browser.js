@@ -1619,15 +1619,24 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
     for(n in this.pieces) {
       p = this.pieces[n];
       i = this.client_selected_pieces[my_index].indexOf(p);
+
+      // If this piece is not in someone else's team zone
+      team_zone = this.in_team_zone(p.x, p.y)
+
+      // Our team zone or no team zone or team zone with grab enabled
+      if(team_zone == team || team_zone < 0 || this.team_zones[team_zone].grab_mode == 1) {
         
-      // If it's within the rectangle, select it. 
-      // TO DO: This is a lot of cosines and sines calculated!
-      if(is_within_selection_box(p.x, p.y, this.client_selection_boxes[my_index])) {
-        if(i < 0) this.client_selected_pieces[my_index].push(p);
-      }
-      // Otherwise, deselect it.
-      else if(i >= 0 && !e.ctrlKey && !e.shiftKey) {
-        this.client_selected_pieces[my_index].splice(i,1);
+        // If it's within the rectangle and ok to move, select it. 
+        // TO DO: This is a lot of cosines and sines calculated!
+        if(is_within_selection_box(p.x, p.y, this.client_selection_boxes[my_index]) &&
+          (p.movable_by == null ||
+          p.movable_by.indexOf(team)>=0)) {
+          if(i < 0) this.client_selected_pieces[my_index].push(p);
+        }
+        // Otherwise, deselect it.
+        else if(i >= 0 && !e.ctrlKey && !e.shiftKey) {
+          this.client_selected_pieces[my_index].splice(i,1);
+        }
       }
     } // End of loop over all pieces
   } // End of if we have a selection box
