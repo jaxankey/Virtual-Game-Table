@@ -213,16 +213,17 @@ io.on('connection', function(socket) {
    *  hp_ids        List of this client's held piece ids
    *  hp_coords     List of [dx,dy,r] coordinates, one for each hp_id. dx and dy are relative to x and y
    *  client_r      Rotation of the client (for drawing the hand orientation)
+   *  selection_box Selection box for this client {x0_target, y0_target, x1_target, y1_target, r_target}
    */
-  socket.on('m', function(x, y, hp_ids, hp_coords, client_r) {
+  socket.on('m', function(x, y, hp_ids, hp_coords, client_r, selection_box) {
     
     // Figure out the client
     client_index = client_sockets.indexOf(socket);
     client_id    = client_ids[client_index];
-    log('m:', client_id, x, y, hp_ids, hp_coords, client_r);
+    log('m:', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
     
     // send messages to everyone but this socket
-    socket.broadcast.emit('m', client_id, x, y, hp_ids, hp_coords, client_r);
+    socket.broadcast.emit('m', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
   });
 
   socket.on('test', function(x) {

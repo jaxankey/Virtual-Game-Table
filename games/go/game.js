@@ -29,9 +29,9 @@ board.z_target = 50;
 board.r_step   = 45;
 
 // Add some people
-board.add_team('observer',  ['hand_blue.png',  'fist_blue.png'],   '#77F');
-board.add_team('black',     ['hand_gray.png',  'fist_gray.png'],   '#444');
-board.add_team('white',     ['hand_white.png', 'fist_white.png'],  '#AAA');
+board.add_team('observer',  ['hand_blue.png',  'fist_blue.png'],   '#7777FF');
+board.add_team('black',     ['hand_gray.png',  'fist_gray.png'],   '#444444');
+board.add_team('white',     ['hand_white.png', 'fist_white.png'],  '#AAAAAA');
 
 // Add an 8x8 snap grid with 64px square width
 w = 50; 

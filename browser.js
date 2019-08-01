@@ -65,6 +65,53 @@ function get_team_number()  {return document.getElementById("teams").selectedInd
 function set_team_number(n) {return document.getElementById("teams").selectedIndex = n;}
 
 /**
+ * Returns true if x,y is within the box.
+ * @param {float} x 
+ * @param {float} y 
+ * @param {box} box 
+ */
+function is_within_selection_box(x,y,box) {
+  cs = get_selection_box_corners(box);
+
+  // rotate all 5 points of interest so the comparison is easy.
+  rp = rotate_vector(x,y,-box.r);
+  r0 = rotate_vector(cs.x0, cs.y0, -box.r);
+  r1 = rotate_vector(cs.x1, cs.y1, -box.r);
+  
+  // now compare
+  return rp.x >= Math.min(r0.x,r1.x) && rp.x <= Math.max(r0.x,r1.x) &&
+         rp.y >= Math.min(r0.y,r1.y) && rp.y <= Math.max(r0.y,r1.y) ;
+}
+
+/**
+ * Calculates the other two selection box corners based on the view rotation.
+ * @param {box} box 
+ * 
+ * Returns {x0, y0, x1, y1, x2, y2, x3, y3}
+ */
+function get_selection_box_corners(box) {
+  
+  // Get the center
+  cx = (box.x0 + box.x1)*0.5;
+  cy = (box.y0 + box.y1)*0.5;
+  
+  // Get the half diagonal
+  a  = Math.sqrt((box.y1-box.y0)*(box.y1-box.y0)+(box.x1-box.x0)*(box.x1-box.x0)) * 0.5;
+ 
+  // Get the unrotated angle to the corner TO DO:
+  t  = Math.atan((box.y1-cy)/(box.x1-cx));
+  x2 = cx + a*Math.cos(t+2*box.r*Math.PI/180.0);
+  y2 = cy - a*Math.sin(t+2*box.r*Math.PI/180.0);
+  x3 = 2*cx - x2;
+  y3 = 2*cy - y2;
+
+  return {x0:box.x0, y0:box.y0,
+          x1:box.x1, y1:box.y1,
+          x2:x2,     y2:y2,
+          x3:x3,     y3:y3}
+}
+
+/**
  * Use my client_id to find my index for things like client_held_pieces, client_teams, etc...
  */
 function get_my_client_index() {return board.client_ids.indexOf(board.client_id);}
@@ -91,14 +138,20 @@ function or_default(a, default_a) {
  * @param {float} r angle with which to rotate (degrees)
  */
 function rotate_vector(x,y,r) {
-  // convert to radians
-  var rr = r*Math.PI/180.0;
+  
+  // Only recompute cosine and sine if the angle is new.
+  if(r != this.last_r) {
+    console.log('new', r, this.last_r);
+    // convert to radians & compute.
+    this.last_r = r;
+    rr = r*Math.PI/180.0
+    this.cos_r = Math.cos(rr);
+    this.sin_r = Math.sin(rr);
+  }
 
   // rotate coordinates
-  var cos_r = Math.cos(rr);
-  var sin_r = Math.sin(rr);
-  var x2 =  cos_r*x + sin_r*y;
-  var y2 = -sin_r*x + cos_r*y;
+  var x2 =  this.cos_r*x + this.sin_r*y;
+  var y2 = -this.sin_r*x + this.cos_r*y;
 
   return({x:x2, y:y2});
 }
@@ -487,7 +540,7 @@ PIECE.prototype.inner_circle  = function(x, y) {
   // circular bounds
   return d.x*d.x + d.y*d.y <= w*w;
 }
-PIECE.prototype.rectangle  = function(x, y) {
+PIECE.prototype.rectangle  = function(x,y) {
   
   // if this piece has an angle, do the transform
   var r_deg = this.r;
@@ -502,6 +555,8 @@ PIECE.prototype.rectangle  = function(x, y) {
   return (Math.abs(d.x) <= 0.5*this.images[this.active_image].width 
        && Math.abs(d.y) <= 0.5*this.images[this.active_image].height);
 }
+
+// Returns true if x,y are in the piece bounds
 PIECE.prototype.contains = function(x, y) {
   
   // Determine if a point is inside the PIECE's bounds
@@ -901,6 +956,7 @@ function BOARD(canvas) {
   this.client_previous_held_pieces     = []; // List of previously held pieces (for detecting changes to send to the server)
   this.client_selected_pieces          = []; // List of selected pieces for each client.
   this.client_previous_selected_pieces = []; // List of previously selected pieces (for detecting changes)
+  this.client_selection_boxes          = []; // Selection rectangle (dictionary with coordinates)
 
   this.held_piece_coordinates = []; // list of [dx,dy,r] coordinates, one for each held piece
 
@@ -910,6 +966,7 @@ function BOARD(canvas) {
   this.drag_offset_screen_x= null;
   this.drag_offset_screen_y= null;
 
+  
   // the box coordinates for all the unused game pieces
   this.box_x = 0;
   this.box_y = -3000;
@@ -1102,6 +1159,8 @@ BOARD.prototype.add_snap_grid = function(x_left, y_top, width, height, x0, y0, d
 
 BOARD.prototype.add_team = function(name, hand_image_paths, color) {
   console.log('add_team()', name, hand_image_paths, color);
+
+  color = or_default(color, '#777777');
 
   // add team to GUI list
   var teams  = document.getElementById("teams");
@@ -1482,16 +1541,26 @@ BOARD.prototype.event_mousedown = function(e) {
 
   // If we got this far, it means we clicked somewhere without a valid piece.
   // If there was an object selected, we deselect it & drop whatever we were holding.
-  this.client_selected_pieces[my_index] = [];  
-  this.client_held_pieces    [my_index] = [];
+  if(!e.ctrlKey && !e.shiftKey) {
+    this.client_selected_pieces[my_index] = [];  
+    this.client_held_pieces    [my_index] = [];
+  }
   console.log('miss', this.client_held_pieces    [my_index].length, 'held', 
                       this.client_selected_pieces[my_index].length, 'selected');
   
   // store the drag offset for canvas motion
-  this.drag_offset_board_x = this.mouse.x;
-  this.drag_offset_board_y = this.mouse.y;
+  this.drag_offset_board_x  = this.mouse.x;
+  this.drag_offset_board_y  = this.mouse.y;
   this.drag_offset_screen_x = e.clientX-this.px;
   this.drag_offset_screen_y = e.clientY-this.py;
+
+  // if we right-clicked or held control, start the selection box
+  // We use the current value of r, which should be updated whenever we move and draw the canvas.
+  if(e.ctrlKey || e.shiftKey || e.button != 0) 
+    this.client_selection_boxes[my_index] = {x0: this.mouse.x, y0: this.mouse.y,
+                                             x1: this.mouse.x, y1: this.mouse.y,
+                                             r : this.r,};
+
 }
 
 // whenever the mouse moves in the canvas
@@ -1535,8 +1604,36 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
     } // end of loop over held pieces
   } // end of "if holding pieces"
   
-  // Otherwise we're dragging the canvas; when the mouse is down, these are not null
-  else if (this.drag_offset_screen_x && this.drag_offset_screen_y ) {
+  // If we have a selection box, update that.
+  else if(this.client_selection_boxes[my_index]) {
+
+    // Trigger a redraw
+    this.trigger_redraw = true;
+
+    // Update the coordinates
+    this.client_selection_boxes[my_index].x1 = this.mouse.x;
+    this.client_selection_boxes[my_index].y1 = this.mouse.y;
+
+    // Update the selection based on these coordinates
+    // Loop over all pieces
+    for(n in this.pieces) {
+      p = this.pieces[n];
+      i = this.client_selected_pieces[my_index].indexOf(p);
+        
+      // If it's within the rectangle, select it. 
+      // TO DO: This is a lot of cosines and sines calculated!
+      if(is_within_selection_box(p.x, p.y, this.client_selection_boxes[my_index])) {
+        if(i < 0) this.client_selected_pieces[my_index].push(p);
+      }
+      // Otherwise, deselect it.
+      else if(i >= 0 && !e.ctrlKey && !e.shiftKey) {
+        this.client_selected_pieces[my_index].splice(i,1);
+      }
+    } // End of loop over all pieces
+  } // End of if we have a selection box
+
+  // Otherwise, we're dragging the canvas; when the mouse is down, these are not null
+  else if(this.drag_offset_screen_x && this.drag_offset_screen_y) {
     
     // update the pan coordinates (immediate=true)
     // Pan is set in screen coordinates, 
@@ -1544,7 +1641,7 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
     // This also triggers a redraw, as one might expect.
     this.set_pan(e.clientX-this.drag_offset_screen_x, e.clientY-this.drag_offset_screen_y, true); 
   } 
-}
+} // end of event_mousemove
 
 BOARD.prototype.event_mouseup = function(e) {
   console.log('event_mouseup', e);
@@ -1577,6 +1674,9 @@ BOARD.prototype.event_mouseup = function(e) {
   this.drag_offset_board_y = null;
   this.drag_offset_screen_x= null;
   this.drag_offset_screen_y= null;
+
+  // null out the selection box
+  this.client_selection_boxes[my_index] = null;
 
 }
 BOARD.prototype.event_dblclick = function(e) {
@@ -1613,32 +1713,32 @@ BOARD.prototype.event_mousewheel = function(e) {
   // trigger redraw to be safe
   this.trigger_redraw = true;
 
-  // if shift is held, rotate canvas
+  // if shift or ctrl is held, rotate canvas
   if (e.shiftKey || e.ctrlKey) {
-    // rotate
-    if     (e.wheelDelta > 0) this.set_rotation(this.r_target-this.r_step);
-    else if(e.wheelDelta < 0) this.set_rotation(this.r_target+this.r_step);
-  }
-  
-  // if ctrl is held, zoom canvas
-  else if (e.ctrlKey || sps.length == 0) {    
 
-    // zoom in
-    if(e.wheelDelta > 0) this.zoom_in();
+    // If we're holding pieces and shift
+    if (sps.length > 0 && e.shiftKey) {
+
+      // Loop over all pieces and rotate them
+      for(i=0; i<sps.length; i++) {
+        if      (e.wheelDelta < 0) sps[i].rotate( sps[i].r_step);
+        else if (e.wheelDelta > 0) sps[i].rotate(-sps[i].r_step);
+      }
+    } 
     
-    // zoom out
-    else if(e.wheelDelta < 0) this.zoom_out();
-  }
+    // Otherwise, rotate the board (i.e., control key or no held pieces)
+    else {
+      // rotate board
+      if     (e.wheelDelta > 0) this.set_rotation(this.r_target-this.r_step);
+      else if(e.wheelDelta < 0) this.set_rotation(this.r_target+this.r_step);
+    } // end of rotate the board.
+
+  } // End of shift or control keys
   
-  // otherwise, if pieces are selected, rotate all of them.
-  else if (sps.length > 0) {
-    
-    // Loop over all pieces and rotate them
-    for(i=0; i<sps.length; i++) {
-      if      (e.wheelDelta < 0) sps[i].rotate( sps[i].r_step);
-      else if (e.wheelDelta > 0) sps[i].rotate(-sps[i].r_step);
-    }
-    
+  // zoom canvas unless modifiers are down
+  else {    
+    if(e.wheelDelta > 0) this.zoom_in();    
+    else if(e.wheelDelta < 0) this.zoom_out();
   }
   
   // reset the timer
@@ -1647,10 +1747,14 @@ BOARD.prototype.event_mousewheel = function(e) {
 
 // whenever someone pushes down a keyboard button
 BOARD.prototype.event_keydown = function(e) {
+  e.preventDefault();
 
   // trigger redraw to be safe
   this.trigger_redraw = true;
   this.t_previous_draw = Date.now();
+
+  // Get this client index
+  var my_index = get_my_client_index();
 
   // do the default stuff, but only if the canvas has focus
   if(document.activeElement == document.getElementById('table')) {
@@ -1674,13 +1778,11 @@ BOARD.prototype.event_keydown = function(e) {
       // Pan right or rotate CW
       case 68: // D
       case 39: // RIGHT
-        if(e.ctrlKey || e.shiftKey) this.set_rotation(this.r_target+this.r_step);
+        if(e.ctrlKey) this.set_rotation(this.r_target+this.r_step);
         else {
-          // if there are selected pieces, rotate them.
-          if (sps.length > 0) {
-            for(i=0; i<sps.length; i++) {
-              sps[i].rotate(sps[i].r_step);sps[i].rotate(sps[i].r_step);
-            }
+          // if there are selected pieces and we're hodling shift, rotate them.
+          if (sps.length > 0 && e.shiftKey) {
+            for(i=0; i<sps.length; i++) sps[i].rotate(sps[i].r_step);
           }
           // otherwise pan
           else this.set_pan(this.px_target-this.pan_step, this.py_target);
@@ -1690,14 +1792,11 @@ BOARD.prototype.event_keydown = function(e) {
       // Pan left or rotate CCW
       case 65: // A
       case 37: // LEFT
-        if(e.ctrlKey || e.shiftKey) this.set_rotation(this.r_target-this.r_step);
+        if(e.ctrlKey) this.set_rotation(this.r_target-this.r_step);
         else {
-          
-          // if there are selected pieces, rotate them.
-          if (sps.length > 0) {
-            for(i=0; i<sps.length; i++) {
-              sps[i].rotate(sps[i].r_step);sps[i].rotate(-sps[i].r_step);
-            }
+          // if there are selected pieces and we're holding shift, rotate them.
+          if (sps.length > 0 && e.shiftKey) {
+            for(i=0; i<sps.length; i++) sps[i].rotate(-sps[i].r_step);
           }
           // otherwise pan
           else this.set_pan(this.px_target+this.pan_step, this.py_target);
@@ -1795,6 +1894,21 @@ BOARD.prototype.event_keydown = function(e) {
           }
         }  
       
+        break;
+    
+      case 67: // c for collect
+
+        // Collect all selected piece to your hand coordinates
+        for(i in this.client_selected_pieces[my_index]) 
+          this.client_selected_pieces[my_index][i].set_target(this.mouse.x, this.mouse.y);
+    
+        break;
+
+      case 88: // x for xpand
+
+        // TO DO: define xpand steps in x and y, optional xpanded piece rotation (relative to view), 
+        // and spread out the held pieces accordingly. Use rotate_vector for the differential vectors of each.
+        // Also an optional collect piece rotation
         break;
     }
 
@@ -2000,7 +2114,9 @@ BOARD.prototype.draw = function() {
   //           Lower-def counterparts.
   //        Ignore drawing pieces outside the view?
   if (this.needs_redraw()) {
-    
+
+    my_index = get_my_client_index();
+
     //////////////////////////////////////////////////////////////
     // First we calculate the next step in the camera position
     //////////////////////////////////////////////////////////////
@@ -2052,8 +2168,8 @@ BOARD.prototype.draw = function() {
     if ( Math.abs(this.px-pxtarget) < this.transition_snap) this.px = pxtarget;
     if ( Math.abs(this.py-pytarget) < this.transition_snap) this.py = pytarget;
     
-    
-
+    // Update the selection box r value if we have one
+    if(this.client_selection_boxes[my_index]) this.client_selection_boxes[my_index].r = this.r;
 
     //////////////////////////////////////
     // Now we actually update the canvas
@@ -2128,7 +2244,7 @@ BOARD.prototype.draw = function() {
       pieces[i].move_and_draw();
     } // end of piece draw loop
 
-    // draw selection rectangles for each client
+    // draw selection rectangles around pieces for each client
     for (i in this.client_selected_pieces) {
       
       // get the selected pieces for this team
@@ -2182,6 +2298,39 @@ BOARD.prototype.draw = function() {
       } // end of loop over selected pieces for team
     } // end of loop over team selected pieces
     
+
+    // Draw the selection boxes
+    for(c in this.client_selection_boxes) {
+
+      // If there is a box
+      box = this.client_selection_boxes[c];
+      if(box) {
+
+        // Update the corners to match the hand coordinates (smoother!)
+        // TO DO: this is one step behind the hands!
+        if(c != my_index) {
+          box.x1 = this.client_hands[c].x;
+          box.y1 = this.client_hands[c].y;
+        }
+        // calculate the corner coordinates based on the rotation angle.
+        corners = get_selection_box_corners(box);
+
+        // set the box style
+        context.lineWidth   = 0*this.selected_border_width*50.0/this.z;
+        context.strokeStyle = this.team_colors[this.client_teams[c]]+'77';
+        context.fillStyle   = this.team_colors[this.client_teams[c]]+'77';
+        
+        // Actually draw it.
+        context.beginPath();
+        context.moveTo(corners.x0, corners.y0);
+        context.lineTo(corners.x2, corners.y2);
+        context.lineTo(corners.x1, corners.y1);
+        context.lineTo(corners.x3, corners.y3);
+        context.closePath();
+        context.fill();
+      }
+    }
+
     // Draw hands for each client
     for(i in this.client_ids) {
 
@@ -2192,8 +2341,8 @@ BOARD.prototype.draw = function() {
       // and the active image index to be set. 
 
       // Set the hand images based on team index
-      this.client_hands[i].images         = this.team_hand_images[team]
-      this.client_hands[i].private_images = this.team_hand_images[team]      
+      this.client_hands[i].images             = this.team_hand_images[team]
+      this.client_hands[i].private_images     = this.team_hand_images[team]      
       if(this.client_held_pieces[i].length > 0) this.client_hands[i].active_image = 1;
       else                                      this.client_hands[i].active_image = 0;
 
@@ -2281,7 +2430,8 @@ BOARD.prototype.send_stream_update = function() {
     // emit the mouse update event, which includes the held piece ids and their target coordinates,
     // So that the hand and pieces move as a unit. 
     my_socket.emit('m', this.mouse.x, this.mouse.y, hp_ids, 
-                    this.held_piece_coordinates, this.r_target); 
+                    this.held_piece_coordinates, this.r_target, 
+                    this.client_selection_boxes[my_index]); 
   
     // store this info
     this.previous_mouse = this.mouse;
@@ -2411,7 +2561,7 @@ my_socket.on('chat', server_chat);
 server_users = function(client_ids, client_names, client_teams, client_held_piece_ids, client_selected_piece_ids) {
   
   console.log("Received users:", client_ids, client_names, client_teams, client_held_piece_ids, client_selected_piece_ids);
-  
+
   // Clear out the old values
   board.client_ids                      = [];
   board.client_names                    = [];
@@ -2420,6 +2570,7 @@ server_users = function(client_ids, client_names, client_teams, client_held_piec
   board.client_held_pieces              = [];
   board.client_selected_pieces          = [];
   board.client_previous_selected_pieces = [];
+  board.client_selection_boxes          = [];
   //board.client_previous_held_pieces = []; // Don't reset this, in case things come back the same!
 
   // Clear out and refill the html showing who is connected.
@@ -2444,6 +2595,9 @@ server_users = function(client_ids, client_names, client_teams, client_held_piec
     board.client_selected_pieces.push(sps);
     board.client_previous_selected_pieces.push([...hps]);
 
+    // TO DO: server update user info to take a "client" dictionary.
+    board.client_selection_boxes.push(null);
+
     // figure out the team name for this client
     team_name = document.getElementById("teams").options[client_teams[i]].text;
     
@@ -2463,10 +2617,10 @@ my_socket.on('users', server_users);
  *   hp_coords:  held piece coordinates [dx,dy,r] with dx and dy relative to the mouse.
  *   client_r:   hand rotation
  */
-server_mousemove = function(client_id, x, y, hp_ids, hp_coords, client_r){
+server_mousemove = function(client_id, x, y, hp_ids, hp_coords, client_r, selection_box){
   
   // server has sent a "mouse move"
-  console.log('Received m:', client_id, x, y, hp_ids, hp_coords, client_r);
+  console.log('Received m:', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
 
   // Get the client index whose mouse moved
   client_index = board.client_ids.indexOf(client_id);
@@ -2474,7 +2628,10 @@ server_mousemove = function(client_id, x, y, hp_ids, hp_coords, client_r){
   // Set the coordinates of the hand for redrawing.
   board.client_hands[client_index].set_target(x, y, -client_r, null, true);
 
-  // Reset the client held pieces
+  // update this client's selection_box
+  board.client_selection_boxes[client_index] = selection_box;
+
+  // Reset this client held pieces
   board.client_previous_held_pieces[client_index] = [];
   board.client_held_pieces         [client_index] = [];
 

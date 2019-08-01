@@ -25,9 +25,9 @@ board.game_name = "chess";
 board.set_background_image('board.png');
 
 // Add some people
-board.add_team('observer',  ['hand_white.png', 'fist_white.png'],   '#BBB');
-board.add_team('red',       ['hand_red.png',   'fist_red.png'],     '#F88');
-board.add_team('blue',      ['hand_blue.png',  'fist_blue.png'],    '#88F');
+board.add_team('observer',  ['hand_white.png', 'fist_white.png'],   '#BBBBBB');
+board.add_team('red',       ['hand_red.png',   'fist_red.png'],     '#FF8888');
+board.add_team('blue',      ['hand_blue.png',  'fist_blue.png'],    '#8888FF');
 
 // Add an 8x8 snap grid with 64px square width
 w = 64; 
