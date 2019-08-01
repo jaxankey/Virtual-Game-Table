@@ -1490,8 +1490,8 @@ BOARD.prototype.event_mousedown = function(e) {
   // store the drag offset for canvas motion
   this.drag_offset_board_x = this.mouse.x;
   this.drag_offset_board_y = this.mouse.y;
-  this.drag_offset_screen_x = e.screenX-this.px;
-  this.drag_offset_screen_y = e.screenY-this.py;
+  this.drag_offset_screen_x = e.clientX-this.px;
+  this.drag_offset_screen_y = e.clientY-this.py;
 }
 
 // whenever the mouse moves in the canvas
@@ -1500,7 +1500,7 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
   // get the new mouse coordinates
   if(e) this.mouse  = this.get_mouse_coordinates(e);
 
-  //console.log('event_mousemove', e.screenX-this.drag_offset_screen_x, e.screenY-this.drag_offset_screen_y );
+  //console.log('event_mousemove', e.clientX-this.drag_offset_screen_x, e.clientY-this.drag_offset_screen_y );
   
   // get the team index
   team     = get_team_number();
@@ -1542,7 +1542,7 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
     // Pan is set in screen coordinates, 
     // so setting pan=100 when zoomed in will move the board less than zoomed out.
     // This also triggers a redraw, as one might expect.
-    this.set_pan(e.screenX-this.drag_offset_screen_x, e.screenY-this.drag_offset_screen_y, true); 
+    this.set_pan(e.clientX-this.drag_offset_screen_x, e.clientY-this.drag_offset_screen_y, true); 
   } 
 }
 
