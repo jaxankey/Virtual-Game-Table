@@ -99,6 +99,7 @@ function get_selection_box_corners(box) {
   a  = Math.sqrt((box.y1-box.y0)*(box.y1-box.y0)+(box.x1-box.x0)*(box.x1-box.x0)) * 0.5;
  
   // Get the unrotated angle to the corner TO DO:
+  // TO DO: this is expensive!!
   t  = Math.atan((box.y1-cy)/(box.x1-cx));
   x2 = cx + a*Math.cos(t+2*box.r*Math.PI/180.0);
   y2 = cy - a*Math.sin(t+2*box.r*Math.PI/180.0);
@@ -1627,7 +1628,6 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
       if(team_zone == team || team_zone < 0 || this.team_zones[team_zone].grab_mode == 1) {
         
         // If it's within the rectangle and ok to move, select it. 
-        // TO DO: This is a lot of cosines and sines calculated!
         if(is_within_selection_box(p.x, p.y, this.client_selection_boxes[my_index]) &&
           (p.movable_by == null ||
           p.movable_by.indexOf(team)>=0)) {
