@@ -2242,61 +2242,62 @@ BOARD.prototype.draw = function() {
       // Draw the piece. This call takes care of finding the piece's next coordinates,
       // translating and rotating the context.
       pieces[i].move_and_draw();
+      
+      // If this piece is selected by someone, draw the selection box
+      // draw selection rectangles around pieces for each client
+      for (c in this.client_selected_pieces) {
+        
+        // get the selected pieces for this team
+        sps = this.client_selected_pieces[c]; 
+        j = sps.indexOf(pieces[i]);
+
+        // Loop over the selected pieces
+        if(j>=0) {
+          sp = sps[j];
+
+          // if the piece is selected, draw the rectangle
+          if (sp.active_image != null) {
+            
+            // get the width and height 
+            var w = sp.images[sp.active_image].width+4;
+            var h = sp.images[sp.active_image].height+4;
+            
+            // if we're not allowed to zoom, adjust the size
+            if(!sp.zooms_with_canvas) {
+              w = w*100.0/this.z;
+              h = h*100.0/this.z;
+            }
+            
+            // shift to piece coordinates
+            context.translate(sp.x, sp.y);
+            context.rotate(sp.r*Math.PI/180.0);
+            
+            // if we're not allowed to rotate, transform
+            if(!sp.rotates_with_canvas) context.rotate(-this.r*Math.PI/180.0);
+            
+            // draw white background of the border
+            context.lineWidth   = this.selected_border_width*100.0/this.z;
+            context.strokeStyle = "#FFFFFFAA";
+            sp.draw_selection();
+            
+            // draw the border
+            context.lineWidth   = this.selected_border_width*50.0/this.z;
+            context.strokeStyle = this.team_colors[this.client_teams[c]]+'AA';
+            sp.draw_selection();
+            
+            // if we're not allowed to rotate, transform
+            if(!sp.rotates_with_canvas) context.rotate(this.r*Math.PI/180.0);
+            
+            // untransform
+            context.rotate(-sp.r*Math.PI/180.0);
+            context.translate(-sp.x, -sp.y);
+          } // end of if piece selecte, draw rectangle
+        } // end of loop over selected pieces for team
+      } // end of loop over team selected pieces
+
     } // end of piece draw loop
 
-    // draw selection rectangles around pieces for each client
-    for (i in this.client_selected_pieces) {
-      
-      // get the selected pieces for this team
-      sps = this.client_selected_pieces[i]; 
-      
-      // Loop over the selected pieces
-      for(j=0; j<sps.length; j++) {
-        sp = sps[j];
-
-        // if the piece is selected, draw the rectangle
-        if (sp.active_image != null) {
-          
-          // get the width and height 
-          var w = sp.images[sp.active_image].width+4;
-          var h = sp.images[sp.active_image].height+4;
-          
-          // if we're not allowed to zoom, adjust the size
-          if(!sp.zooms_with_canvas) {
-            w = w*100.0/this.z;
-            h = h*100.0/this.z;
-          }
-          
-          // shift to piece coordinates
-          context.translate(sp.x, sp.y);
-          
-          // include piece's internal rotation
-          context.rotate(sp.r*Math.PI/180.0);
-          
-          // if we're not allowed to rotate, transform
-          if(!sp.rotates_with_canvas) context.rotate(-this.r*Math.PI/180.0);
-          
-          // draw white background of the border
-          context.lineWidth   = this.selected_border_width*100.0/this.z;
-          context.strokeStyle = "#FFFFFFAA";
-          sp.draw_selection();
-          
-          // draw the border
-          context.lineWidth   = this.selected_border_width*50.0/this.z;
-          context.strokeStyle = this.team_colors[this.client_teams[i]]+'AA';
-          sp.draw_selection();
-          
-          // if we're not allowed to rotate, transform
-          if(!sp.rotates_with_canvas) context.rotate(this.r*Math.PI/180.0);
-          
-          // unrotate
-          context.rotate(-sp.r*Math.PI/180.0);
-          
-          // shift back
-          context.translate(-sp.x, -sp.y);
-        } // end of if piece selecte, draw rectangle
-      } // end of loop over selected pieces for team
-    } // end of loop over team selected pieces
+    
     
 
     // Draw the selection boxes
