@@ -1987,9 +1987,26 @@ BOARD.prototype.event_keydown = function(e) {
       
       case 90: // z for zcramble
 
+        // Default: no pieces
+        sps = [];
+
+        // If we have selected pieces, use those
+        if(this.client_selected_pieces[my_index].length) sps = [...this.client_selected_pieces[my_index]];
+        
+        // Otherwise, use the piece under the mouse
+        else {
+
+          // Only do so if we're not in someone else's team zone
+          team_zone = this.in_team_zone(this.mouse.x, this.mouse.y);
+          if(team_zone < 0 || team_zone == get_team_number()) {
+            i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
+            if(i >= 0) sps = [this.pieces[i]];
+          }
+        }
+        
         // Collect all selected piece to your hand coordinates
-        for(var i in this.client_selected_pieces[my_index]) {
-          p = this.client_selected_pieces[my_index][i];
+        for(var i in sps) {
+          p = sps[i];
 
           // Set the random image
           p.active_image = Math.floor(Math.random() * p.images.length); 
@@ -1997,7 +2014,7 @@ BOARD.prototype.event_keydown = function(e) {
           // Generate a random x,y square based on the image dimensions, number of images, 
           // and randomly rotate it.
           I = p.images[p.active_image];
-          distance = 1.5*Math.sqrt(this.client_selected_pieces[my_index].length)*Math.max(I.width, I.height);
+          distance = 1.5*Math.sqrt(sps.length)*Math.max(I.width, I.height);
           d = rotate_vector((Math.random()-0.5)*distance, 
                             (Math.random()-0.5)*distance, 
                              Math.random()*2*Math.PI);
