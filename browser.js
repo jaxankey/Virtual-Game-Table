@@ -31,7 +31,7 @@ var update_interval_ms = 10000; // how often to send a full update (ms)
 var draw_interval_ms   = 10;    // how often to draw the canvas (ms)
 
 if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-  document.getElementById("everything").innerHTML = "Sorry, this requires the non-mobile Chrome web browser to run.<br><br>xoxoxo,<br>Jack";}
+  document.getElementById("everything").innerHTML = "<h2>Sorry, this requires the non-mobile Chrome web browser to run.<br><br>xoxoxo,<br>Jack</h2>";}
 
 /**
  * USEFUL FUNCTIONS
@@ -910,12 +910,13 @@ function BOARD(canvas) {
   this.transition_speed        = 0.35;     // max rate of piece motion
   this.transition_acceleration = 0.15;     // rate of acceleration
   this.transition_snap         = 0.1;      // how close to be to snap to the final result
-  this.collect_offset_x        = 3;        // how much to shift each piece when collecting
-  this.collect_offset_y        = 3;        // how much to shift each piece when collecting
+  this.collect_offset_x        = 2;        // how much to shift each piece when collecting
+  this.collect_offset_y        = 2;        // how much to shift each piece when collecting
+  this.collect_r               = 0;        // what rotation to apply to collected pieces (null works, too)
   this.expand_spacing_x        = 50;       // how wide to space things when xpanding (x key)
   this.expand_spacing_y        = 50;       // how wide to space things when xpanding (x key)
-  this.expand_number_per_row   = 20;       // how many pieces per row when xpanding 
-  this.expand_r                = 0;        // What rotation to apply to xpanded pieces (relative to view)
+  this.expand_number_per_row   = 10;       // how many pieces per row when xpanding 
+  this.expand_r                = 0;        // What rotation to apply to xpanded pieces (null works, too)
   // TO DO: collect parameters
   //        randomize parameters
 
@@ -1946,7 +1947,12 @@ BOARD.prototype.event_keydown = function(e) {
           // Put this piece on top.
           this.pop_piece(this.pieces.indexOf(p));
           this.push_piece(p);
-          p.set_target(this.mouse.x + i*d.x, this.mouse.y - i*d.y);
+
+          // Get the rotation
+          if(this.collect_r != null) r_target = this.collect_r - this.r_target;
+          else                       r_target = null;
+          console.log(r_target, this.r_target, this.collect_r);
+          p.set_target(this.mouse.x + i*d.x, this.mouse.y - i*d.y, r_target);
         }
     
         break;
@@ -1987,9 +1993,26 @@ BOARD.prototype.event_keydown = function(e) {
       
       case 90: // z for zcramble
 
+        // Default: no pieces
+        sps = [];
+
+        // If we have selected pieces, use those
+        if(this.client_selected_pieces[my_index].length) sps = [...this.client_selected_pieces[my_index]];
+        
+        // Otherwise, use the piece under the mouse
+        else {
+
+          // Only do so if we're not in someone else's team zone
+          team_zone = this.in_team_zone(this.mouse.x, this.mouse.y);
+          if(team_zone < 0 || team_zone == get_team_number()) {
+            i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
+            if(i >= 0) sps = [this.pieces[i]];
+          }
+        }
+        
         // Collect all selected piece to your hand coordinates
-        for(var i in this.client_selected_pieces[my_index]) {
-          p = this.client_selected_pieces[my_index][i];
+        for(var i in sps) {
+          p = sps[i];
 
           // Set the random image
           p.active_image = Math.floor(Math.random() * p.images.length); 
@@ -1997,7 +2020,7 @@ BOARD.prototype.event_keydown = function(e) {
           // Generate a random x,y square based on the image dimensions, number of images, 
           // and randomly rotate it.
           I = p.images[p.active_image];
-          distance = 1.5*Math.sqrt(this.client_selected_pieces[my_index].length)*Math.max(I.width, I.height);
+          distance = 1.5*Math.sqrt(sps.length)*Math.max(I.width, I.height);
           d = rotate_vector((Math.random()-0.5)*distance, 
                             (Math.random()-0.5)*distance, 
                              Math.random()*2*Math.PI);

@@ -263,8 +263,8 @@ function setup() {
 
     // get the spiral grid coordinates
     s = hex_spiral(n);
-    hex_tiles[n].set_target_grid(s.n, s.m).send_to_top();
-    hex_tiles[n].set_rotation(30);
+    hex_tiles[n].set_target_grid(s.n, s.m, 30);
+    
     // random rotation
     //hex_tiles[n].set_rotation(Math.floor(Math.random()*5)*60);
   }
@@ -280,7 +280,7 @@ function setup() {
     
     // MINICASTLE
     v = rotate_vector(0, 405*R/120*N/3, angle);
-    mini_castles[n].set_target(v.x, v.y, 30-angle).send_to_top();
+    mini_castles[n].set_target(v.x, v.y, 30-angle);
     
     // OCCUPATION MARKERS
     f  = forts[n];
