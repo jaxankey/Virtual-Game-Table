@@ -51,8 +51,8 @@ board.add_team('yellow',   ['hand_yellow.png','fist_yellow.png'], '#ffe84b');
 board.add_team('manager',  ['hand_white.png', 'fist_white.png' ], '#cccccc');
 
 // team zone and shortcut coordinates
-x1 = 220*R/120*N/3; y1 = 490*R/120*N/3; 
-x3 = x1+70;         y3 = y1+195;
+x1 = 190*R/120*N/3; y1 = 490*R/120*N/3; 
+x3 = x1+50;         y3 = y1+195;
 team_angles = [30, 90, 150, 210, 270, 330];
 board.shortcut_coordinates = [];
 for(n=0; n<6; n++) {
@@ -101,8 +101,6 @@ mini_castles = [
   board.add_piece(['mini_castle.png']),
   board.add_piece(['mini_castle.png'])];
 
-
-
 //////////////////////////
 // PIECES
 //////////////////////////
@@ -127,6 +125,7 @@ walls_defense = [];
 // add all the generic pieces
 for (n=0; n<6; n++) {
   
+  // Rectangular stuff
   board.new_piece_physical_shape = "rectangle";
   board.new_piece_owners = [n+1];
   
@@ -151,6 +150,9 @@ for (n=0; n<6; n++) {
   d.push(board.add_piece(['move_hidden.png', 'bluff.png'   ], ['private_bluff.png',    'bluff.png'   ]));
   defends[n] = d;
   
+  // Round stuff
+  board.new_piece_physical_shape = "outer_circle";
+  
   // add walls
   wa = [];
   wd = [];
@@ -161,7 +163,6 @@ for (n=0; n<6; n++) {
   walls_offense[n] = wa;
   walls_defense[n] = wd;
   
-  board.new_piece_physical_shape = "outer_circle";
   
   // add resources
   r = [];
@@ -195,8 +196,16 @@ bombs = [
 board.new_piece_rotates_with_canvas = false;
 poo  = board.add_piece(['toilet.png']);
 king = board.add_piece(['king.png']);
-  
-  
+
+board.new_piece_rotates_with_canvas = true;
+board.new_piece_physical_shape = 'rectangle';
+
+// add dice
+dice = [];
+for(n=0; n<5; n++) dice.push(board.add_piece(['6die1.png','6die2.png','6die3.png','6die4.png','6die5.png','6die6.png']));
+
+
+
 
 //////////////////////////
 // SETUP
@@ -300,9 +309,15 @@ function setup() {
     
   } // end of dealing team pieces
   
+  // special pieces
   poo .set_target(0, 470*R/120*N/3,0).send_to_top();
   king.set_target(0,-470*R/120*N/3,0).send_to_top();
-  
+
+  // put dice off to the side.
+  for(n in dice) dice[n].set_target(120*(Math.random()-0.5), 
+              470*R/120*N/3 + 200 + 120*(Math.random()-0.5), 
+                                    720*(Math.random()-0.5)).send_to_top();
+
 }
 
 // recall previous settings

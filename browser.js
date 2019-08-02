@@ -1281,11 +1281,11 @@ BOARD.prototype.add_pieces = function() {
 }
 
 BOARD.prototype.push_piece = function(piece) {
-  console.log('board.push_piece()', piece.piece_id, this.pieces.length);
+  //console.log('board.push_piece()', piece.piece_id, this.pieces.length);
   this.pieces.push(piece);
 }
 BOARD.prototype.pop_piece  = function(i) {
-  console.log('board.pop_piece()', i, this.pieces.length);
+  //console.log('board.pop_piece()', i, this.pieces.length);
   return this.pieces.splice(i,1)[0];
 }
 
@@ -1995,7 +1995,7 @@ BOARD.prototype.event_keydown = function(e) {
                              Math.random()*2*Math.PI);
           
           // Now set the target
-          p.set_target(this.mouse.x - d.x, this.mouse.y + d.y, Math.random()*360.0);
+          p.set_target(this.mouse.x - d.x, this.mouse.y + d.y, Math.random()*720.0-360.0);
         }
 
         break;

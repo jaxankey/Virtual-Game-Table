@@ -14,7 +14,7 @@
    height="1052.3622"
    id="svg2"
    version="1.1"
-   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   inkscape:version="0.92.4 (unknown)"
    viewBox="0 0 744.09448 1052.3622"
    sodipodi:docname="pieces.svg"
    inkscape:export-filename="C:\Users\jaxankey\Desktop\Dropbox\Game Table\games\strategy\images\arrow_red.png"
@@ -2305,6 +2305,48 @@
          result="composite2"
          id="feComposite4613-7-1" />
     </filter>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Blur"
+       id="filter1511">
+      <feFlood
+         flood-opacity="0.498039"
+         flood-color="rgb(0,0,0)"
+         result="flood"
+         id="feFlood1501" />
+      <feComposite
+         in="flood"
+         in2="SourceGraphic"
+         operator="in"
+         result="composite1"
+         id="feComposite1503" />
+      <feGaussianBlur
+         in="composite1"
+         stdDeviation="2.4"
+         result="blur"
+         id="feGaussianBlur1505" />
+      <feOffset
+         dx="0"
+         dy="0"
+         result="offset"
+         id="feOffset1507" />
+      <feComposite
+         in="SourceGraphic"
+         in2="offset"
+         operator="over"
+         result="fbSourceGraphic"
+         id="feComposite1509" />
+      <feColorMatrix
+         result="fbSourceGraphicAlpha"
+         in="fbSourceGraphic"
+         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
+         id="feColorMatrix1569" />
+      <feGaussianBlur
+         id="feGaussianBlur1571"
+         stdDeviation="0.2 0.2"
+         result="blur"
+         in="fbSourceGraphic" />
+    </filter>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -2314,11 +2356,11 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.8"
-     inkscape:cx="168.13614"
-     inkscape:cy="955.42771"
+     inkscape:cx="99.207569"
+     inkscape:cy="755.42771"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
-     showgrid="false"
+     showgrid="true"
      inkscape:window-width="1779"
      inkscape:window-height="1001"
      inkscape:window-x="125"
@@ -3630,5 +3672,52 @@
          id="rect4487-9-9"
          style="opacity:1;fill:none;fill-opacity:1;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
     </g>
+    <rect
+       style="fill:#ffffff;stroke:#ececec;stroke-width:2;stroke-miterlimit:4;stroke-dasharray:none;filter:url(#filter1511)"
+       id="rect1427"
+       width="60"
+       height="60"
+       x="60"
+       y="357.36218"
+       ry="10"
+       inkscape:export-filename="6die6.png"
+       inkscape:export-xdpi="66.666664"
+       inkscape:export-ydpi="66.666664" />
+    <circle
+       style="fill:#333333;stroke:#000000;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path1573"
+       cx="90"
+       cy="387.36218"
+       r="5" />
+    <circle
+       style="opacity:1;fill:#333333;stroke:#000000;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path1573-3"
+       cx="75"
+       cy="372.36218"
+       r="5" />
+    <circle
+       style="opacity:1;fill:#333333;stroke:#000000;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path1573-6"
+       cx="105"
+       cy="372.36218"
+       r="5" />
+    <circle
+       style="opacity:1;fill:#333333;stroke:#000000;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path1573-7"
+       cx="105"
+       cy="402.36218"
+       r="5" />
+    <circle
+       style="opacity:1;fill:#333333;stroke:#000000;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path1573-5"
+       cx="75"
+       cy="402.36218"
+       r="5" />
+    <circle
+       style="opacity:1;fill:#333333;stroke:#000000;stroke-width:1.5;stroke-miterlimit:4;stroke-dasharray:none"
+       id="path1573-35"
+       cx="165"
+       cy="387.36218"
+       r="5" />
   </g>
 </svg>
