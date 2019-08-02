@@ -2402,7 +2402,7 @@ BOARD.prototype.draw = function() {
             
             // draw the border
             context.lineWidth   = this.selected_border_width*50.0/this.z;
-            context.strokeStyle = this.team_colors[this.client_teams[c]]+'AA';
+            context.strokeStyle = this.team_colors[this.client_teams[c]]+'FF';
             sp.draw_selection();
             
             // if we're not allowed to rotate, transform
