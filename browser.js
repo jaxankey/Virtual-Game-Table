@@ -896,11 +896,15 @@ function BOARD(canvas) {
   console.log("Creating a new board...")
   
   //// options
-  this.hand_fade_ms            = 1000;  // how long before motionless hands disappear
-  this.transition_speed        = 0.35;  // max rate of piece motion
-  this.transition_acceleration = 0.15;  // rate of acceleration
-  this.transition_snap         = 0.1;   // how close to be to snap to the final result
-  
+  this.hand_fade_ms            = 1000;     // how long before motionless hands disappear
+  this.transition_speed        = 0.35;     // max rate of piece motion
+  this.transition_acceleration = 0.15;     // rate of acceleration
+  this.transition_snap         = 0.1;      // how close to be to snap to the final result
+  this.expand_spacing_x        = 50;       // how wide to space things when xpanding (x key)
+  this.expand_spacing_y        = 50;       // how wide to space things when xpanding (x key)
+  this.expand_number_per_row   = 20;       // how many pieces per row when xpanding 
+  this.expand_r                = 0;        // What rotation to apply to xpanded pieces (relative to view)
+
   // needed to distinguish cookies from different games
   this.game_name = 'default';
   
@@ -1918,6 +1922,31 @@ BOARD.prototype.event_keydown = function(e) {
         // TO DO: define xpand steps in x and y, optional xpanded piece rotation (relative to view), 
         // and spread out the held pieces accordingly. Use rotate_vector for the differential vectors of each.
         // Also an optional collect piece rotation
+        rows = [];
+        sps  = [...this.client_selected_pieces[my_index]];
+
+        // loop over the selected pieces, splicing rows until it's empty
+        while(sps.length > 0) {
+          rows.push(sps.splice(0,Math.max(1,this.expand_number_per_row)));
+        }
+
+        // loop over the rows, setting the coordinates
+        for(ny in rows) {
+          dy = this.expand_spacing_y*(ny-0.5*rows.length+0.5);
+          
+          // loop over each piece
+          for(nx in rows[ny]) {
+            // Get the dx and dy
+            dx = this.expand_spacing_x*(nx-0.5*rows[ny].length+0.5);
+            
+            // Rotate the dx,dy vector
+            d = rotate_vector(dx,dy,this.r_target);
+
+            // Now set the coordinates
+            rows[ny][nx].set_target(this.mouse.x+d.x,this.mouse.y+d.y,this.expand_r-this.r_target);
+          }
+        }
+
         break;
     }
 
