@@ -1929,7 +1929,7 @@ BOARD.prototype.event_keydown = function(e) {
       case 67: // c for collect
 
         // get the rotated offset step vector
-        d = rotate_vector(this.collect_offset_x, this.collect_offset_y, this.r_target);
+        d = rotate_vector(this.collect_offset_x, this.collect_offset_y, -this.r_target);
         
         // Collect all selected piece to your hand coordinates
         for(var i in this.client_selected_pieces[my_index]) {
@@ -1938,7 +1938,7 @@ BOARD.prototype.event_keydown = function(e) {
           // Put this piece on top.
           this.pop_piece(this.pieces.indexOf(p));
           this.push_piece(p);
-          p.set_target(this.mouse.x - i*d.x, this.mouse.y + i*d.y);
+          p.set_target(this.mouse.x + i*d.x, this.mouse.y - i*d.y);
         }
     
         break;
