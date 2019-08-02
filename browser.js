@@ -31,7 +31,7 @@ var update_interval_ms = 10000; // how often to send a full update (ms)
 var draw_interval_ms   = 10;    // how often to draw the canvas (ms)
 
 if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-  document.getElementById("everything").innerHTML = "Sorry, this requires the non-mobile Chrome web browser to run.<br><br>xoxoxo,<br>Jack";}
+  document.getElementById("everything").innerHTML = "<h2>Sorry, this requires the non-mobile Chrome web browser to run.<br><br>xoxoxo,<br>Jack</h2>";}
 
 /**
  * USEFUL FUNCTIONS
