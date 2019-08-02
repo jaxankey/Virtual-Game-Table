@@ -142,7 +142,7 @@ function rotate_vector(x,y,r) {
   
   // Only recompute cosine and sine if the angle is new.
   if(r != this.last_r) {
-    console.log('new', r, this.last_r);
+    
     // convert to radians & compute.
     this.last_r = r;
     rr = r*Math.PI/180.0
