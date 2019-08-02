@@ -910,12 +910,12 @@ function BOARD(canvas) {
   this.transition_speed        = 0.35;     // max rate of piece motion
   this.transition_acceleration = 0.15;     // rate of acceleration
   this.transition_snap         = 0.1;      // how close to be to snap to the final result
-  this.collect_offset_x        = 3;        // how much to shift each piece when collecting
-  this.collect_offset_y        = 3;        // how much to shift each piece when collecting
+  this.collect_offset_x        = 2;        // how much to shift each piece when collecting
+  this.collect_offset_y        = 2;        // how much to shift each piece when collecting
   this.collect_r               = 0;        // what rotation to apply to collected pieces (null works, too)
   this.expand_spacing_x        = 50;       // how wide to space things when xpanding (x key)
   this.expand_spacing_y        = 50;       // how wide to space things when xpanding (x key)
-  this.expand_number_per_row   = 20;       // how many pieces per row when xpanding 
+  this.expand_number_per_row   = 25;       // how many pieces per row when xpanding 
   this.expand_r                = 0;        // What rotation to apply to xpanded pieces (null works, too)
   // TO DO: collect parameters
   //        randomize parameters
