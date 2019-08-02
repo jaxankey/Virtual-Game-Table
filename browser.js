@@ -1060,12 +1060,13 @@ function BOARD(canvas) {
   // mouse & keyboard events
   canvas.addEventListener('mousedown',   this.event_mousedown  .bind(this), true); 
   canvas.addEventListener('mousemove',   this.event_mousemove  .bind(this), true); 
+  canvas.addEventListener('mouseover',   this.event_mouseover  .bind(this), true);
   canvas.addEventListener('mouseup',     this.event_mouseup    .bind(this), true); 
   canvas.addEventListener('dblclick',    this.event_dblclick   .bind(this), true); 
   canvas.addEventListener('mousewheel',  this.event_mousewheel .bind(this), true);
   canvas.addEventListener('contextmenu', this.event_contextmenu.bind(this), true);
-
-  $(document.body).on('keydown',     this.event_keydown    .bind(this));
+  
+  $(document.body).on('keydown', this.event_keydown.bind(this));
   
   //// TIMERS 
   
@@ -1585,9 +1586,16 @@ BOARD.prototype.event_mousedown = function(e) {
 
 }
 
+BOARD.prototype.event_mouseover = function(e) {
+  document.getElementById('table').focus();
+} 
+
+
 // whenever the mouse moves in the canvas
 BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) { 
   
+  // Make sure the board is in focus.
+
   // get the new mouse coordinates
   if(e) this.mouse  = this.get_mouse_coordinates(e);
 
@@ -1777,7 +1785,7 @@ BOARD.prototype.event_mousewheel = function(e) {
 
 // whenever someone pushes down a keyboard button
 BOARD.prototype.event_keydown = function(e) {
-  e.preventDefault();
+  //e.preventDefault();
 
   // trigger redraw to be safe
   this.trigger_redraw = true;
