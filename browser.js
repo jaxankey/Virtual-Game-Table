@@ -33,7 +33,6 @@ var draw_interval_ms   = 10;    // how often to draw the canvas (ms)
 if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
   document.getElementById("everything").innerHTML = "Sorry, this requires the non-mobile Chrome web browser to run.<br><br>xoxoxo,<br>Jack";}
 
-
 /**
  * USEFUL FUNCTIONS
  */
@@ -247,11 +246,12 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   private_image_paths = or_default(private_image_paths, image_paths);
   
   // equivalent of storing object properties (or defaults)
-  this.board               = board;                       // board instance for this piece
-  this.piece_id            = piece_id;                    // unique piece id
-  this.image_paths         = image_paths;                 // list of available images (seen by everyone)
-  this.private_image_paths = private_image_paths;         // list of available private image path strings, e.g. 'pants.png' (seen by team)
-  this.owners              = this.board.new_piece_owners; // list of who owns this piece (private images)
+  this.board                     = board;                       // board instance for this piece
+  this.piece_id                  = piece_id;                    // unique piece id
+  this.image_paths               = image_paths;                 // list of available images (seen by everyone)
+  this.private_image_paths       = private_image_paths;         // list of available private image path strings, e.g. 'pants.png' (seen by team)
+  this.private_images_everywhere = this.board.new_piece_private_images_everywhere; // Whether the private image is also visible outside the team zone.
+  this.owners                    = this.board.new_piece_owners; // list of who owns this piece (private images)
   
   // automatic defaults
   this.x_target         = this.board.new_piece_x_target;
@@ -396,9 +396,16 @@ PIECE.prototype.set_active_image = function(i) {
 }
 
 // Increment the active image
-PIECE.prototype.increment_active_image = function() {
-  this.active_image++;
-  if(this.active_image >= this.images.length) this.active_image = 0;
+PIECE.prototype.increment_active_image = function(randomize) {
+  
+  // Randomize the image
+  if(randomize) this.active_image = Math.floor(Math.random()*this.images.length);
+  
+  // Cycle the image
+  else {
+    this.active_image++;
+    if(this.active_image >= this.images.length) this.active_image = 0;
+  }
 }
 
 // set the target location and rotation all then rotated by angle
@@ -670,11 +677,14 @@ PIECE.prototype.move_and_draw = function() {
   // by default, use the public image set
   var images = this.images;
   
-  // if the team number is in this piece's owners array, use the private images
+  // if our team is in the owner list for this piece
   if(this.owners != null && 
-     this.owners.indexOf(get_team_number()) > -1) {
-	 images = this.private_images;
-	} 
+     this.owners.indexOf(get_team_number()) > -1 &&
+     // and we're supposed to see private images everywhere
+     this.private_images_everywhere) 
+
+        // use the private images for sure.
+        images = this.private_images;
   
   // otherwise, loop over the team zones to see if we should use private images.
   else {
@@ -900,14 +910,20 @@ function BOARD(canvas) {
   this.transition_speed        = 0.35;     // max rate of piece motion
   this.transition_acceleration = 0.15;     // rate of acceleration
   this.transition_snap         = 0.1;      // how close to be to snap to the final result
+  this.collect_offset_x        = 3;        // how much to shift each piece when collecting
+  this.collect_offset_y        = 3;        // how much to shift each piece when collecting
   this.expand_spacing_x        = 50;       // how wide to space things when xpanding (x key)
   this.expand_spacing_y        = 50;       // how wide to space things when xpanding (x key)
   this.expand_number_per_row   = 20;       // how many pieces per row when xpanding 
   this.expand_r                = 0;        // What rotation to apply to xpanded pieces (relative to view)
+  // TO DO: collect parameters
+  //        randomize parameters
 
   // needed to distinguish cookies from different games
   this.game_name = 'default';
   
+  // TO DO: Turn this into a piece shell with default values?
+
   // defaults for new pieces
   this.new_piece_x_target            = 0;
   this.new_piece_y_target            = 0;
@@ -919,6 +935,7 @@ function BOARD(canvas) {
   this.new_piece_snap_index          = null;
   this.new_piece_movable_by          = null;
   this.new_piece_peakable_by         = null;
+  this.new_piece_private_images_everywhere = false;
   this.new_piece_active_image        = 0;
   this.new_piece_rotates_with_canvas = false;
   this.new_piece_zooms_with_canvas   = true;
@@ -1893,7 +1910,7 @@ BOARD.prototype.event_keydown = function(e) {
         // By default we cycle the selected piece
         // Cycle the piece images
         if(sps.length>0) {
-          for(i=0; i<sps.length; i++) sps[i].increment_active_image();
+          for(i in sps) sps[i].increment_active_image(e.ctrlKey || e.shiftKey);
         }
 
         // Otherwise we use the one just under the mouse.
@@ -1903,7 +1920,7 @@ BOARD.prototype.event_keydown = function(e) {
           team_zone = this.in_team_zone(this.mouse.x, this.mouse.y);
           if(team_zone < 0 || team_zone == get_team_number()) {
             i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
-            if(i >= 0) this.pieces[i].increment_active_image();
+            if(i >= 0) this.pieces[i].increment_active_image(e.ctrlKey || e.shiftKey);
           }
         }  
       
@@ -1911,17 +1928,23 @@ BOARD.prototype.event_keydown = function(e) {
     
       case 67: // c for collect
 
+        // get the rotated offset step vector
+        d = rotate_vector(this.collect_offset_x, this.collect_offset_y, this.r_target);
+        
         // Collect all selected piece to your hand coordinates
-        for(i in this.client_selected_pieces[my_index]) 
-          this.client_selected_pieces[my_index][i].set_target(this.mouse.x, this.mouse.y);
+        for(var i in this.client_selected_pieces[my_index]) {
+          p = this.client_selected_pieces[my_index][i];
+          
+          // Put this piece on top.
+          this.pop_piece(this.pieces.indexOf(p));
+          this.push_piece(p);
+          p.set_target(this.mouse.x - i*d.x, this.mouse.y + i*d.y);
+        }
     
         break;
 
       case 88: // x for xpand
 
-        // TO DO: define xpand steps in x and y, optional xpanded piece rotation (relative to view), 
-        // and spread out the held pieces accordingly. Use rotate_vector for the differential vectors of each.
-        // Also an optional collect piece rotation
         rows = [];
         sps  = [...this.client_selected_pieces[my_index]];
 
@@ -1942,9 +1965,37 @@ BOARD.prototype.event_keydown = function(e) {
             // Rotate the dx,dy vector
             d = rotate_vector(dx,dy,this.r_target);
 
+            // Push the piece on the top of the stack
+            p = rows[ny][nx];
+            this.pop_piece(this.pieces.indexOf(p));
+            this.push_piece(p);
+
             // Now set the coordinates
-            rows[ny][nx].set_target(this.mouse.x+d.x,this.mouse.y+d.y,this.expand_r-this.r_target);
+            p.set_target(this.mouse.x+d.x,this.mouse.y+d.y,this.expand_r-this.r_target);
           }
+        }
+
+        break;
+      
+      case 90: // z for zcramble
+
+        // Collect all selected piece to your hand coordinates
+        for(var i in this.client_selected_pieces[my_index]) {
+          p = this.client_selected_pieces[my_index][i];
+
+          // Set the random image
+          p.active_image = Math.floor(Math.random() * p.images.length); 
+          
+          // Generate a random x,y square based on the image dimensions, number of images, 
+          // and randomly rotate it.
+          I = p.images[p.active_image];
+          distance = 1.5*Math.sqrt(this.client_selected_pieces[my_index].length)*Math.max(I.width, I.height);
+          d = rotate_vector((Math.random()-0.5)*distance, 
+                            (Math.random()-0.5)*distance, 
+                             Math.random()*2*Math.PI);
+          
+          // Now set the target
+          p.set_target(this.mouse.x - d.x, this.mouse.y + d.y, Math.random()*360.0);
         }
 
         break;
