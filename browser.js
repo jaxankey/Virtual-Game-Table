@@ -912,10 +912,11 @@ function BOARD(canvas) {
   this.transition_snap         = 0.1;      // how close to be to snap to the final result
   this.collect_offset_x        = 3;        // how much to shift each piece when collecting
   this.collect_offset_y        = 3;        // how much to shift each piece when collecting
+  this.collect_r               = 0;        // what rotation to apply to collected pieces (null works, too)
   this.expand_spacing_x        = 50;       // how wide to space things when xpanding (x key)
   this.expand_spacing_y        = 50;       // how wide to space things when xpanding (x key)
   this.expand_number_per_row   = 20;       // how many pieces per row when xpanding 
-  this.expand_r                = 0;        // What rotation to apply to xpanded pieces (relative to view)
+  this.expand_r                = 0;        // What rotation to apply to xpanded pieces (null works, too)
   // TO DO: collect parameters
   //        randomize parameters
 
@@ -1946,7 +1947,12 @@ BOARD.prototype.event_keydown = function(e) {
           // Put this piece on top.
           this.pop_piece(this.pieces.indexOf(p));
           this.push_piece(p);
-          p.set_target(this.mouse.x + i*d.x, this.mouse.y - i*d.y);
+
+          // Get the rotation
+          if(this.collect_r != null) r_target = this.collect_r - this.r_target;
+          else                       r_target = null;
+          console.log(r_target, this.r_target, this.collect_r);
+          p.set_target(this.mouse.x + i*d.x, this.mouse.y - i*d.y, r_target);
         }
     
         break;
