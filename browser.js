@@ -96,10 +96,10 @@ function get_selection_box_corners(box) {
   cy = (box.y0 + box.y1)*0.5;
   
   // Get the half diagonal
+  // TO DO: this is all very expensive for every piece!
   a  = Math.sqrt((box.y1-box.y0)*(box.y1-box.y0)+(box.x1-box.x0)*(box.x1-box.x0)) * 0.5;
  
   // Get the unrotated angle to the corner TO DO:
-  // TO DO: this is expensive!!
   t  = Math.atan((box.y1-cy)/(box.x1-cx));
   x2 = cx + a*Math.cos(t+2*box.r*Math.PI/180.0);
   y2 = cy - a*Math.sin(t+2*box.r*Math.PI/180.0);
