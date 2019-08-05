@@ -86,11 +86,17 @@ app.get('/jquery.js', function(request, response) {
   response.sendFile(process.cwd() + '/external_scripts/jquery-1.11.1.js'); } );
   
 app.get('/images/:image', function(request, response) {
-  response.sendFile(game_directory + '/images/'+request.params.image) });
+  response.sendFile(game_directory + '/images/'+request.params.image); });
 
+app.get('/images/:directory/:image', function(request, response) {
+  response.sendFile(game_directory + '/images/' + request.params.directory + '/' +request.params.image); });
 
-
-
+app.get('/images/:dir1/:dir2/:image', function(request, response) {
+  response.sendFile(game_directory + '/images/' + request.params.dir1 + '/' + request.params.dir2 + '/' +request.params.image); });
+  
+  app.get('/rules.pdf', function(request, response) {
+    response.sendFile(game_directory + '/rules.pdf'); });
+  
 // Last known board configuration
 
 // Piece positions. These lists should match in length!

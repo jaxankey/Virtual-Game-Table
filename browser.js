@@ -16,13 +16,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// TO DO: select_and_hold_piece(), select_and_hold_pieces(), ctrl-a, ctrl-space 
-// TO DO: context menu disable
 // TO DO: massive overhaul & code simplification:
 //         * all piece lists become piece_id lists; function get_piece_by_id() 
 //         * combine all groups of parallel arrays into a single dictionary
 //         * use these dictionaries to send info to the server and back
-
+// TO DO: var before every local variable! Avoids overwriting by other functions in loops!
+// TO DO: local sqrt(), sin(), cos(), tan() that remembers angles and previous results.
+// TO DO: key to zoom in on mouse while held
 
 //// OPTIONS
 
@@ -70,12 +70,12 @@ function set_team_number(n) {return document.getElementById("teams").selectedInd
  * @param {box} box 
  */
 function is_within_selection_box(x,y,box) {
-  cs = get_selection_box_corners(box);
+  var cs = get_selection_box_corners(box);
 
   // rotate all 5 points of interest so the comparison is easy.
-  rp = rotate_vector(x,y,-box.r);
-  r0 = rotate_vector(cs.x0, cs.y0, -box.r);
-  r1 = rotate_vector(cs.x1, cs.y1, -box.r);
+  var rp = rotate_vector(x,y,-box.r);
+  var r0 = rotate_vector(cs.x0, cs.y0, -box.r);
+  var r1 = rotate_vector(cs.x1, cs.y1, -box.r);
   
   // now compare
   return rp.x >= Math.min(r0.x,r1.x) && rp.x <= Math.max(r0.x,r1.x) &&
@@ -91,19 +91,19 @@ function is_within_selection_box(x,y,box) {
 function get_selection_box_corners(box) {
   
   // Get the center
-  cx = (box.x0 + box.x1)*0.5;
-  cy = (box.y0 + box.y1)*0.5;
+  var cx = (box.x0 + box.x1)*0.5;
+  var cy = (box.y0 + box.y1)*0.5;
   
   // Get the half diagonal
   // TO DO: this is all very expensive for every piece!
-  a  = Math.sqrt((box.y1-box.y0)*(box.y1-box.y0)+(box.x1-box.x0)*(box.x1-box.x0)) * 0.5;
+  var a = Math.sqrt((box.y1-box.y0)*(box.y1-box.y0)+(box.x1-box.x0)*(box.x1-box.x0)) * 0.5;
  
   // Get the unrotated angle to the corner TO DO:
-  t  = Math.atan((box.y1-cy)/(box.x1-cx));
-  x2 = cx + a*Math.cos(t+2*box.r*Math.PI/180.0);
-  y2 = cy - a*Math.sin(t+2*box.r*Math.PI/180.0);
-  x3 = 2*cx - x2;
-  y3 = 2*cy - y2;
+  var t  = Math.atan((box.y1-cy)/(box.x1-cx));
+  var x2 = cx + a*Math.cos(t+2*box.r*Math.PI/180.0);
+  var y2 = cy - a*Math.sin(t+2*box.r*Math.PI/180.0);
+  var x3 = 2*cx - x2;
+  var y3 = 2*cy - y2;
 
   return {x0:box.x0, y0:box.y0,
           x1:box.x1, y1:box.y1,
@@ -176,6 +176,35 @@ function shuffle_array(array) {
   return array;
 }
 
+/**
+ * Shuffles the selected pieces.
+ * 
+ * @param {int} active_image (optional) active image index
+ * @param {float} r_piece (optional) otation of the piece
+ * @param {float} r_stack (optional) rotation of the stack
+ * @param {float} offset_x (optional) override the offset_x
+ * @param {float} offset_y (optional) override the offset_y
+ */
+function shuffle_selected_pieces(active_image, r_piece, r_stack, offset_x, offset_y) {
+  board.shuffle_pieces(board.client_selected_pieces[get_my_client_index()],
+                       active_image, r_piece, r_stack, offset_x, offset_y)
+}
+
+/**
+ * Shuffles the supplied pieces.
+ * 
+ * @param {array} pieces list of pieces to shuffle
+ * @param {int} active_image (optional) active image index
+ * @param {float} r_piece (optional) otation of the piece
+ * @param {float} r_stack (optional) rotation of the stack
+ * @param {float} offset_x (optional) override the offset_x
+ * @param {float} offset_y (optional) override the offset_y
+ */
+function shuffle_pieces(pieces, active_image, r_piece, r_stack, offset_x, offset_y) {
+  board.shuffle_pieces(pieces, active_image, r_piece, r_stack, offset_x, offset_y)
+}
+
+
 // turns integer into location (in units of basis vectors), hexagonally spiralling out from the center
 function hex_spiral(n) {
 
@@ -183,13 +212,13 @@ function hex_spiral(n) {
   if(n==0) return {n:0, m:0}
 
   // get the index of the shell
-  s = Math.ceil(Math.sqrt(0.25+n/3.0)-0.5);
+  var s = Math.ceil(Math.sqrt(0.25+n/3.0)-0.5);
 
   // zero index of this shell
-  n0 = 6*s*(s-1)/2+1;
+  var n0 = 6*s*(s-1)/2+1;
 
   // depending which of the 6 legs we're on get the vectors
-  leg = Math.floor((n-n0)/s);
+  var leg = Math.floor((n-n0)/s);
   switch(leg) {
     case 0: x0 =  s; y0 =  0; dx0 = -1;  dy0 =  1; break;
     case 1: x0 =  0; y0 =  s; dx0 = -1;  dy0 =  0; break;
@@ -200,10 +229,31 @@ function hex_spiral(n) {
   }
 
   // which element of the 6 legs we're on
-  i = n-n0-leg*s;
+  var i = n-n0-leg*s;
 
   // assemble the grid snap
   return {n:x0+i*dx0, m:y0+i*dy0};
+}
+
+/**
+ * Returns a list of n unique random lattice index pairs [nx,ny] from a hex spiral of length N.
+ * Hint: N had better be larger than n.
+ * @param {int} spaces 
+ * @param {int} items 
+ */
+function hex_spiral_random(n,N) {
+
+  // Generate the list of hex spiral inputs
+  possible_ns = [...Array(N).keys()];
+
+  // Loop over the number of desired pairs
+  pairs = [];
+  for(var i=0; i<n; i++) {
+    j = possible_ns.splice(Math.floor(Math.random()*possible_ns.length),1);
+    console.log(i,possible_ns, j);
+    pairs.push(hex_spiral(j));
+  }
+  return pairs;
 }
 
 // returns a random integer over the specified bounds
@@ -500,7 +550,7 @@ PIECE.prototype.ellipse  = function(x, y) {
   var r_deg = this.r;
   
   // if this piece does not rotate with the board
-  if (!this.rotates_with_board) r_deg = r_deg-this.board.r;
+  if (this.rotates_with_board) r_deg = r_deg-this.board.r;
   
   // get rotated coordinates
   d = rotate_vector(x-this.x, y-this.y, r_deg);
@@ -518,7 +568,7 @@ PIECE.prototype.outer_circle  = function(x, y) {
   var r_deg = this.r;
   
   // if this piece does not rotate with the board
-  if (!this.rotates_with_board) r_deg = r_deg-this.board.r;
+  if (this.rotates_with_board) r_deg = r_deg-this.board.r;
   
   // get rotated coordinates
   d = rotate_vector(x-this.x, y-this.y, r_deg);
@@ -536,7 +586,7 @@ PIECE.prototype.inner_circle  = function(x, y) {
   var r_deg = this.r;
   
   // if this piece does not rotate with the board
-  if (!this.rotates_with_board) r_deg = r_deg-this.board.r;
+  if (this.rotates_with_board) r_deg = r_deg-this.board.r;
   
   // get rotated coordinates
   d = rotate_vector(x-this.x, y-this.y, r_deg);
@@ -548,13 +598,13 @@ PIECE.prototype.inner_circle  = function(x, y) {
   // circular bounds
   return d.x*d.x + d.y*d.y <= w*w;
 }
-PIECE.prototype.rectangle  = function(x,y) {
+PIECE.prototype.rectangle = function(x,y) {
   
   // if this piece has an angle, do the transform
   var r_deg = this.r;
   
   // if this piece does not rotate with the board
-  if (!this.rotates_with_board) r_deg = r_deg-this.board.r;
+  if (this.rotates_with_board) r_deg = r_deg-this.board.r;
   
   // get rotated coordinates
   d = rotate_vector(x-this.x, y-this.y, r_deg);
@@ -906,6 +956,10 @@ function BOARD(canvas) {
   console.log("Creating a new board...")
   
   //// options
+  this.shuffle_distance        = 100;       // How far to randomize when shuffling.
+  this.alt_z                   = 150;      // zoom level of the ALT key.
+  this.r_home                  = 0;        // where the escape key will take you
+  this.pan_step                = 100;
   this.hand_fade_ms            = 1000;     // how long before motionless hands disappear
   this.transition_speed        = 0.35;     // max rate of piece motion
   this.transition_acceleration = 0.15;     // rate of acceleration
@@ -989,7 +1043,11 @@ function BOARD(canvas) {
   this.drag_offset_screen_x= null;
   this.drag_offset_screen_y= null;
 
-  
+  this._prealt_px = 0;
+  this._prealt_py = 0;
+  this._prealt_r  = 0;
+  this._prealt_z  = 0;
+
   // the box coordinates for all the unused game pieces
   this.box_x = 0;
   this.box_y = -3000;
@@ -1033,8 +1091,6 @@ function BOARD(canvas) {
   this.z_target     = 100;
   this.r_step       = 45;
   this.r_target     = 0;  // rotation setpoint
-  this.r_home       = 0;  // where the escape key will take you
-  this.pan_step       = 100;
   this.previous_r   = this.r_target;
   
   // current values
@@ -1067,7 +1123,11 @@ function BOARD(canvas) {
   canvas.addEventListener('mousewheel',  this.event_mousewheel .bind(this), true);
   canvas.addEventListener('contextmenu', this.event_contextmenu.bind(this), true);
   
-  $(document.body).on('keydown', this.event_keydown.bind(this));
+  canvas.addEventListener('keydown', this.event_keydown.bind(this), true);
+  canvas.addEventListener('keyup',   this.event_keyup  .bind(this), true);
+  
+  //$(document.body).on('keydown', this.event_keydown.bind(this));
+  //$(document.body).on('keyup',   this.event_keyup  .bind(this));
   
   //// TIMERS 
   
@@ -1199,7 +1259,7 @@ BOARD.prototype.add_team = function(name, hand_image_paths, color) {
   team = this.team_hand_images.length-1;
 
   // loop over the hand image paths and load up the images
-  for (i in hand_image_paths) {
+  for (var i in hand_image_paths) {
 
     // Get the path
     path = hand_image_paths[i];
@@ -1226,6 +1286,82 @@ BOARD.prototype.add_team = function(name, hand_image_paths, color) {
 
     } // end of if path in images else.
   } // end of loop over hand image paths
+}
+
+/**
+ * Shuffles the supplied pieces, creating a stack at the current location of the bottom card
+ *  @param {list} pieces // list of piece objects
+ * 
+ *  // Optional
+ *  @param {int}   active_image // Set the active image of all pieces
+ *  @param {float} r_piece      // Set the rotation (degrees) of the piece (relative to board)
+ *  @param {float} r_stack      // Set the rotation (degrees) of the stack
+ *  @param {float} offset_x     // Override the default offset x.
+ *  @param {float} offset_y     // Override the default offset y.
+ */
+BOARD.prototype.shuffle_pieces = function(pieces, active_image, r_piece, r_stack, offset_x, offset_y) {
+
+  // Find the index of the bottom card
+
+  // Start with the largest possible index
+  var ib = 0;
+
+  // Find lower indices for each supplied piece
+  for(var i in pieces) {
+    var x = this.pieces.indexOf(pieces[i]);
+    if(x > ib) 
+    {
+      ib = x;
+    }
+  }
+  bottom_piece = this.pieces[ib];
+
+  r_piece = or_default(r_piece, bottom_piece.r_target);
+
+  // Now collect them to those coordinates with a shuffle
+  this.collect_pieces(pieces, bottom_piece.x_target, bottom_piece.y_target, 
+                      true, active_image, -r_piece, r_stack, offset_x, offset_y);
+}
+
+
+BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y) {
+
+  console.log('r', r_piece, r_stack);
+
+  var offset_x = or_default(offset_x, this.collect_offset_x);
+  var offset_y = or_default(offset_y, this.collect_offset_y);
+  var r_piece  = or_default(r_piece,  this.collect_r);
+  var r_stack   = or_default(r_stack,   0);
+  
+  // shuffle if we're supposed to
+  if(shuffle) {
+    // Animation: randomize rotation (doesn't affect r_target)
+    for(var n in pieces) {
+      pieces[n].r = Math.random()*360-180;
+      pieces[n].x = pieces[n].x + (Math.random()-0.5)*this.shuffle_distance;
+      pieces[n].y = pieces[n].y + (Math.random()-0.5)*this.shuffle_distance;
+      pieces[n].t_previous_move = Date.now();
+    }
+    this.trigger_redraw = true;
+    shuffle_array(pieces);
+  }
+  // get the rotated offset step vector
+  var d = rotate_vector(offset_x, offset_y, -r_stack);
+  
+  // Collect all selected piece to your hand coordinates
+  for(var i in pieces) {
+    p = pieces[i];
+    
+    // Put this piece on top.
+    this.pop_piece(this.pieces.indexOf(p));
+    this.push_piece(p);
+
+    var N = pieces.length-1;
+    p.set_target(x + (i-N)*d.x, y - (i-N)*d.y, -r_piece);
+
+    // If we have an active image specified, set it
+    if(active_image != null) p.set_active_image(active_image);
+  }
 }
 
 BOARD.prototype.new_client_hand = function() {
@@ -1438,7 +1574,7 @@ BOARD.prototype.in_team_zone = function(x,y) {
 BOARD.prototype.find_selected_piece_client_index = function(piece) {
 
   // Loop over the selected piece arrays for each team
-  for(i in this.client_selected_pieces) {
+  for(var i in this.client_selected_pieces) {
     if(this.client_selected_pieces[i].includes(piece)) return i;
   }
 
@@ -1458,7 +1594,7 @@ BOARD.prototype.deselect_piece = function(piece) {
   if(client_index < 0) return;
 
   // Find the piece in the client's array
-  i = this.client_selected_pieces[client_index].indexOf(piece);
+  var i = this.client_selected_pieces[client_index].indexOf(piece);
   if(i < 0) {
     console.log('OOPS! deselect_piece failed!');
     return;
@@ -1529,19 +1665,31 @@ BOARD.prototype.event_mousedown = function(e) {
               
               // Clear out and select this piece only.
               this.client_selected_pieces[my_index] = [p]; 
-
-              // pull the piece out and put it on top, but only with a left click
-              if(e.button==0) {
-                p = this.pop_piece(i);
-                this.push_piece(p);
-              }
             }
+          }
+
+          // Pop it out of the main stack
+          var p = this.pop_piece(i);
+          
+          // Pop it out of the selected pieces
+          var n = this.client_selected_pieces[my_index].indexOf(p);
+          if(n >= 0) this.client_selected_pieces[my_index].splice(n,1);
+
+          // Left click means put it on top
+          if(e.button==0) {
+            this.push_piece(p);
+            this.client_selected_pieces[my_index].push(p);
+
+          // With a right click, send to bottom.
+          } else if(e.button==2) {
+            this.pieces.unshift(p);
+            this.client_selected_pieces[my_index].unshift(p);
           }
 
           // Rebuild the held pieces list.
           this.client_held_pieces[my_index] = [];
           this.held_piece_coordinates       = [];
-          for(m in this.client_selected_pieces[my_index]) {
+          for(var m in this.client_selected_pieces[my_index]) {
             
             // Shortcut to the piece
             hp = this.client_selected_pieces[my_index][m];
@@ -1648,8 +1796,8 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
     // Update the selection based on these coordinates
     // Loop over all pieces
     for(n in this.pieces) {
-      p = this.pieces[n];
-      i = this.client_selected_pieces[my_index].indexOf(p);
+      var p = this.pieces[n];
+      var i = this.client_selected_pieces[my_index].indexOf(p);
 
       // If this piece is not in someone else's team zone
       team_zone = this.in_team_zone(p.x, p.y)
@@ -1728,7 +1876,8 @@ BOARD.prototype.event_dblclick = function(e) {
   this.trigger_redraw = true;
 
   // If we're not in someone else's team zone, look for a piece at the mouse location
-  p = null; i = -1; // defaults = no piece worth double clicking
+  var p = null; 
+  var i = -1; // defaults = no piece worth double clicking
   team_zone = this.in_team_zone(this.mouse.x, this.mouse.y);
   if(get_team_number() == team_zone || team_zone < 0)
   {
@@ -1759,7 +1908,7 @@ BOARD.prototype.event_mousewheel = function(e) {
     if (sps.length > 0 && e.shiftKey) {
 
       // Loop over all pieces and rotate them
-      for(i=0; i<sps.length; i++) {
+      for(var i=0; i<sps.length; i++) {
         if      (e.wheelDelta < 0) sps[i].rotate( sps[i].r_step);
         else if (e.wheelDelta > 0) sps[i].rotate(-sps[i].r_step);
       }
@@ -1782,6 +1931,43 @@ BOARD.prototype.event_mousewheel = function(e) {
   
   // reset the timer
   this.t_previous_draw = Date.now();
+}
+
+// When someone lifts a key
+BOARD.prototype.event_keyup  = function(e) {
+  // trigger redraw to be safe
+  this.trigger_redraw = true;
+  this.t_previous_draw = Date.now();
+
+  // Get this client index
+  var my_index = get_my_client_index();
+
+  // do the default stuff, but only if the canvas has focus
+  if(document.activeElement == document.getElementById('table')) {
+    
+    // find our selected piece
+    sps = this.client_selected_pieces[get_my_client_index()]; 
+          
+    console.log('event_keydown',e.keyCode);
+    switch (e.keyCode) {
+      case 192: // tilde for unzooming.
+      
+      if(sps.length) {
+        this.set_zoom(this._prealt_z, true);
+        this.set_pan(this._prealt_px, this._prealt_py, true);
+        this.set_rotation(this._prealt_r, true);
+      } else {
+        this.set_zoom(this._prealt_z);
+        this.set_pan(this._prealt_px, this._prealt_py);
+        this.set_rotation(this._prealt_r);
+      }
+      this._tilde_down = false;
+      break;
+    }
+
+    // at this point, we call the user function
+    event_keyup(e,p);
+  } // end of canvas has focus
 }
 
 // whenever someone pushes down a keyboard button
@@ -1821,7 +2007,7 @@ BOARD.prototype.event_keydown = function(e) {
         else {
           // if there are selected pieces and we're hodling shift, rotate them.
           if (sps.length > 0 && e.shiftKey) {
-            for(i=0; i<sps.length; i++) sps[i].rotate(sps[i].r_step);
+            for(var i=0; i<sps.length; i++) sps[i].rotate(sps[i].r_step);
           }
           // otherwise pan
           else this.set_pan(this.px_target-this.pan_step, this.py_target);
@@ -1835,7 +2021,7 @@ BOARD.prototype.event_keydown = function(e) {
         else {
           // if there are selected pieces and we're holding shift, rotate them.
           if (sps.length > 0 && e.shiftKey) {
-            for(i=0; i<sps.length; i++) sps[i].rotate(-sps[i].r_step);
+            for(var i=0; i<sps.length; i++) sps[i].rotate(-sps[i].r_step);
           }
           // otherwise pan
           else this.set_pan(this.px_target+this.pan_step, this.py_target);
@@ -1877,7 +2063,6 @@ BOARD.prototype.event_keydown = function(e) {
         break;
       
       case 48:  // 0
-      case 192: // tilde
       case 27:  // ESCAPE
         // return home
         this.set_pan(0,0);
@@ -1895,7 +2080,7 @@ BOARD.prototype.event_keydown = function(e) {
       case 57: // 9
 
         // Get the index
-        i = e.keyCode - 49
+        var i = e.keyCode - 49
 
         // Save the current view
         if(e.ctrlKey || e.shiftKey) {
@@ -1919,7 +2104,7 @@ BOARD.prototype.event_keydown = function(e) {
         // By default we cycle the selected piece
         // Cycle the piece images
         if(sps.length>0) {
-          for(i in sps) sps[i].increment_active_image(e.ctrlKey || e.shiftKey);
+          for(var i in sps) sps[i].increment_active_image(e.ctrlKey || e.shiftKey);
         }
 
         // Otherwise we use the one just under the mouse.
@@ -1928,7 +2113,7 @@ BOARD.prototype.event_keydown = function(e) {
           // Only do so if we're not in someone else's team zone
           team_zone = this.in_team_zone(this.mouse.x, this.mouse.y);
           if(team_zone < 0 || team_zone == get_team_number()) {
-            i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
+            var i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
             if(i >= 0) this.pieces[i].increment_active_image(e.ctrlKey || e.shiftKey);
           }
         }  
@@ -1936,28 +2121,20 @@ BOARD.prototype.event_keydown = function(e) {
         break;
     
       case 67: // c for collect
-
-        // get the rotated offset step vector
-        d = rotate_vector(this.collect_offset_x, this.collect_offset_y, -this.r_target);
-        
-        // Collect all selected piece to your hand coordinates
-        for(var i in this.client_selected_pieces[my_index]) {
-          p = this.client_selected_pieces[my_index][i];
-          
-          // Put this piece on top.
-          this.pop_piece(this.pieces.indexOf(p));
-          this.push_piece(p);
-
-          // Get the rotation
-          if(this.collect_r != null) r_target = this.collect_r - this.r_target;
-          else                       r_target = null;
-          console.log(r_target, this.r_target, this.collect_r);
-          p.set_target(this.mouse.x + i*d.x, this.mouse.y - i*d.y, r_target);
-        }
+        // pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y
+        this.collect_pieces(this.client_selected_pieces[my_index], 
+          this.mouse.x, this.mouse.y, 
+          e.shiftKey, null,             // shuffle, active image 
+          this.r_target, 0,             // r_piece, r_stack
+          this.collect_offset_x, this.collect_offset_y);
     
         break;
 
-      case 88: // x for xpand
+      case 86: // v for shuffle in place
+        this.shuffle_pieces(this.client_selected_pieces[my_index]);
+        break;
+
+      case 88: // x for xpose
 
         rows = [];
         sps  = [...this.client_selected_pieces[my_index]];
@@ -1984,6 +2161,11 @@ BOARD.prototype.event_keydown = function(e) {
             this.pop_piece(this.pieces.indexOf(p));
             this.push_piece(p);
 
+            // Push to the top of selected pieces
+            var n = sps.indexOf(p);
+            if(n>=0) sps.splice(n,1);
+            sps.push(p);
+
             // Now set the coordinates
             p.set_target(this.mouse.x+d.x,this.mouse.y+d.y,this.expand_r-this.r_target);
           }
@@ -2005,7 +2187,7 @@ BOARD.prototype.event_keydown = function(e) {
           // Only do so if we're not in someone else's team zone
           team_zone = this.in_team_zone(this.mouse.x, this.mouse.y);
           if(team_zone < 0 || team_zone == get_team_number()) {
-            i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
+            var i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
             if(i >= 0) sps = [this.pieces[i]];
           }
         }
@@ -2030,6 +2212,45 @@ BOARD.prototype.event_keydown = function(e) {
         }
 
         break;
+
+      case 192: // tilde zoom
+        if(this._tilde_down) break;
+        this._tilde_down = true;
+
+        // Remember the previous
+        this._prealt_r  = this.r_target;
+        this._prealt_px = this.px_target;
+        this._prealt_py = this.py_target;
+        this._prealt_z  = this.z_target;
+
+        
+        // If we have selected a piece, zoom in on that
+        if(sps.length) {
+          this.set_zoom(this.alt_z, true);
+
+          var N = sps.length-1;
+
+          // Rotate the view to match the piece
+          this.set_rotation(-sps[0].r_target, true);
+          
+          // Get the pan vector
+          var pan = rotate_vector(-sps[N].x_target*(this.z_target*0.01), 
+                                  -sps[N].y_target*(this.z_target*0.01),
+                                  -board.r_target);
+          this.set_pan(pan.x, pan.y, true);
+        }
+        // otherwise, use the mouse.
+        else {
+          this.set_zoom(this.alt_z);
+
+          // Get the pan vector
+          var pan = rotate_vector(-this.mouse.x*this.z_target*0.01,
+                                  -this.mouse.y*this.z_target*0.01,
+                                  -board.r_target);
+          this.set_pan(pan.x, pan.y);
+        }
+
+        break;
     }
 
     // at this point, we call the user function
@@ -2040,6 +2261,10 @@ BOARD.prototype.event_keydown = function(e) {
 // User functions
 function event_keydown(event_data, piece, piece_index) {
   console.log("event_keydown(event_data,piece,piece_index): Default behavior is to do nothing. Feel free to overwrite this for your game!" );
+}
+
+function event_keyup(event_data, piece, piece_index) {
+  console.log("event_keyup(event_data,piece,piece_index): Default behavior is to do nothing. Feel free to overwrite this for your game!" );
 }
 
 // called when someone double clicks. Feel free to overwrite this!
@@ -2073,7 +2298,7 @@ BOARD.prototype.set_zoom = function(z, immediate) {
   this.z_target = z;
     
   // if it's immediate, set the current value too
-  if(immediate) this.z = z_target;
+  if(immediate) this.z = this.z_target;
   
   // trigger a redraw
   this.trigger_redraw  = true;
@@ -2211,12 +2436,12 @@ BOARD.prototype.needs_redraw = function() {
       this.py != this.py_target) return true;
 
   // see if any of the hands need a redraw
-  for (i in this.client_hands) {
+  for (var i in this.client_hands) {
     if (this.client_hands[i].needs_redraw()) return true;
   }
 
   // see if any of the pieces need a redraw
-  for (i=0; i<this.pieces.length; i++) {
+  for (var i=0; i<this.pieces.length; i++) {
     if (this.pieces[i].needs_redraw()) return true
   }
   
@@ -2343,7 +2568,7 @@ BOARD.prototype.draw = function() {
     
     
     // draw all pieces
-    for (i in pieces) {
+    for (var i in pieces) {
 
       // We can skip the drawing of elements that have moved off the screen:
       //max_radius = 1.5*(pieces[i].w - pieces[i].h)
@@ -2453,7 +2678,7 @@ BOARD.prototype.draw = function() {
     }
 
     // Draw hands for each client
-    for(i in this.client_ids) {
+    for(var i in this.client_ids) {
 
       // Get the hand and team index
       team = this.client_teams[i];
@@ -2494,6 +2719,9 @@ BOARD.prototype.draw = function() {
  */
 BOARD.prototype.send_stream_update = function() {
  
+  // Trigger a redraw to handle things like slow loading of images
+  this.trigger_redraw = true;
+
   // Get client index and team
   my_index = get_my_client_index();
   
@@ -2501,7 +2729,7 @@ BOARD.prototype.send_stream_update = function() {
   // Get the selected pieces
   sps = this.client_selected_pieces[my_index];
   sp_ids = [];
-  for(i in sps) sp_ids.push(sps[i].piece_id);
+  for(var i in sps) sp_ids.push(sps[i].piece_id);
   
   // If the arrays are different
   if(!array_compare(sps, this.client_previous_selected_pieces[my_index])) { 
@@ -2520,7 +2748,7 @@ BOARD.prototype.send_stream_update = function() {
   // Get a list of the held pieces and their ids
   hps = this.client_held_pieces[my_index];
   hp_ids = [];
-  for(i in hps) hp_ids.push(hps[i].piece_id);
+  for(var i in hps) hp_ids.push(hps[i].piece_id);
  
   // If the arrays are different
   if(!array_compare(hps, this.client_previous_held_pieces[my_index])) {
@@ -2699,7 +2927,7 @@ server_users = function(client_ids, client_names, client_teams, client_held_piec
   html_clients.empty();
   
   // Loop over the supplied clients
-  for (i in client_ids) {
+  for (var i in client_ids) {
     console.log(i, client_ids[i], client_names[i], client_teams[i], client_held_piece_ids[i], client_selected_piece_ids[i]);
 
     // Rebuild all the arrays
@@ -2792,17 +3020,17 @@ server_selectionchange = function(piece_ids, client_id){
 
   // For each of the sps, make sure they're popped from the other
   // client's selected pieces
-  for(i in sps) {
+  for(var i in sps) {
     sp = sps[i];
-    for(c in board.client_selected_pieces) {
+    for(var c in board.client_selected_pieces) {
       if(c != client_index)
       {
         // If this client's selected pieces contains sp, pop it.
-        j        = board.client_selected_pieces[c].indexOf(sp);        
+        var j = board.client_selected_pieces[c].indexOf(sp);        
         if(j >= 0) board.client_selected_pieces[c].splice(j,1);
 
         // Do the same for held pieces, just in case
-        j        = board.client_held_pieces[c].indexOf(sp);
+        var j = board.client_held_pieces[c].indexOf(sp);
         if(j >= 0) board.client_held_pieces[c].splice(j,1);
       }
     }
