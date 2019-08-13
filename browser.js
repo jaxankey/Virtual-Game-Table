@@ -1406,7 +1406,7 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
     for(var n in pieces)
       pieces[n].set_target(pieces[n].x + (Math.random()-0.5)*this.shuffle_distance,
                            pieces[n].y + (Math.random()-0.5)*this.shuffle_distance,
-                           Math.random()*360-180, null, null, true);
+                           null, null, null, true);
     
     // Trigger an update
     this.send_stream_update();
@@ -1842,11 +1842,15 @@ BOARD.prototype.event_mousedown = function(e) {
           else if(send_to > 0) {
             this.pop_piece(piece_index);
             this.insert_piece(p, this.pieces.length);
+            this.client_selected_pieces[my_index].splice(client_piece_index,1);
+            this.client_selected_pieces[my_index].push(p);
           }
 
           else if(send_to < 0) {
             this.pop_piece(piece_index);
             this.insert_piece(p, 0);
+            this.client_selected_pieces[my_index].splice(client_piece_index,1);
+            this.client_selected_pieces[my_index].splice(0,0,p);
           }
 
           // Rebuild the held pieces list, because we haven't lifted the mouse yet
@@ -2068,8 +2072,12 @@ BOARD.prototype.event_dblclick = function(e) {
 }
 BOARD.prototype.event_mousewheel = function(e) {
   console.log('event_mousewheel', e.wheelDelta);
+  
   // prevents default
   e.preventDefault();
+
+  // Caps lock state
+  var caps = e.getModifierState("CapsLock");
 
   // Limit the number of wheel events per second
   if(!this._last_wheel_t) this._last_wheel_t = Date.now();
@@ -2099,15 +2107,15 @@ BOARD.prototype.event_mousewheel = function(e) {
     // Otherwise, rotate the board (i.e., control key or no held pieces)
     else {
       // rotate board
-      if     (e.wheelDelta > 0) this.set_rotation(this.r_target-this.r_step);
-      else if(e.wheelDelta < 0) this.set_rotation(this.r_target+this.r_step);
+      if     (e.wheelDelta > 0) this.set_rotation(this.r_target-this.r_step, caps);
+      else if(e.wheelDelta < 0) this.set_rotation(this.r_target+this.r_step, caps);
     } // end of rotate the board.
 
   } // End of shift or control keys
   
   // zoom canvas unless modifiers are down
   else {    
-    if(e.wheelDelta > 0) this.zoom_in();    
+    if(e.wheelDelta > 0)      this.zoom_in();    
     else if(e.wheelDelta < 0) this.zoom_out();
   }
   
@@ -2121,8 +2129,8 @@ BOARD.prototype.event_keyup  = function(e) {
   this.trigger_redraw = true;
   this.t_previous_draw = Date.now();
 
-  // Get this client index
-  var my_index = get_my_client_index();
+  // Caps lock for immediate zoom/pan/rotate
+  var caps = e.getModifierState("CapsLock");
 
   // do the default stuff, but only if the canvas has focus
   if(document.activeElement == document.getElementById('table')) {
@@ -2136,9 +2144,9 @@ BOARD.prototype.event_keyup  = function(e) {
       case 86:  // v for unzooming
 
       // If we're rotating, make it immediate for vomiting reasons.
-      this.set_zoom(this._prealt_z,                  this.r_target != this._prealt_r);
-      this.set_pan(this._prealt_px, this._prealt_py, this.r_target != this._prealt_r);
-      this.set_rotation(this._prealt_r,              this.r_target != this._prealt_r);
+      this.set_zoom(this._prealt_z,                  caps);
+      this.set_pan(this._prealt_px, this._prealt_py, caps);
+      this.set_rotation(this._prealt_r,              caps);
     
       this._tilde_down = false;
       break;
@@ -2160,6 +2168,9 @@ BOARD.prototype.event_keydown = function(e) {
   // Get this client index
   var my_index = get_my_client_index();
 
+  // Caps lock for immediate zoom/pan/rotate
+  var caps = e.getModifierState("CapsLock");
+
   // do the default stuff, but only if the canvas has focus
   if(document.activeElement == document.getElementById('table')) {
     
@@ -2174,7 +2185,7 @@ BOARD.prototype.event_keydown = function(e) {
         if(e.shiftKey && sps.length) {
           for(var i=0; i<sps.length; i++) sps[i].rotate(sps[i].r_step);
         }
-        else this.set_rotation(this.r_target+this.r_step);
+        else this.set_rotation(this.r_target+this.r_step, caps);
         break;
       
       // Rotate CCW
@@ -2182,20 +2193,20 @@ BOARD.prototype.event_keydown = function(e) {
       if(e.shiftKey && sps.length) {
         for(var i=0; i<sps.length; i++) sps[i].rotate(-sps[i].r_step);
       }
-      else this.set_rotation(this.r_target-this.r_step);
+      else this.set_rotation(this.r_target-this.r_step, caps);
         break;
       
       // Pan right or rotate CW
       case 68: // D
       case 39: // RIGHT
-        if(e.shiftKey && sps.length == 0) this.set_rotation(this.r_target+this.r_step);
+        if(e.shiftKey && sps.length == 0) this.set_rotation(this.r_target+this.r_step, caps);
         else {
           // if there are selected pieces and we're hodling shift, rotate them.
           if (sps.length > 0 && e.shiftKey) {
             for(var i=0; i<sps.length; i++) sps[i].rotate(sps[i].r_step);
           }
           // otherwise pan
-          else this.set_pan(this.px_target-this.pan_step, this.py_target);
+          else this.set_pan(this.px_target-this.pan_step, this.py_target, caps);
         }
         break;
       
@@ -2203,14 +2214,14 @@ BOARD.prototype.event_keydown = function(e) {
       case 65: // A
       case 37: // LEFT
         if(e.shiftKey && sps.length == 0)
-          this.set_rotation(this.r_target-this.r_step);
+          this.set_rotation(this.r_target-this.r_step, caps);
         else {
           // if there are selected pieces and we're holding shift, rotate their locations.
           if (sps.length > 0 && e.shiftKey) {
             for(var i=0; i<sps.length; i++) sps[i].rotate(-sps[i].r_step);
           }
           // otherwise pan
-          else this.set_pan(this.px_target+this.pan_step, this.py_target);
+          else this.set_pan(this.px_target+this.pan_step, this.py_target, caps);
         }
         break;
       
@@ -2218,24 +2229,24 @@ BOARD.prototype.event_keydown = function(e) {
       case 70:  // F
       case 189: // MINUS
         // zoom out
-        this.zoom_out();
+        this.zoom_out(caps);
         break;
       
       // Zoom in
       case 82:  // R
       case 187: // PLUS
         // zoom in
-        this.zoom_in();
+        this.zoom_in(caps);
         break;
       
       // Pan up or zoom in
       case 87: // W
       case 38: // UP
         // zoom
-        if (e.shiftKey) this.zoom_in();
+        if (e.shiftKey) this.zoom_in(caps);
         
         // pan
-        else this.set_pan(this.px_target, this.py_target+this.pan_step);
+        else this.set_pan(this.px_target, this.py_target+this.pan_step, caps);
         break;
       
       // Pan down or zoom out
@@ -2245,14 +2256,14 @@ BOARD.prototype.event_keydown = function(e) {
         if(e.shiftKey) this.zoom_out();
         
         // pan
-        else this.set_pan(this.px_target, this.py_target-this.pan_step);
+        else this.set_pan(this.px_target, this.py_target-this.pan_step, caps);
         break;
       
       case 48:  // 0
       case 27:  // ESCAPE
         // return home
-        this.set_pan(0,0);
-        this.set_rotation(this.r_home);
+        this.set_pan(0,0, caps);
+        this.set_rotation(this.r_home, caps);
         break;
       
       case 49: // 1
@@ -2286,9 +2297,9 @@ BOARD.prototype.event_keydown = function(e) {
 
           console.log('shortcut', i, x, y, z, r);
           if(!isNaN(x) && !isNaN(x) && !isNaN(x) && !isNaN(x)) {
-            this.set_pan(x*ratio,y*ratio);
-            this.set_zoom(z);
-            this.set_rotation(r);
+            this.set_pan(x*ratio,y*ratio, caps);
+            this.set_zoom(z, caps);
+            this.set_rotation(r, caps);
           }
         }
         break;
@@ -2432,7 +2443,7 @@ BOARD.prototype.event_keydown = function(e) {
 
       case 192: // tilde zoom
       case 86:  // v key
-
+        
         if(this._tilde_down) break;
         this._tilde_down = true;
 
@@ -2460,13 +2471,13 @@ BOARD.prototype.event_keydown = function(e) {
 
         // otherwise, use the mouse.
         else {
-          this.set_zoom(this.alt_z);
+          this.set_zoom(this.alt_z, caps);
 
           // Get the pan vector
           var pan = rotate_vector(-this.mouse.x*this.z_target*0.01,
                                   -this.mouse.y*this.z_target*0.01,
                                   -board.r_target);
-          this.set_pan(pan.x, pan.y);
+          this.set_pan(pan.x, pan.y, caps);
         }
         break;
     }
@@ -2547,35 +2558,39 @@ BOARD.prototype.set_rotation = function(r_deg, immediate) {
 }
 
 // zoom in
-BOARD.prototype.zoom_in = function() {
+BOARD.prototype.zoom_in = function(immediate) {
   
+  var immediate = or_default(immediate, false);
+
   // increment
   z0 = this.z_target;
   z1 = this.z_target*this.z_step;
   if(z1 > this.z_max) z1=this.z_max;
 
   // set the zoom
-  this.set_zoom(z1);
+  this.set_zoom(z1, immediate);
   
   // get the ratio and adjust the pan as well
   ratio = z1/z0;
-  this.set_pan(this.px_target*ratio, this.py_target*ratio);
+  this.set_pan(this.px_target*ratio, this.py_target*ratio, immediate);
 }
 
 // zoom out
-BOARD.prototype.zoom_out = function() {
+BOARD.prototype.zoom_out = function(immediate) {
   
+  var immediate = or_default(immediate, false);
+
   // decrement
   z0 = this.z_target;
   z1 = this.z_target/this.z_step;
   if(z1 < this.z_min) z1=this.z_min;
 
   // set the zoom
-  this.set_zoom(z1);
+  this.set_zoom(z1, immediate);
   
   // get the ratio and adjust the pan as well
   ratio = z1/z0;
-  this.set_pan(this.px_target*ratio, this.py_target*ratio);
+  this.set_pan(this.px_target*ratio, this.py_target*ratio, immediate);
 }
 
 // set the orientation of the board

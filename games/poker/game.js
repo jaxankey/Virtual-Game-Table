@@ -146,8 +146,8 @@ function collect_all_cards() {
   }
 
   // Get the target for the deck
-  if([0,9].includes(team)) d = rotate_vector(0,0);
-  else                     d = rotate_vector(R1*0.3, R1*0.8, 45*(team-1));
+  if(team == 0 || team == 9) d = rotate_vector(0, 0, 0);
+  else                       d = rotate_vector(R1*0.3, R1*0.8, 45*(team-1));
   
   // collect the cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
   board.collect_pieces(sps, d.x, d.y, true, 0, board.r_target, board.r_target, 0.1, 0.1);
