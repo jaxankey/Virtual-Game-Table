@@ -33,8 +33,8 @@ board.r_step   = 45;
 board.pan_step = 250;
 
 // Collection and expansion settings
-board.collect_offset_x = 2;
-board.collect_offset_y = 2;
+board.collect_offset_x = 0.1;
+board.collect_offset_y = 0.1;
 board.collect_r_piece  = null; // Rotates the piece to the current view
 board.collect_r_stack  = null; // Rotates the stack offsets to the current view
 board.expand_spacing_x = 35;

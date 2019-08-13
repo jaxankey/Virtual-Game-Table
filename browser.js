@@ -26,92 +26,11 @@
 // TO DO: local sqrt(), sin(), cos(), tan() that remembers angles and previous results.
 // TO DO: dice rolling on sparse hex grid
 // TO DO: middle mouse click = temporary zoom
+// TO DO: thicker selection lines
 
-/**
- * go(): load_cookies
-browser.js:2498 Setting zoom to 40
-browser.js:1231 go(): _ready_for_packets=true
-browser.js:1235 go(): emit("?")
-browser.js:3330 Received id: 69
-browser.js:3342 Received update: 715 pieces
-browser.js:3131 Received chat: <b>Server:</b> Welcome!
-browser.js:3213 Received m: 66 790.3497902713941 1317.9055384544952 [] [] 0 null
-browser.js:3219 Uncaught TypeError: Cannot read property 'set_target' of undefined
-    at Socket.server_mousemove (browser.js:3219)
-    at Socket.Emitter.emit (socket.io.js:1)
-    at Socket.onevent (socket.io.js:1)
-    at Socket.onpacket (socket.io.js:1)
-    at Manager.<anonymous> (socket.io.js:1)
-    at Manager.Emitter.emit (socket.io.js:1)
-    at Manager.ondecoded (socket.io.js:1)
-    at Decoder.<anonymous> (socket.io.js:1)
-    at Decoder.Emitter.emit (socket.io.js:1)
-    at Decoder.add (socket.io.js:3)
-server_mousemove @ browser.js:3219
-Emitter.emit @ socket.io.js:1
-Socket.onevent @ socket.io.js:1
-Socket.onpacket @ socket.io.js:1
-(anonymous) @ socket.io.js:1
-Emitter.emit @ socket.io.js:1
-Manager.ondecoded @ socket.io.js:1
-(anonymous) @ socket.io.js:1
-Emitter.emit @ socket.io.js:1
-Decoder.add @ socket.io.js:3
-Manager.ondata @ socket.io.js:1
-(anonymous) @ socket.io.js:1
-Emitter.emit @ socket.io.js:1
-Socket.onPacket @ socket.io.js:1
-(anonymous) @ socket.io.js:1
-Emitter.emit @ socket.io.js:1
-Transport.onPacket @ socket.io.js:1
-callback @ socket.io.js:2
-(anonymous) @ socket.io.js:2
-exports.decodePayloadAsBinary @ socket.io.js:2
-exports.decodePayload @ socket.io.js:2
-Polling.onData @ socket.io.js:2
-(anonymous) @ socket.io.js:2
-Emitter.emit @ socket.io.js:1
-Request.onData @ socket.io.js:2
-Request.onLoad @ socket.io.js:2
-xhr.onreadystatechange @ socket.io.js:2
-XMLHttpRequest.send (async)
-(anonymous) @ VM218:1
-Request.create @ socket.io.js:2
-Request @ socket.io.js:2
-XHR.request @ socket.io.js:2
-XHR.doPoll @ socket.io.js:2
-Polling.poll @ socket.io.js:2
-Polling.onData @ socket.io.js:2
-(anonymous) @ socket.io.js:2
-Emitter.emit @ socket.io.js:1
-Request.onData @ socket.io.js:2
-Request.onLoad @ socket.io.js:2
-xhr.onreadystatechange @ socket.io.js:2
-XMLHttpRequest.send (async)
-(anonymous) @ VM218:1
-Request.create @ socket.io.js:2
-Request @ socket.io.js:2
-XHR.request @ socket.io.js:2
-XHR.doPoll @ socket.io.js:2
-Polling.poll @ socket.io.js:2
-Polling.doOpen @ socket.io.js:2
-Transport.open @ socket.io.js:1
-Socket.open @ socket.io.js:1
-Socket @ socket.io.js:1
-Socket @ socket.io.js:1
-Manager.open.Manager.connect @ socket.io.js:1
-Manager @ socket.io.js:1
-Manager @ socket.io.js:1
-lookup @ socket.io.js:1
-(anonymous) @ browser.js:3101
-browser.js:1999 event_mouseup MouseEvent {isTrusted: true, screenX: 655, screenY: 178, clientX: 819, clientY: 93, …}
-46browser.js:137 Uncaught TypeError: Cannot read property 'length' of undefined
-    at array_compare (browser.js:137)
-    at BOARD.send_stream_update (browser.js:2974)
- */
 //// OPTIONS
 
-var stream_interval_ms = 200; //150;   // how often to send a stream update (ms)
+var stream_interval_ms = 200;   //150;   // how often to send a stream update (ms)
 var update_interval_ms = 10000; // how often to send a full update (ms)
 var draw_interval_ms   = 10;    // how often to draw the canvas (ms)
 
@@ -403,13 +322,14 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   private_image_paths = or_default(private_image_paths, image_paths);
   
   // equivalent of storing object properties (or defaults)
-  this.board                     = board;                       // board instance for this piece
-  this.piece_id                  = piece_id;                    // unique piece id
-  this.image_paths               = image_paths;                 // list of available images (seen by everyone)
-  this.private_image_paths       = private_image_paths;         // list of available private image path strings, e.g. 'pants.png' (seen by team)
+  this.board                     = board;                        // board instance for this piece
+  this.piece_id                  = piece_id;                     // unique piece id
+  this.image_paths               = image_paths;                  // list of available images (seen by everyone)
+  this.private_image_paths       = private_image_paths;          // list of available private image path strings, e.g. 'pants.png' (seen by team)
   this.private_images_everywhere = this.board.new_piece_private_images_everywhere; // Whether the private image is also visible outside the team zone.
-  this.owners                    = this.board.new_piece_owners; // list of who owns this piece (private images)
-  
+  this.owners                    = this.board.new_piece_owners;  // list of who owns this piece (private images)
+  this.is_tray                   = this.board.new_piece_is_tray; // whether selecting this piece selects those within its bounds and above it.
+
   // Index in the main piece stack (determines drawing order)
   this.previous_n = null;
 
@@ -717,6 +637,7 @@ PIECE.prototype.contains = function(x, y) {
   if(this.images[this.active_image]) return this.physical_shape(x,y);
   else return false
 }
+
 PIECE.prototype.on_image_load   = function(e) {
     
     return;
@@ -1115,7 +1036,8 @@ function BOARD(canvas) {
   this.new_piece_box_x               = 0;
   this.new_piece_box_y               = 0;
   this.new_piece_owners              = null;
-  
+  this.new_piece_is_tray             = false;
+
   // master list of all image names and objects, used to prevent double-loading
   this.images = {};
   
@@ -1763,7 +1685,76 @@ BOARD.prototype.find_selected_piece_client_index = function(piece) {
 }
 
 /**
- * Deselects the specified piece
+ * Selects the piece for ourselves. If piece.is_tray, selects all pieces on it as well.
+ * @param{PIECE}   piece
+ * @param{send_to} where to send it. -1 = bottom, 0 = nowhere, 1 = top.
+ */
+BOARD.prototype.select_piece = function(piece, send_to, top, bottom) {
+
+  // TO DO: tray doesn't quite work when pieces near the top.
+
+  // Where to send this piece
+  var send_to   = or_default(send_to, 0);
+  var top = or_default(top, this.pieces.length);
+  var bottom    = or_default(bottom,    this.bottom_index); 
+  
+  console.log('select_piece', send_to, top);
+
+  // Get my index
+  var my_index = get_my_client_index();
+
+  // Get my selected pieces
+  var sps = this.client_selected_pieces[my_index];
+
+  // Don't mess with it if someone else is already holding it (not just selected, but held!)
+  var holder = this.find_holder(piece);
+  if(holder >= 0 && holder != my_index) return;
+
+  // If someone else had this selected, remove their selection
+  var client2 = this.find_selected_piece_client_index(piece);  
+  if(client2 >= 0 && client2 != my_index) this.deselect_piece(piece);
+
+  // Only add it if we haven't already selected it.
+  var m = sps.indexOf(piece);
+  if(m < 0) {
+
+    // Add this piece
+    sps.push(piece);
+    
+    // Record the initial index of the piece
+    var i0 = this.pieces.lastIndexOf(piece)
+
+    // If we're supposed to, send it to the top or bottom
+    if(send_to > 0) {
+      this.pop_piece(i0);
+      this.insert_piece(piece, this.pieces.length);
+      top--; // Don't want to keep adding this piece to the selection!
+    }
+    else if(send_to < 0) {
+      this.pop_piece(i0);
+      this.insert_piece(piece, bottom); // function handles the bottom index.
+      bottom++;
+    }
+    
+    // If it's a tray, also select all the pieces that are on it.
+    if(piece.is_tray) {
+      // Loop over all pieces above this one, recursively selecting if on top of this piece
+      for(var n=i0; n<top; n++) {
+        p = this.pieces[n];
+        if(piece.contains(p.x, p.y)) {
+          this.select_piece(p, send_to, top, bottom); // don't sort till the end
+          if(send_to > 0) {
+            n--;
+            top--;
+           } // sending to top means we need to repeat an index
+        }
+      }
+    } 
+  } // End of "wasn't already selected"
+}
+
+/**
+ * Deselects the specified piece from anyone holding it.
  */
 BOARD.prototype.deselect_piece = function(piece) {
   
@@ -1775,13 +1766,12 @@ BOARD.prototype.deselect_piece = function(piece) {
 
   // Find the piece in the client's array
   var i = this.client_selected_pieces[client_index].indexOf(piece);
-  if(i < 0) {
-    console.log('OOPS! deselect_piece failed!');
-    return;
-  }
+  if(i < 0) console.log('OOPS! deselect_piece failed!');
 
-  // Pop the piece out 
-  this.client_selected_pieces[client_index].splice(i,1); // Jack
+  else {
+    // Pop the piece out of our selection.
+    this.client_selected_pieces[client_index].splice(i,1); 
+  }
 }
 
 // whenever someone clicks the mouse
@@ -1819,61 +1809,47 @@ BOARD.prototype.event_mousedown = function(e) {
       if (p.contains(this.mouse.x, this.mouse.y) && 
          (p.movable_by == null ||
           p.movable_by.indexOf(team)>=0)) {
-        
-        // Find out if anyone's holding it
-        var holder = this.find_holder(p);
-        
-        // Only mess with it if someone else is NOT holding it.
-        if(holder < 0 || holder == my_index) {
-        
-          // Check and see if someone else has this piece selected.
-          var client2 = this.find_selected_piece_client_index(p);
+             
+          // Find out where to send it
+          if      (e.button == 0) send_to = 1;
+          else if (e.button == 2) send_to = -1;
+          else                    send_to = 0; 
           
-          // If someone else had this selected, remove their selection
-          if(client2 >= 0 && client2 != my_index) this.deselect_piece(p);
-          
-          // Find the selected piece index
-          var m = this.client_selected_pieces[my_index].indexOf(p);
-          
-          // shift-click adds / removes a piece, normal click selects a piece alone
+          // get the piece index
+          var client_piece_index = this.client_selected_pieces[my_index].indexOf(p);
+          var piece_index        = this.pieces.indexOf(p);
+
+          // If we're holding shift, toggle the selection.
           if(e.shiftKey) {
             
             // If it's not selected, select it
-            if(m < 0) this.client_selected_pieces[my_index].push(p);
+            if(client_piece_index < 0) this.select_piece(p, 0);
 
             // Otherwise, deselect it and don't bother with the popping / holding stuff.
             else {
-              this.client_selected_pieces[my_index].splice(m,1);
+              this.deselect_piece(p);
               return;
             }
-          
-          // Othwerwise we treat it like a new selection
-          } else {
+          } 
 
-            // Clear out and select the piece only if it's not already selected.
-            if(m < 0) this.client_selected_pieces[my_index] = [p]; 
-          }
-          
-          // Pop it out of the main stack, updating the indices of the rest so they're not
-          // resent to the server.
-          var p = this.pop_piece(i);
-          
-          // Pop it out of the selected pieces
-          var n = this.client_selected_pieces[my_index].indexOf(p);
-          if(n >= 0) this.client_selected_pieces[my_index].splice(n,1);
-
-          // Left click means put it on top
-          if(e.button==0) {
-            this.insert_piece(p,this.pieces.length); // triggers a resend
-            this.client_selected_pieces[my_index].push(p); // order will match piece order
-
-          // With a right click, send to bottom.
-          } else if(e.button==2) {
-            this.insert_piece(p,0); // triggers a resend
-            this.client_selected_pieces[my_index].unshift(p); // order will match piece order
+          // Otherwise, if we don't have it already, treat it like a new selection
+          else if(client_piece_index < 0) {
+            this.client_selected_pieces[my_index].length = 0;
+            this.select_piece(p, send_to);
           }
 
-          // Rebuild the held pieces list.
+          // Otherwise, we do have it and this is a normal shiftless click. Pop to top or bottom.
+          else if(send_to > 0) {
+            this.pop_piece(piece_index);
+            this.insert_piece(p, this.pieces.length);
+          }
+
+          else if(send_to < 0) {
+            this.pop_piece(piece_index);
+            this.insert_piece(p, 0);
+          }
+
+          // Rebuild the held pieces list, because we haven't lifted the mouse yet
           this.client_held_pieces[my_index] = [];
           this.held_piece_coordinates       = [];
           for(var m in this.client_selected_pieces[my_index]) {
@@ -1893,7 +1869,6 @@ BOARD.prototype.event_mousedown = function(e) {
                              this.client_selected_pieces[my_index].length, 'selected');
           
           return;
-        } // end of "no one is holding it"
       } // end of mouse click near movable piece
     } // end of loop over all pieces
   } // end of "our team zone or no team zone"
@@ -1919,7 +1894,6 @@ BOARD.prototype.event_mousedown = function(e) {
     this.client_selection_boxes[my_index] = {x0: this.mouse.x, y0: this.mouse.y,
                                              x1: this.mouse.x, y1: this.mouse.y,
                                              r : this.r,};
-
 }
 
 BOARD.prototype.event_mouseover = function(e) {
@@ -2981,7 +2955,13 @@ BOARD.prototype.send_stream_update = function() {
 
   // Get client index and team
   my_index = get_my_client_index();
-  
+
+  // Allows one to temporarily highlight some pieces (countdown)
+  if(this.clear_selected_after > 0) {
+    this.clear_selected_after--;
+    if(this.clear_selected_after == 0) this.client_selected_pieces[my_index].length = 0;
+  }
+
   // We should only check / send if our own team's piece selection has changed  
   // Get the selected pieces
   sps = this.client_selected_pieces[my_index];

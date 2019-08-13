@@ -21,11 +21,11 @@
  */
 
 //////////////////////////
-// Card Table
+// Card Table With Chips
 //////////////////////////
 
 // short name needed for differentiating the games in the cookies
-board.game_name = 'cards';
+board.game_name = 'poker';
 
 // set the allowed rotations and initial zoom (out)
 board.z_target = 80;
@@ -33,7 +33,7 @@ board.r_step   = 45;
 board.pan_step = 250;
 
 // Collection and expansion settings
-board.collect_offset_x = 2;
+board.collect_offset_x = 2; // Sets the chip spacing when collecting (too larget for cards, but oh well)
 board.collect_offset_y = 2;
 board.collect_r_piece  = null; // Rotates the piece to the current view
 board.collect_r_stack  = null; // Rotates the stack offsets to the current view

@@ -28,6 +28,9 @@ board.set_background_image('board.png');
 board.z_target = 50;
 board.r_step   = 45;
 
+board.collect_r_piece = 0;    // All pieces collect with the same rotation
+board.collect_r_stack = null; // Stacks are relative to the view
+
 // Add some people
 board.add_team('observer',  ['hand_blue.png',  'fist_blue.png'],   '#7777FF');
 board.add_team('black',     ['hand_gray.png',  'fist_gray.png'],   '#444444');
