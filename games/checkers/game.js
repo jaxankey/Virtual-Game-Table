@@ -62,4 +62,4 @@ function setup() {
 }
 
 // Restore user settings (if any)
-board.load_cookies();
+board.go();

@@ -34,6 +34,9 @@ board.r_step     = 60;
 board.r_home     = 30; // Where the "escape" key will take you
 board.r_target   = 30;
 
+board.collect_r_piece = null;     // what rotation to apply to collected pieces (null means view rotation)
+board.collect_r_stack = null;     // what rotation to apply to collected pieces (null means view rotation)
+  
 
 
 //////////////////////////
@@ -100,6 +103,9 @@ mini_castles = [
   board.add_piece(['mini_castle.png']),
   board.add_piece(['mini_castle.png']),
   board.add_piece(['mini_castle.png'])];
+
+// Set the bottom index so pieces aren't sent below the tiles!
+board.bottom_index = board.pieces.length;
 
 //////////////////////////
 // PIECES
@@ -227,7 +233,7 @@ function collect_pieces(n) {
   for (m=0; m<r.length; m++) {
     v = rotate_vector(R*1.25  + Math.random()*80-40, 
                       y1+100 + Math.random()*80-40, angle);
-    r[m].set_target(v.x, v.y, -angle).send_to_top();
+    r[m].set_target(v.x, v.y, -angle);
   }
   
   // ACTIONS
@@ -239,14 +245,14 @@ function collect_pieces(n) {
   // Distribute the top row
   for (m=0; m<a.length; m++) {
     v = rotate_vector((m-3)*42, y1+80, angle);
-    a[m].set_target(v.x, v.y, -angle, null, true).send_to_top();
+    a[m].set_target(v.x, v.y, -angle, null, true);
     a[m].active_image = 0;
   }
 
   // Distribute teh bottom row
   for (m=0; m<d.length; m++) {
     v = rotate_vector((m-3)*42, y1+120, angle);
-    d[m].set_target(v.x, v.y, -angle, null, true).send_to_top();
+    d[m].set_target(v.x, v.y, -angle, null, true);
     d[m].active_image = 0;
   }
 }
@@ -287,38 +293,38 @@ function setup() {
     v = rotate_vector(0, 350*R/120*N/3, angle);
     for (m=0; m<f.length; m++) {
       v = rotate_vector(-R*1.15, y1+60-0.5*m, angle);
-      f[m].set_target(v.x, v.y, -angle).send_to_top();
+      f[m].set_target(v.x, v.y, -angle);
     }
     
     // BOMB CARS
     v = rotate_vector(-R*1.15, y1+140, angle);
-    bombs[n].set_target(v.x, v.y, 0).send_to_top();
+    bombs[n].set_target(v.x, v.y, 0);
     
     // CORNER TOWERS
     wa = walls_offense[n];
     for (m=0; m<wa.length; m++) {
       v = rotate_vector((m-3)*42, y1+40, angle);
-      wa[m].set_target(v.x, v.y, -angle).send_to_top();
+      wa[m].set_target(v.x, v.y, -angle);
     }
     wd = walls_defense[n];
     for (m=0; m<wd.length; m++) {
       v = rotate_vector((m-3)*42, y1+160, angle);
-      wd[m].set_target(v.x, v.y, -angle).send_to_top();
+      wd[m].set_target(v.x, v.y, -angle);
     }
 
     
   } // end of dealing team pieces
   
   // special pieces
-  poo .set_target(0, 470*R/120*N/3,0).send_to_top();
-  king.set_target(0,-470*R/120*N/3,0).send_to_top();
+  poo .set_target(0, 470*R/120*N/3,0);
+  king.set_target(0,-470*R/120*N/3,0);
 
   // put dice off to the side.
   for(n in dice) dice[n].set_target(120*(Math.random()-0.5), 
               470*R/120*N/3 + 200 + 120*(Math.random()-0.5), 
-                                    720*(Math.random()-0.5)).send_to_top();
+                                    720*(Math.random()-0.5));
 
 }
 
 // recall previous settings
-board.load_cookies();
+board.go();

@@ -94,17 +94,42 @@ app.get('/images/:directory/:image', function(request, response) {
 app.get('/images/:dir1/:dir2/:image', function(request, response) {
   response.sendFile(game_directory + '/images/' + request.params.dir1 + '/' + request.params.dir2 + '/' +request.params.image); });
   
-  app.get('/rules.pdf', function(request, response) {
-    response.sendFile(game_directory + '/rules.pdf'); });
+app.get('/rules.pdf', function(request, response) {
+  response.sendFile(game_directory + '/rules.pdf'); });
   
 // Last known board configuration
 
-// Piece positions. These lists should match in length!
-last_piece_ids            = []; // List of last known piece id numbers 
-last_xs                   = []; // list of last known piece x-coordinates
-last_ys                   = []; // list of last known piece y-coordinates
-last_rs                   = []; // list of last known piece rotations
-last_active_image_indices = []; // list of last known active image indices
+// Piece information
+pieces = [];
+/** each piece contains 
+ * id   piece id
+ * x    x position
+ * y    y position
+ * r    rotation
+ * i    active image index
+ * n    position in main stack
+*/
+
+//team_zones = null;
+/** each team zone contains
+ * draw_mode
+ * grab_mode
+ * r
+ * team_index
+ * x1,x2,x3,x4,y1,y2,y3,y4
+ */
+
+
+/**
+ * Find and return the index of the supplied piece id.
+ * @param {int} id 
+ */
+function find_piece(id) {
+  for(var n in pieces) {
+    if(pieces[n].id == id) return n;
+  }
+  return -1;
+}
 
 // Client information. These lists should match in length!
 // We break these into lists so the data is easy to send.
@@ -138,7 +163,7 @@ client_drag_offsets       = []; // list of [dx,dy] offset coordinates for each h
  *    r     : rotation of board (hand)  
  * 
  * Coordinates of multiple pieces
- *  'u' (piece_ids, xs, ys, rs, active_image_indices, clear)  
+ *  'u' (incoming_pieces, clear)  
  * 
  * Piece selected 
  *  's' (piece_ids, team_number)
@@ -165,15 +190,43 @@ io.on('connection', function(socket) {
   // Tell this user their id.
   socket.emit('id', last_client_id);
 
-  // send last full update
-  if(last_piece_ids.length) {
-    log('sending last known config:', last_piece_ids.length, "pieces")
-    socket.emit('u', last_piece_ids, last_xs, last_ys, last_rs, last_active_image_indices)
-  }
+  // send last full update -- now handled by client query.
+  //log('sending last known config:', pieces.length, "pieces");
+  //socket.emit('u', pieces);
   
   // Welcome them to the server.
   socket.emit('chat', '<b>Server:</b> Welcome!');
   
+  // Received a "ready to go" query
+  socket.on('?', function() {
+    // get the client id
+    var client_index = client_sockets.indexOf(socket);
+    var client_id    = client_ids[client_index];
+
+    // Log it
+    log('Received "?" from client', client_id, client_index);
+    
+    // Send the last known config
+    log('Sending last known config:', pieces.length, "pieces");
+    socket.emit('u', pieces);
+
+    // Send the selected pieces of all the other clients
+    for(var n in client_selected_piece_ids) 
+      if(n != client_index) socket.emit('s', client_selected_piece_ids[n], client_ids[n]);
+
+    // Send the team zones
+    /*socket.emit('tz', team_zones);*/
+  });
+
+  /* socket.on('tz', function(incoming_team_zones) {
+    
+    log('tz:', incoming_team_zones);
+    team_zones = [...incoming_team_zones];
+
+    // send messages to everyone but this socket
+    socket.broadcast.emit('tz', team_zones);
+  });*/
+
   // Received a name or team change triggers a full user information dump, including held pieces.
   socket.on('user', function(name, team) {
     
@@ -244,65 +297,59 @@ io.on('connection', function(socket) {
 
   /**
    * Someone sent information about a bunch of pieces.
-   * Data includes
-   *  piece_ids            List of piece ids
-   *  xs, ys, rs           Lists of piece coordinates and rotations
-   *  active_image_indices List of active image indices
-   *  clear                Whether to clear the existing history
    */
-  socket.on('u', function(piece_ids, xs, ys, rs, active_image_indices, clear) {
+  socket.on('u', function(incoming_pieces, clear) {
 
     // pieces is a list
-    log('u:', piece_ids.length, 'pieces');
+    log('u:', incoming_pieces.length, 'pieces');
 
     // emit to the rest
-    socket.broadcast.emit('u', piece_ids, xs, ys, rs, active_image_indices);
+    socket.broadcast.emit('u', incoming_pieces);
 
-    // Now remember what was sent...
+    // Now update our private memory to match!
 
     // If we're supposed to, get rid of the pieces in memory
-    if(clear==true) {
-      
-      // I know this is weird, but javascript garbage collection will apparently handle it.
-      last_piece_ids           .length = 0;
-      last_xs                  .length = 0;
-      last_ys                  .length = 0;
-      last_rs                  .length = 0;
-      last_active_image_indices.length = 0;
-    }
+    if(clear==true) pieces.length=0;
   
-    // find and replace, or push the new information to the last known lists
-    for(n in piece_ids) {
+
+
+    // Now we wish to overwrite all the existing pieces with the new ones,
+    // and make sure they're in the right places.
+
+    // Sort the piece datas by n's (must be increasing!)
+    incoming_pieces.sort(function(a, b){return a.n-b.n});
+
+    // run through the list of ids, find the index m in the stack of the pieces by id
+    for(var i in incoming_pieces) {
+      pd = incoming_pieces[i];
       
-      // get the supplied index, x, y, and active images
-      i = piece_ids[n];
-      x = xs[n];
-      y = ys[n];
-      r = rs[n];
-      a = active_image_indices[n];
+      // find the current index
+      var m = find_piece(pd.id);
       
-      // See if we already have it.
-      m = last_piece_ids.indexOf(i);
-      
-      // if we didn't find it, push it
-      if(m<0) {
-        // push all the new data
-        last_piece_ids.push(i);
-        last_xs       .push(x);
-        last_ys       .push(y);
-        last_rs       .push(r);
-        last_active_image_indices.push(a);
-      } 
-      
-      // otherwise, just update it
-      else {
-        last_piece_ids[m] = i;
-        last_xs[m]        = x;
-        last_ys[m]        = y;
-        last_rs[m]        = r;
-        last_active_image_indices[m] = a;
+      // if the piece exists, pop it (to be replaced below) and update the rest
+      if(m>=0) {
+        
+        // Remove it
+        pieces.splice(m,1);
+
+        // Decrement the indices of the subsequent pieces
+        for(var j=m; j<pieces.length; j++) pieces[j].n--;
       }
-    } // end of for loop over piece_ids
+    } // end of loop over supplied pieces
+
+    // Loop over the pieces again to insert them into the main stack, which currently should not contain them. We do this 
+    // in separate loops so that pieces removed from random locations and sent to 
+    // random locations do not interact. The value of ns is the final value in the pieces array.
+    for(var i in incoming_pieces) {
+      p = incoming_pieces[i];
+
+      // insert the piece at it's index
+      pieces.splice(p.n, 0, p);
+
+      // increment the subsequent piece indices
+      for(var j=p.n+1; j<pieces.length; j++) pieces[j].n++;
+    }
+    
   });
 
   // Deal with selection changes at the team level, 
@@ -316,24 +363,27 @@ io.on('connection', function(socket) {
     client_id    = client_ids[client_index];
 
     // pieces is a list
-    log('s:', client_id, piece_ids);
+    log('s: client', client_id, piece_ids.length, 'pieces');
 
     // emit to everyone else
     socket.broadcast.emit('s', piece_ids, client_id);
   });
 
   // someone sent a held pieces change
-  socket.on('h', function(piece_ids) {
+  socket.on('h', function(incoming_pieces) {
 
     // get the client id
     client_index = client_sockets.indexOf(socket);
     client_id    = client_ids[client_index];
 
+    // sort them by n
+    incoming_pieces.sort(function(a, b){return a.n-b.n});
+
     // pieces is a list
-    log('h:', client_id, piece_ids);
+    log('h:', client_id, incoming_pieces);
 
     // emit to everyone else
-    socket.broadcast.emit('h', piece_ids, client_id);
+    socket.broadcast.emit('h', client_id, incoming_pieces);
   });
   
   // handle the disconnect

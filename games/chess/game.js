@@ -98,4 +98,4 @@ function setup() {
 }
 
 // recall previous user settings
-board.load_cookies();
+board.go();

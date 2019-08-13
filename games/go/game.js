@@ -44,6 +44,7 @@ snappy = board.add_snap_grid(
 
 // Set new piece defaults
 board.new_piece_snap_index = snappy; // new pieces will be linked to this grid
+board.new_piece_physical_shape = "outer_circle";
 
 // Add all the pieces (no particular place)
 blacks = board.add_pieces(180, ['stone_black.png']);
@@ -56,4 +57,4 @@ function setup() {
 }
 
 // Restore user settings (if any)
-board.load_cookies();
+board.go();
