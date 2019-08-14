@@ -152,7 +152,7 @@ function collect_all_cards() {
   else                       d = rotate_vector(R1*0.3, R1*0.8, 45*(team-1));
   
   // collect the cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
-  board.collect_pieces(sps, d.x, d.y, true, 0, board.r_target, board.r_target, 0.1, 0.1);
+  board.collect_pieces(sps, d.x, d.y, true, 0, board.r_target, board.r_target);
 }
 
 /**
@@ -255,7 +255,7 @@ function get_active_teams() {
   return teams;
 }
 
-function deal() {
+function deal(face_up) {
   console.log('deal');
 
   // Find which teams are in the game
@@ -276,6 +276,8 @@ function deal() {
       p = sps.pop();
       p.set_target(d.x, -d.y, -(team-1)*45+720);
 
+      if(face_up) p.active_image = 1;
+
       // Put it on top of the stack
       board.pop_piece(board.pieces.lastIndexOf(p));
       board.insert_piece(p, board.pieces.length);
@@ -288,10 +290,10 @@ function setup() {
   console.log('setup');
 
   // collect the  cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
-  board.collect_pieces(cards,   0,   0,   true,           0,      0,      0,     0.1,     0.1,   false);
+  board.collect_pieces(   cards,0,0,   true,           0,      0,      0);
   
   // collect the chips way off to the side to start.
-  board.collect_pieces(chips,   2*R2,0,   true,           0,      0,      0,     0.1,     0.1,   false);
+  board.collect_pieces(chips,   2*R2,0,   true,           0,      0,      0);
   
   // distribute the chips to each team
   for(var n=0; n<number_of_teams; n++) {
@@ -339,6 +341,9 @@ function event_keydown(e, p, i) {
   switch (e.keyCode) {
     case 66: // B for bet.
       bet();
+    break;
+    case 76: // L for deaL
+      deal(e.shiftKey);
     break;
   }
 }

@@ -1408,11 +1408,11 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
     for(var n in pieces)
       pieces[n].set_target(pieces[n].x + (Math.random()-0.5)*this.shuffle_distance,
                            pieces[n].y + (Math.random()-0.5)*this.shuffle_distance,
-                           null, null, null, true);
+                           (Math.random()-0.5)*720, null, null, true);
     
     // Trigger an update
     this.send_stream_update();
-    this._ignore_next_stream_update = true;
+    this.ignore_next_streams = 2;
   } 
 
   // get the rotated offset step vector
@@ -1421,7 +1421,13 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
 
   // Collect all selected piece to the specified coordinates
   for(var i in pieces) {
-    p = pieces[i];
+
+    // Put this piece on top, in order, regardless of from_top
+    this.pop_piece(this.pieces.indexOf(pieces[i])); // take it out, but avoid triggering an update for the rest.
+    this.pieces.push(pieces[i]);                    // Push the piece on top, triggering an update
+
+    if(from_top) p = pieces[pieces.length-i-1];
+    else         p = pieces[i];
     
     // Get the rotated stack step.
     if(offset_x != null && typeof offset_x !== 'undefined') ox = offset_x;
@@ -1430,13 +1436,10 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
     else                                                    oy = p.collect_offset_y;
     var d = rotate_vector(ox, oy, -r_stack);
   
-    // Put this piece on top.
-    this.pop_piece(this.pieces.indexOf(p)); // take it out, but avoid triggering an update for the rest.
-    this.pieces.push(p);                    // Push the piece on top, triggering an update
-
     var N = pieces.length-1;
-    if(from_top) p.set_target(x + (i-N)*d.x, y - (i-N)*d.y, -r_piece);
-    else         p.set_target(x + i*d.x,     y - i*d.y,     -r_piece);
+    if(from_top) {x = x-d.x; y = y+d.y;}
+    else         {x = x+d.x; y = y-d.y;}
+    p.set_target(x, y, -r_piece);
 
     // If we have an active image specified, set it
     if(active_image != null) p.set_active_image(active_image);
@@ -2965,8 +2968,8 @@ BOARD.prototype.send_stream_update = function() {
   this.trigger_redraw = true;
 
   // Allows one to add a delay to an update, e.g., when shuffle animating.
-  if(this._ignore_next_stream_update) {
-    this._ignore_next_stream_update = false;
+  if(this.ignore_next_streams > 0) {
+    this.ignore_next_streams--;
     return;
   }
 
