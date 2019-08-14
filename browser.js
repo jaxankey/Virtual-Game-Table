@@ -26,7 +26,8 @@
 // TO DO: local sqrt(), sin(), cos(), tan() that remembers angles and previous results.
 // TO DO: dice rolling on sparse hex grid
 // TO DO: middle mouse click = temporary zoom
-// TO DO: thicker selection lines
+// TO DO: new_piece_offset_x and y, update all games & fix cards & poker.
+// TO DO: keys with a lookup table and functions that can be overwritten?
 
 //// OPTIONS
 
@@ -2115,8 +2116,8 @@ BOARD.prototype.event_mousewheel = function(e) {
   
   // zoom canvas unless modifiers are down
   else {    
-    if(e.wheelDelta > 0)      this.zoom_in();    
-    else if(e.wheelDelta < 0) this.zoom_out();
+    if(e.wheelDelta > 0)      this.zoom_in(caps);    
+    else if(e.wheelDelta < 0) this.zoom_out(caps);
   }
   
   // reset the timer
