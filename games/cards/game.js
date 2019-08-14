@@ -33,8 +33,6 @@ board.r_step   = 45;
 board.pan_step = 250;
 
 // Collection and expansion settings
-board.collect_offset_x = 0.1;
-board.collect_offset_y = 0.1;
 board.collect_r_piece  = null; // Rotates the piece to the current view
 board.collect_r_stack  = null; // Rotates the stack offsets to the current view
 board.expand_spacing_x = 35;
@@ -100,6 +98,8 @@ board.new_piece_r_step              = 45;
 board.new_piece_movable_by = null;
 
 // Add all the cards
+board.new_piece_collect_offset_x = 0.1;
+board.new_piece_collect_offset_y = 0.1;
 cards = [];
 for(n in names) cards.push(board.add_piece(['back.png', names[n]+'.png'], [names[n]+'p.png', names[n]+'.png']));
 
@@ -188,7 +188,12 @@ function deal() {
       d = rotate_vector((Math.random()-0.5)*50,-R1*0.7+(Math.random()-0.5)*50,-(team-1)*45);
 
       // Pop it and send it
-      sps.pop().set_target(d.x, -d.y, -(team-1)*45+720);
+      p = sps.pop();
+      p.set_target(d.x, -d.y, -(team-1)*45+720);
+
+      // Put it on top of the stack
+      board.pop_piece(board.pieces.lastIndexOf(p));
+      board.insert_piece(p, board.pieces.length);
     } 
   } // end of loop over active teams
 }

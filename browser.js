@@ -26,7 +26,6 @@
 // TO DO: local sqrt(), sin(), cos(), tan() that remembers angles and previous results.
 // TO DO: dice rolling on sparse hex grid
 // TO DO: middle mouse click = temporary zoom
-// TO DO: new_piece_offset_x and y, update all games & fix cards & poker.
 // TO DO: keys with a lookup table and functions that can be overwritten?
 
 //// OPTIONS
@@ -330,6 +329,8 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   this.private_images_everywhere = this.board.new_piece_private_images_everywhere; // Whether the private image is also visible outside the team zone.
   this.owners                    = this.board.new_piece_owners;  // list of who owns this piece (private images)
   this.is_tray                   = this.board.new_piece_is_tray; // whether selecting this piece selects those within its bounds and above it.
+  this.collect_offset_x          = this.board.new_piece_collect_offset_x;
+  this.collect_offset_y          = this.board.new_piece_collect_offset_y;
 
   // Index in the main piece stack (determines drawing order)
   this.previous_n = null;
@@ -1001,8 +1002,6 @@ function BOARD(canvas) {
   this.transition_speed        = 0.35;     // max rate of piece motion
   this.transition_acceleration = 0.15;     // rate of acceleration
   this.transition_snap         = 0.1;      // how close to be to snap to the final result
-  this.collect_offset_x        = 2;        // how much to shift each piece when collecting
-  this.collect_offset_y        = 2;        // how much to shift each piece when collecting
   this.collect_r_piece         = null;     // what rotation to apply to collected pieces (null means view rotation)
   this.collect_r_stack         = null;     // what rotation to apply to collected pieces (null means view rotation)
   this.expand_spacing_x        = 50;       // how wide to space things when xpanding (x key)
@@ -1038,6 +1037,9 @@ function BOARD(canvas) {
   this.new_piece_box_y               = 0;
   this.new_piece_owners              = null;
   this.new_piece_is_tray             = false;
+  this.new_piece_collect_offset_x    = 2;        // how much to shift each piece when collecting
+  this.new_piece_collect_offset_y    = 2;        // how much to shift each piece when collecting
+  
 
   // master list of all image names and objects, used to prevent double-loading
   this.images = {};
@@ -1392,8 +1394,7 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
   // Things will move, so let's trigger a redraw to be safe / responsive.
   this.trigger_redraw = true;
 
-  var offset_x = or_default(offset_x, this.collect_offset_x);
-  var offset_y = or_default(offset_y, this.collect_offset_y);
+  // Defaults
   var r_piece  = or_default(r_piece,  this.collect_r_piece);
   var r_stack  = or_default(r_stack,  this.collect_r_stack);
   
@@ -1418,13 +1419,17 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
   if(r_stack == null) r_stack = this.r_target;
   if(r_piece == null) r_piece = this.r_target;
 
-  // Get the rotated stack step.
-  var d = rotate_vector(offset_x, offset_y, -r_stack);
-  
   // Collect all selected piece to the specified coordinates
   for(var i in pieces) {
     p = pieces[i];
     
+    // Get the rotated stack step.
+    if(offset_x != null && typeof offset_x !== 'undefined') ox = offset_x;
+    else                                                    ox = p.collect_offset_x;
+    if(offset_y != null && typeof offset_y !== 'undefined') oy = offset_y;
+    else                                                    oy = p.collect_offset_y;
+    var d = rotate_vector(ox, oy, -r_stack);
+  
     // Put this piece on top.
     this.pop_piece(this.pieces.indexOf(p)); // take it out, but avoid triggering an update for the rest.
     this.pieces.push(p);                    // Push the piece on top, triggering an update
@@ -2331,13 +2336,13 @@ BOARD.prototype.event_keydown = function(e) {
     
       case 67: // c for collect
         
-      // pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y
+        // Collect all the pieces into a stack
         this.collect_pieces(this.client_selected_pieces[my_index], 
-          this.mouse.x, this.mouse.y, 
+          this.mouse.x, this.mouse.y,                   // coordinates of the stack
           e.shiftKey, null,                             // shuffle, active image 
           this.collect_r_piece,  this.collect_r_stack,  // r_piece, r_stack
-          this.collect_offset_x, this.collect_offset_y,
-          true); // centers top piece on mouse
+          null, null,                                   // offset_x, offset_y (default to piece values)
+          true);                                        // centers stack wrt the TOP piece
     
         break;
 
