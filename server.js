@@ -352,8 +352,8 @@ io.on('connection', function(socket) {
   socket.on('s', function(piece_ids) {
     
     // get the client id
-    client_index = client_sockets.indexOf(socket);
-    client_id    = client_ids[client_index];
+    var client_index = client_sockets.indexOf(socket);
+    var client_id    = client_ids[client_index];
 
     // pieces is a list
     log('s: client', client_id, piece_ids.length, 'pieces');
@@ -363,20 +363,17 @@ io.on('connection', function(socket) {
   });
 
   // someone sent a held pieces change
-  socket.on('h', function(incoming_pieces) {
+  socket.on('h', function(is_holding) {
 
     // get the client id
-    client_index = client_sockets.indexOf(socket);
-    client_id    = client_ids[client_index];
-
-    // sort them by n
-    incoming_pieces.sort(function(a, b){return a.n-b.n});
+    var client_index = client_sockets.indexOf(socket);
+    var client_id    = client_ids[client_index];
 
     // pieces is a list
-    log('h:', client_id, incoming_pieces);
+    log('h:', client_id, 'is_holding =', is_holding);
 
     // emit to everyone else
-    socket.broadcast.emit('h', client_id, incoming_pieces);
+    socket.broadcast.emit('h', client_id, is_holding);
   });
   
   // handle the disconnect
