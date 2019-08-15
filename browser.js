@@ -24,9 +24,18 @@
 //           their instance as a first argument? This makes net traffic super simple.
 // TO DO: var before every local variable. Avoids overwriting by other functions in loops!
 // TO DO: local sqrt(), sin(), cos(), tan() that remembers angles and previous results.
+// TO DO: middle mouse click = focus
+//
+// TO DO: keyboard keys with a lookup table and functions that can be overwritten?
+// TO DO: Shift-c reverse-sorts?
+//
+// TO DO: Rotate pieces about center doesn't work with mouse held down / dragging. held_piece_coordinates doesn't update. Remove it.
+// TO DO: Top and bottom index for each piece (defines layers!)
 // TO DO: dice rolling on sparse hex grid
-// TO DO: middle mouse click = temporary zoom
-// TO DO: keys with a lookup table and functions that can be overwritten?
+// TO DO: Undo log in stream update for some changes
+// TO DO: Update controls html file and add link to all games.
+
+
 
 //// OPTIONS
 
@@ -230,6 +239,21 @@ function shuffle_pieces(pieces, active_image, r_piece, r_stack, offset_x, offset
   board.shuffle_pieces(pieces, active_image, r_piece, r_stack, offset_x, offset_y)
 }
 
+/**
+ * Returns the coordinates of the center of mass of the supplied list of pieces.
+ * @param {[]} pieces 
+ */
+function get_center_of_pieces(pieces) {
+  var sumx = 0;
+  var sumy = 0;
+
+  for(var n in pieces) {
+    p = pieces[n];
+    sumx = sumx + p.x_target;
+    sumy = sumy + p.y_target;
+  }
+  return {x: sumx/pieces.length, y:sumy/pieces.length};
+}
 
 // turns integer into location (in units of basis vectors), hexagonally spiralling out from the center
 function hex_spiral(n) {
@@ -557,10 +581,23 @@ PIECE.prototype.set_rotation = function(r_deg, immediate, keep_t_previous_move) 
 
 
 
-PIECE.prototype.rotate = function(r_deg) {
+PIECE.prototype.rotate = function(r_deg, x0, y0) {
+
+  console.log(x0,y0);
+
+  // By default, rotate the piece about its own center.
+  var x0 = or_default(x0, this.x_target);
+  var y0 = or_default(y0, this.y_target);
+
+  // If specified, rotate about the supplied center coordinate
+  if(x0 != this.x_target || y0 != this.y_target) {
+    d = rotate_vector(this.x_target-x0, this.y_target-y0, -r_deg);
+    this.set_target(x0 + d.x, y0 + d.y, r_deg + this.r_target);
+  }
   
-  // rotates the piece (relative)
-  this.set_rotation(r_deg + this.r_target);
+  // Otherwise rotate around its center.
+  else this.set_rotation(r_deg + this.r_target);
+
 }
 PIECE.prototype.ellipse  = function(x, y) {
   
@@ -994,10 +1031,10 @@ function BOARD(canvas) {
   console.log("Creating a new board...")
   
   //// options
-  this.shuffle_distance        = 100;       // How far to randomize when shuffling.
-  this.alt_z                   = 150;      // zoom level of the ALT key.
+  this.shuffle_distance        = 100;      // How far to randomize when shuffling.
+  this.focus_zoom_level        = 180;      // zoom level of the F key.
   this.r_home                  = 0;        // where the escape key will take you
-  this.pan_step                = 200;
+  this.pan_step                = 400;
   this.hand_fade_ms            = 1000;     // how long before motionless hands disappear
   this.transition_speed        = 0.35;     // max rate of piece motion
   this.transition_acceleration = 0.15;     // rate of acceleration
@@ -1088,7 +1125,7 @@ function BOARD(canvas) {
   this._prealt_px = 0;
   this._prealt_py = 0;
   this._prealt_r  = 0;
-  this._prealt_z  = 0;
+  this._prefocus_zoom_level  = 0;
 
   // the box coordinates for all the unused game pieces
   this.box_x = 0;
@@ -1127,8 +1164,8 @@ function BOARD(canvas) {
   this.peak_image_index = 0;
 
   // zoom pan rotate snap variables
-  this.z_max        = 200;
-  this.z_min        = 12.5;
+  this.z_max        = 400;
+  this.z_min        = 6.25;
   this.z_step       = Math.pow(2,0.25);
   this.z_target     = 100;
   this.r_step       = 45;
@@ -1787,14 +1824,14 @@ BOARD.prototype.deselect_piece = function(piece) {
 BOARD.prototype.event_mousedown = function(e) {
   
   // Get my client list index
-  my_index = get_my_client_index();
+  var my_index = get_my_client_index();
 
   // trigger redraw to be safe
   this.trigger_redraw = true;
 
   // get the mouse coordinates & team
   this.mouse = this.get_mouse_coordinates(e);
-  team  = get_team_number();
+  var team  = get_team_number();
   
   // report the coordinates
   console.log("event_mousedown", this.mouse);
@@ -1802,7 +1839,7 @@ BOARD.prototype.event_mousedown = function(e) {
   // If we're not in someone else's team zone, see if we have clicked on a piece.
   
   // Figure out the team zone we clicked in.
-  team_zone = this.in_team_zone(this.mouse.x, this.mouse.y)
+  var team_zone = this.in_team_zone(this.mouse.x, this.mouse.y)
   
   // Our team zone or no team zone or team zone with grab enabled
   if(team_zone == team || team_zone < 0 || this.team_zones[team_zone].grab_mode == 1) {
@@ -1811,7 +1848,7 @@ BOARD.prototype.event_mousedown = function(e) {
     for (var i=this.pieces.length-1; i>=0; i--) {
       
       // handle on the piece
-      p = this.pieces[i];
+      var p = this.pieces[i];
 
       // See if the mouse down happened within the piece and is movable.
       // This if statement returns from the function (quits the loop!)
@@ -2055,7 +2092,12 @@ BOARD.prototype.event_mouseup = function(e) {
   // null out the selection box
   this.client_selection_boxes[my_index] = null;
 
+  // Update the others, in particular about the selection box
+  my_socket.emit('m', this.mouse.x, this.mouse.y, [], // no held piece ids
+                      [], this.r_target, // no held piece coordinates
+                      null); // no selection boxes. 
 }
+
 BOARD.prototype.event_dblclick = function(e) {
   console.log('event_dblclick', e);
   
@@ -2108,8 +2150,8 @@ BOARD.prototype.event_mousewheel = function(e) {
 
       // Loop over all pieces and rotate them
       for(var i=0; i<sps.length; i++) {
-        if      (e.wheelDelta < 0) sps[i].rotate( sps[i].r_step);
-        else if (e.wheelDelta > 0) sps[i].rotate(-sps[i].r_step);
+        if      (e.wheelDelta < 0) sps[i].rotate( sps[i].r_step, this.mouse.x, this.mouse.y);
+        else if (e.wheelDelta > 0) sps[i].rotate(-sps[i].r_step, this.mouse.x, this.mouse.y);
       }
     } 
     
@@ -2150,12 +2192,12 @@ BOARD.prototype.event_keyup  = function(e) {
     console.log('event_keyup',e.keyCode);
     switch (e.keyCode) {
       case 192: // tilde for unzooming.
-      case 86:  // v for unzooming
+      case 70:  // F for focus
 
       // If we're rotating, make it immediate for vomiting reasons.
-      this.set_zoom(this._prealt_z,                  caps);
-      this.set_pan(this._prealt_px, this._prealt_py, caps);
-      this.set_rotation(this._prealt_r,              caps);
+      this.set_zoom(this._prefocus_zoom_level,                  caps || e.shiftKey);
+      this.set_pan(this._prealt_px, this._prealt_py, caps || e.shiftKey);
+      this.set_rotation(this._prealt_r,              caps || e.shiftKey);
     
       this._tilde_down = false;
       break;
@@ -2212,7 +2254,8 @@ BOARD.prototype.event_keydown = function(e) {
         else {
           // if there are selected pieces and we're hodling shift, rotate them.
           if (sps.length > 0 && e.shiftKey) {
-            for(var i=0; i<sps.length; i++) sps[i].rotate(sps[i].r_step);
+            var d = get_center_of_pieces(sps);
+            for(var i in sps) sps[i].rotate(sps[i].r_step, d.x, d.y);
           }
           // otherwise pan
           else this.set_pan(this.px_target-this.pan_step, this.py_target, caps);
@@ -2227,22 +2270,20 @@ BOARD.prototype.event_keydown = function(e) {
         else {
           // if there are selected pieces and we're holding shift, rotate their locations.
           if (sps.length > 0 && e.shiftKey) {
-            for(var i=0; i<sps.length; i++) sps[i].rotate(-sps[i].r_step);
+            var d = get_center_of_pieces(sps);
+            for(var i in sps) sps[i].rotate(-sps[i].r_step, d.x, d.y);
           }
           // otherwise pan
           else this.set_pan(this.px_target+this.pan_step, this.py_target, caps);
         }
         break;
       
-      // Zoom out
-      case 70:  // F
       case 189: // MINUS
         // zoom out
         this.zoom_out(caps);
         break;
       
       // Zoom in
-      case 82:  // R
       case 187: // PLUS
         // zoom in
         this.zoom_in(caps);
@@ -2262,7 +2303,7 @@ BOARD.prototype.event_keydown = function(e) {
       case 83: // S
       case 40: // DOWN
         // zoom
-        if(e.shiftKey) this.zoom_out();
+        if(e.shiftKey) this.zoom_out(caps);
         
         // pan
         else this.set_pan(this.px_target, this.py_target-this.pan_step, caps);
@@ -2405,53 +2446,53 @@ BOARD.prototype.event_keydown = function(e) {
         }
         break;
       
-      case 90: // z for zcramble
-
-        if(e.shiftKey) {
-          // Default: no pieces
-          sps = [];
-
-          // If we have selected pieces, use those
-          if(this.client_selected_pieces[my_index].length) sps = [...this.client_selected_pieces[my_index]];
-          
-          // Otherwise, use the piece under the mouse
-          else {
-
-            // Only do so if we're not in someone else's team zone
-            team_zone = this.in_team_zone(this.mouse.x, this.mouse.y);
-            if(team_zone < 0 || team_zone == get_team_number()) {
-              var i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
-              if(i >= 0) sps = [this.pieces[i]];
-            }
-          }
-          
-          // Collect all selected piece to your hand coordinates
-          for(var i in sps) {
-            p = sps[i];
-
-            // Set the random image
-            p.active_image = Math.floor(Math.random() * p.images.length); 
-            
-            // Generate a random x,y square based on the image dimensions, number of images, 
-            // and randomly rotate it.
-            I = p.images[p.active_image];
-            distance = 1.5*Math.sqrt(sps.length)*Math.max(I.width, I.height);
-            d = rotate_vector((Math.random()-0.5)*distance, 
-                              (Math.random()-0.5)*distance, 
-                              Math.random()*2*Math.PI);
-            
-            // Now set the target
-            p.set_target(this.mouse.x - d.x, this.mouse.y + d.y, Math.random()*720.0-360.0);
-          }
-        } 
-
+      case 90: // z for zhuffle
+        
         // Normal z just shuffles in place
-        else this.shuffle_pieces(this.client_selected_pieces[my_index]);
+        this.shuffle_pieces(this.client_selected_pieces[my_index]);
+        break;
+
+      case 82: // r for roll / randomize
+        // Default: no pieces
+        sps = [];
+
+        // If we have selected pieces, use those
+        if(this.client_selected_pieces[my_index].length) sps = [...this.client_selected_pieces[my_index]];
+        
+        // Otherwise, use the piece under the mouse
+        else {
+
+          // Only do so if we're not in someone else's team zone
+          team_zone = this.in_team_zone(this.mouse.x, this.mouse.y);
+          if(team_zone < 0 || team_zone == get_team_number()) {
+            var i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
+            if(i >= 0) sps = [this.pieces[i]];
+          }
+        }
+        
+        // Collect all selected piece to your hand coordinates
+        for(var i in sps) {
+          p = sps[i];
+
+          // Set the random image
+          p.active_image = Math.floor(Math.random() * p.images.length); 
+          
+          // Generate a random x,y square based on the image dimensions, number of images, 
+          // and randomly rotate it.
+          I = p.images[p.active_image];
+          distance = 1.5*Math.sqrt(sps.length)*Math.max(I.width, I.height);
+          d = rotate_vector((Math.random()-0.5)*distance, 
+                            (Math.random()-0.5)*distance, 
+                            Math.random()*2*Math.PI);
+          
+          // Now set the target
+          p.set_target(this.mouse.x - d.x, this.mouse.y + d.y, Math.random()*720.0-360.0);
+        }
         
         break;
 
       case 192: // tilde zoom
-      case 86:  // v key
+      case 70:  // F for focus
         
         if(this._tilde_down) break;
         this._tilde_down = true;
@@ -2460,11 +2501,11 @@ BOARD.prototype.event_keydown = function(e) {
         this._prealt_r  = this.r_target;
         this._prealt_px = this.px_target;
         this._prealt_py = this.py_target;
-        this._prealt_z  = this.z_target;
+        this._prefocus_zoom_level  = this.z_target;
 
-        // If we have selected a piece, zoom in on that
-        if(sps.length && e.keyCode == 192 && !e.shiftKey) {
-          this.set_zoom(this.alt_z, true);
+        // If we have selected a piece and hold shift, zoom in on that
+        if(sps.length && e.shiftKey) {
+          this.set_zoom(this.focus_zoom_level, true);
 
           var N = sps.length-1;
 
@@ -2480,13 +2521,13 @@ BOARD.prototype.event_keydown = function(e) {
 
         // otherwise, use the mouse.
         else {
-          this.set_zoom(this.alt_z, caps);
+          this.set_zoom(this.focus_zoom_level, caps || e.shiftKey);
 
           // Get the pan vector
           var pan = rotate_vector(-this.mouse.x*this.z_target*0.01,
                                   -this.mouse.y*this.z_target*0.01,
                                   -board.r_target);
-          this.set_pan(pan.x, pan.y, caps);
+          this.set_pan(pan.x, pan.y, caps || e.shiftKey);
         }
         break;
     }
@@ -2973,7 +3014,7 @@ BOARD.prototype.send_stream_update = function() {
     return;
   }
 
-  // TO DO: Handle the mouse pan every 1/4 second
+  // Handle the mouse pan every 1/4 second
   //if(board.client_held_pieces.length && board._mouse_pan_x) board.set_pan(this.px_target+5*this._mouse_pan_x, this.py_target);
   //if(board.client_held_pieces.length && board._mouse_pan_y) board.set_pan(this.px_target,                     this.py_target+5*this._mouse_pan_y)
 

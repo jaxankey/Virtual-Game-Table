@@ -154,13 +154,6 @@ client_drag_offsets       = []; // list of [dx,dy] offset coordinates for each h
  * Chat message 
  *  'chat' (msg)
  *  
- * Mouse event
- *  'm' (n, x, y, h, dx, dy, r)
- *    n     : index of client or team (forgot)
- *    x, y  : new mouse location
- *    h     : index of held piece (or 0 if none)
- *    dx, dy: location of piece relative to mouse
- *    r     : rotation of board (hand)  
  * 
  * Coordinates of multiple pieces
  *  'u' (incoming_pieces, clear)  
