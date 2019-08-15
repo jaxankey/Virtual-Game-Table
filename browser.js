@@ -29,7 +29,7 @@
 // TO DO: keyboard keys with a lookup table and functions that can be overwritten?
 // TO DO: Shift-c reverse-sorts?
 //
-// TO DO: Rotate pieces about center doesn't work with mouse held down / dragging.
+// TO DO: Rotate pieces about center while held sends the piece angle immediately, but delays the new coordinates
 // TO DO: Top and bottom index for each piece (defines layers!)
 // TO DO: dice rolling on sparse hex grid
 // TO DO: Undo log in stream update for some changes
@@ -244,15 +244,19 @@ function shuffle_pieces(pieces, active_image, r_piece, r_stack, offset_x, offset
  * @param {[]} pieces 
  */
 function get_center_of_pieces(pieces) {
-  var sumx = 0;
-  var sumy = 0;
+  var sumx  = 0;
+  var sumy  = 0;
+  var sumx0 = 0;
+  var sumy0 = 0;
 
   for(var n in pieces) {
     p = pieces[n];
     sumx = sumx + p.x_target;
     sumy = sumy + p.y_target;
+    sumx0 = sumx0 + p.x0;
+    sumy0 = sumy0 + p.y0;
   }
-  return {x: sumx/pieces.length, y:sumy/pieces.length};
+  return {x: sumx/pieces.length, y:sumy/pieces.length, x0:sumx0/pieces.length, y0:sumy0/pieces.length};
 }
 
 // turns integer into location (in units of basis vectors), hexagonally spiralling out from the center
@@ -359,14 +363,19 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   // Index in the main piece stack (determines drawing order)
   this.previous_n = null;
 
-  // automatic defaults
+  // Target values.
   this.x_target         = this.board.new_piece_x_target;
   this.y_target         = this.board.new_piece_y_target;
   this.r_target         = this.board.new_piece_r_target;
   this.r_step           = this.board.new_piece_r_step;
+  this.x0_target        = 0;
+  this.y0_target        = 0;
   
-  this.x = this.board.new_piece_x;
-  this.y = this.board.new_piece_y;
+  // Instantaneous values
+  this.x  = this.board.new_piece_x;
+  this.y  = this.board.new_piece_y;
+  this.x0 = 0;
+  this.y0 = 0; 
   this.r = 2*(180-360*Math.random()); // snazzy first load
   
   this.t_fade_ms        = this.board.new_piece_t_fade_ms;
@@ -457,6 +466,8 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   // current velocity of motion (to add momentum)
   this.vx = 0;
   this.vy = 0;
+  this.vx0 = 0;
+  this.vy0 = 0;
   this.vr = 0;
 
   // last time this piece was moved / drawn
@@ -583,8 +594,6 @@ PIECE.prototype.set_rotation = function(r_deg, immediate, keep_t_previous_move) 
 
 PIECE.prototype.rotate = function(r_deg, x0, y0) {
 
-  console.log(x0,y0);
-
   // By default, rotate the piece about its own center.
   var x0 = or_default(x0, this.x_target);
   var y0 = or_default(y0, this.y_target);
@@ -597,8 +606,20 @@ PIECE.prototype.rotate = function(r_deg, x0, y0) {
   
   // Otherwise rotate around its center.
   else this.set_rotation(r_deg + this.r_target);
-
 }
+
+/**
+ * Rotates the piece's ORIGIN coordinates (this.x0, this.y0) about the specified point
+ */
+PIECE.prototype.rotate0 = function(r_deg, x, y) {
+
+  // If specified, rotate about the supplied center coordinate
+  d = rotate_vector(this.x0_target-x, this.y0_target-y, -r_deg);
+  this.x0_target = x + d.x;
+  this.y0_target = y + d.y;
+}
+
+
 PIECE.prototype.ellipse  = function(x, y) {
   
   // if this piece has an angle, do the transform
@@ -740,31 +761,45 @@ PIECE.prototype.move_and_draw = function() {
   vx_target = (this.x_target - this.x)*speed;
   vy_target = (this.y_target - this.y)*speed;
   vr_target = (this.r_target - this.r)*speed;
-
+  vx0_target = (this.x0_target - this.x0)*speed;
+  vy0_target = (this.y0_target - this.y0)*speed;
+  
   // calculate the actual velocity after acceleration
   this.vx = (vx_target - this.vx)*accel;
   this.vy = (vy_target - this.vy)*accel;
   this.vr = (vr_target - this.vr)*accel;
+  this.vx0 = (vx0_target - this.vx0)*accel;
+  this.vy0 = (vy0_target - this.vy0)*accel;
   
   // adjust the step size
   dx = this.vx * dt/draw_interval_ms;
   dy = this.vy * dt/draw_interval_ms;
   dr = this.vr * dt/draw_interval_ms;
-
+  dx0 = this.vx0 * dt/draw_interval_ms;
+  dy0 = this.vy0 * dt/draw_interval_ms;
+  
   // make sure it's not too big
   if (Math.abs(dx) > Math.abs(this.x_target-this.x)) dx = this.x_target-this.x;
   if (Math.abs(dy) > Math.abs(this.y_target-this.y)) dy = this.y_target-this.y;
   if (Math.abs(dr) > Math.abs(this.r_target-this.r)) dr = this.r_target-this.r;
+  if (Math.abs(dx0) > Math.abs(this.x0_target-this.x0)) dx0 = this.x0_target-this.x0;
+  if (Math.abs(dy0) > Math.abs(this.y0_target-this.y0)) dy0 = this.y0_target-this.y0;
   
   // Calculate the new coordinates
   this.x = dx + this.x;
   this.y = dy + this.y;
   this.r = dr + this.r;
+  this.x0 = dx0 + this.x0;
+  this.y0 = dy0 + this.y0;
 
   // round to the nearest pixel if we've hit the target
   if ( Math.abs(this.x-this.x_target) < snap && Math.abs(this.y-this.y_target) < snap) {
     this.x = this.x_target;
     this.y = this.y_target;
+  }
+  if ( Math.abs(this.x0-this.x0_target) < snap && Math.abs(this.y0-this.y0_target) < snap) {
+    this.x0 = this.x0_target;
+    this.y0 = this.y0_target;
   }
   if ( Math.abs(this.r-this.r_target) < snap) {
     //this.r_target = this.r_target % 360;
@@ -1911,8 +1946,10 @@ BOARD.prototype.event_mousedown = function(e) {
           // Also remember the initial coordinates
           for(var j in this.client_selected_pieces[my_index]) {
             var sp = this.client_selected_pieces[my_index][j];
+            sp.x0_target = sp.x;
+            sp.y0_target = sp.y;
             sp.x0 = sp.x;
-            sp.y0 = sp.y;
+            sp.y0 = sp.y; // immediate
           }
 
           // Quit out of the whole function
@@ -2258,7 +2295,14 @@ BOARD.prototype.event_keydown = function(e) {
           // if there are selected pieces and we're hodling shift, rotate them.
           if (sps.length > 0 && e.shiftKey) {
             var d = get_center_of_pieces(sps);
-            for(var i in sps) sps[i].rotate(sps[i].r_step, d.x, d.y);
+            for(var i in sps) {
+              // Rotate the target coordinates about the center of mass
+              sps[i].rotate (sps[i].r_step, d.x,  d.y);
+
+              // Rotate the origin points to match, so that future mouse updates do not
+              // unrotate the new values of x_target and y_target.
+              sps[i].rotate0(sps[i].r_step, d.x0, d.y0); 
+            }
           }
           // otherwise pan
           else this.set_pan(this.px_target-this.pan_step, this.py_target, caps);
@@ -2274,7 +2318,14 @@ BOARD.prototype.event_keydown = function(e) {
           // if there are selected pieces and we're holding shift, rotate their locations.
           if (sps.length > 0 && e.shiftKey) {
             var d = get_center_of_pieces(sps);
-            for(var i in sps) sps[i].rotate(-sps[i].r_step, d.x, d.y);
+            for(var i in sps) {
+              // Rotate the target coordinates about the center of mass
+              sps[i].rotate (-sps[i].r_step, d.x,  d.y);
+
+              // Rotate the origin points to match, so that future mouse updates do not
+              // unrotate the new values of x_target and y_target.
+              sps[i].rotate0(-sps[i].r_step, d.x0, d.y0);
+            }
           }
           // otherwise pan
           else this.set_pan(this.px_target+this.pan_step, this.py_target, caps);
