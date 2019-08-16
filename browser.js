@@ -29,6 +29,7 @@
 // TO DO: keyboard keys with a lookup table and functions that can be overwritten?
 // TO DO: Shift-c reverse-sorts?
 //
+// TO DO: hands don't close when held piece, can steal!
 // TO DO: Rotate pieces about center while held sends the piece angle immediately, but delays the new coordinates
 // TO DO: Top and bottom index for each piece (defines layers!)
 // TO DO: dice rolling on sparse hex grid
@@ -189,6 +190,20 @@ function rotate_vector(x,y,r) {
   var y2 = -this.sin_r*x + this.cos_r*y;
 
   return({x:x2, y:y2});
+}
+
+function rotate_pieces_about_center(pieces, r_deg) {
+  var d = get_center_of_pieces(pieces);
+  
+  for(var i in pieces) {
+    
+    // Rotate the target coordinates about the center of mass
+    pieces[i].rotate (r_deg, d.x,  d.y);
+
+    // Rotate the origin points to match, so that future mouse updates do not
+    // unrotate the new values of x_target and y_target.
+    pieces[i].rotate0(r_deg, d.x0, d.y0); 
+  }
 }
 
 // randomizes the order of the supplied array (in place)
@@ -2173,7 +2188,9 @@ BOARD.prototype.event_mousewheel = function(e) {
   // Limit the number of wheel events per second
   if(!this._last_wheel_t) this._last_wheel_t = Date.now();
   t = Date.now();
-  if(t-this._last_wheel_t < 100) return;
+  if(e.shiftKey) limit = 400;
+  else           limit = 150;
+  if(t-this._last_wheel_t < limit) return;
   this._last_wheel_t = t;
   
   // find our selected pieces
@@ -2187,12 +2204,8 @@ BOARD.prototype.event_mousewheel = function(e) {
 
     // If we're holding pieces and shift
     if (sps.length > 0 && e.shiftKey) {
-
-      // Loop over all pieces and rotate them
-      for(var i=0; i<sps.length; i++) {
-        if      (e.wheelDelta < 0) sps[i].rotate( sps[i].r_step, this.mouse.x, this.mouse.y);
-        else if (e.wheelDelta > 0) sps[i].rotate(-sps[i].r_step, this.mouse.x, this.mouse.y);
-      }
+        if      (e.wheelDelta < 0) rotate_pieces_about_center(sps, sps[sps.length-1].r_step);
+        else if (e.wheelDelta > 0) rotate_pieces_about_center(sps, -sps[sps.length-1].r_step);
     } 
     
     // Otherwise, rotate the board (i.e., control key or no held pieces)
@@ -2293,17 +2306,8 @@ BOARD.prototype.event_keydown = function(e) {
         if(e.shiftKey && sps.length == 0) this.set_rotation(this.r_target+this.r_step, caps);
         else {
           // if there are selected pieces and we're hodling shift, rotate them.
-          if (sps.length > 0 && e.shiftKey) {
-            var d = get_center_of_pieces(sps);
-            for(var i in sps) {
-              // Rotate the target coordinates about the center of mass
-              sps[i].rotate (sps[i].r_step, d.x,  d.y);
+          if (sps.length > 0 && e.shiftKey) rotate_pieces_about_center(sps, sps[sps.length-1].r_step);
 
-              // Rotate the origin points to match, so that future mouse updates do not
-              // unrotate the new values of x_target and y_target.
-              sps[i].rotate0(sps[i].r_step, d.x0, d.y0); 
-            }
-          }
           // otherwise pan
           else this.set_pan(this.px_target-this.pan_step, this.py_target, caps);
         }
@@ -2316,17 +2320,8 @@ BOARD.prototype.event_keydown = function(e) {
           this.set_rotation(this.r_target-this.r_step, caps);
         else {
           // if there are selected pieces and we're holding shift, rotate their locations.
-          if (sps.length > 0 && e.shiftKey) {
-            var d = get_center_of_pieces(sps);
-            for(var i in sps) {
-              // Rotate the target coordinates about the center of mass
-              sps[i].rotate (-sps[i].r_step, d.x,  d.y);
-
-              // Rotate the origin points to match, so that future mouse updates do not
-              // unrotate the new values of x_target and y_target.
-              sps[i].rotate0(-sps[i].r_step, d.x0, d.y0);
-            }
-          }
+          if (sps.length > 0 && e.shiftKey) rotate_pieces_about_center(sps, -sps[sps.length-1].r_step);
+          
           // otherwise pan
           else this.set_pan(this.px_target+this.pan_step, this.py_target, caps);
         }
