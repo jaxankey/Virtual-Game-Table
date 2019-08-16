@@ -29,8 +29,7 @@
 // TO DO: keyboard keys with a lookup table and functions that can be overwritten?
 // TO DO: Shift-c reverse-sorts?
 //
-// TO DO: hands don't close when held piece, can steal!
-// TO DO: Rotate pieces about center while held sends the piece angle immediately, but delays the new coordinates
+// TO DO: Rotate pieces about center while held seems to send too many updates.
 // TO DO: Top and bottom index for each piece (defines layers!)
 // TO DO: dice rolling on sparse hex grid
 // TO DO: Undo log in stream update for some changes
@@ -50,6 +49,58 @@ if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera M
 /**
  * USEFUL FUNCTIONS
  */
+
+// Faster version of slow functions
+function sin(r_deg) {
+
+  // If it's the same value, return the previous result.
+  if(r_deg == this.previous_r_deg) return this.result;
+
+  // Otherwise, calculate it and remember it
+  this.result = Math.sin(r_deg*Math.PI/180.0);
+  this.previous_r_deg = r_deg;
+  return this.result;
+}
+function cos(r_deg) {
+
+  // If it's the same value, return the previous result.
+  if(r_deg == this.previous_r_deg) return this.result;
+
+  // Otherwise, calculate it and remember it
+  this.result = Math.cos(r_deg*Math.PI/180.0);
+  this.previous_r_deg = r_deg;
+  return this.result;
+}
+function tan(r_deg) {
+
+  // If it's the same value, return the previous result.
+  if(r_deg == this.previous_r_deg) return this.result;
+
+  // Otherwise, calculate it and remember it
+  this.result = Math.tan(r_deg*Math.PI/180.0);
+  this.previous_r_deg = r_deg;
+  return this.result;
+}
+function atand(x) {
+
+  // If it's the same value, return the previous result.
+  if(x == this.previous_x) return this.result;
+
+  // Otherwise, calculate it and remember it
+  this.result = Math.atan(x)*180.0/Math.PI;
+  this.previous_x = x;
+  return this.result;
+}
+function sqrt(x) {
+
+  // If it's the same value, return the previous result.
+  if(x == this.previous_x) return this.result;
+
+  // Otherwise, calculate it and remember it
+  this.result = Math.sqrt(x);
+  this.previous_x = x;
+  return this.result;
+}
 
 /**
  * Compares two multidimensional arrays.
@@ -135,7 +186,7 @@ function get_selection_box_corners(box) {
   var a = Math.sqrt((box.y1-box.y0)*(box.y1-box.y0)+(box.x1-box.x0)*(box.x1-box.x0)) * 0.5;
  
   // Get the unrotated angle to the corner TO DO:
-  var t  = Math.atan((box.y1-cy)/(box.x1-cx));
+  var t  = atand((box.y1-cy)/(box.x1-cx)) * Math.PI/180.0;
   var x2 = cx + a*Math.cos(t+2*box.r*Math.PI/180.0);
   var y2 = cy - a*Math.sin(t+2*box.r*Math.PI/180.0);
   var x3 = 2*cx - x2;
@@ -193,11 +244,13 @@ function rotate_vector(x,y,r) {
 }
 
 function rotate_pieces_about_center(pieces, r_deg) {
+  
+  // Get the center of the current target coordinates, and the origin target coordinates
   var d = get_center_of_pieces(pieces);
   
   for(var i in pieces) {
     
-    // Rotate the target coordinates about the center of mass
+    // Rotate the target coordinates about the group center
     pieces[i].rotate (r_deg, d.x,  d.y);
 
     // Rotate the origin points to match, so that future mouse updates do not
@@ -259,19 +312,27 @@ function shuffle_pieces(pieces, active_image, r_piece, r_stack, offset_x, offset
  * @param {[]} pieces 
  */
 function get_center_of_pieces(pieces) {
-  var sumx  = 0;
-  var sumy  = 0;
-  var sumx0 = 0;
-  var sumy0 = 0;
-
+  var xmin  = null;
+  var xmax  = null;
+  var ymin  = null;
+  var ymax  = null;
+  var xmin0 = null;
+  var xmax0 = null;
+  var ymin0 = null;
+  var ymax0 = null;
+  
   for(var n in pieces) {
     p = pieces[n];
-    sumx = sumx + p.x_target;
-    sumy = sumy + p.y_target;
-    sumx0 = sumx0 + p.x0;
-    sumy0 = sumy0 + p.y0;
+    if(xmin==null || p.x_target < xmin) xmin = p.x_target;
+    if(xmax==null || p.x_target > xmax) xmax = p.x_target;
+    if(ymin==null || p.y_target < ymin) ymin = p.y_target;
+    if(ymax==null || p.y_target > ymax) ymax = p.y_target;
+    if(xmin0==null || p.x0_target < xmin0) xmin0 = p.x0_target;
+    if(xmax0==null || p.x0_target > xmax0) xmax0 = p.x0_target;
+    if(ymin0==null || p.y0_target < ymin0) ymin0 = p.y0_target;
+    if(ymax0==null || p.y0_target > ymax0) ymax0 = p.y0_target;
   }
-  return {x: sumx/pieces.length, y:sumy/pieces.length, x0:sumx0/pieces.length, y0:sumy0/pieces.length};
+  return {x:0.5*(xmin+xmax), y:0.5*(ymin+ymax), x0:0.5*(xmin0+xmax0), y0:0.5*(ymin0+ymax0)};
 }
 
 // turns integer into location (in units of basis vectors), hexagonally spiralling out from the center
@@ -379,19 +440,19 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   this.previous_n = null;
 
   // Target values.
-  this.x_target         = this.board.new_piece_x_target;
-  this.y_target         = this.board.new_piece_y_target;
-  this.r_target         = this.board.new_piece_r_target;
-  this.r_step           = this.board.new_piece_r_step;
-  this.x0_target        = 0;
-  this.y0_target        = 0;
+  this.x_target  = this.board.new_piece_x_target;
+  this.y_target  = this.board.new_piece_y_target;
+  this.r_target  = this.board.new_piece_r_target;
+  this.r_step    = this.board.new_piece_r_step;
+  this.x0_target = 0;
+  this.y0_target = 0;
   
   // Instantaneous values
-  this.x  = this.board.new_piece_x;
-  this.y  = this.board.new_piece_y;
+  this.x  = this.board.new_piece_x_target;
+  this.y  = this.board.new_piece_y_target;
+  this.r = this.board.new_piece_r_target;
   this.x0 = 0;
   this.y0 = 0; 
-  this.r = 2*(180-360*Math.random()); // snazzy first load
   
   this.t_fade_ms        = this.board.new_piece_t_fade_ms;
   this.snap_index       = this.board.new_piece_snap_index;
@@ -773,9 +834,9 @@ PIECE.prototype.move_and_draw = function() {
   this.t_previous_draw = t;
 
   // calculate the target velocity
-  vx_target = (this.x_target - this.x)*speed;
-  vy_target = (this.y_target - this.y)*speed;
-  vr_target = (this.r_target - this.r)*speed;
+  vx_target  = (this.x_target - this.x)*speed;
+  vy_target  = (this.y_target - this.y)*speed;
+  vr_target  = (this.r_target - this.r)*speed;
   vx0_target = (this.x0_target - this.x0)*speed;
   vy0_target = (this.y0_target - this.y0)*speed;
   
@@ -1106,8 +1167,6 @@ function BOARD(canvas) {
   // defaults for new pieces
   this.new_piece_x_target            = 0;
   this.new_piece_y_target            = 0;
-  this.new_piece_x                   = 0;
-  this.new_piece_y                   = 0;
   this.new_piece_r_target            = 0;
   this.new_piece_r_step              = 90;
   this.new_piece_t_fade_ms           = 0;
@@ -1927,7 +1986,7 @@ BOARD.prototype.event_mousedown = function(e) {
             else {
               this.deselect_piece(p);
               this.client_is_holding[my_index] = false;
-              this.trigger_h_stream;
+              this.trigger_h_stream = true;
               return;
             }
           } 
@@ -1956,13 +2015,15 @@ BOARD.prototype.event_mousedown = function(e) {
 
           // Let's treat them as held until the mouseup happens
           this.client_is_holding[my_index] = true;
-          this.trigger_h_stream;
+          this.trigger_h_stream = true;
 
-          // Also remember the initial coordinates
+          // Also stop the movement and remember the initial coordinates
           for(var j in this.client_selected_pieces[my_index]) {
             var sp = this.client_selected_pieces[my_index][j];
-            sp.x0_target = sp.x;
-            sp.y0_target = sp.y;
+            sp.x_target = sp.x;
+            sp.y_target = sp.y;
+            sp.x0_target = sp.x_target;
+            sp.y0_target = sp.y_target;
             sp.x0 = sp.x;
             sp.y0 = sp.y; // immediate
           }
@@ -1977,14 +2038,14 @@ BOARD.prototype.event_mousedown = function(e) {
   // If there was an object selected, we deselect it & drop whatever we were holding.
   if(!e.ctrlKey && !e.shiftKey) {
     this.client_selected_pieces[my_index].length = 0;  
-    this.client_is_holding     [my_index] = false;
+    this.client_is_holding[my_index] = false;
     this.trigger_h_stream = true;
   }
   
   // store the drag offset for canvas motion
-  this.drag_offset_board_x  = this.mouse.x;
+  this.drag_offset_board_x  = this.mouse.x; // mousedown board coordinates
   this.drag_offset_board_y  = this.mouse.y;
-  this.drag_offset_screen_x = e.clientX-this.px;
+  this.drag_offset_screen_x = e.clientX-this.px; // mousedown screen (pixels) coordinates
   this.drag_offset_screen_y = e.clientY-this.py;
 
   // if we right-clicked or held shift, start the selection box
@@ -2048,7 +2109,7 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
           // We want to drag it from where we clicked.
           // the timer will handle the data sending if things have changed
           // Unlike set_pan, these coordinates are relative to the unzoomed, unrotated board.
-          hp.set_target(this.mouse.x - this.mouse_down.x + hp.x0,
+          hp.set_target(this.mouse.x - this.mouse_down.x + hp.x0, // x0 and y0 could be moving if we rotated recently
                         this.mouse.y - this.mouse_down.y + hp.y0, 
                         null, null, true, keep_t_previous_move) // make the move immediate
           
@@ -2204,7 +2265,7 @@ BOARD.prototype.event_mousewheel = function(e) {
 
     // If we're holding pieces and shift
     if (sps.length > 0 && e.shiftKey) {
-        if      (e.wheelDelta < 0) rotate_pieces_about_center(sps, sps[sps.length-1].r_step);
+        if      (e.wheelDelta < 0) rotate_pieces_about_center(sps,  sps[sps.length-1].r_step);
         else if (e.wheelDelta > 0) rotate_pieces_about_center(sps, -sps[sps.length-1].r_step);
     } 
     
@@ -2877,11 +2938,6 @@ BOARD.prototype.draw = function() {
     // set the actual transform
     this.context.setTransform(cos_r, sin_r, -sin_r, cos_r, this.px+cx, this.py+cy);
     
-    // Trigger a mouse move event with the last known raw mouse event
-    // We set keep_t_previous_move=true (second argument) so it doesn't reset the dynamics 
-    // t0 every frame; without this the rotation is crazy slow or stopped.
-    if(this.client_is_holding[my_index]) this.event_mousemove(this.mouse.e, true);
-
     // TO DO: also look up requestAnimationFrame API for faster rendering
 
     // draw the background image
@@ -3064,7 +3120,7 @@ BOARD.prototype.send_stream_update = function() {
   }
 
   // Get client index and team
-  my_index = get_my_client_index();
+  var my_index = get_my_client_index();
 
   // Allows one to temporarily highlight some pieces (countdown)
   if(this.clear_selected_after > 0) {
@@ -3125,12 +3181,10 @@ BOARD.prototype.send_stream_update = function() {
   } // end of updating mouse coordinates
   
   // Now loop over ALL the pieces to see if their coordinates or position have changed
-  var piece_datas = [];
+  var changed_pieces = [];
   for (var n=0; n<this.pieces.length; n++) {
+    var p = this.pieces[n]; // TO DO: for some reason, n became a string with "for n in this.pieces!"
     
-    // Get the piece
-    var p = this.pieces[n];
-
     // See if anything has changed
     if (p.previous_x != p.x_target ||
         p.previous_y != p.y_target ||
@@ -3139,7 +3193,7 @@ BOARD.prototype.send_stream_update = function() {
         p.previous_n != n) {
       
       // push the piece data
-      piece_datas.push({
+      changed_pieces.push({
         id: p.piece_id,
         x:  p.x_target,
         y:  p.y_target,
@@ -3160,9 +3214,9 @@ BOARD.prototype.send_stream_update = function() {
   
 
   // if we found something, send it
-  if (piece_datas.length > 0) {
-    console.log('sending "u" with', piece_datas.length, 'pieces');
-    my_socket.emit('u', piece_datas);
+  if (changed_pieces.length > 0) {
+    console.log('sending "u" with', changed_pieces.length, 'pieces');
+    my_socket.emit('u', changed_pieces);
   }
 } 
 
@@ -3334,7 +3388,7 @@ server_mousemove = function(client_id, x, y, hp_ids, hp_coords, client_r, select
   if(!board._ready_for_packets) return;
 
   // server has sent a "mouse move"
-  console.log('Received m:', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
+  //console.log('Received m:', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
 
   // Get the client index whose mouse moved
   client_index = board.client_ids.indexOf(client_id);
@@ -3407,7 +3461,7 @@ server_heldchange = function(client_id, is_holding) {
 
   // Server sent a change in held pieces
   console.log('h: client id =', client_id, 'index =', client_index, 'is_holding =', is_holding);
-
+  
   // Update whether the client's selection is held
   board.client_is_holding[client_index] = is_holding;
 
@@ -3431,7 +3485,7 @@ server_update = function(piece_datas){
   if(!board._ready_for_packets) return;
 
   // server has sent a pieces update
-  console.log('Received update:', piece_datas.length, 'pieces');
+  console.log('Received u:', piece_datas.length, 'pieces');
   board.last_update_ms = Date.now();
 
   // If we got nothing, send a full update to populate

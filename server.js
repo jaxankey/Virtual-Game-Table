@@ -110,16 +110,6 @@ pieces = [];
  * n    position in main stack
 */
 
-//team_zones = null;
-/** each team zone contains
- * draw_mode
- * grab_mode
- * r
- * team_index
- * x1,x2,x3,x4,y1,y2,y3,y4
- */
-
-
 /**
  * Find and return the index of the supplied piece id.
  * @param {int} id 
@@ -138,7 +128,7 @@ client_ids                = []; // list of unique ids for each socket
 client_sockets            = []; // sockets
 client_names              = []; // names associated with each socket
 client_teams              = []; // team numbers associated with each socket
-client_held_piece_ids     = []; // lists of last known held piece indices for each socket
+client_is_holding         = []; // lists of last known held piece indices for each socket
 client_selected_piece_ids = []; // Lists of the last known selected pieces for each socket
 client_drag_offsets       = []; // list of [dx,dy] offset coordinates for each held piece
 
@@ -174,7 +164,7 @@ io.on('connection', function(socket) {
   client_sockets       .push(socket);  // each client gets a socket
   client_names         .push("n00b");  // each client gets a name string
   client_teams         .push(0);       // each client gets a team index
-  client_held_piece_ids.push([]);      // each client gets a list of held pieces 
+  client_is_holding    .push(false);      // each client gets a list of held pieces 
   client_selected_piece_ids.push([]);  // each client gets a list of selected pieces
   client_drag_offsets  .push([]);      // for each held piece, there is a list of [dx,dy] offsets
 
@@ -244,7 +234,7 @@ io.on('connection', function(socket) {
       socket.broadcast.emit('chat', '<b>Server:</b> '+client_names[i]+" joins Team "+String(team));
     
     // tell everyone about the current list.
-    io.emit('users', client_ids, client_names, client_teams, client_held_piece_ids, client_selected_piece_ids);
+    io.emit('users', client_ids, client_names, client_teams, client_is_holding, client_selected_piece_ids);
   });
 
   // received a chat message
@@ -272,7 +262,7 @@ io.on('connection', function(socket) {
     // Figure out the client
     client_index = client_sockets.indexOf(socket);
     client_id    = client_ids[client_index];
-    log('m:', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
+    log('m:', client_id, x, y, hp_ids.length, hp_coords.length, client_r, selection_box);
     
     // send messages to everyone but this socket
     socket.broadcast.emit('m', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
@@ -303,8 +293,6 @@ io.on('connection', function(socket) {
 
     // If we're supposed to, get rid of the pieces in memory
     if(clear==true) pieces.length=0;
-  
-
 
     // Now we wish to overwrite all the existing pieces with the new ones,
     // and make sure they're in the right places.
@@ -314,10 +302,10 @@ io.on('connection', function(socket) {
 
     // run through the list of ids, find the index m in the stack of the pieces by id
     for(var i in incoming_pieces) {
-      pd = incoming_pieces[i];
+      pd = incoming_pieces[i]; // incoming piece
       
       // find the current index
-      var m = find_piece(pd.id);
+      var m = find_piece(pd.id); // index of incoming piece
       
       // if the piece exists, pop it (to be replaced below) and update the rest
       if(m>=0) {
@@ -334,11 +322,11 @@ io.on('connection', function(socket) {
     // in separate loops so that pieces removed from random locations and sent to 
     // random locations do not interact. The value of ns is the final value in the pieces array.
     for(var i in incoming_pieces) {
-      p = incoming_pieces[i];
+      p = incoming_pieces[i]; // incoming piece
 
-      // insert the piece at it's index
+      // insert the piece at it's index (WHAT IF THIS IS HIGHER THAN THE SIZE OF THE STACK?)
       pieces.splice(p.n, 0, p);
-
+      
       // increment the subsequent piece indices
       for(var j=p.n+1; j<pieces.length; j++) pieces[j].n++;
     }
@@ -388,11 +376,11 @@ io.on('connection', function(socket) {
     client_sockets    .splice(i,1);
     client_names      .splice(i,1);
     client_teams      .splice(i,1);
-    client_held_piece_ids.splice(i,1);
+    client_is_holding .splice(i,1);
     client_selected_piece_ids.splice(i,1);
     
-    // tell the world!
-    io.emit('users', client_ids, client_names, client_teams, client_held_piece_ids, client_selected_piece_ids);
+    // tell the world! TO DO!
+    io.emit('users', client_ids, client_names, client_teams, client_is_holding, client_selected_piece_ids);
   });
 
 }); // end of io
