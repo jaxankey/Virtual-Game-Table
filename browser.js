@@ -23,23 +23,17 @@
 //         * all objects become server packets, and functions to draw, etc take 
 //           their instance as a first argument? This makes net traffic super simple.
 // TO DO: var before every local variable. Avoids overwriting by other functions in loops!
-// TO DO: local sqrt(), sin(), cos(), tan() that remembers angles and previous results.
-// TO DO: middle mouse click = focus
-//
 // TO DO: keyboard keys with a lookup table and functions that can be overwritten?
 // TO DO: Shift-c reverse-sorts?
 //
-// TO DO: Rotate pieces about center while held seems to send too many updates.
+// TO DO: middle mouse click = focus
 // TO DO: Top and bottom index for each piece (defines layers!)
 // TO DO: dice rolling on sparse hex grid
-// TO DO: Undo log in stream update for some changes
 // TO DO: Update controls html file and add link to all games.
-
-
 
 //// OPTIONS
 
-var stream_interval_ms = 200;   //150;   // how often to send a stream update (ms)
+var stream_interval_ms = 100;   //150;   // how often to send a stream update (ms)
 var update_interval_ms = 10000; // how often to send a full update (ms)
 var draw_interval_ms   = 10;    // how often to draw the canvas (ms)
 
@@ -54,52 +48,52 @@ if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera M
 function sin(r_deg) {
 
   // If it's the same value, return the previous result.
-  if(r_deg == this.previous_r_deg) return this.result;
+  if(r_deg == sin.r_deg) return sin.result;
 
   // Otherwise, calculate it and remember it
-  this.result = Math.sin(r_deg*Math.PI/180.0);
-  this.previous_r_deg = r_deg;
-  return this.result;
+  sin.result = Math.sin(r_deg*Math.PI/180.0);
+  sin.r_deg = r_deg;
+  return sin.result;
 }
 function cos(r_deg) {
 
   // If it's the same value, return the previous result.
-  if(r_deg == this.previous_r_deg) return this.result;
+  if(r_deg == cos.r_deg) return cos.result;
 
   // Otherwise, calculate it and remember it
-  this.result = Math.cos(r_deg*Math.PI/180.0);
-  this.previous_r_deg = r_deg;
-  return this.result;
+  cos.result = Math.cos(r_deg*Math.PI/180.0);
+  cos.r_deg = r_deg;
+  return cos.result;
 }
 function tan(r_deg) {
 
   // If it's the same value, return the previous result.
-  if(r_deg == this.previous_r_deg) return this.result;
+  if(r_deg == tan.r_deg) return tan.result;
 
   // Otherwise, calculate it and remember it
-  this.result = Math.tan(r_deg*Math.PI/180.0);
-  this.previous_r_deg = r_deg;
-  return this.result;
+  tan.result = Math.tan(r_deg*Math.PI/180.0);
+  tan.r_deg = r_deg;
+  return tan.result;
 }
 function atand(x) {
 
   // If it's the same value, return the previous result.
-  if(x == this.previous_x) return this.result;
+  if(x == atand.x) return atand.result;
 
   // Otherwise, calculate it and remember it
-  this.result = Math.atan(x)*180.0/Math.PI;
-  this.previous_x = x;
-  return this.result;
+  atand.result = Math.atan(x)*180.0/Math.PI;
+  atand.x = x;
+  return atand.result;
 }
 function sqrt(x) {
 
   // If it's the same value, return the previous result.
-  if(x == this.previous_x) return this.result;
+  if(x == sqrt.x) return sqrt.result;
 
   // Otherwise, calculate it and remember it
-  this.result = Math.sqrt(x);
-  this.previous_x = x;
-  return this.result;
+  sqrt.result = Math.sqrt(x);
+  sqrt.x = x;
+  return sqrt.result;
 }
 
 /**
@@ -186,9 +180,9 @@ function get_selection_box_corners(box) {
   var a = Math.sqrt((box.y1-box.y0)*(box.y1-box.y0)+(box.x1-box.x0)*(box.x1-box.x0)) * 0.5;
  
   // Get the unrotated angle to the corner TO DO:
-  var t  = atand((box.y1-cy)/(box.x1-cx)) * Math.PI/180.0;
-  var x2 = cx + a*Math.cos(t+2*box.r*Math.PI/180.0);
-  var y2 = cy - a*Math.sin(t+2*box.r*Math.PI/180.0);
+  var t  = atand((box.y1-cy)/(box.x1-cx));
+  var x2 = cx + a*cos(t+2*box.r);
+  var y2 = cy - a*sin(t+2*box.r);
   var x3 = 2*cx - x2;
   var y3 = 2*cy - y2;
 
@@ -231,9 +225,8 @@ function rotate_vector(x,y,r) {
     
     // convert to radians & compute.
     this.last_r = r;
-    rr = r*Math.PI/180.0
-    this.cos_r = Math.cos(rr);
-    this.sin_r = Math.sin(rr);
+    this.cos_r = cos(r);
+    this.sin_r = sin(r);
   }
 
   // rotate coordinates
@@ -1274,6 +1267,7 @@ function BOARD(canvas) {
   this.z_min        = 6.25;
   this.z_step       = Math.pow(2,0.25);
   this.z_target     = 100;
+  this.previous_z   = this.z_target;
   this.r_step       = 45;
   this.r_target     = 0;  // rotation setpoint
   this.previous_r   = this.r_target;
@@ -1288,6 +1282,8 @@ function BOARD(canvas) {
   this.py  = 0;
   this.px_target = this.px;
   this.py_target = 0;
+  this.previous_px = this.px_target;
+  this.previous_py = this.py_target;
   
   this.vpx = 0;
   this.vpy = 0;
@@ -1396,6 +1392,7 @@ BOARD.prototype.load_cookies = function() {
         px = parseFloat(s[1]);
         this.px_target = px;
         this.px        = px;
+        this.previous_px = px;
         this.set_cookie('px_target', px); // updates the cookie date
         break;
       
@@ -1403,6 +1400,7 @@ BOARD.prototype.load_cookies = function() {
         py = parseFloat(s[1]);
         this.py_target = py;
         this.py        = py;
+        this.previous_py = py;
         this.set_cookie('py_target', py); // updates the cookie date
         break;
       
@@ -1761,26 +1759,23 @@ BOARD.prototype.get_mouse_coordinates = function(e) {
   // and the rotated unzoomed canvas (xr, yr), and the rotated movement (dxr,dyr)
   // Specifying rotated = true will get coordinates with respect to the rotated, unzoomed canvas.
 
-  // get the bounding rectangle of the canvas
-  var rect = this.canvas.getBoundingClientRect();
+  // figure out the center of the board
+  var cx = Math.round(this.canvas.width  / 2);
+  var cy = Math.round(this.canvas.height / 2);
 
-    // figure out the center of the board
-    var cx = Math.round(this.canvas.width  / 2);
-    var cy = Math.round(this.canvas.height / 2);
+  // set the new zoom/rotation/pan
+  var sin_r = sin(this.r);
+  var cos_r = cos(this.r);
+  
+  // zoom and pan
+  
+  // raw coordinates
+  xr = (e.offsetX-cx-this.px)/(this.z*0.01);
+  yr = (e.offsetY-cy-this.py)/(this.z*0.01);
 
-    // set the new zoom/rotation/pan
-    var sin_r = Math.sin(this.r*Math.PI/180.0);
-    var cos_r = Math.cos(this.r*Math.PI/180.0);
-    
-    // zoom and pan
-    
-    // raw coordinates
-    xr = (e.offsetX-cx-this.px)/(this.z*0.01);
-    yr = (e.offsetY-cy-this.py)/(this.z*0.01);
-
-    // Raw movement
-    dxr = (e.movementX)/(this.z*0.01);
-    dyr = (e.movementY)/(this.z*0.01);
+  // Raw movement
+  dxr = (e.movementX)/(this.z*0.01);
+  dyr = (e.movementY)/(this.z*0.01);
     
   // return the transformed mouse coordinates
   return {
@@ -1940,9 +1935,10 @@ BOARD.prototype.event_mousedown = function(e) {
   this.trigger_redraw = true;
 
   // get the mouse coordinates & team
-  this.mouse_down = this.get_mouse_coordinates(e); // the anchor.
-  this.mouse      = this.get_mouse_coordinates(e);
-  var team        = get_team_number();
+  this.mouse_down  = this.get_mouse_coordinates(e); // the anchor.
+  this.mouse       = this.get_mouse_coordinates(e);
+  this.mouse_event = e;
+  var team         = get_team_number();
   
   // report the coordinates
   console.log("event_mousedown", this.mouse);
@@ -2076,7 +2072,10 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
   // Make sure the board is in focus.
 
   // get the new mouse coordinates
-  if(e) this.mouse  = this.get_mouse_coordinates(e);
+  if(e) {
+    this.mouse = this.get_mouse_coordinates(e);
+    this.mouse_event = e;
+  }
 
   // Mouse pan (disabled in the send_stream_update)
   this._mouse_pan_x = null;
@@ -2193,11 +2192,11 @@ BOARD.prototype.event_mouseup = function(e) {
       // Trigger a snap for everyone else
       this.client_selected_pieces[my_index][n].previous_x = null;
     }
-  }
 
-  // remove it from our holding
-  this.client_is_holding[my_index] = false;
-  this.trigger_h_stream = true;
+    // remove it from our holding
+    this.client_is_holding[my_index] = false;
+    this.trigger_h_stream = true;
+  }
   
   // null out the drag offset so we know not to carry the canvas around
   this.drag_offset_board_x = null;
@@ -2677,6 +2676,9 @@ BOARD.prototype.set_zoom = function(z, immediate) {
   // defaults
   immediate = or_default(immediate, false);
   
+  // Keep the previous value
+  this.previous_z = this.z_target;
+
   // check the bounds
   if(z > this.z_max) z=this.z_max;
   if(z < this.z_min) z=this.z_min;
@@ -2704,6 +2706,7 @@ BOARD.prototype.set_rotation = function(r_deg, immediate) {
   immediate = or_default(immediate, false);
   
   // sets the target rotation
+  this.previous_r = this.r_target;
   this.r_target = r_deg;
     
   // if it's immediate, set the current value too
@@ -2760,6 +2763,8 @@ BOARD.prototype.set_pan = function(px, py, immediate) {
   immediate = or_default(immediate, false);
   
   // sets the target rotation
+  this.previous_px = this.px_target;
+  this.previous_py = this.py_target;
   this.px_target = px;
   this.py_target = py;
     
@@ -2804,6 +2809,7 @@ BOARD.prototype.tantrum = function() {
     u1 = Math.random();
     u2 = Math.random();
     
+    // For random stuff, no reason to use the "fast" cos and sin
     x = Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2)*1000.0
     y = Math.sqrt(-2*Math.log(u1))*Math.sin(2*Math.PI*u2)*1000.0
     r = Math.random()*5000-2500;
@@ -2853,7 +2859,7 @@ BOARD.prototype.draw = function() {
   //           Lower-def counterparts.
   //        Ignore drawing pieces outside the view?
   if (this.needs_redraw()) {
-
+    
     my_index = get_my_client_index();
 
     //////////////////////////////////////////////////////////////
@@ -2907,10 +2913,15 @@ BOARD.prototype.draw = function() {
     if ( Math.abs(this.py-pytarget) < this.transition_snap) this.py = pytarget;
     if ( Math.abs(this.r - rtarget) < this.transition_snap) {
       //this.r_target = this.r_target % 360;
-      this.r        = this.r_target;
+      this.r = this.r_target;
     }
     // Update the selection box r value if we have one
     if(this.client_selection_boxes[my_index]) this.client_selection_boxes[my_index].r = this.r;
+
+    // If the board's pan, rotation, or zoom changed, update the hovering mouse coordinates
+    if((dz || dr || dpx || dpy) && this.mouse_event ) this.event_mousemove(this.mouse_event);
+
+
 
     //////////////////////////////////////
     // Now we actually update the canvas
@@ -2931,7 +2942,8 @@ BOARD.prototype.draw = function() {
     var cx = Math.round(canvas.width  / 2);
     var cy = Math.round(canvas.height / 2);
 
-    // set the new z/r/pan
+    // set the new z/r/pan. Since this.r is changing a lot and we're not looping over pieces,
+    // don't bother with the "memory" versions of sin and cos
     var sin_r = this.z*0.01*Math.sin(this.r*Math.PI/180.0);
     var cos_r = this.z*0.01*Math.cos(this.r*Math.PI/180.0);
     
@@ -3172,6 +3184,7 @@ BOARD.prototype.send_stream_update = function() {
     
     // emit the mouse update event, which includes the held piece ids and their target coordinates,
     // So that the hand and pieces move as a unit. 
+    console.log('Sending m:', this.mouse.x, this.mouse.y, sp_ids.length, 'pieces');
     my_socket.emit('m', this.mouse.x, this.mouse.y, sp_ids, sp_coords, this.r_target, 
                     this.client_selection_boxes[my_index]);
   
@@ -3220,7 +3233,7 @@ BOARD.prototype.send_stream_update = function() {
   }
 } 
 
-// Timer: very occasionally sends all piece coordinates to the server, just to be safe.
+// Very occasionally sends all piece coordinates to the server, just to be safe.
 // This will be called some time after the last full update.
 BOARD.prototype.send_full_update   = function(force) {
   
