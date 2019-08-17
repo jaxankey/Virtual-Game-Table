@@ -26,6 +26,9 @@
 // TO DO: keyboard keys with a lookup table and functions that can be overwritten?
 // TO DO: Shift-c reverse-sorts?
 //
+// TO DO: Switch the gameplay updates to UDP, even though the data rate is low, or 
+//        add a check to see if the previous packet was received.
+//        https://stackoverflow.com/questions/11382495/how-to-be-sure-that-message-via-socket-io-has-been-received-to-the-client
 // TO DO: middle mouse click = focus
 // TO DO: Top and bottom index for each piece (defines layers!)
 // TO DO: dice rolling on sparse hex grid
@@ -841,9 +844,9 @@ PIECE.prototype.move_and_draw = function() {
   this.vy0 = (vy0_target - this.vy0)*accel;
   
   // adjust the step size
-  dx = this.vx * dt/draw_interval_ms;
-  dy = this.vy * dt/draw_interval_ms;
-  dr = this.vr * dt/draw_interval_ms;
+  dx  = this.vx  * dt/draw_interval_ms;
+  dy  = this.vy  * dt/draw_interval_ms;
+  dr  = this.vr  * dt/draw_interval_ms;
   dx0 = this.vx0 * dt/draw_interval_ms;
   dy0 = this.vy0 * dt/draw_interval_ms;
   
@@ -1304,12 +1307,8 @@ function BOARD(canvas) {
   canvas.addEventListener('dblclick',    this.event_dblclick   .bind(this), true); 
   canvas.addEventListener('mousewheel',  this.event_mousewheel .bind(this), true);
   canvas.addEventListener('contextmenu', this.event_contextmenu.bind(this), true);
-  
-  canvas.addEventListener('keydown', this.event_keydown.bind(this), true);
-  canvas.addEventListener('keyup',   this.event_keyup  .bind(this), true);
-  
-  //$(document.body).on('keydown', this.event_keydown.bind(this));
-  //$(document.body).on('keyup',   this.event_keyup  .bind(this));
+  canvas.addEventListener('keydown',     this.event_keydown    .bind(this), true);
+  canvas.addEventListener('keyup',       this.event_keyup      .bind(this), true);
   
   //// TIMERS 
   setInterval(this.draw.bind(this), draw_interval_ms);
@@ -3566,7 +3565,6 @@ window.onresize = function(event) {
   board.trigger_redraw = true;
 };
 
-
 //// CONTROL EVENTS
 function name_onchange() {
   console.log("New name:", get_name());
@@ -3583,6 +3581,3 @@ function peak_onchange() { board.trigger_redraw = true; }
 
 // create the board
 var board = new BOARD(document.getElementById('table'));
-
-
-
