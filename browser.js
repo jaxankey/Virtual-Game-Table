@@ -24,12 +24,12 @@
 //           their instance as a first argument? This makes net traffic super simple.
 // TO DO: var before every local variable. Avoids overwriting by other functions in loops!
 // TO DO: keyboard keys with a lookup table and functions that can be overwritten?
-// TO DO: Shift-c reverse-sorts?
-//
 // TO DO: Switch the gameplay updates to UDP, even though the data rate is low, or 
 //        add a check to see if the previous packet was received.
 //        https://stackoverflow.com/questions/11382495/how-to-be-sure-that-message-via-socket-io-has-been-received-to-the-client
+//
 // TO DO: middle mouse click = focus
+// TO DO: Shift-c reverse-sorts?
 // TO DO: Top and bottom index for each piece (defines layers!)
 // TO DO: dice rolling on sparse hex grid
 // TO DO: Update controls html file and add link to all games.
@@ -239,19 +239,29 @@ function rotate_vector(x,y,r) {
   return({x:x2, y:y2});
 }
 
-function rotate_pieces_about_center(pieces, r_deg) {
+function rotate_pieces(pieces, r_deg, immediate, x, y) {
   
+  var immediate = or_default(immediate, false);
+  var x         = or_default(x, null);
+  var y         = or_default(y, null);
+
   // Get the center of the current target coordinates, and the origin target coordinates
-  var d = get_center_of_pieces(pieces);
+  if(x == null || y == null) var d = get_center_of_pieces(pieces);
+  else var d = {
+    x :x, 
+    y :y, 
+    x0:x + p.x0-p.x,
+    y0:y + p.y0-p.y
+  };
   
   for(var i in pieces) {
     
     // Rotate the target coordinates about the group center
-    pieces[i].rotate (r_deg, d.x,  d.y);
+    pieces[i].rotate(r_deg, d.x,  d.y, immediate);
 
     // Rotate the origin points to match, so that future mouse updates do not
     // unrotate the new values of x_target and y_target.
-    pieces[i].rotate0(r_deg, d.x0, d.y0); 
+    pieces[i].rotate0(r_deg, d.x0, d.y0, immediate); 
   }
 }
 
@@ -663,32 +673,39 @@ PIECE.prototype.set_rotation = function(r_deg, immediate, keep_t_previous_move) 
 }
 
 
-
-PIECE.prototype.rotate = function(r_deg, x0, y0) {
+/**
+ * Rotates a piece about the (optional) supplied origin (x0,y0).
+ */
+PIECE.prototype.rotate = function(r_deg, x0, y0, immediate) {
 
   // By default, rotate the piece about its own center.
   var x0 = or_default(x0, this.x_target);
   var y0 = or_default(y0, this.y_target);
+  var immediate = or_default(immediate, false);
 
   // If specified, rotate about the supplied center coordinate
   if(x0 != this.x_target || y0 != this.y_target) {
     d = rotate_vector(this.x_target-x0, this.y_target-y0, -r_deg);
-    this.set_target(x0 + d.x, y0 + d.y, r_deg + this.r_target);
+    this.set_target(x0 + d.x, y0 + d.y, r_deg + this.r_target, null, null, immediate);
   }
   
   // Otherwise rotate around its center.
-  else this.set_rotation(r_deg + this.r_target);
+  else this.set_rotation(r_deg + this.r_target, immediate);
 }
 
 /**
  * Rotates the piece's ORIGIN coordinates (this.x0, this.y0) about the specified point
  */
-PIECE.prototype.rotate0 = function(r_deg, x, y) {
+PIECE.prototype.rotate0 = function(r_deg, x, y, immediate) {
 
   // If specified, rotate about the supplied center coordinate
   d = rotate_vector(this.x0_target-x, this.y0_target-y, -r_deg);
   this.x0_target = x + d.x;
   this.y0_target = y + d.y;
+  if(immediate) {
+    this.x0 = this.x0_target;
+    this.y0 = this.y0_target;
+  }
 }
 
 
@@ -2263,8 +2280,8 @@ BOARD.prototype.event_mousewheel = function(e) {
 
     // If we're holding pieces and shift
     if (sps.length > 0 && e.shiftKey) {
-        if      (e.wheelDelta < 0) rotate_pieces_about_center(sps,  sps[sps.length-1].r_step);
-        else if (e.wheelDelta > 0) rotate_pieces_about_center(sps, -sps[sps.length-1].r_step);
+        if      (e.wheelDelta < 0) rotate_pieces(sps,  sps[sps.length-1].r_step);
+        else if (e.wheelDelta > 0) rotate_pieces(sps, -sps[sps.length-1].r_step);
     } 
     
     // Otherwise, rotate the board (i.e., control key or no held pieces)
@@ -2365,7 +2382,7 @@ BOARD.prototype.event_keydown = function(e) {
         if(e.shiftKey && sps.length == 0) this.set_rotation(this.r_target+this.r_step, caps);
         else {
           // if there are selected pieces and we're hodling shift, rotate them.
-          if (sps.length > 0 && e.shiftKey) rotate_pieces_about_center(sps, sps[sps.length-1].r_step);
+          if (sps.length > 0 && e.shiftKey) rotate_pieces(sps, sps[sps.length-1].r_step);
 
           // otherwise pan
           else this.set_pan(this.px_target-this.pan_step, this.py_target, caps);
@@ -2379,7 +2396,7 @@ BOARD.prototype.event_keydown = function(e) {
           this.set_rotation(this.r_target-this.r_step, caps);
         else {
           // if there are selected pieces and we're holding shift, rotate their locations.
-          if (sps.length > 0 && e.shiftKey) rotate_pieces_about_center(sps, -sps[sps.length-1].r_step);
+          if (sps.length > 0 && e.shiftKey) rotate_pieces(sps, -sps[sps.length-1].r_step);
           
           // otherwise pan
           else this.set_pan(this.px_target+this.pan_step, this.py_target, caps);
@@ -2917,9 +2934,40 @@ BOARD.prototype.draw = function() {
     // Update the selection box r value if we have one
     if(this.client_selection_boxes[my_index]) this.client_selection_boxes[my_index].r = this.r;
 
+    
+
     // If the board's pan, rotation, or zoom changed, update the hovering mouse coordinates
     if((dz || dr || dpx || dpy) && this.mouse_event ) this.event_mousemove(this.mouse_event);
 
+    // If the board rotated and we're holding pieces, update their rotations
+    if(dr && this.client_is_holding[my_index] && this.mouse_event) {
+      var sps = this.client_selected_pieces[my_index];
+      
+      rotate_pieces(sps, -dr, true, this.mouse.x, this.mouse.y);
+      /*// Rotate the pieces about their centers
+      for(var n in sps) {
+        var p = sps[n];
+
+        // Rotate the pieces
+        p.r_target -= dr;
+        p.r        -= dr;
+
+        // Rotate the piece coordinates about the mouse coordinates
+        // x,y,r,angle,disable_snap,immediate,keep_t_previous_move
+        //mouse = this.get_mouse_coordinates(this.mouse_event);
+        mouse = this.mouse;
+
+        var d = rotate_vector(p.x_target-mouse.x, p.y_target-mouse.y, dr);
+        p.set_target(mouse.x+d.x, mouse.y_target+d.y, null, null, undefined, true);
+        
+        var d = rotate_vector(p.x0_target-mouse.x, p.y0_target-mouse.y, dr);
+        p.x0_target = mouse.x+d.x;
+        p.y0_target = mouse.y+d.y;
+        p.x0 = p.x0_target;
+        p.y0 = p.y0_target;
+
+      }*/
+    } 
 
 
     //////////////////////////////////////
