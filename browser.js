@@ -1858,8 +1858,6 @@ BOARD.prototype.find_selected_piece_client_index = function(piece) {
  */
 BOARD.prototype.select_piece = function(piece, send_to, top, bottom) {
 
-  // TO DO: tray doesn't quite work when pieces near the top.
-
   // Where to send this piece
   var send_to   = or_default(send_to, 0);
   var top = or_default(top, this.pieces.length);
@@ -1913,7 +1911,7 @@ BOARD.prototype.select_piece = function(piece, send_to, top, bottom) {
           if(send_to > 0) {
             n--;
             top--;
-           } // sending to top means we need to repeat an index
+          } // sending to top means we need to repeat an index
         }
       }
     } 
@@ -2024,6 +2022,9 @@ BOARD.prototype.event_mousedown = function(e) {
           }
 
           // At this point, we have selected something new.
+
+          // Sort the selected pieces to match the order of the board.
+          this.client_selected_pieces[my_index].sort(function(p1,p2) {return board.pieces.indexOf(p1)-board.pieces.indexOf(p2);});
 
           // Let's treat them as held until the mouseup happens
           this.client_is_holding[my_index] = true;
@@ -2164,12 +2165,17 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
           p.movable_by.indexOf(team)>=0)) {
           if(i < 0) this.client_selected_pieces[my_index].push(p);
         }
+        
         // Otherwise, deselect it.
-        else if(i >= 0 && !e.ctrlKey && !e.shiftKey) {
+        else if(i >= 0 && !e.shiftKey) {
           this.client_selected_pieces[my_index].splice(i,1);
         }
       }
     } // End of loop over all pieces
+
+    // Sort the selected pieces to match the order of the board.
+    this.client_selected_pieces[my_index].sort(function(p1,p2) {return board.pieces.indexOf(p1)-board.pieces.indexOf(p2);});
+
   } // End of if we have a selection box
 
   // Otherwise, we're dragging the canvas; when the mouse is down, these are not null
