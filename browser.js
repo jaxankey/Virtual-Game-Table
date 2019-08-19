@@ -31,7 +31,6 @@
 // TO DO: middle mouse click = focus
 // TO DO: Shift-c reverse-sorts?
 // TO DO: Top and bottom index for each piece (defines layers!)
-// TO DO: dice rolling on sparse hex grid
 // TO DO: Update controls html file and add link to all games.
 
 //// OPTIONS
@@ -137,6 +136,50 @@ function get_team_zone_packets() {
   }
   return packets;
 }
+
+/**
+ * Scramble the supplied pieces, like rolling dice: randomizes locations in a pattern determined by the 
+ * last piece's diameter, minimizing overlap. 
+ * 
+ * @param {array} pieces list of pieces to randomize
+ * @param {int}   space  space occupied by each piece on average
+ */
+function scramble_pieces(pieces, x, y, space) {
+  
+  // First find the center of the pieces and the space taken by each
+  var c = get_center_of_pieces(pieces);
+  var x = or_default(x, c.x);
+  var y = or_default(y, c.y);
+  var space = or_default(space, 2);
+
+  // Now find the basis vectors based on the radius of the last piece
+  var d  = pieces[pieces.length-1].get_dimensions()
+  var D  = Math.sqrt(d.width*d.width+d.height*d.height);
+  var ax = 2*D;
+  var ay = 0;
+  var bx = ax*cos(60);
+  var by = ax*sin(60);
+
+  // Rotate the basis vectors by a random angle
+  var r = 360*Math.random();
+  var a = rotate_vector(ax, ay, r);
+  var b = rotate_vector(bx, by, r);
+
+  // Generate all the available grid spots
+  var spots =[]; for(var n=0; n<pieces.length*space; n++) spots.push(n);
+  
+  // Set the piece coordinates on the hex grid
+  for(var n in pieces) {
+    var p = pieces[n];
+    var d = hex_spiral(spots.splice(Math.floor(Math.random()*spots.length),1));
+    var v = rotate_vector(0.5*D*Math.random(), 0, 360.0*(Math.random()));
+    p.set_target(x + d.n*a.x + d.m*b.x + v.x, 
+                 y + d.n*a.y + d.m*b.y + v.y, 
+                 (Math.random()-0.5)*720);
+    p.active_image = Math.floor(Math.random()*p.images.length);
+  }
+}
+
 
 /**
  * Returns true if x,y is within the box.
@@ -341,7 +384,11 @@ function get_center_of_pieces(pieces) {
   return {x:0.5*(xmin+xmax), y:0.5*(ymin+ymax), x0:0.5*(xmin0+xmax0), y0:0.5*(ymin0+ymax0)};
 }
 
-// turns integer into location (in units of basis vectors), hexagonally spiralling out from the center
+/**
+ * Converts an integer into an integer basis vector {m,n} following a hexagonal spiral from 
+ * {m:0,n:0}
+ * @param {int} n step.
+ */
 function hex_spiral(n) {
 
   // return the origin to avoid explosions if n=0
@@ -588,6 +635,13 @@ PIECE.prototype.increment_active_image = function(randomize) {
     this.active_image++;
     if(this.active_image >= this.images.length) this.active_image = 0;
   }
+}
+
+// Returns a vector {width, height, max, min} for the current active image.
+PIECE.prototype.get_dimensions = function() {
+  var w = this.images[this.active_image].width;
+  var h = this.images[this.active_image].height;
+  return {width: w, height: h, max: Math.max(w, h), min: Math.min(w, h)};
 }
 
 // set the target location and rotation all then rotated by angle
@@ -2336,6 +2390,13 @@ BOARD.prototype.event_keyup  = function(e) {
     
       this._tilde_down = false;
       break;
+
+      case 82: // r for roll / randomize
+        
+        // When we lift the r key, scramble the pieces
+        scramble_pieces(sps, this.mouse.x, this.mouse.y, 2);
+
+      break;
     }
 
     // at this point, we call the user function
@@ -2601,24 +2662,14 @@ BOARD.prototype.event_keydown = function(e) {
           }
         }
         
-        // Collect all selected piece to your hand coordinates
-        for(var i in sps) {
-          p = sps[i];
-
-          // Set the random image
-          p.active_image = Math.floor(Math.random() * p.images.length); 
-          
-          // Generate a random x,y square based on the image dimensions, number of images, 
-          // and randomly rotate it.
-          I = p.images[p.active_image];
-          distance = 1.5*Math.sqrt(sps.length)*Math.max(I.width, I.height);
-          d = rotate_vector((Math.random()-0.5)*distance, 
-                            (Math.random()-0.5)*distance, 
-                            Math.random()*2*Math.PI);
-          
-          // Now set the target
-          p.set_target(this.mouse.x - d.x, this.mouse.y + d.y, Math.random()*720.0-360.0);
-        }
+        // Until we release the key, collect the pieces to the mouse coordinates
+        // Collect all the pieces into a stack
+        this.collect_pieces(this.client_selected_pieces[my_index], 
+          this.mouse.x, this.mouse.y,                   // coordinates of the stack
+          e.shiftKey, null,                             // shuffle, active image 
+          this.collect_r_piece,  this.collect_r_stack,  // r_piece, r_stack
+          null, null,                                   // offset_x, offset_y (default to piece values)
+          true);                                        // centers stack wrt the TOP piece
         
         break;
 

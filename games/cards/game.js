@@ -21,11 +21,11 @@
  */
 
 //////////////////////////
-// Card Table
+// Card Table With Chips
 //////////////////////////
 
 // short name needed for differentiating the games in the cookies
-board.game_name = 'cards';
+board.game_name = 'poker';
 
 // set the allowed rotations and initial zoom (out)
 board.z_target = 80;
@@ -81,6 +81,8 @@ for(n=0; n<number_of_teams; n++) {
 // Full board view
 board.shortcut_coordinates.push([0,0,50,0]);
 
+
+
 /////////////
 // PIECES  
 /////////////
@@ -103,9 +105,22 @@ board.new_piece_collect_offset_y = 0.1;
 cards = [];
 for(n in names) cards.push(board.add_piece(['back.png', names[n]+'.png'], [names[n]+'p.png', names[n]+'.png']));
 
+// Add all the chips
+board.new_piece_collect_offset_x = 2;
+board.new_piece_collect_offset_y = 2;
+board.new_piece_physical_shape = "inner_circle";
+chips_black = []; for(n=0; n<40;  n++) chips_black .push(board.add_piece(['chip_black.png']));
+chips_blue  = []; for(n=0; n<40;  n++) chips_blue  .push(board.add_piece(['chip_blue.png']));
+chips_red   = []; for(n=0; n<80;  n++) chips_red   .push(board.add_piece(['chip_red.png']));
+chips_white = []; for(n=0; n<160; n++) chips_white .push(board.add_piece(['chip_white.png']));
+chips = chips_black.concat(chips_blue).concat(chips_red).concat(chips_white);
+
+
 /////////////////////
 // FUNCTIONALITY
 /////////////////////
+
+
 
 function collect_all_cards() {
   console.log('collect_all_cards');
@@ -159,6 +174,76 @@ function sort_selected() {
   }
 }
 
+
+/**
+ * Throws selected pieces into the pot.
+ */
+function bet() {
+  // Get the selected pieces
+  var sps = board.client_selected_pieces[get_my_client_index()];
+
+  // By default we bet all selected pieces
+  already_bet = false;
+  for(var i in sps) 
+  {
+    // Only throw in the chips!
+    if(chips.indexOf(sps[i]) >= 0) {
+      sps[i].set_target(sps[i].x*0.5+(Math.random()-0.5)*20, 
+                                      sps[i].y*0.5+(Math.random()-0.5)*20, 
+                                      Math.random()*360);
+      already_bet = true;
+    }
+  }
+  
+  // Clear the selection.
+  sps.length=0;
+
+  // Otherwise we use the one just under the mouse.
+  if(!already_bet) {
+
+    // Only do so if we're not in someone else's team zone
+    team_zone = board.in_team_zone(board.mouse.x, board.mouse.y);
+    if(team_zone < 0 || team_zone == get_team_number()) {
+      var i = board.find_top_piece_at_location(board.mouse.x, board.mouse.y);
+      
+      // Found one!
+      if(i >= 0) {
+        // Fire it off
+        board.pieces[i].set_target(board.pieces[i].x*0.5+(Math.random()-0.5)*20, 
+                                   board.pieces[i].y*0.5+(Math.random()-0.5)*20,
+                                   Math.random()*360);
+        
+        // Put it on top
+        p = board.pop_piece(i);
+        board.insert_piece(p, board.pieces.length);
+
+      } // End of "found a piece"
+    } // End of if hovering in a grab zone
+  } // "haven't already bet, look under mouse"
+}
+
+// Find the free chips in the middle of the board
+function get_free_chips() {
+  free_chips = [];
+  for(var n in chips) {
+    if(board.in_team_zone(chips[n].x, chips[n].y) < 0 &&
+       chips[n].x*chips[n].x + chips[n].y*chips[n].y <= R1*R1) 
+       free_chips.push(chips[n]);
+  }
+  return free_chips;
+}
+
+function collect_pot() {
+
+  // Get all the free chips
+  free_chips = get_free_chips();
+
+  for(var n in free_chips) {
+    d = rotate_vector((Math.random()-0.5)*50, R2*0.7+(Math.random()-0.5)*50, (get_team_number()-1)*45);
+    free_chips[n].set_target(d.x, d.y, (Math.random()-0.5)*360);
+  }
+}
+
 function get_active_teams() {
   var teams = [];
   for(n in board.client_teams) {
@@ -205,8 +290,51 @@ function setup() {
   console.log('setup');
 
   // collect the  cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
-  board.collect_pieces(cards, 0, 0, true, 0, 0, 0, null, null, false);
+  board.collect_pieces(   cards,0,0,   true,           0,      0,      0);
+  
+  // collect the chips way off to the side to start.
+  board.collect_pieces(chips,   2*R2,0,   true,           0,      0,      0);
+  
+  // distribute the chips to each team
+  for(var n=0; n<number_of_teams; n++) {
+    
+    var x0 = -175;
+    var y0 = y3-40;
+    var dx = -50;
+    var r0 = -n*board.r_step;
+
+    // Collect the black chips (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
+    d = rotate_vector(x0, y0, r0);
+    board.collect_pieces(chips_black.slice(n*5, n*5+5), d.x, d.y, false, 0, 0, -n*board.r_step);
+  
+    // Collect the blue chips (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
+    d = rotate_vector(x0-dx, y0, r0);
+    board.collect_pieces(chips_blue.slice(n*5, n*5+5), d.x, d.y, false, 0, 0, -n*board.r_step);
+  
+    // Collect the red chips (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
+    d = rotate_vector(x0-2*dx, y0, r0);
+    board.collect_pieces(chips_red.slice(n*10, n*10+5), d.x, d.y, false, 0, 0, -n*board.r_step);
+    
+    d = rotate_vector(x0-3*dx, y0, r0);
+    board.collect_pieces(chips_red.slice(n*10+5, n*10+10), d.x, d.y, false, 0, 0, -n*board.r_step);
+  
+    // Collect the white chips (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)  
+    d = rotate_vector(x0-4*dx, y0, r0);
+    board.collect_pieces(chips_white.slice(n*20, n*20+5), d.x, d.y, false, 0, 0, -n*board.r_step);
+
+    d = rotate_vector(x0-5*dx, y0, r0);
+    board.collect_pieces(chips_white.slice(n*20+5, n*20+10), d.x, d.y, false, 0, 0, -n*board.r_step);
+
+    d = rotate_vector(x0-6*dx, y0, r0);
+    board.collect_pieces(chips_white.slice(n*20+10, n*20+15), d.x, d.y, false, 0, 0, -n*board.r_step);
+
+    d = rotate_vector(x0-7*dx, y0, r0);
+    board.collect_pieces(chips_white.slice(n*20+15, n*20+20), d.x, d.y, false, 0, 0, -n*board.r_step);
+  }
+
+  
 }
+
 
 // Overloading keydown dummy function for our game-specific keys
 function event_keydown(e, p, i) {

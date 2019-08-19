@@ -1,5 +1,0 @@
-#!/bin/bash
-
-port=${1:-37777}
-
-node ../../server.js $port
