@@ -35,7 +35,7 @@
 
 //// OPTIONS
 
-var stream_interval_ms = 100;   //150;   // how often to send a stream update (ms)
+var stream_interval_ms = 150;   //150;   // how often to send a stream update (ms)
 var update_interval_ms = 10000; // how often to send a full update (ms)
 var draw_interval_ms   = 10;    // how often to draw the canvas (ms)
 
@@ -144,17 +144,18 @@ function get_team_zone_packets() {
  * @param {array} pieces list of pieces to randomize
  * @param {int}   space  space occupied by each piece on average
  */
-function scramble_pieces(pieces, x, y, space) {
+function scramble_pieces(pieces, x, y, space, scale) {
   
   // First find the center of the pieces and the space taken by each
   var c = get_center_of_pieces(pieces);
   var x = or_default(x, c.x);
   var y = or_default(y, c.y);
   var space = or_default(space, 2);
+  var scale = or_default(scale, 1);
 
   // Now find the basis vectors based on the radius of the last piece
   var d  = pieces[pieces.length-1].get_dimensions()
-  var D  = Math.sqrt(d.width*d.width+d.height*d.height);
+  var D  = scale*Math.sqrt(d.width*d.width+d.height*d.height);
   var ax = 2*D;
   var ay = 0;
   var bx = ax*cos(60);
@@ -171,12 +172,12 @@ function scramble_pieces(pieces, x, y, space) {
   // Set the piece coordinates on the hex grid
   for(var n in pieces) {
     var p = pieces[n];
-    var d = hex_spiral(spots.splice(Math.floor(Math.random()*spots.length),1));
+    var d = hex_spiral(spots.splice(rand_int(0, spots.length-1),1));
     var v = rotate_vector(0.5*D*Math.random(), 0, 360.0*(Math.random()));
     p.set_target(x + d.n*a.x + d.m*b.x + v.x, 
                  y + d.n*a.y + d.m*b.y + v.y, 
-                 (Math.random()-0.5)*720);
-    p.active_image = Math.floor(Math.random()*p.images.length);
+                 (Math.random()-0.5)*720*scale);
+    p.active_image = rand_int(0, p.images.length-1);
   }
 }
 
@@ -316,7 +317,7 @@ function shuffle_array(array) {
   while (0 !== currentIndex) {
 
     // Pick a remaining element...
-    randomIndex = Math.floor(Math.random() * currentIndex);
+    randomIndex = rand_int(0, currentIndex-1);
     currentIndex -= 1;
 
     // And swap it with the current element.
@@ -432,7 +433,7 @@ function hex_spiral_random(n,N) {
   // Loop over the number of desired pairs
   pairs = [];
   for(var i=0; i<n; i++) {
-    j = possible_ns.splice(Math.floor(Math.random()*possible_ns.length),1);
+    j = possible_ns.splice(rand_int(0, possible_ns.length-1),1);
     console.log(i,possible_ns, j);
     pairs.push(hex_spiral(j));
   }
@@ -440,7 +441,14 @@ function hex_spiral_random(n,N) {
 }
 
 // returns a random integer over the specified bounds
-function rand_int(m,n) { return Math.floor(Math.random()*(1+n-m))+m; }
+function rand_int(m,n) { 
+  y = Math.floor(Math.random()*(1+n-m))+m; 
+
+  // exceedingly rare case
+  if(y > n) y = n;
+
+  return y;
+}
 
 // returns true if (x,y) is below / to the left of the line defined by (x1,y1) and (x2,y2)
 function is_below_line(x,y, x1,y1, x2,y2) {
@@ -513,7 +521,7 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   this.peakable_by      = this.board.new_piece_peakable_by;
   this.active_image     = this.board.new_piece_active_image;
   this.alpha            = this.board.new_piece_alpha;
-  
+
   // where it belongs in the box
   this.box_x = this.board.new_piece_box_x;
   this.box_y = this.board.new_piece_box_y;
@@ -1260,6 +1268,7 @@ function BOARD(canvas) {
   
   //// INTERNAL DATA
   this._ready_for_packets = false;
+  this._hadoken_charge_t0 = null; // pre-scramble keydown time.
 
   // canvas and context for drawing
   this.canvas  = canvas;
@@ -1295,9 +1304,9 @@ function BOARD(canvas) {
   this.drag_offset_screen_x= null;
   this.drag_offset_screen_y= null;
 
-  this._prealt_px = 0;
-  this._prealt_py = 0;
-  this._prealt_r  = 0;
+  this._prefocus_px = 0;
+  this._prefocus_py = 0;
+  this._prefocus_r  = 0;
   this._prefocus_zoom_level  = 0;
 
   // the box coordinates for all the unused game pieces
@@ -2385,16 +2394,17 @@ BOARD.prototype.event_keyup  = function(e) {
 
       // If we're rotating, make it immediate for vomiting reasons.
       this.set_zoom(this._prefocus_zoom_level,                  caps || e.shiftKey);
-      this.set_pan(this._prealt_px, this._prealt_py, caps || e.shiftKey);
-      this.set_rotation(this._prealt_r,              caps || e.shiftKey);
+      this.set_pan(this._prefocus_px, this._prefocus_py, caps || e.shiftKey);
+      this.set_rotation(this._prefocus_r,              caps || e.shiftKey);
     
       this._tilde_down = false;
       break;
 
       case 82: // r for roll / randomize
         
-        // When we lift the r key, scramble the pieces
+        // When we lift the r key, scramble the pieces and unset the t0
         scramble_pieces(sps, this.mouse.x, this.mouse.y, 2);
+        this._hadoken_charge_t0 = null;
 
       break;
     }
@@ -2645,44 +2655,48 @@ BOARD.prototype.event_keydown = function(e) {
         break;
 
       case 82: // r for roll / randomize
-        // Default: no pieces
-        sps = [];
+        
+        // Only if we aren't already holding
+        if(this._hadoken_charge_t0 != null) break;
 
         // If we have selected pieces, use those
-        if(this.client_selected_pieces[my_index].length) sps = [...this.client_selected_pieces[my_index]];
+        if(this.client_selected_pieces[my_index].length) {
+          
+          // Until we release the key, collect the pieces to the mouse coordinates
+          this.collect_pieces(this.client_selected_pieces[my_index], 
+            this.mouse.x, this.mouse.y,                   // coordinates of the stack
+            e.shiftKey, null,                             // shuffle, active image 
+            this.collect_r_piece,  this.collect_r_stack,  // r_piece, r_stack
+            null, null,                                   // offset_x, offset_y (default to piece values)
+            true);                                        // centers stack wrt the TOP piece
         
-        // Otherwise, use the piece under the mouse
+          // Record the time that this started for animation reasons
+          this._hadoken_charge_t0 = Date.now();
+        }
+        
+        // Otherwise, scramble the piece under the mouse
         else {
 
           // Only do so if we're not in someone else's team zone
           team_zone = this.in_team_zone(this.mouse.x, this.mouse.y);
           if(team_zone < 0 || team_zone == get_team_number()) {
             var i = this.find_top_piece_at_location(this.mouse.x, this.mouse.y);
-            if(i >= 0) sps = [this.pieces[i]];
+            if(i >= 0) scramble_pieces([this.pieces[i]], this.mouse.x, this.mouse.y, 2);
           }
         }
-        
-        // Until we release the key, collect the pieces to the mouse coordinates
-        // Collect all the pieces into a stack
-        this.collect_pieces(this.client_selected_pieces[my_index], 
-          this.mouse.x, this.mouse.y,                   // coordinates of the stack
-          e.shiftKey, null,                             // shuffle, active image 
-          this.collect_r_piece,  this.collect_r_stack,  // r_piece, r_stack
-          null, null,                                   // offset_x, offset_y (default to piece values)
-          true);                                        // centers stack wrt the TOP piece
-        
+
         break;
 
-      case 192: // tilde zoom
+      case 192: // tilde for focus
       case 70:  // F for focus
         
         if(this._tilde_down) break;
         this._tilde_down = true;
 
         // Remember the previous
-        this._prealt_r  = this.r_target;
-        this._prealt_px = this.px_target;
-        this._prealt_py = this.py_target;
+        this._prefocus_r  = this.r_target;
+        this._prefocus_px = this.px_target;
+        this._prefocus_py = this.py_target;
         this._prefocus_zoom_level  = this.z_target;
 
         // If we have selected a piece and hold shift, zoom in on that
@@ -2991,14 +3005,11 @@ BOARD.prototype.draw = function() {
     // Update the selection box r value if we have one
     if(this.client_selection_boxes[my_index]) this.client_selection_boxes[my_index].r = this.r;
 
-    
-
     // If the board's pan, rotation, or zoom changed, update the hovering mouse coordinates
     if((dz || dr || dpx || dpy) && this.mouse_event ) this.event_mousemove(this.mouse_event);
 
     // If the board rotated and we're holding pieces, update their rotations
     if(dr && this.client_is_holding[my_index] && this.mouse_event) {
-      var sps = this.client_selected_pieces[my_index];
       
       rotate_pieces(sps, -dr, true, this.mouse.x, this.mouse.y);
       /*// Rotate the pieces about their centers
@@ -3226,7 +3237,7 @@ BOARD.prototype.draw = function() {
  */
 BOARD.prototype.send_stream_update = function() {
  
-  // Trigger a redraw to handle things like slow loading of images
+  // Always trigger a redraw to handle things like slow loading of images
   this.trigger_redraw = true;
 
   // Allows one to add a delay to an update, e.g., when shuffle animating.
@@ -3237,16 +3248,20 @@ BOARD.prototype.send_stream_update = function() {
 
   // Get client index and team
   var my_index = get_my_client_index();
-
+  var sps = this.client_selected_pieces[my_index];
+  
   // Allows one to temporarily highlight some pieces (countdown)
   if(this.clear_selected_after > 0) {
     this.clear_selected_after--;
     if(this.clear_selected_after == 0) this.client_selected_pieces[my_index].length = 0;
   }
 
+  // If we're charging a hadoken, scramble the selected images
+  if(this._hadoken_charge_t0 != null && sps.length)
+    for(n=0; n<sps.length; n++) sps[n].active_image = rand_int(0,sps[n].images.length-1);
+
   // We should only check / send if our own team's piece selection has changed  
   // Get the selected pieces
-  var sps = this.client_selected_pieces[my_index];
   var sp_ids = [];
   for(var i in sps) sp_ids.push(sps[i].piece_id);
   
