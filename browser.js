@@ -2091,19 +2091,23 @@ BOARD.prototype.event_mousedown = function(e) {
             this.select_piece(p, send_to);
           }
 
-          // Otherwise, we do have it and this is a normal shiftless click. Pop to top or bottom.
-          else if(send_to > 0) {
-            this.pop_piece(piece_index);
-            this.insert_piece(p, this.pieces.length);
-            this.client_selected_pieces[my_index].splice(client_piece_index,1);
-            this.client_selected_pieces[my_index].push(p);
-          }
-          else if(send_to < 0) {
-            this.pop_piece(piece_index);
-            this.insert_piece(p, 0);
-            this.client_selected_pieces[my_index].splice(client_piece_index,1);
-            this.client_selected_pieces[my_index].splice(0,0,p);
-          }
+          // Otherwise, we do have it and this is a normal shiftless click. Pop all selected pieces to the top or bottom
+          else {
+            var sps = this.client_selected_pieces[my_index];
+
+            if(send_to > 0) {
+              for(var n in sps) {
+                var sp = this.pop_piece(this.pieces.indexOf(sps[n]));
+                this.insert_piece(sp, this.pieces.length);
+              }
+            }
+            else if(send_to < 0) {
+              for(var n=sps.length-1; n>=0; n--) {
+                var sp = this.pop_piece(this.pieces.indexOf(sps[n]));
+                this.insert_piece(sp, 0);
+              }
+            }
+          } // End of "we do have it and normal shiftless click"
 
           // At this point, we have selected something new.
 
