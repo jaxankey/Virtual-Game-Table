@@ -31,8 +31,7 @@
 // TO DO: middle mouse click = focus
 // TO DO: Shift-c reverse-sorts?
 // TO DO: Top and bottom index for each piece (defines layers!)
-// TO DO: Update controls html file and add link to all games.
-// TO DO: Rotating the board while holding hadoken pieces causes the pieces to revert to their original locations
+// TO DO: Rotating view while holding moving objects snaps them to their final position.
 
 //// OPTIONS
 
