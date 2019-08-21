@@ -129,7 +129,7 @@ function set_team_number(n) {return document.getElementById("teams").selectedInd
  * Returns a list of team zone packets ready for the server
  */
 function get_team_zone_packets() {
-  packets = [];
+  var packets = [];
   for(n in board.team_zones) {
     if(board.team_zones[n]) packets.push(board.team_zones[n].to_packet());
     else                    packets.push(null);
@@ -174,9 +174,11 @@ function scramble_pieces(pieces, x, y, space, scale) {
     var p = pieces[n];
     var d = hex_spiral(spots.splice(rand_int(0, spots.length-1),1));
     var v = rotate_vector(0.5*D*Math.random(), 0, 360.0*(Math.random()));
+    
+    //           x,y,r,                        angle,disable_snap,immediate,set_origin
     p.set_target(x + d.n*a.x + d.m*b.x + v.x, 
                  y + d.n*a.y + d.m*b.y + v.y, 
-                 (Math.random()-0.5)*720*scale);
+                 (Math.random()-0.5)*720*scale, null, null, false, true);
     p.active_image = rand_int(0, p.images.length-1);
   }
 }
@@ -317,11 +319,11 @@ function shuffle_array(array) {
   while (0 !== currentIndex) {
 
     // Pick a remaining element...
-    randomIndex = rand_int(0, currentIndex-1);
+    var randomIndex = rand_int(0, currentIndex-1);
     currentIndex -= 1;
 
     // And swap it with the current element.
-    temporaryValue = array[currentIndex];
+    var temporaryValue = array[currentIndex];
     array[currentIndex] = array[randomIndex];
     array[randomIndex] = temporaryValue;
   }
@@ -372,7 +374,7 @@ function get_center_of_pieces(pieces) {
   var ymax0 = null;
   
   for(var n in pieces) {
-    p = pieces[n];
+    var p = pieces[n];
     if(xmin==null || p.x_target < xmin) xmin = p.x_target;
     if(xmax==null || p.x_target > xmax) xmax = p.x_target;
     if(ymin==null || p.y_target < ymin) ymin = p.y_target;
@@ -401,6 +403,12 @@ function hex_spiral(n) {
   // zero index of this shell
   var n0 = 6*s*(s-1)/2+1;
 
+  // Declarations
+  var x0 = null;
+  var y0 = null;
+  var dx0 = null;
+  var dy0 = null;
+  
   // depending which of the 6 legs we're on get the vectors
   var leg = Math.floor((n-n0)/s);
   switch(leg) {
@@ -442,7 +450,7 @@ function hex_spiral_random(n,N) {
 
 // returns a random integer over the specified bounds
 function rand_int(m,n) { 
-  y = Math.floor(Math.random()*(1+n-m))+m; 
+  var y = Math.floor(Math.random()*(1+n-m))+m; 
 
   // exceedingly rare case
   if(y > n) y = n;
@@ -566,7 +574,7 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
       console.log("  loading /images/"+this.image_paths[i]);
 
       // create the image object
-      I = new Image();
+      var I = new Image();
       this.images.push(I);
       I.src = '/images/'+this.image_paths[i];
       
@@ -591,7 +599,7 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
       console.log("  loading /images/"+this.private_image_paths[i]);
 
       // create the image object
-      I = new Image();
+      var I = new Image();
       this.private_images.push(I);
       I.src = '/images/'+this.private_image_paths[i];
       
@@ -608,8 +616,8 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   this.vr = 0;
 
   // last time this piece was moved / drawn
-  this.t_previous_draw = Date.now();
-  this.t_previous_move = this.t_previous_draw;
+  this._t_previous_draw = Date.now();
+  this.t_previous_move = this._t_previous_draw;
   
   // keep track of the previous target to reduce reduntant server info
   this.previous_x = this.x_target;
@@ -622,7 +630,8 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
 // Put it in its box;
 PIECE.prototype.put_away = function() {
   
-  this.set_target(this.board.box_x+this.box_x, this.board.box_y+this.box_y, 0);
+  // x,y,r,angle,disable_snap,immediate,set_origin
+  this.set_target(this.board.box_x+this.box_x, this.board.box_y+this.box_y, 0, null, null, false, true);
   return this;
 }
 
@@ -653,7 +662,7 @@ PIECE.prototype.get_dimensions = function() {
 }
 
 // set the target location and rotation all then rotated by angle
-PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate,keep_t_previous_move) {
+PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate,set_origin) {
 
   // Set default argument values
   x            = or_default(x, this.x_target);
@@ -662,10 +671,11 @@ PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate,keep_t_
   angle        = or_default(angle, null);
   disable_snap = or_default(disable_snap, false);
   immediate    = or_default(immediate, false);
+  set_origin   = or_default(set_origin, false); 
   
   // if we're supposed to transform the coordinates
   if(angle != null) {
-    v = rotate_vector(x, y, angle);
+    var v = rotate_vector(x, y, angle);
     r = r-angle;
     x = v.x;
     y = v.y;
@@ -674,18 +684,28 @@ PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate,keep_t_
   // if we're supposed to snap
   if(this.snap_index != null && !disable_snap) {
     
-    // apply the snap (Note I did NOT say "Awww SNAP". Wait. Shit.)
-    snapped = this.board.snap_grids[this.snap_index].get_snapped_coordinates(x,y);
+    // apply the snap
+    var snapped = this.board.snap_grids[this.snap_index].get_snapped_coordinates(x,y);
     x = snapped.x;
     y = snapped.y;
   }
   
+  // If we're also setting the origin coordinates (relative to their starting point)
+  if(set_origin) {
+    this.x0_target = this.x0_target + x - this.x_target;
+    this.y0_target = this.y0_target + y - this.y_target;
+  }
+
   // set the target
-  this.x_target = x;
-  this.y_target = y;
-  
+  this.x_target  = x;
+  this.y_target  = y;
+
   // if immediate, go there without animation
   if (immediate) {
+    if(set_origin) {
+      this.x0 = this.x0 + x - this.x;
+      this.y0 = this.y0 + y - this.y;
+    }
     this.x = x;
     this.y = y;
   }
@@ -694,10 +714,7 @@ PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate,keep_t_
   if(r != null) this.set_rotation(r, immediate);
   
   // reset the clock (if not immediate) & trigger a redraw
-  if(!immediate) {
-    this.t_previous_draw = Date.now();
-    if(!keep_t_previous_move) this.t_previous_move = this.t_previous_draw;
-  }
+  if(!immediate) this._t_previous_draw = Date.now();
   this.board.trigger_redraw = true;
 
   // return the handle to the piece
@@ -709,14 +726,15 @@ PIECE.prototype.set_target_grid = function(n,m,r_deg) {
   r_deg = or_default(r_deg, null);
   
   // get the grid
-  g = this.board.snap_grids[this.snap_index];
+  var g = this.board.snap_grids[this.snap_index];
   
+  // x,y,r,angle,disable_snap,immediate,set_origin
   if(g != null) this.set_target(g.x0+n*g.dx1+m*g.dx2, 
                                 g.y0+n*g.dy1+m*g.dy2, r_deg, null, true);
   
   return this;
 }
-PIECE.prototype.set_rotation = function(r_deg, immediate, keep_t_previous_move) {
+PIECE.prototype.set_rotation = function(r_deg, immediate) {
   immediate = or_default(immediate, false);
   
   // set the target
@@ -724,10 +742,7 @@ PIECE.prototype.set_rotation = function(r_deg, immediate, keep_t_previous_move) 
   if (immediate) this.r = r_deg;
   
   // reset the clock & trigger a redraw
-  if(!immediate){
-    this.t_previous_draw = Date.now();
-    if(!keep_t_previous_move) this.t_previous_move = this.t_previous_draw;
-  }
+  if(!immediate) this._t_previous_draw = Date.now();
   this.board.trigger_redraw = true;
   
   // return the handle to the piece
@@ -747,7 +762,7 @@ PIECE.prototype.rotate = function(r_deg, x0, y0, immediate) {
 
   // If specified, rotate about the supplied center coordinate
   if(x0 != this.x_target || y0 != this.y_target) {
-    d = rotate_vector(this.x_target-x0, this.y_target-y0, -r_deg);
+    var d = rotate_vector(this.x_target-x0, this.y_target-y0, -r_deg);
     this.set_target(x0 + d.x, y0 + d.y, r_deg + this.r_target, null, null, immediate);
   }
   
@@ -761,7 +776,7 @@ PIECE.prototype.rotate = function(r_deg, x0, y0, immediate) {
 PIECE.prototype.rotate0 = function(r_deg, x, y, immediate) {
 
   // If specified, rotate about the supplied center coordinate
-  d = rotate_vector(this.x0_target-x, this.y0_target-y, -r_deg);
+  var d = rotate_vector(this.x0_target-x, this.y0_target-y, -r_deg);
   this.x0_target = x + d.x;
   this.y0_target = y + d.y;
   if(immediate) {
@@ -780,11 +795,11 @@ PIECE.prototype.ellipse  = function(x, y) {
   if (this.rotates_with_board) r_deg = r_deg-this.board.r;
   
   // get rotated coordinates
-  d = rotate_vector(x-this.x, y-this.y, r_deg);
+  var d = rotate_vector(x-this.x, y-this.y, r_deg);
   
   // get width and height
-  w = 0.5*this.images[this.active_image].width;
-  h = 0.5*this.images[this.active_image].height;
+  var w = 0.5*this.images[this.active_image].width;
+  var h = 0.5*this.images[this.active_image].height;
   
   // elliptical bounds
   return d.x*d.x/(w*w) + d.y*d.y/(h*h) <= 1;
@@ -798,11 +813,11 @@ PIECE.prototype.outer_circle  = function(x, y) {
   if (this.rotates_with_board) r_deg = r_deg-this.board.r;
   
   // get rotated coordinates
-  d = rotate_vector(x-this.x, y-this.y, r_deg);
+  var d = rotate_vector(x-this.x, y-this.y, r_deg);
   
   // get width
-  w = Math.max(0.5*this.images[this.active_image].width, 
-               0.5*this.images[this.active_image].height);
+  var w = Math.max(0.5*this.images[this.active_image].width, 
+                   0.5*this.images[this.active_image].height);
   
   // circular bounds
   return d.x*d.x + d.y*d.y <= w*w;
@@ -896,38 +911,38 @@ PIECE.prototype.draw_selection = function() {
 PIECE.prototype.move_and_draw = function() {
   
   // Draws this PIECE to the context
-  context = this.board.context;
+  var context = this.board.context;
   
   // dynamics
-  speed = this.board.transition_speed;
-  accel = this.board.transition_acceleration;
-  snap  = this.board.transition_snap;
+  var speed = this.board.transition_speed;
+  var accel = this.board.transition_acceleration;
+  var snap  = this.board.transition_snap;
   
   // update the time and time since last draw
-  t  = Date.now();
-  dt = t - this.t_previous_draw;
-  this.t_previous_draw = t;
+  var t  = Date.now();
+  var dt = t - this._t_previous_draw;
+  this._t_previous_draw = t;
 
   // calculate the target velocity
-  vx_target  = (this.x_target - this.x)*speed;
-  vy_target  = (this.y_target - this.y)*speed;
-  vr_target  = (this.r_target - this.r)*speed;
-  vx0_target = (this.x0_target - this.x0)*speed;
-  vy0_target = (this.y0_target - this.y0)*speed;
+  var vx_target  = (this.x_target - this.x)*speed;
+  var vy_target  = (this.y_target - this.y)*speed;
+  var vr_target  = (this.r_target - this.r)*speed;
+  var vx0_target = (this.x0_target - this.x0)*speed;
+  var vy0_target = (this.y0_target - this.y0)*speed;
   
   // calculate the actual velocity after acceleration
-  this.vx = (vx_target - this.vx)*accel;
-  this.vy = (vy_target - this.vy)*accel;
-  this.vr = (vr_target - this.vr)*accel;
+  this.vx  = (vx_target  - this.vx) *accel;
+  this.vy  = (vy_target  - this.vy) *accel;
+  this.vr  = (vr_target  - this.vr) *accel;
   this.vx0 = (vx0_target - this.vx0)*accel;
   this.vy0 = (vy0_target - this.vy0)*accel;
   
   // adjust the step size
-  dx  = this.vx  * dt/draw_interval_ms;
-  dy  = this.vy  * dt/draw_interval_ms;
-  dr  = this.vr  * dt/draw_interval_ms;
-  dx0 = this.vx0 * dt/draw_interval_ms;
-  dy0 = this.vy0 * dt/draw_interval_ms;
+  var dx  = this.vx  * dt/draw_interval_ms;
+  var dy  = this.vy  * dt/draw_interval_ms;
+  var dr  = this.vr  * dt/draw_interval_ms;
+  var dx0 = this.vx0 * dt/draw_interval_ms;
+  var dy0 = this.vy0 * dt/draw_interval_ms;
   
   // make sure it's not too big
   if (Math.abs(dx) > Math.abs(this.x_target-this.x)) dx = this.x_target-this.x;
@@ -937,9 +952,9 @@ PIECE.prototype.move_and_draw = function() {
   if (Math.abs(dy0) > Math.abs(this.y0_target-this.y0)) dy0 = this.y0_target-this.y0;
   
   // Calculate the new coordinates
-  this.x = dx + this.x;
-  this.y = dy + this.y;
-  this.r = dr + this.r;
+  this.x  = dx + this.x;
+  this.y  = dy + this.y;
+  this.r  = dr + this.r;
   this.x0 = dx0 + this.x0;
   this.y0 = dy0 + this.y0;
 
@@ -981,7 +996,7 @@ PIECE.prototype.move_and_draw = function() {
   
   // otherwise, loop over the team zones to see if we should use private images.
   else {
-	  for(n=0; n<this.board.team_zones.length; n++) {
+	  for(var n=0; n<this.board.team_zones.length; n++) {
 
 		  // if the piece is in our own team zone, use the private images
 		  if(n == get_team_number() 	      && 
@@ -1000,6 +1015,7 @@ PIECE.prototype.move_and_draw = function() {
     
     // Calculate the new alpha.
     if(this.t_fade_ms) {
+      
       // if we moved this time
       if(dx || dy) this.t_previous_move = t;
 
@@ -1008,7 +1024,7 @@ PIECE.prototype.move_and_draw = function() {
 
       // smooth fade function
       if(dt > this.t_fade_ms) a = 0;
-      else                    a = this.alpha*(1.0 - Math.pow(1.0-Math.pow(dt/this.t_fade_ms-1.0, 2),8));
+      else a = this.alpha*(1.0 - Math.pow(1.0-Math.pow(dt/this.t_fade_ms-1.0, 2),8));
 
     } else a = this.alpha;
 
@@ -1328,8 +1344,11 @@ function BOARD(canvas) {
 
   // we use this to recognize when the mouse state has changed 
   // (avoids sending too many events too quickly to the server)
-  this.mouse          = {x:0, y:0, e:{offsetX:0, offsetY:0}};
-  this.previous_mouse = {x:0, y:0, e:{offsetX:0, offsetY:0}};
+  this.mouse              = {x:0, y:0, e:{offsetX:0, offsetY:0}};
+  this.previous_mouse     = {x:0, y:0, e:{offsetX:0, offsetY:0}};
+
+  // This is a faster version of previous mouse that is updated every mousemove event.
+  this._previous_mousemove = {x:0, y:0, e:{offsetX:0, offsetY:0}};
   
   // keeps track of the index for new pieces & hands
   this.next_piece_id = 0;
@@ -1371,7 +1390,7 @@ function BOARD(canvas) {
   this.vpx = 0;
   this.vpy = 0;
   
-  this.t_previous_draw = Date.now();
+  this._t_previous_draw = Date.now();
   
   //// EVENTS 
   
@@ -1626,11 +1645,12 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
 
     // Animation: randomize rotation and displacement (doesn't affect r_target)
     for(var n in pieces)
+    // x,y,r,angle,disable_snap,immediate,set_origin
       pieces[n].set_target(pieces[n].x + (Math.random()-0.5)*this.shuffle_distance,
                            pieces[n].y + (Math.random()-0.5)*this.shuffle_distance,
-                           (Math.random()-0.5)*720, null, null, true);
+                           (Math.random()-0.5)*720, null, null, true, true);
     
-    // Trigger an update
+    // Trigger an update to tell everyone the new locations
     this.send_stream_update();
     this.ignore_next_streams = 2;
   } 
@@ -1646,8 +1666,8 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
     this.pop_piece(this.pieces.indexOf(pieces[i])); // take it out, but avoid triggering an update for the rest.
     this.pieces.push(pieces[i]);                    // Push the piece on top, triggering an update
 
-    if(from_top) p = pieces[pieces.length-i-1];
-    else         p = pieces[i];
+    if(from_top) var p = pieces[pieces.length-i-1];
+    else         var p = pieces[i];
     
     // Get the rotated stack step.
     if(offset_x != null && typeof offset_x !== 'undefined') ox = offset_x;
@@ -1656,10 +1676,11 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
     else                                                    oy = p.collect_offset_y;
     var d = rotate_vector(ox, oy, -r_stack);
   
-    var N = pieces.length-1;
     if(from_top) {x = x-d.x; y = y+d.y;}
     else         {x = x+d.x; y = y-d.y;}
-    p.set_target(x, y, -r_piece);
+    
+    //           x, y,  r,       angle, disable_snap, immediate, set_origin
+    p.set_target(x, y, -r_piece, null,  null,         false,     true);
 
     // If we have an active image specified, set it
     if(active_image != null) p.set_active_image(active_image);
@@ -2147,24 +2168,25 @@ BOARD.prototype.event_mouseout = function(e) {
 }
 
 // whenever the mouse moves in the canvas
-BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) { 
+BOARD.prototype.event_mousemove = function(e) { 
   
   // Make sure the board is in focus.
 
   // get the new mouse coordinates
   if(e) {
+    this._previous_mousemove = this.mouse;
     this.mouse = this.get_mouse_coordinates(e);
     this.mouse_event = e;
   }
 
-  // Mouse pan (disabled in the send_stream_update)
-  this._mouse_pan_x = null;
+  // Mouse edge pan calculation (disabled in the send_stream_update)
+  /*this._mouse_pan_x = null;
   this._mouse_pan_y = null;
-  N = 70
+  var N = 70
   if(e.clientX<N) this._mouse_pan_x = N+1-e.clientX;            
   if(e.clientY<N) this._mouse_pan_y = N+1-e.clientY;
   if(this.canvas.clientWidth -e.clientX < 40) this._mouse_pan_x = this.canvas.clientWidth -e.clientX-N-1;
-  if(this.canvas.clientHeight-e.clientY < 40) this._mouse_pan_y = this.canvas.clientHeight-e.clientY-N-1;
+  if(this.canvas.clientHeight-e.clientY < 40) this._mouse_pan_y = this.canvas.clientHeight-e.clientY-N-1;*/
   
   // get the team index
   var team     = get_team_number();
@@ -2185,16 +2207,24 @@ BOARD.prototype.event_mousemove = function(e, keep_t_previous_move) {
       // If we're allowed to move this piece and it exists
       if(hp.movable_by == null || hp.movable_by.indexOf(get_team_number())>=0) {
           
-          // We want to drag it from where we clicked.
+          // We want to drag it from where they were when we grabbed them.
           // the timer will handle the data sending if things have changed
           // Unlike set_pan, these coordinates are relative to the unzoomed, unrotated board.
-          hp.set_target(this.mouse.x - this.mouse_down.x + hp.x0, // x0 and y0 could be moving if we rotated recently
-                        this.mouse.y - this.mouse_down.y + hp.y0, 
-                        null, null, true, keep_t_previous_move) // make the move immediate
-          
-          // make sure it immediately moves there while we're holding it
-          hp.x = hp.x_target;
-          hp.y = hp.y_target;
+          // x,y,r,angle,disable_snap,immediate,set_origin
+          /*hp.set_target(hp.x0 + this.mouse.x - this.mouse_down.x, // x0 and y0 could be moving if we rotated recently
+                        hp.y0 + this.mouse.y - this.mouse_down.y, 
+                        null, null, 
+                        true, true, false) // disable snap, immediate, don't update origin (this is the whole point of the origin) */
+          // This is a confusing thing, because we want to be able to have animations like collect and expand,
+          // but we also want to make the moves immediate. 
+          // The animations are run by setting the origin targets and letting the origin evolve
+          // What we really want to do is *shift* all of the coordinates by the distance the mouse moved
+          var dx = this.mouse.x - this._previous_mousemove.x;
+          var dy = this.mouse.y - this._previous_mousemove.y;
+          hp.x_target += dx;
+          hp.x        += dx;
+          hp.y_target += dy;
+          hp.y        += dy;
 
       } // End of allowed to move
     } // end of loop over held pieces
@@ -2369,14 +2399,14 @@ BOARD.prototype.event_mousewheel = function(e) {
   }
   
   // reset the timer
-  this.t_previous_draw = Date.now();
+  this._t_previous_draw = Date.now();
 }
 
 // When someone lifts a key
 BOARD.prototype.event_keyup  = function(e) {
   // trigger redraw to be safe
   this.trigger_redraw = true;
-  this.t_previous_draw = Date.now();
+  this._t_previous_draw = Date.now();
 
   // Caps lock for immediate zoom/pan/rotate
   var caps = e.getModifierState("CapsLock");
@@ -2385,7 +2415,8 @@ BOARD.prototype.event_keyup  = function(e) {
   if(document.activeElement == document.getElementById('table')) {
     
     // find our selected piece
-    sps = this.client_selected_pieces[get_my_client_index()]; 
+    var my_index = get_my_client_index();
+    var sps = this.client_selected_pieces[my_index]; 
           
     console.log('event_keyup',e.keyCode);
     switch (e.keyCode) {
@@ -2402,8 +2433,10 @@ BOARD.prototype.event_keyup  = function(e) {
 
       case 82: // r for roll / randomize
         
-        // When we lift the r key, scramble the pieces and unset the t0
+        // When we lift the r key, scramble the pieces, drop them, and unset the t0
         scramble_pieces(sps, this.mouse.x, this.mouse.y, 2);
+        this.client_is_holding[my_index] = false;
+        this.trigger_h_stream = true;
         this._hadoken_charge_t0 = null;
 
       break;
@@ -2420,7 +2453,7 @@ BOARD.prototype.event_keydown = function(e) {
 
   // trigger redraw to be safe
   this.trigger_redraw = true;
-  this.t_previous_draw = Date.now();
+  this._t_previous_draw = Date.now();
 
   // Get this client index
   var my_index = get_my_client_index();
@@ -2439,45 +2472,50 @@ BOARD.prototype.event_keydown = function(e) {
       
       // Rotate CW
       case 69: // E
-        if(e.shiftKey && sps.length) {
-          for(var i=0; i<sps.length; i++) sps[i].rotate(sps[i].r_step);
-        }
+        
+        // Rotate pieces in place
+        if(e.shiftKey && sps.length) for(var i=0; i<sps.length; i++) sps[i].rotate(sps[i].r_step);
+
+        // Otherwise rotate the view.
         else this.set_rotation(this.r_target+this.r_step, caps);
         break;
       
       // Rotate CCW
       case 81: // Q
-      if(e.shiftKey && sps.length) {
-        for(var i=0; i<sps.length; i++) sps[i].rotate(-sps[i].r_step);
-      }
-      else this.set_rotation(this.r_target-this.r_step, caps);
+
+        // Rotate pieces in place
+        if(e.shiftKey && sps.length) for(var i=0; i<sps.length; i++) sps[i].rotate(-sps[i].r_step);
+
+        // Otherwise, set rotation
+        else this.set_rotation(this.r_target-this.r_step, caps);
         break;
       
       // Pan right or rotate CW
       case 68: // D
       case 39: // RIGHT
+        // Shift key rotates the view with no pieces selected
         if(e.shiftKey && sps.length == 0) this.set_rotation(this.r_target+this.r_step, caps);
-        else {
-          // if there are selected pieces and we're hodling shift, rotate them.
-          if (sps.length > 0 && e.shiftKey) rotate_pieces(sps, sps[sps.length-1].r_step);
-
-          // otherwise pan
-          else this.set_pan(this.px_target-this.pan_step, this.py_target, caps);
-        }
+        
+        // Shift key with pieces rotates them about their center
+        else if(e.shiftKey && sps.length > 0) rotate_pieces(sps, sps[sps.length-1].r_step);
+          
+        // otherwise pan
+        else this.set_pan(this.px_target-this.pan_step, this.py_target, caps);
         break;
       
       // Pan left or rotate CCW
       case 65: // A
       case 37: // LEFT
-        if(e.shiftKey && sps.length == 0)
-          this.set_rotation(this.r_target-this.r_step, caps);
-        else {
-          // if there are selected pieces and we're holding shift, rotate their locations.
-          if (sps.length > 0 && e.shiftKey) rotate_pieces(sps, -sps[sps.length-1].r_step);
+        
+        // Shift key rotates the view with no pieces selected
+        if(e.shiftKey && sps.length == 0) this.set_rotation(this.r_target-this.r_step, caps);
+        
+        // Shift key with pieces rotates them about their center
+        else if(e.shiftKey && sps.length > 0) rotate_pieces(sps, -sps[sps.length-1].r_step);
           
-          // otherwise pan
-          else this.set_pan(this.px_target+this.pan_step, this.py_target, caps);
-        }
+        // otherwise pan
+        else this.set_pan(this.px_target+this.pan_step, this.py_target, caps);
+        
         break;
       
       case 189: // MINUS
@@ -2642,8 +2680,8 @@ BOARD.prototype.event_keydown = function(e) {
             if(n>=0) sps.splice(n,1);
             sps.push(p);
 
-            // Now set the coordinates
-            p.set_target(this.mouse.x+d.x,this.mouse.y+d.y,this.expand_r-this.r_target);
+            // Now set the coordinates x,y,r,angle,disable_snap,immediate,set_origin
+            p.set_target(this.mouse.x+d.x,this.mouse.y+d.y,this.expand_r-this.r_target, null, null, false, true);
           }
         }
         break;
@@ -2779,7 +2817,7 @@ BOARD.prototype.set_zoom = function(z, immediate) {
   
   // trigger a redraw
   this.trigger_redraw  = true;
-  this.t_previous_draw = Date.now();
+  this._t_previous_draw = Date.now();
   
   // store the setting for next time
   this.set_cookie('z_target', this.z_target);
@@ -2799,9 +2837,15 @@ BOARD.prototype.set_rotation = function(r_deg, immediate) {
   // if it's immediate, set the current value too
   if(immediate) this.r = r_deg;
   
+  // If we're holding pieces, rotate them as well
+  /*my_index = get_my_client_index();
+  if(this.client_is_holding[my_index] && this.client_selected_pieces[my_index].length)
+    rotate_pieces(this.client_selected_pieces[my_index], -r_deg+this.previous_r, immediate, this.mouse.x, this.mouse.y);
+  // Enabling the more responsive version in board.draw*/
+
   // trigger a redraw
   this.trigger_redraw  = true;
-  this.t_previous_draw = Date.now();
+  this._t_previous_draw = Date.now();
 
   // store the setting for next time
   this.set_cookie('r_target', this.r_target);
@@ -2863,7 +2907,7 @@ BOARD.prototype.set_pan = function(px, py, immediate) {
   
   // trigger a redraw
   this.trigger_redraw  = true;
-  this.t_previous_draw = Date.now();
+  this._t_previous_draw = Date.now();
   
   this.set_cookie('px_target', px);
   this.set_cookie('py_target', py);
@@ -2947,28 +2991,28 @@ BOARD.prototype.draw = function() {
   //        Ignore drawing pieces outside the view?
   if (this.needs_redraw()) {
     
-    my_index = get_my_client_index();
+    var my_index = get_my_client_index();
 
     //////////////////////////////////////////////////////////////
     // First we calculate the next step in the camera position
     //////////////////////////////////////////////////////////////
 
     //// Zoom/pan/rotate dynamics
-    t  = Date.now();
-    dt = t - this.t_previous_draw;
-    this.t_previous_draw = t;
+    var t  = Date.now();
+    var dt = t - this._t_previous_draw;
+    this._t_previous_draw = t;
 
     // get the target
-    ztarget  = this.z_target;
-    rtarget  = this.r_target;
-    pxtarget = this.px_target;
-    pytarget = this.py_target;
+    var ztarget  = this.z_target;
+    var rtarget  = this.r_target;
+    var pxtarget = this.px_target;
+    var pytarget = this.py_target;
     
     // calculate the target velocity
-    vztarget  = (ztarget  - this.z) *this.transition_speed;
-    vrtarget  = (rtarget  - this.r) *this.transition_speed;
-    vpxtarget = (pxtarget - this.px)*this.transition_speed;
-    vpytarget = (pytarget - this.py)*this.transition_speed;
+    var vztarget  = (ztarget  - this.z) *this.transition_speed;
+    var vrtarget  = (rtarget  - this.r) *this.transition_speed;
+    var vpxtarget = (pxtarget - this.px)*this.transition_speed;
+    var vpytarget = (pytarget - this.py)*this.transition_speed;
     
     // calculate the actual velocity after acceleration
     this.vz  = (vztarget  - this.vz) *this.transition_acceleration;
@@ -2977,10 +3021,10 @@ BOARD.prototype.draw = function() {
     this.vpy = (vpytarget - this.vpy)*this.transition_acceleration;
     
     // adjust the step size
-    dz  = this.vz  * dt/draw_interval_ms;
-    dr  = this.vr  * dt/draw_interval_ms;
-    dpx = this.vpx * dt/draw_interval_ms;
-    dpy = this.vpy * dt/draw_interval_ms;
+    var dz  = this.vz  * dt/draw_interval_ms;
+    var dr  = this.vr  * dt/draw_interval_ms;
+    var dpx = this.vpx * dt/draw_interval_ms;
+    var dpy = this.vpy * dt/draw_interval_ms;
     
     // make sure we don't overshoot
     if (Math.abs(dz)  > Math.abs(ztarget -this.z )) dz  = ztarget -this.z;
@@ -3006,37 +3050,16 @@ BOARD.prototype.draw = function() {
     if(this.client_selection_boxes[my_index]) this.client_selection_boxes[my_index].r = this.r;
 
     // If the board's pan, rotation, or zoom changed, update the hovering mouse coordinates
+    // This moves hands, held pieces, and selection boxes around.
     if((dz || dr || dpx || dpy) && this.mouse_event ) this.event_mousemove(this.mouse_event);
-
-    // If the board rotated and we're holding pieces, update their rotations
-    if(dr && this.client_is_holding[my_index] && this.mouse_event) {
-      
-      rotate_pieces(sps, -dr, true, this.mouse.x, this.mouse.y);
-      /*// Rotate the pieces about their centers
-      for(var n in sps) {
-        var p = sps[n];
-
-        // Rotate the pieces
-        p.r_target -= dr;
-        p.r        -= dr;
-
-        // Rotate the piece coordinates about the mouse coordinates
-        // x,y,r,angle,disable_snap,immediate,keep_t_previous_move
-        //mouse = this.get_mouse_coordinates(this.mouse_event);
-        mouse = this.mouse;
-
-        var d = rotate_vector(p.x_target-mouse.x, p.y_target-mouse.y, dr);
-        p.set_target(mouse.x+d.x, mouse.y_target+d.y, null, null, undefined, true);
-        
-        var d = rotate_vector(p.x0_target-mouse.x, p.y0_target-mouse.y, dr);
-        p.x0_target = mouse.x+d.x;
-        p.y0_target = mouse.y+d.y;
-        p.x0 = p.x0_target;
-        p.y0 = p.y0_target;
-
-      }*/
-    } 
-
+    
+    // If the board rotated and we're holding pieces, update their rotations (disabled)
+    // This led to more responsive rotations (pieces didn't "breath" when rotating the canvas) 
+    // but somehow started to not work during some other updates. 
+    // Currently this is handled in board.set_rotation(), which updates
+    // the held piece orientation & targets. Conceptually more simple to think about for sure.
+    if(dr && this.client_is_holding[my_index]) 
+      rotate_pieces(this.client_selected_pieces[my_index], -dr, true, this.mouse.x, this.mouse.y); 
 
     //////////////////////////////////////
     // Now we actually update the canvas
@@ -3111,12 +3134,12 @@ BOARD.prototype.draw = function() {
       for (c in this.client_selected_pieces) {
         
         // get the selected pieces for this team
-        sps = this.client_selected_pieces[c]; 
-        j = sps.indexOf(pieces[i]);
+        var sps = this.client_selected_pieces[c]; 
+        var j   = sps.indexOf(pieces[i]);
 
         // Loop over the selected pieces
         if(j>=0) {
-          sp = sps[j];
+          var sp = sps[j];
 
           // if the piece is selected, draw the rectangle
           if (sp.active_image != null) {
@@ -3157,7 +3180,6 @@ BOARD.prototype.draw = function() {
           } // end of if piece selecte, draw rectangle
         } // end of loop over selected pieces for team
       } // end of loop over team selected pieces
-
     } // end of piece draw loop
 
     
@@ -3596,6 +3618,9 @@ server_heldchange = function(client_id, is_holding) {
   
   // Update whether the client's selection is held
   board.client_is_holding[client_index] = is_holding;
+  
+  // Make the hand appear again
+  board.client_hands[client_index].t_previous_move = Date.now();
 
   // trigger a redraw
   board.trigger_redraw = true;
