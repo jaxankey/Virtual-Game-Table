@@ -32,6 +32,7 @@
 // TO DO: Shift-c reverse-sorts?
 // TO DO: Top and bottom index for each piece (defines layers!)
 // TO DO: Update controls html file and add link to all games.
+// TO DO: Rotating the board while holding hadoken pieces causes the pieces to revert to their original locations
 
 //// OPTIONS
 
