@@ -31,7 +31,9 @@
 // TO DO: middle mouse click = focus
 // TO DO: Shift-c reverse-sorts?
 // TO DO: Find a way to switch back to the more responsive piece rotation in board.draw(). (Make incremental changes to piece coordinates, rather than setting targets?)
-// TO DO: Panning and rotating while held pieces move causes slight drift in the mouse's grab point.
+// TO DO: Add new_piece_layer integer for automatic layered drawing. It has to naturally stay sorted, or 
+//        else is_tray will not work. Perhaps board.pieces should be {0:[], 1:[], ...}? 
+//        Alternatively, insert_piece() could auto-sort by checking piece layers and incrementing/decrementing when out of order.
 
 //// OPTIONS
 
@@ -2288,25 +2290,32 @@ BOARD.prototype.event_mousewheel = function(e) {
 
   // Limit the number of wheel events per second
   if(!this._last_wheel_t) this._last_wheel_t = Date.now();
-  t = Date.now();
+  var t = Date.now();
   if(e.shiftKey) limit = 400;
   else           limit = 150;
   if(t-this._last_wheel_t < limit) return;
   this._last_wheel_t = t;
   
   // find our selected pieces
-  sps = this.client_selected_pieces[get_my_client_index()]; 
+  var my_index = get_my_client_index();
+  var sps = this.client_selected_pieces[my_index]; 
     
   // trigger redraw to be safe
   this.trigger_redraw = true;
 
-  // if shift or ctrl is held, rotate canvas
+  // if shift or ctrl is held, rotate canvas or pieces
   if (e.shiftKey || e.ctrlKey) {
 
-    // If we're holding pieces and shift
-    if (sps.length > 0 && e.shiftKey) {
-        if      (e.wheelDelta < 0) rotate_pieces(sps,  sps[sps.length-1].r_step);
-        else if (e.wheelDelta > 0) rotate_pieces(sps, -sps[sps.length-1].r_step);
+    // If we've selected pieces and shift
+    if (sps.length > 0) {
+        if      (e.wheelDelta < 0) {
+          if(this.client_is_holding[my_index]) rotate_pieces(sps, sps[sps.length-1].r_step, false, this.mouse.x, this.mouse.y);
+          else                                 rotate_pieces(sps, sps[sps.length-1].r_step, false);
+        }
+        else if (e.wheelDelta > 0) {
+          if(this.client_is_holding[my_index]) rotate_pieces(sps, -sps[sps.length-1].r_step, false, this.mouse.x, this.mouse.y);
+          else                                 rotate_pieces(sps, -sps[sps.length-1].r_step, false);
+        }
     } 
     
     // Otherwise, rotate the board (i.e., control key or no held pieces)
@@ -2422,9 +2431,11 @@ BOARD.prototype.event_keydown = function(e) {
         // Shift key rotates the view with no pieces selected
         if(e.shiftKey && sps.length == 0) this.set_rotation(this.r_target+this.r_step, caps);
         
-        // Shift key with pieces rotates them about their center
-        else if(e.shiftKey && sps.length > 0) rotate_pieces(sps, sps[sps.length-1].r_step);
-          
+        // Shift key with pieces rotates them about the mouse
+        else if(e.shiftKey && sps.length > 0) {
+          if(this.client_is_holding[my_index]) rotate_pieces(sps, sps[sps.length-1].r_step, false, this.mouse.x, this.mouse.y);
+          else                                 rotate_pieces(sps, sps[sps.length-1].r_step, false);
+        }  
         // otherwise pan
         else this.set_pan(this.px_target-this.pan_step, this.py_target, caps);
         break;
@@ -2436,9 +2447,12 @@ BOARD.prototype.event_keydown = function(e) {
         // Shift key rotates the view with no pieces selected
         if(e.shiftKey && sps.length == 0) this.set_rotation(this.r_target-this.r_step, caps);
         
-        // Shift key with pieces rotates them about their center
-        else if(e.shiftKey && sps.length > 0) rotate_pieces(sps, -sps[sps.length-1].r_step);
-          
+        // Shift key with pieces rotates them about the mouse
+        else if(e.shiftKey && sps.length > 0) {
+          if(this.client_is_holding[my_index]) rotate_pieces(sps, -sps[sps.length-1].r_step, false, this.mouse.x, this.mouse.y);
+          else                                 rotate_pieces(sps, -sps[sps.length-1].r_step, false);
+        }
+
         // otherwise pan
         else this.set_pan(this.px_target+this.pan_step, this.py_target, caps);
         
