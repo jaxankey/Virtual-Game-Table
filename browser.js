@@ -30,8 +30,8 @@
 //
 // TO DO: middle mouse click = focus
 // TO DO: Shift-c reverse-sorts?
-// TO DO: Top and bottom index for each piece (defines layers!)
-// TO DO: Rotating view while holding moving objects snaps them to their final position.
+// TO DO: Find a way to switch back to the more responsive piece rotation in board.draw(). (Make incremental changes to piece coordinates, rather than setting targets?)
+// TO DO: Panning and rotating while held pieces move causes slight drift in the mouse's grab point.
 
 //// OPTIONS
 
@@ -175,10 +175,10 @@ function scramble_pieces(pieces, x, y, space, scale) {
     var d = hex_spiral(spots.splice(rand_int(0, spots.length-1),1));
     var v = rotate_vector(0.5*D*Math.random(), 0, 360.0*(Math.random()));
     
-    //           x,y,r,                        angle,disable_snap,immediate,set_origin
+    //           x,y,r,                        angle,disable_snap,immediate
     p.set_target(x + d.n*a.x + d.m*b.x + v.x, 
                  y + d.n*a.y + d.m*b.y + v.y, 
-                 (Math.random()-0.5)*720*scale, null, null, false, true);
+                 (Math.random()-0.5)*720*scale, null, null, false);
     p.active_image = rand_int(0, p.images.length-1);
   }
 }
@@ -296,19 +296,9 @@ function rotate_pieces(pieces, r_deg, immediate, x, y) {
   else var d = {
     x :x, 
     y :y, 
-    x0:x + p.x0-p.x,
-    y0:y + p.y0-p.y
   };
   
-  for(var i in pieces) {
-    
-    // Rotate the target coordinates about the group center
-    pieces[i].rotate(r_deg, d.x,  d.y, immediate);
-
-    // Rotate the origin points to match, so that future mouse updates do not
-    // unrotate the new values of x_target and y_target.
-    pieces[i].rotate0(r_deg, d.x0, d.y0, immediate); 
-  }
+  for(var i in pieces) pieces[i].rotate(r_deg, d.x, d.y, immediate);
 }
 
 // randomizes the order of the supplied array (in place)
@@ -368,10 +358,6 @@ function get_center_of_pieces(pieces) {
   var xmax  = null;
   var ymin  = null;
   var ymax  = null;
-  var xmin0 = null;
-  var xmax0 = null;
-  var ymin0 = null;
-  var ymax0 = null;
   
   for(var n in pieces) {
     var p = pieces[n];
@@ -379,12 +365,8 @@ function get_center_of_pieces(pieces) {
     if(xmax==null || p.x_target > xmax) xmax = p.x_target;
     if(ymin==null || p.y_target < ymin) ymin = p.y_target;
     if(ymax==null || p.y_target > ymax) ymax = p.y_target;
-    if(xmin0==null || p.x0_target < xmin0) xmin0 = p.x0_target;
-    if(xmax0==null || p.x0_target > xmax0) xmax0 = p.x0_target;
-    if(ymin0==null || p.y0_target < ymin0) ymin0 = p.y0_target;
-    if(ymax0==null || p.y0_target > ymax0) ymax0 = p.y0_target;
   }
-  return {x:0.5*(xmin+xmax), y:0.5*(ymin+ymax), x0:0.5*(xmin0+xmax0), y0:0.5*(ymin0+ymax0)};
+  return {x:0.5*(xmin+xmax), y:0.5*(ymin+ymax)};
 }
 
 /**
@@ -513,15 +495,11 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   this.y_target  = this.board.new_piece_y_target;
   this.r_target  = this.board.new_piece_r_target;
   this.r_step    = this.board.new_piece_r_step;
-  this.x0_target = 0;
-  this.y0_target = 0;
   
   // Instantaneous values
   this.x  = this.board.new_piece_x_target;
   this.y  = this.board.new_piece_y_target;
   this.r = this.board.new_piece_r_target;
-  this.x0 = 0;
-  this.y0 = 0; 
   
   this.t_fade_ms        = this.board.new_piece_t_fade_ms;
   this.snap_index       = this.board.new_piece_snap_index;
@@ -611,8 +589,6 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   // current velocity of motion (to add momentum)
   this.vx = 0;
   this.vy = 0;
-  this.vx0 = 0;
-  this.vy0 = 0;
   this.vr = 0;
 
   // last time this piece was moved / drawn
@@ -630,8 +606,8 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
 // Put it in its box;
 PIECE.prototype.put_away = function() {
   
-  // x,y,r,angle,disable_snap,immediate,set_origin
-  this.set_target(this.board.box_x+this.box_x, this.board.box_y+this.box_y, 0, null, null, false, true);
+  // x,y,r,angle,disable_snap,immediate
+  this.set_target(this.board.box_x+this.box_x, this.board.box_y+this.box_y, 0, null, null, false);
   return this;
 }
 
@@ -662,7 +638,7 @@ PIECE.prototype.get_dimensions = function() {
 }
 
 // set the target location and rotation all then rotated by angle
-PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate,set_origin) {
+PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate) {
 
   // Set default argument values
   x            = or_default(x, this.x_target);
@@ -671,7 +647,6 @@ PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate,set_ori
   angle        = or_default(angle, null);
   disable_snap = or_default(disable_snap, false);
   immediate    = or_default(immediate, false);
-  set_origin   = or_default(set_origin, false); 
   
   // if we're supposed to transform the coordinates
   if(angle != null) {
@@ -689,12 +664,6 @@ PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate,set_ori
     x = snapped.x;
     y = snapped.y;
   }
-  
-  // If we're also setting the origin coordinates (relative to their starting point)
-  if(set_origin) {
-    this.x0_target = this.x0_target + x - this.x_target;
-    this.y0_target = this.y0_target + y - this.y_target;
-  }
 
   // set the target
   this.x_target  = x;
@@ -702,10 +671,6 @@ PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate,set_ori
 
   // if immediate, go there without animation
   if (immediate) {
-    if(set_origin) {
-      this.x0 = this.x0 + x - this.x;
-      this.y0 = this.y0 + y - this.y;
-    }
     this.x = x;
     this.y = y;
   }
@@ -770,20 +735,6 @@ PIECE.prototype.rotate = function(r_deg, x0, y0, immediate) {
   else this.set_rotation(r_deg + this.r_target, immediate);
 }
 
-/**
- * Rotates the piece's ORIGIN coordinates (this.x0, this.y0) about the specified point
- */
-PIECE.prototype.rotate0 = function(r_deg, x, y, immediate) {
-
-  // If specified, rotate about the supplied center coordinate
-  var d = rotate_vector(this.x0_target-x, this.y0_target-y, -r_deg);
-  this.x0_target = x + d.x;
-  this.y0_target = y + d.y;
-  if(immediate) {
-    this.x0 = this.x0_target;
-    this.y0 = this.y0_target;
-  }
-}
 
 
 PIECE.prototype.ellipse  = function(x, y) {
@@ -927,45 +878,31 @@ PIECE.prototype.move_and_draw = function() {
   var vx_target  = (this.x_target - this.x)*speed;
   var vy_target  = (this.y_target - this.y)*speed;
   var vr_target  = (this.r_target - this.r)*speed;
-  var vx0_target = (this.x0_target - this.x0)*speed;
-  var vy0_target = (this.y0_target - this.y0)*speed;
   
   // calculate the actual velocity after acceleration
   this.vx  = (vx_target  - this.vx) *accel;
   this.vy  = (vy_target  - this.vy) *accel;
   this.vr  = (vr_target  - this.vr) *accel;
-  this.vx0 = (vx0_target - this.vx0)*accel;
-  this.vy0 = (vy0_target - this.vy0)*accel;
   
   // adjust the step size
   var dx  = this.vx  * dt/draw_interval_ms;
   var dy  = this.vy  * dt/draw_interval_ms;
   var dr  = this.vr  * dt/draw_interval_ms;
-  var dx0 = this.vx0 * dt/draw_interval_ms;
-  var dy0 = this.vy0 * dt/draw_interval_ms;
   
   // make sure it's not too big
   if (Math.abs(dx) > Math.abs(this.x_target-this.x)) dx = this.x_target-this.x;
   if (Math.abs(dy) > Math.abs(this.y_target-this.y)) dy = this.y_target-this.y;
   if (Math.abs(dr) > Math.abs(this.r_target-this.r)) dr = this.r_target-this.r;
-  if (Math.abs(dx0) > Math.abs(this.x0_target-this.x0)) dx0 = this.x0_target-this.x0;
-  if (Math.abs(dy0) > Math.abs(this.y0_target-this.y0)) dy0 = this.y0_target-this.y0;
   
   // Calculate the new coordinates
   this.x  = dx + this.x;
   this.y  = dy + this.y;
   this.r  = dr + this.r;
-  this.x0 = dx0 + this.x0;
-  this.y0 = dy0 + this.y0;
-
+  
   // round to the nearest pixel if we've hit the target
   if ( Math.abs(this.x-this.x_target) < snap && Math.abs(this.y-this.y_target) < snap) {
     this.x = this.x_target;
     this.y = this.y_target;
-  }
-  if ( Math.abs(this.x0-this.x0_target) < snap && Math.abs(this.y0-this.y0_target) < snap) {
-    this.x0 = this.x0_target;
-    this.y0 = this.y0_target;
   }
   if ( Math.abs(this.r-this.r_target) < snap) {
     //this.r_target = this.r_target % 360;
@@ -1645,10 +1582,10 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
 
     // Animation: randomize rotation and displacement (doesn't affect r_target)
     for(var n in pieces)
-    // x,y,r,angle,disable_snap,immediate,set_origin
+    // x,y,r,angle,disable_snap,immediate
       pieces[n].set_target(pieces[n].x + (Math.random()-0.5)*this.shuffle_distance,
                            pieces[n].y + (Math.random()-0.5)*this.shuffle_distance,
-                           (Math.random()-0.5)*720, null, null, true, true);
+                           (Math.random()-0.5)*720, null, null, true);
     
     // Trigger an update to tell everyone the new locations
     this.send_stream_update();
@@ -1679,8 +1616,8 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
     if(from_top) {x = x-d.x; y = y+d.y;}
     else         {x = x+d.x; y = y-d.y;}
     
-    //           x, y,  r,       angle, disable_snap, immediate, set_origin
-    p.set_target(x, y, -r_piece, null,  null,         false,     true);
+    //           x, y,  r,       angle, disable_snap, immediate
+    p.set_target(x, y, -r_piece, null,  null,         false);
 
     // If we have an active image specified, set it
     if(active_image != null) p.set_active_image(active_image);
@@ -2123,10 +2060,6 @@ BOARD.prototype.event_mousedown = function(e) {
             var sp = this.client_selected_pieces[my_index][j];
             sp.x_target = sp.x;
             sp.y_target = sp.y;
-            sp.x0_target = sp.x_target;
-            sp.y0_target = sp.y_target;
-            sp.x0 = sp.x;
-            sp.y0 = sp.y; // immediate
           }
 
           // Quit out of the whole function
@@ -2211,18 +2144,7 @@ BOARD.prototype.event_mousemove = function(e) {
       // If we're allowed to move this piece and it exists
       if(hp.movable_by == null || hp.movable_by.indexOf(get_team_number())>=0) {
           
-          // We want to drag it from where they were when we grabbed them.
-          // the timer will handle the data sending if things have changed
-          // Unlike set_pan, these coordinates are relative to the unzoomed, unrotated board.
-          // x,y,r,angle,disable_snap,immediate,set_origin
-          /*hp.set_target(hp.x0 + this.mouse.x - this.mouse_down.x, // x0 and y0 could be moving if we rotated recently
-                        hp.y0 + this.mouse.y - this.mouse_down.y, 
-                        null, null, 
-                        true, true, false) // disable snap, immediate, don't update origin (this is the whole point of the origin) */
-          // This is a confusing thing, because we want to be able to have animations like collect and expand,
-          // but we also want to make the moves immediate. 
-          // The animations are run by setting the origin targets and letting the origin evolve
-          // What we really want to do is *shift* all of the coordinates by the distance the mouse moved
+          // Shift all of the coordinates by the distance the mouse moved
           var dx = this.mouse.x - this._previous_mousemove.x;
           var dy = this.mouse.y - this._previous_mousemove.y;
           hp.x_target += dx;
@@ -2684,8 +2606,8 @@ BOARD.prototype.event_keydown = function(e) {
             if(n>=0) sps.splice(n,1);
             sps.push(p);
 
-            // Now set the coordinates x,y,r,angle,disable_snap,immediate,set_origin
-            p.set_target(this.mouse.x+d.x,this.mouse.y+d.y,this.expand_r-this.r_target, null, null, false, true);
+            // Now set the coordinates x,y,r,angle,disable_snap,immediate
+            p.set_target(this.mouse.x+d.x,this.mouse.y+d.y,this.expand_r-this.r_target, null, null, false);
           }
         }
         break;
@@ -2842,10 +2764,10 @@ BOARD.prototype.set_rotation = function(r_deg, immediate) {
   if(immediate) this.r = r_deg;
   
   // If we're holding pieces, rotate them as well
-  /*my_index = get_my_client_index();
+  my_index = get_my_client_index();
   if(this.client_is_holding[my_index] && this.client_selected_pieces[my_index].length)
     rotate_pieces(this.client_selected_pieces[my_index], -r_deg+this.previous_r, immediate, this.mouse.x, this.mouse.y);
-  // Enabling the more responsive version in board.draw*/
+  // I have disabled the more responsive version in board.draw
 
   // trigger a redraw
   this.trigger_redraw  = true;
@@ -3058,12 +2980,15 @@ BOARD.prototype.draw = function() {
     if((dz || dr || dpx || dpy) && this.mouse_event ) this.event_mousemove(this.mouse_event);
     
     // If the board rotated and we're holding pieces, update their rotations (disabled)
-    // This led to more responsive rotations (pieces didn't "breath" when rotating the canvas) 
-    // but somehow started to not work during some other updates. 
-    // Currently this is handled in board.set_rotation(), which updates
-    // the held piece orientation & targets. Conceptually more simple to think about for sure.
-    if(dr && this.client_is_holding[my_index]) 
-      rotate_pieces(this.client_selected_pieces[my_index], -dr, true, this.mouse.x, this.mouse.y); 
+    // This led to more responsive rotations (collections of pieces didn't "breath" when rotating the canvas) 
+    // but, because of the immediate nature of this update, moving held pieces snapped to the
+    // final location.
+    // 
+    // Currently the functionality of this command ishandled in board.set_rotation(), 
+    // which updates the held piece orientation & targets. Conceptually more simple to think about, 
+    // for sure, but it has the weird "breathing" artifact...
+    /*if(dr && this.client_is_holding[my_index]) 
+      rotate_pieces(this.client_selected_pieces[my_index], -dr, true, this.mouse.x, this.mouse.y);*/ 
 
     //////////////////////////////////////
     // Now we actually update the canvas
