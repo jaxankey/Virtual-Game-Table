@@ -25,15 +25,16 @@
 // TO DO: var before every local variable. Avoids overwriting by other functions in loops!
 // TO DO: keyboard keys with a lookup table and functions that can be overwritten?
 // TO DO: Switch the gameplay updates to UDP, even though the data rate is low, or 
-//        add a check to see if the previous packet was received.
+//        add a check to see if the previous packet was received. Or see the failure mechanism
 //        https://stackoverflow.com/questions/11382495/how-to-be-sure-that-message-via-socket-io-has-been-received-to-the-client
 //
 // TO DO: middle mouse click = focus
 // TO DO: Shift-c reverse-sorts?
 // TO DO: Find a way to switch back to the more responsive piece rotation in board.draw(). (Make incremental changes to piece coordinates, rather than setting targets?)
 // TO DO: Add new_piece_layer integer for automatic layered drawing. It has to naturally stay sorted, or 
-//        else is_tray will not work. Perhaps board.pieces should be {0:[], 1:[], ...}? 
+//        else is_tray will not work, and selecting pieces would be a problem. Perhaps board.pieces should be {0:[], 1:[], ...}? 
 //        Alternatively, insert_piece() could auto-sort by checking piece layers and incrementing/decrementing when out of order.
+// TO DO: Make private code (only the image paths) public. Server has argument for path to images
 
 //// OPTIONS
 

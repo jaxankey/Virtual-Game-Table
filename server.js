@@ -17,10 +17,13 @@
  */
 
 // port upon which the server listens
-var port = 37777
+var game_name = 'checkers';
+var port      = 37777;
+for(var n in process.argv) log(process.argv[n]);
 
-// find out if a port was supplied
-if (process.argv.length > 2) port = parseInt(process.argv[2]);
+// find out if a game name and port was supplied
+if (process.argv.length > 2) game_name = process.argv[2];
+if (process.argv.length > 3) port = parseInt(process.argv[3]);
 
 // requirements
 var app  = require('express')();        // routing handler
@@ -56,12 +59,28 @@ function log() {
   console.log.apply(this, arguments);
 }
     
-// get the game directory
-game_directory = process.cwd();
+// get the directories
+var root_directory     = process.cwd();
+
+// This is the order of searching for files.
+var private_directory  = root_directory + '/private/'  + game_name
+var game_directory     = root_directory + '/games/'    + game_name;
+var defaults_directory = root_directory + '/defaults/' + game_name;
+
 
 // change to the root directory
-process.chdir('../..');
-log(process.cwd());
+log(private_directory);
+log(game_directory);
+log(defaults_directory);
+
+/**
+ * Returns the path to the appropriate file, following the priority
+ * private/gamename/path, games/gamename/path, and finally default/gamename/path.
+ */
+function find_file(path) {
+
+}
+
 
 // File requests
 app.get('/', function(request, response) {
@@ -70,21 +89,9 @@ app.get('/', function(request, response) {
 app.get('/rules/', function(request, response) {
   response.sendFile(game_directory + '/rules.html'); } );
 
-app.get('/controls/', function(request, response) {
-  response.sendFile(process.cwd() + '/controls.html'); } );
-    
 app.get('/game.js', function(request, response) {
   response.sendFile(game_directory + '/game.js'); } );
 
-app.get('/browser.js', function(request, response) {
-  response.sendFile(process.cwd() + '/browser.js') } );
-  
-app.get('/socket.io.js', function(request, response) {
-  response.sendFile(process.cwd() + '/external_scripts/socket.io-1.2.0.js'); } );
-
-app.get('/jquery.js', function(request, response) {
-  response.sendFile(process.cwd() + '/external_scripts/jquery-1.11.1.js'); } );
-  
 app.get('/images/:image', function(request, response) {
   response.sendFile(game_directory + '/images/'+request.params.image); });
 
@@ -96,6 +103,19 @@ app.get('/images/:dir1/:dir2/:image', function(request, response) {
   
 app.get('/rules.pdf', function(request, response) {
   response.sendFile(game_directory + '/rules.pdf'); });
+  
+app.get('/browser.js', function(request, response) {
+  response.sendFile(process.cwd() + '/browser.js') } );
+
+app.get('/controls/', function(request, response) {
+  response.sendFile(process.cwd() + '/controls.html'); } );
+    
+app.get('/socket.io.js', function(request, response) {
+  response.sendFile(process.cwd() + '/external_scripts/socket.io-1.2.0.js'); } );
+
+app.get('/jquery.js', function(request, response) {
+  response.sendFile(process.cwd() + '/external_scripts/jquery-1.11.1.js'); } );
+  
   
 // Last known board configuration
 

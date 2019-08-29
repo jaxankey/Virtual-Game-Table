@@ -1,0 +1,6 @@
+#!/bin/bash
+
+game=$1
+port=$2
+
+node server.js $game $port
