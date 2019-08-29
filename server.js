@@ -16,16 +16,22 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Versions included in external_scripts
+jquery_version    = 'jquery-1.11.1.js'
+socket_io_version = 'socket.io-1.2.0.js'
+
 // port upon which the server listens
-var game_name = 'checkers';
+var game_name = 'cards';
 var port      = 37777;
-for(var n in process.argv) log(process.argv[n]);
+console.log('\nArguments:');
+for(var n in process.argv) console.log(process.argv[n]);
 
 // find out if a game name and port was supplied
 if (process.argv.length > 2) game_name = process.argv[2];
 if (process.argv.length > 3) port = parseInt(process.argv[3]);
 
 // requirements
+var fs   = require('fs');               // file system stuff
 var app  = require('express')();        // routing handler
 var http = require('http').Server(app); // listening
 var io   = require('socket.io')(http);  // fast input/output
@@ -64,57 +70,58 @@ var root_directory     = process.cwd();
 
 // This is the order of searching for files.
 var private_directory  = root_directory + '/private/'  + game_name
-var game_directory     = root_directory + '/games/'    + game_name;
-var defaults_directory = root_directory + '/defaults/' + game_name;
+var games_directory     = root_directory + '/games/'    + game_name;
+var defaults_directory = root_directory + '/defaults';
 
 
 // change to the root directory
-log(private_directory);
-log(game_directory);
-log(defaults_directory);
+console.log('\nSearch Order:');
+console.log(private_directory);
+console.log(games_directory);
+console.log(defaults_directory+'\n');
+
+/**
+ * See if the full path exists.
+ * @param {string} path 
+ */
+function file_exists(path) {
+  return fs.existsSync(path);
+}
 
 /**
  * Returns the path to the appropriate file, following the priority
- * private/gamename/path, games/gamename/path, and finally default/gamename/path.
+ * private_directory, games_directory, defaults_directory
  */
 function find_file(path) {
-
+  //console.log(' Searching for', path, 'in');
+  paths = [
+    private_directory +'/'+path,
+    games_directory   +'/'+path,
+    defaults_directory+'/'+path,
+  ] 
+  for(var n in paths) {
+    //console.log('  ', paths[n]);
+    if(file_exists(paths[n])) return paths[n];
+  }
+  return false;
 }
 
-
 // File requests
-app.get('/', function(request, response) {
-  response.sendFile(game_directory + '/index.html'); } );
+app.get('/external_scripts/socket.io.js', function(request, response) {
+  response.sendFile(root_directory + '/external_scripts/' + socket_io_version); } );
 
-app.get('/rules/', function(request, response) {
-  response.sendFile(game_directory + '/rules.html'); } );
+app.get('/external_scripts/jquery.js', function(request, response) {
+  response.sendFile(root_directory + '/external_scripts/' + jquery_version); } );
 
-app.get('/game.js', function(request, response) {
-  response.sendFile(game_directory + '/game.js'); } );
+app.get('/',          function(request, response) {response.sendFile(find_file('index.html'))    ;} );
+app.get('/rules/',    function(request, response) {response.sendFile(find_file('rules.html'))    ;} );
+app.get('/controls/', function(request, response) {response.sendFile(find_file('controls.html')) ;} );
+app.get('/:f',        function(request, response) {response.sendFile(find_file(request.params.f));} );
 
-app.get('/images/:image', function(request, response) {
-  response.sendFile(game_directory + '/images/'+request.params.image); });
-
-app.get('/images/:directory/:image', function(request, response) {
-  response.sendFile(game_directory + '/images/' + request.params.directory + '/' +request.params.image); });
-
-app.get('/images/:dir1/:dir2/:image', function(request, response) {
-  response.sendFile(game_directory + '/images/' + request.params.dir1 + '/' + request.params.dir2 + '/' +request.params.image); });
+app.get('/images/:i',       function(request, response) {response.sendFile(find_file('images/'+request.params.i                                          ));} );
+app.get('/images/:d/:i',    function(request, response) {response.sendFile(find_file('images/'+request.params.d+'/'+request.params.i                     ));} );
+app.get('/images/:a/:b/:c', function(request, response) {response.sendFile(find_file('images/'+request.params.a+'/'+request.params.b+'/'+request.params.c));} );
   
-app.get('/rules.pdf', function(request, response) {
-  response.sendFile(game_directory + '/rules.pdf'); });
-  
-app.get('/browser.js', function(request, response) {
-  response.sendFile(process.cwd() + '/browser.js') } );
-
-app.get('/controls/', function(request, response) {
-  response.sendFile(process.cwd() + '/controls.html'); } );
-    
-app.get('/socket.io.js', function(request, response) {
-  response.sendFile(process.cwd() + '/external_scripts/socket.io-1.2.0.js'); } );
-
-app.get('/jquery.js', function(request, response) {
-  response.sendFile(process.cwd() + '/external_scripts/jquery-1.11.1.js'); } );
   
   
 // Last known board configuration

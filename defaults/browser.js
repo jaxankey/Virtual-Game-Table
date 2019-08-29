@@ -34,7 +34,8 @@
 // TO DO: Add new_piece_layer integer for automatic layered drawing. It has to naturally stay sorted, or 
 //        else is_tray will not work, and selecting pieces would be a problem. Perhaps board.pieces should be {0:[], 1:[], ...}? 
 //        Alternatively, insert_piece() could auto-sort by checking piece layers and incrementing/decrementing when out of order.
-// TO DO: Make private code (only the image paths) public. Server has argument for path to images
+// TO DO: Server supplies a unique game id so you can work with multiple games of the same type? This would mean
+//        setting up your views every time...
 
 //// OPTIONS
 
