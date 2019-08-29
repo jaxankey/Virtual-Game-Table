@@ -79,7 +79,7 @@
                      right:         20px;
                      background-color: white;}
     
-    .chat-input {width:212px;}
+    .chat-input {width:210px;}
 	
   </style>
 
@@ -129,14 +129,15 @@
     <table class="tight" width="100%"><tr>
       <td class="tight">
         Name:
-      </td><td class="tight">
-        <input id="name" onchange="name_onchange()" maxlength=16 autocomplete="off" value="n00b" style="width: 90%"/>
-      </td><td class="tight">
+        <input id="name" onchange="name_onchange()" maxlength=16 autocomplete="off" value="n00b" style="width: 25%"/>
         <select id="teams" onchange="team_onchange()"></select>
       </td>
     </tr>
     <tr>
-      <td class="tight"><button id="shuffle" onclick="shuffle_selected_pieces(0);">Shuffle</button></td>
+      <td class="tight">
+        <button id="shuffle" onclick="shuffle_selected_pieces(0);">(Z)huffle Selected</button>
+        <button id="roll"    onclick="scramble_selected_pieces();">(R)oll Selected</button>
+      </td>
     </tr>
   </table>
     
@@ -144,13 +145,23 @@
     <ul id="messages" class="chat"></ul>
 
     <!-- chat area -->
+    <table class="tight" width="100%"><tr>
+        <td class="tight">
+          <form><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2"/><button tabindex="3">Chat</button></form>
+        </td>
+      </tr>
+      <tr>
+        <td class="tight">
+          <button id="select_players"  onmousedown="select_players(3);">(P)layers</button>
+          <button id="select_gates"    onmousedown="select_gates(3);">(G)ates</button>
+        </td></tr><tr><td class="tight">
+          <button id="select_monsters" onmousedown="select_monsters(3);">(M)onsters</button>
+          <button id="select_dice"     onmousedown="select_dice(0);">Dice</button>
+        </td>
+      </tr>
+    </table>
     
-    <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2" width="100%"/><button tabindex="3">Chat</button></form>
     
-    <button id="select_players"  onmousedown="select_players(3);">(P)layers</button>
-    <button id="select_gates"    onmousedown="select_gates(3);">(G)ates</button>
-    <button id="select_monsters" onmousedown="select_monsters(3);">(M)onsters</button>
-    <button id="select_dice"     onmousedown="select_dice(0);">Dice</button>
   
   </div>
  

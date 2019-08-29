@@ -173,6 +173,9 @@ function scramble_pieces(pieces, x, y, space, scale) {
   // Generate all the available grid spots
   var spots =[]; for(var n=0; n<pieces.length*space; n++) spots.push(n);
   
+  // Pop off the spot under your hand if there is only one die.
+  if(pieces.length < 2 && spots.length > 1) spots.splice(0,1);
+  
   // Set the piece coordinates on the hex grid
   for(var n in pieces) {
     var p = pieces[n];
@@ -185,6 +188,14 @@ function scramble_pieces(pieces, x, y, space, scale) {
                  (Math.random()-0.5)*720*scale, null, null, false);
     p.active_image = rand_int(0, p.images.length-1);
   }
+}
+
+/**
+ * Scramble the selected pieces, like rolling dice: randomizes locations in a pattern determined by the 
+ * last piece's diameter, minimizing overlap. 
+ */
+function scramble_selected_pieces() {
+  scramble_pieces(board.client_selected_pieces[get_my_client_index()]);
 }
 
 

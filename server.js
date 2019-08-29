@@ -36,6 +36,9 @@ var app  = require('express')();        // routing handler
 var http = require('http').Server(app); // listening
 var io   = require('socket.io')(http);  // fast input/output
 
+
+
+// Generates a date string for logs
 function get_date_string() {
   
   // get the date
@@ -57,6 +60,8 @@ function get_date_string() {
   return yyyy+'-'+mm+'-'+dd+' '+hh+':'+mm+'.'+ss+' - '
 }
 
+
+// Logs events prepended by the date string
 function log() {
   // prepend the date
   arguments[0] = get_date_string()+String(arguments[0]);
@@ -64,7 +69,9 @@ function log() {
   // forward the arguments to the log.
   console.log.apply(this, arguments);
 }
-    
+
+
+
 // get the directories
 var root_directory     = process.cwd();
 
@@ -103,7 +110,19 @@ function find_file(path) {
     //console.log('  ', paths[n]);
     if(file_exists(paths[n])) return paths[n];
   }
+  console.log('  FILE NOT FOUND:', path);
   return false;
+}
+
+/**
+ * Searches for the path, and, if found, sends it using the response object
+ * @param {response} response
+ * @param {path-like string} path 
+ */
+
+function send(response, path) {
+  var full_path = find_file(path);
+  if(full_path) response.sendFile(full_path);
 }
 
 // File requests
@@ -113,14 +132,14 @@ app.get('/external_scripts/socket.io.js', function(request, response) {
 app.get('/external_scripts/jquery.js', function(request, response) {
   response.sendFile(root_directory + '/external_scripts/' + jquery_version); } );
 
-app.get('/',          function(request, response) {response.sendFile(find_file('index.html'))    ;} );
-app.get('/rules/',    function(request, response) {response.sendFile(find_file('rules.html'))    ;} );
-app.get('/controls/', function(request, response) {response.sendFile(find_file('controls.html')) ;} );
-app.get('/:f',        function(request, response) {response.sendFile(find_file(request.params.f));} );
+app.get('/',          function(request, response) {send(response, 'index.html')    ;} );
+app.get('/rules/',    function(request, response) {send(response, 'rules.html')    ;} );
+app.get('/controls/', function(request, response) {send(response, 'controls.html') ;} );
+app.get('/:f',        function(request, response) {send(response, request.params.f);} );
 
-app.get('/images/:i',       function(request, response) {response.sendFile(find_file('images/'+request.params.i                                          ));} );
-app.get('/images/:d/:i',    function(request, response) {response.sendFile(find_file('images/'+request.params.d+'/'+request.params.i                     ));} );
-app.get('/images/:a/:b/:c', function(request, response) {response.sendFile(find_file('images/'+request.params.a+'/'+request.params.b+'/'+request.params.c));} );
+app.get('/images/:i',       function(request, response) {send(response, 'images/'+request.params.i                                          );} );
+app.get('/images/:d/:i',    function(request, response) {send(response, 'images/'+request.params.d+'/'+request.params.i                     );} );
+app.get('/images/:a/:b/:c', function(request, response) {send(response, 'images/'+request.params.a+'/'+request.params.b+'/'+request.params.c);} );
   
   
   

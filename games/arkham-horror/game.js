@@ -45,6 +45,7 @@ board.collect_r_piece  =  null; // rotate the piece by the current view when col
 board.collect_r_stack  =  0;    // pieces always stack in the same direction
 board.expand_spacing_x =  100;
 board.expand_spacing_y =  100;
+board.expand_number_per_row = 5;
 
 // Add some teams
 board.add_team('white',    ['hand_white.png', 'fist_white.png' ], '#cccccc');
@@ -306,7 +307,7 @@ function select_from_board(pieces) {
 function select_players(delay)  {select_from_board(character_markers); board.clear_selected_after=delay;}
 function select_gates(delay)    {select_from_board(gate_tokens);       board.clear_selected_after=delay;}
 function select_monsters(delay) {select_from_board(monsters);          board.clear_selected_after=delay;}
-function select_dice(delay)     {select_from_board(dice);              board.clear_selected_after=delay;}
+function select_dice()          {board.client_selected_pieces[get_my_client_index()] = [...dice];}
 function deselect(delay)        {board.client_selected_pieces[get_my_client_index()].length=0;}
 
 function event_keydown(event_data, piece, piece_index) {
