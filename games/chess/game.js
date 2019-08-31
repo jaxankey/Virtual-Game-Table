@@ -22,7 +22,7 @@
 board.game_name = "chess";
 
 // Paint the table
-board.set_background_image('board.png');
+board.set_background_image('chess/board.png');
 
 // Add some people
 board.add_team('observer',  ['hand_white.png', 'fist_white.png'],   '#BBBBBB');
@@ -39,33 +39,34 @@ snappy = board.add_snap_grid(
    0,      w);    // basis vector 2
 
 // Set the defaults for new pieces
-board.new_piece_snap_index = snappy;
-board.new_piece_r_target   = 0;
-board.new_piece_r_step     = 45;
+board.new_piece_snap_index = snappy;         // Assigns new pieces to the snap grid
+board.new_piece_r_target   = 0;              // Rotation of new pieces
+board.new_piece_r_step     = 45;             // Rotation step (should we wish to)
+board.new_piece_rotates_with_canvas = false; // For chess, everyone wants the pieces to appear vertically
    
 // Add all the blue pieces (no particular place)
-kb  = board.add_piece(['king_blue.png'  ]); 
-qb  = board.add_piece(['queen_blue.png' ]); 
-bb1 = board.add_piece(['bishop_blue.png']); 
-nb1 = board.add_piece(['knight_blue.png']); 
-rb1 = board.add_piece(['rook_blue.png'  ]);  
-bb2 = board.add_piece(['bishop_blue.png']); 
-nb2 = board.add_piece(['knight_blue.png']); 
-rb2 = board.add_piece(['rook_blue.png'  ]); 
+kb  = board.add_piece(['chess/king_blue.png'  ]); 
+qb  = board.add_piece(['chess/queen_blue.png' ]); 
+bb1 = board.add_piece(['chess/bishop_blue.png']); 
+nb1 = board.add_piece(['chess/knight_blue.png']); 
+rb1 = board.add_piece(['chess/rook_blue.png'  ]);  
+bb2 = board.add_piece(['chess/bishop_blue.png']); 
+nb2 = board.add_piece(['chess/knight_blue.png']); 
+rb2 = board.add_piece(['chess/rook_blue.png'  ]); 
 
 // Add all the red pieces (no particular place)
-kr  = board.add_piece(['king_red.png'  ]); 
-qr  = board.add_piece(['queen_red.png' ]);
-br1 = board.add_piece(['bishop_red.png']); 
-nr1 = board.add_piece(['knight_red.png']);
-rr1 = board.add_piece(['rook_red.png'  ]); 
-br2 = board.add_piece(['bishop_red.png']); 
-nr2 = board.add_piece(['knight_red.png']); 
-rr2 = board.add_piece(['rook_red.png'  ]); 
+kr  = board.add_piece(['chess/king_red.png'  ]); 
+qr  = board.add_piece(['chess/queen_red.png' ]);
+br1 = board.add_piece(['chess/bishop_red.png']); 
+nr1 = board.add_piece(['chess/knight_red.png']);
+rr1 = board.add_piece(['chess/rook_red.png'  ]); 
+br2 = board.add_piece(['chess/bishop_red.png']); 
+nr2 = board.add_piece(['chess/knight_red.png']); 
+rr2 = board.add_piece(['chess/rook_red.png'  ]); 
 
 // pawns
-pbs = board.add_pieces(8, ['pawn_blue.png']); 
-prs = board.add_pieces(8, ['pawn_red.png' ]);  
+pbs = board.add_pieces(8, ['chess/pawn_blue.png']); 
+prs = board.add_pieces(8, ['chess/pawn_red.png' ]);  
 
 // define the setup
 function setup() {

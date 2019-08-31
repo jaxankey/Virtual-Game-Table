@@ -78,14 +78,14 @@ var root_directory     = process.cwd();
 // This is the order of searching for files.
 var private_directory  = root_directory + '/private/'  + game_name
 var games_directory     = root_directory + '/games/'    + game_name;
-var defaults_directory = root_directory + '/defaults';
+var common_directory = root_directory + '/common';
 
 
 // change to the root directory
 console.log('\nSearch Order:');
 console.log(private_directory);
 console.log(games_directory);
-console.log(defaults_directory+'\n');
+console.log(common_directory+'\n');
 
 /**
  * See if the full path exists.
@@ -97,21 +97,21 @@ function file_exists(path) {
 
 /**
  * Returns the path to the appropriate file, following the priority
- * private_directory, games_directory, defaults_directory
+ * private_directory, games_directory, common_directory
  */
 function find_file(path) {
   //console.log(' Searching for', path, 'in');
   paths = [
     private_directory +'/'+path,
     games_directory   +'/'+path,
-    defaults_directory+'/'+path,
+    common_directory  +'/'+path,
   ] 
   for(var n in paths) {
     //console.log('  ', paths[n]);
     if(file_exists(paths[n])) return paths[n];
   }
   console.log('  FILE NOT FOUND:', path);
-  return false;
+  return common_directory+'/images/nofile.png';
 }
 
 /**
@@ -119,7 +119,6 @@ function find_file(path) {
  * @param {response} response
  * @param {path-like string} path 
  */
-
 function send(response, path) {
   var full_path = find_file(path);
   if(full_path) response.sendFile(full_path);
@@ -330,7 +329,8 @@ io.on('connection', function(socket) {
   socket.on('u', function(incoming_pieces, clear) {
 
     // pieces is a list
-    log('u:', incoming_pieces.length, 'pieces');
+    client_index = client_sockets.indexOf(socket);
+    log(client_index, 'u:', incoming_pieces.length, 'pieces');
 
     // emit to the rest
     socket.broadcast.emit('u', incoming_pieces);

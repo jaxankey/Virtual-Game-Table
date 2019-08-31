@@ -287,7 +287,7 @@ gate_tokens = [board.add_piece(['GMBack.png', 'GMAnotherDimension.png']),
 // dice
 board.new_piece_physical_shape = 'rectangle';
 dice = [];
-for(n=0; n<10; n++) dice.push(board.add_piece(['6die1.png','6die2.png','6die3.png','6die4.png','6die5.png','6die6.png']));
+for(n=0; n<10; n++) dice.push(board.add_piece(['dice/6d1.png','dice/6d2.png','dice/6d3.png','dice/6d4.png','dice/6d5.png','dice/6d6.png']));
 
 // First player marker
 first_player = board.add_piece(['FirstPlayer.gif']);

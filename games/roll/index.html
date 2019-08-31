@@ -25,33 +25,27 @@
 
 	
   
-    body  { font:    14px Helvetica, Arial;
-            padding: 0px;
-            margin:  0px;}
+    body { font: 14px Helvetica, Arial;
+           padding: 0px;
+           margin: 0px}
 
-    td    { padding: 10px;}
+    td   { padding: 10px;}
     
-    div   { display: table;}
+    div   {display:  table;}
     
-    canvas{ vertical-align: bottom;}
+    canvas{vertical-align: bottom;}
 
-    .tight{ padding: 0px; 
-            border: 0px; 
-            margin: 0px; 
-            margin-bottom: 5px; 
-            width:0%;}
+    .tight {padding: 0px; border: 0px; margin: 0px; margin-bottom: 5px; width:0%}
 
     .raised { padding:    5px;
               box-shadow: 2px 2px 10px #ccc;
-              margin: 0px;}
+              margin: 10px;}
 
     ul.chat {overflow-y: auto;
              height:     300px;
              font:       14px Helvetica, Arial;}
     
-    #messages { list-style-type: none; 
-                margin:          0; 
-                padding:         0; }
+    #messages { list-style-type: none; margin: 0; padding: 0; }
     #messages li { padding: 5px 5px; }
     #messages li:nth-child(odd) { background: #fff5f5; }
 
@@ -67,19 +61,21 @@
            
     /* USER AND CHAT */
     
-    .user-container {width:         263px; 
-                     margin-bottom: 20px; 
+    .user-container {width:         240px; 
+                     margin-bottom: 10px; 
                      position:      fixed; 
-                     top:           20px; 
-                     right:         20px;
-                     background-color: white;}
-    .chat-container {width:         263px; 
-                     position:      fixed; 
-                     bottom:        20px; 
-                     right:         20px;
+                     top:           10px; 
+                     right:         10px;
                      background-color: white;}
     
-    .chat-input {width:212px;}
+    .chat-container {width: 240px; 
+                     margin-bottom: 10px;
+                     position:      fixed; 
+                     bottom:        10px; 
+                     right:         10px;
+                     background-color: white;}
+    
+    .chat-input {width:235px;}
 	
   </style>
 
@@ -93,7 +89,7 @@
   
   <canvas id="table" width="580px" height="450px" tabindex="1">
         Your browser doesn't support HTML5 canvases. We do all of our testing in
-        chrome. IE is garbage.
+        chrome. IE is garbage. I'd love for someone to code Firefox & Safari support.
   </canvas>
   
  
@@ -101,20 +97,14 @@
   <div id="controls" class="user-container raised">
     
     <table class="tight" style="width:100%">
+      <tr><td class="tight"><b>Table </b></td></tr>
       <tr>
-        
         <td class="tight">
-          <button onclick="board.setup(3);">Setup</button>
-          <button onclick="board.tantrum();">Hat.</button>
-        </td>
-      </tr><tr>
-      
-        <td class="tight" colspan="1">
-          <b>Table</b> 
-          <a href="/controls" target="new">Controls</a>
-        </td>
-      
-      </tr>
+          <a href="/rules" target="new">Rules</a> <a href='/controls' target="new">Controls</a>
+        </td><td class="tight" style="text-align:right" width="100%">
+          <button onclick="board.setup();">Setup</button>
+          <button onclick="board.tantrum();">HAT.</button>
+      </td></tr>
     </table>
     
     <ul id="clients" class="clients"></ul>
@@ -125,33 +115,27 @@
   <!-- chat box -->
   <div id="chat" class="chat-container raised">
     <!-- user info -->
-    <table class="tight" width="100%"><tr>
-      <td class="tight">
-        Name:
-        <input id="name" onchange="name_onchange()" maxlength=16 autocomplete="off" value="n00b" style="width: 70px"/>
-        Team:
+    <table class="tight" style="width:100%"><tr>
+	  <td class="tight">
+        <b>Name</b>
+      </td><td class="tight">
+	    <b>Team</b>
+	  
+	  </td></tr><tr>
+	  </td><td class="tight">
+	    <input id="name" onchange="name_onchange()" maxlength=16 autocomplete="off" value="n00b" style="width: 90%"/>
+      </td><td class="tight">
         <select id="teams" onchange="team_onchange()"></select>
-      </td>
-    </tr>
-    <tr>
-      <td class="tight">
-        Cards:
-      
-        <button id="collect"    onclick="collect_all_cards();">Get</button>
-        <button id="shuffle"    onclick="shuffle_selected_pieces(0, null, null, 0.1, 0.1);">(Z)huffle</button>
-        <button id="deal"       onclick="deal();">Dea(L)</button>
-        <button id="sort_cards" onclick="sort_selected();">Sort</button>
-      </td>
-    </tr>
-    
-  </table>
+	  </td>
+    </tr></table>
     
     <!-- where chat messages will appear -->
     <ul id="messages" class="chat"></ul>
 
     <!-- chat area -->
     
-    <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2" width="100%"/><button tabindex="3">Chat</button></form>
+    <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2"/></form>
+    
   </div>
  
   

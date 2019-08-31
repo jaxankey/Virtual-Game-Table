@@ -208,7 +208,7 @@ board.new_piece_physical_shape = 'rectangle';
 
 // add dice
 dice = [];
-for(n=0; n<5; n++) dice.push(board.add_piece(['6die1.png','6die2.png','6die3.png','6die4.png','6die5.png','6die6.png']));
+for(n=0; n<5; n++) dice.push(board.add_piece(['dice/6d1.png','dice/6d2.png','dice/6d3.png','dice/6d4.png','dice/6d5.png','dice/6d6.png']));
 
 
 

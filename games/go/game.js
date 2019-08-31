@@ -22,7 +22,7 @@
 board.game_name = "go";
 
 // Paint the table
-board.set_background_image('board.png');
+board.set_background_image('go/board.png');
 
 // set the allowed rotations and initial zoom (out)
 board.z_target = 50;
@@ -46,12 +46,13 @@ snappy = board.add_snap_grid(
    0,      w);    // basis vector 2
 
 // Set new piece defaults
-board.new_piece_snap_index = snappy; // new pieces will be linked to this grid
-board.new_piece_physical_shape = "outer_circle";
+board.new_piece_snap_index          = snappy; // new pieces will be linked to this grid
+board.new_piece_physical_shape      = "inner_circle";
+board.new_piece_rotates_with_canvas = false;
 
 // Add all the pieces (no particular place)
-blacks = board.add_pieces(180, ['stone_black.png']);
-whites = board.add_pieces(180, ['stone_white.png']);
+blacks = board.add_pieces(180, ['go/stone_black.png']);
+whites = board.add_pieces(180, ['go/stone_white.png']);
 
 // define the new game setup
 function setup() {
