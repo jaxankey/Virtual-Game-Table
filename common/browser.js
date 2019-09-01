@@ -29,13 +29,12 @@
 //        https://stackoverflow.com/questions/11382495/how-to-be-sure-that-message-via-socket-io-has-been-received-to-the-client
 //
 // TO DO: middle mouse click = focus
-// TO DO: Shift-c reverse-sorts?
+// TO DO: Shift-c sort?
 // TO DO: Find a way to switch back to the more responsive piece rotation in board.draw(). (Make incremental changes to piece coordinates, rather than setting targets?)
 // TO DO: Add new_piece_layer integer for automatic layered drawing. It has to naturally stay sorted, or 
 //        else is_tray will not work, and selecting pieces would be a problem. Perhaps board.pieces should be {0:[], 1:[], ...}? 
 //        Alternatively, insert_piece() could auto-sort by checking piece layers and incrementing/decrementing when out of order.
-// TO DO: Server supplies a unique game id so you can work with multiple games of the same type? This would mean
-//        setting up your views every time...
+// TO DO: Cookies assigned per web address AND game name.
 
 //// OPTIONS
 
@@ -187,7 +186,7 @@ function scramble_pieces(pieces, x, y, space, scale) {
     //           x,y,r,                        angle,disable_snap,immediate
     p.set_target(x + d.n*a.x + d.m*b.x + v.x, 
                  y + d.n*a.y + d.m*b.y + v.y, 
-                 (Math.random()-0.5)*720*scale, null, null, false);
+                 (Math.random()-0.5)*720*scale, null, true, false);
     p.active_image = rand_int(0, p.images.length-1);
   }
 }
@@ -310,10 +309,7 @@ function rotate_pieces(pieces, r_deg, immediate, x, y) {
 
   // Get the center of the current target coordinates, and the origin target coordinates
   if(x == null || y == null) var d = get_center_of_pieces(pieces);
-  else var d = {
-    x :x, 
-    y :y, 
-  };
+  else var d = {x:x,y:y};
   
   for(var i in pieces) pieces[i].rotate(r_deg, d.x, d.y, immediate);
 }
@@ -624,7 +620,7 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
 PIECE.prototype.put_away = function() {
   
   // x,y,r,angle,disable_snap,immediate
-  this.set_target(this.board.box_x+this.box_x, this.board.box_y+this.box_y, 0, null, null, false);
+  this.set_target(this.board.box_x+this.box_x, this.board.box_y+this.box_y, 0, null, true, false);
   return this;
 }
 
@@ -654,17 +650,20 @@ PIECE.prototype.get_dimensions = function() {
   return {width: w, height: h, max: Math.max(w, h), min: Math.min(w, h)};
 }
 
-// set the target location and rotation all then rotated by angle
+// set the target location x,y and rotation r, and everything rotated about the board origin by angle
 PIECE.prototype.set_target = function(x,y,r,angle,disable_snap,immediate) {
 
   // Set default argument values
   x            = or_default(x, this.x_target);
   y            = or_default(y, this.y_target);
   r            = or_default(r, null);
-  angle        = or_default(angle, null);
+  angle        = or_default(angle, null);        
   disable_snap = or_default(disable_snap, false);
   immediate    = or_default(immediate, false);
-  
+
+  // Always disable if held. This causes a single piece to not be let go on mouseup!
+  //disable_snap = disable_snap || board.find_holding_client_index(this) >= 0;
+
   // if we're supposed to transform the coordinates
   if(angle != null) {
     var v = rotate_vector(x, y, angle);
@@ -745,7 +744,7 @@ PIECE.prototype.rotate = function(r_deg, x0, y0, immediate) {
   // If specified, rotate about the supplied center coordinate
   if(x0 != this.x_target || y0 != this.y_target) {
     var d = rotate_vector(this.x_target-x0, this.y_target-y0, -r_deg);
-    this.set_target(x0 + d.x, y0 + d.y, r_deg + this.r_target, null, null, immediate);
+    this.set_target(x0 + d.x, y0 + d.y, r_deg + this.r_target, null, true, immediate);
   }
   
   // Otherwise rotate around its center.
@@ -1624,7 +1623,7 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
     // x,y,r,angle,disable_snap,immediate
       pieces[n].set_target(pieces[n].x + (Math.random()-0.5)*this.shuffle_distance,
                            pieces[n].y + (Math.random()-0.5)*this.shuffle_distance,
-                           (Math.random()-0.5)*720, null, null, true);
+                           (Math.random()-0.5)*720, null, true, true);
     
     // Trigger an update to tell everyone the new locations
     this.send_stream_update();
@@ -1656,7 +1655,7 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
     else         {x = x+d.x; y = y-d.y;}
     
     //           x, y,  r,       angle, disable_snap, immediate
-    p.set_target(x, y, -r_piece, null,  null,         false);
+    p.set_target(x, y, -r_piece, null,  true,         false);
 
     // If we have an active image specified, set it
     if(active_image != null) p.set_active_image(active_image);
@@ -1728,7 +1727,7 @@ BOARD.prototype.expand_pieces = function(pieces, number_per_row, x, y, spacing_x
       sps.push(p);
 
       // Now set the coordinates x,y,r,angle,disable_snap,immediate
-      p.set_target(x+d.x,y+d.y,r_piece-this.r_target, null, null, false);
+      p.set_target(x+d.x,y+d.y,r_piece-this.r_target, null, true, false);
 
       // Set the image
       if(active_image != null) p.active_image = active_image;

@@ -329,39 +329,45 @@ function event_keydown(event_data, piece, piece_index) {
 function setup() {
   
   // Ancient ones pieces, x, y, shuffle, active_image
-  board.collect_pieces(deck_ancient, 0, -1450, true, 0);
-  board.collect_pieces(doom,      -220, -1700)
+  var x0=0;
+  var y0=0;
+  board.collect_pieces(deck_ancient, x0+0,   y0-1450, true, 0, 0);
+  board.collect_pieces(doom,         x0-220, y0-1680, true, 0, 0);
   
   // Mythos & Gate Decks
-  board.collect_pieces(deck_mythos, -440, -1320, true, 0, 90);
-  board.collect_pieces(deck_gate,    440, -1320, true, 0, 90);
+  board.collect_pieces(deck_mythos, x0-350, y0-1390, true, 0, 0);
+  board.collect_pieces(deck_gate,   x0+370, y0-1390, true, 0, 0);
 
   // Gate tokens & Monsters
-  board.collect_pieces(gate_tokens, 750, -1300, true, 0);
-  board.collect_pieces(monsters,    750, -1500, true, 0);
+  board.collect_pieces(gate_tokens, -1200, -1300, true, 0, 0);
+  board.collect_pieces(monsters,    -1000, -1300, true, 0, 0);
+
+  // Player cards
+  board.collect_pieces(character_sheets,  -1700, 0, true, 0, r);
+  board.collect_pieces(character_markers, -1700, -350, true, 0, r);
 
   // Locations
-  var x0 = -1020;
-  var y0 = -1070;
-  var dx = 400;
-  var dy = 265;
-  var r  = 90;
-  board.collect_pieces(deck_downtown,   x0+0*dx, y0,      true, 0, r);
-  board.collect_pieces(deck_easttown,   x0+0*dx, y0+1*dy, true, 0, r);
-  board.collect_pieces(deck_french,     x0+0*dx, y0+2*dy, true, 0, r);
-  board.collect_pieces(deck_merchant,   x0+0*dx, y0+3*dy, true, 0, r);
-  board.collect_pieces(deck_miskatonic, x0+0*dx, y0+4*dy, true, 0, r);
-  board.collect_pieces(deck_southside,  x0-0*dx, y0+5*dy, true, 0, r);
-  board.collect_pieces(deck_northside,  x0-0*dx, y0+6*dy, true, 0, r);
-  board.collect_pieces(deck_rivertown,  x0-0*dx, y0+7*dy, true, 0, r);
-  board.collect_pieces(deck_uptown,     x0-0*dx, y0+8*dy, true, 0, r);
+  var x0 = -1630;
+  var y0 = -1000;
+  var dx = 320;
+  var dy = 420;
+  var r  = 0;
+  board.collect_pieces(deck_northside,  x0,      y0, true, 0, r);
+  board.collect_pieces(deck_downtown,   x0+dx,   y0, true, 0, r);
+  board.collect_pieces(deck_easttown,   x0+2*dx, y0, true, 0, r);
+  board.collect_pieces(deck_merchant,   x0+dx,   y0+dy, true, 0, r);
+  board.collect_pieces(deck_rivertown,  x0+2*dx, y0+dy, true, 0, r);
+  board.collect_pieces(deck_miskatonic, x0+dx,   y0+2*dy, true, 0, r);
+  board.collect_pieces(deck_french,     x0+2*dx, y0+2*dy, true, 0, r);
+  board.collect_pieces(deck_uptown,     x0+dx,   y0+3*dy, true, 0, r);
+  board.collect_pieces(deck_southside,  x0+2*dx, y0+3*dy, true, 0, r);
   
   // Small decks
-  var x0 = -600;
-  var dx = -300;
-  var y0 = 1330;
-  var dy = 200;
-  var r  = 90;
+  var x0 = -1870;
+  var dx = -240;
+  var y0 = 750;
+  var dy = 300;
+  var r  = 0;
   
   // pieces,x,y,shuffle,active_image,r_piece,r_view,offset_x,offset_y
   board.collect_pieces(deck_allies, x0-0*dx, y0, true, 0, r);
@@ -376,11 +382,7 @@ function setup() {
   board.collect_pieces(deputy,      x0-3*dx, y0+dy, true, 0, r);
   board.collect_pieces(blessings,   x0-4*dx, y0+dy, true, 0, r);
   
-  // Player cards
-  board.collect_pieces(character_sheets,  -1020, -1500, true, 0);
-  board.collect_pieces(character_markers, -1300, -1500, true, 0);
-
-  // horror track
+  // terror track
   terror.set_target(-665, 1095);
 
   // dice
@@ -390,18 +392,34 @@ function setup() {
                                          720 *(Math.random()-0.5));
 
   // misc
-  for(var i in clues)   clues  [i].set_target(-700 +(Math.random()-0.5)*a, 1750 +(Math.random()-0.5)*a, 720 *(Math.random()-0.5));
-  for(var i in sanity)  sanity [i].set_target(-500 +(Math.random()-0.5)*a, 1750 +(Math.random()-0.5)*a, 720 *(Math.random()-0.5));
-  for(var i in stamina) stamina[i].set_target(-300 +(Math.random()-0.5)*a, 1750 +(Math.random()-0.5)*a, 720 *(Math.random()-0.5));
+  var x0 = -170;
+  var dx = 115;
+  var y0 = 1300;
+  for(var i in clues)   clues  [i].set_target(x0-150 +(Math.random()-0.5)*a, y0 +(Math.random()-0.5)*a, 720 *(Math.random()-0.5));
+  for(var i in sanity)  sanity [i].set_target(x0-350 +(Math.random()-0.5)*a, y0 +(Math.random()-0.5)*a, 720 *(Math.random()-0.5));
+  for(var i in stamina) stamina[i].set_target(x0-550 +(Math.random()-0.5)*a, y0 +(Math.random()-0.5)*a, 720 *(Math.random()-0.5));
+  board.collect_pieces(sliders,  x0,      y0, false, 0, 180);
+  first_player.set_target(       x0+dx,   y0);
+  board.collect_pieces(doors,    x0+2*dx, y0, false, 0, 0);
+  board.collect_pieces(activity, x0+3*dx, y0, false, 0, 0);
+  board.collect_pieces(explored, x0+4*dx, y0, false, 0, 0);
+  board.collect_pieces(tens,     x0+5*dx+20, y0, false, 0, 0);
+  board.collect_pieces(fives,    x0+5*dx+170, y0, false, 0, 0);
+  board.collect_pieces(ones,     x0+5*dx+320, y0, false, 0, 0);
 
-  board.collect_pieces(sliders, -150, 1700, false, 0, 90);
-  first_player.set_target(0, 1700);
-  board.collect_pieces(doors,    150, 1700);
-  board.collect_pieces(activity, 300, 1700);
-  board.collect_pieces(explored, 450, 1700);
-  board.collect_pieces(tens,     550, 1700, false, 0, 90);
-  board.collect_pieces(fives,    620, 1700, false, 0, 90);
-  board.collect_pieces(ones,     690, 1700, false, 0, 90);
+  // clue tokens
+  clues[0].set_target(-222,837);
+  clues[1].set_target(33.94110786643904, 835.0377268684327);
+  clues[2].set_target(161.05316866322698, 264.57041799521426);
+  clues[3].set_target(367.9202490464511, 151.56627704164873);
+  clues[4].set_target(366.2678409820168, -141.5616191742247);
+  clues[5].set_target(-678.3759120526192, 31.577104788376374);
+  clues[6].set_target(-454.32747210751603, -140.36249733138507);
+  clues[7].set_target(361.4475938065212, -334.1178145599539);
+  clues[8].set_target(-674.9170455755229, -420.3069104828829);
+  clues[9].set_target(135.61813311487606, -840.816635940202);
+  clues[10].set_target(132.3928565620677, -1092.8626848277966);
+  
 }
 
 // Start the show!

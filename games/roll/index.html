@@ -97,7 +97,6 @@
   <div id="controls" class="user-container raised">
     
     <table class="tight" style="width:100%">
-      <tr><td class="tight"><b>Table </b></td></tr>
       <tr>
         <td class="tight">
           <a href="/rules" target="new">Rules</a> <a href='/controls' target="new">Controls</a>
@@ -108,6 +107,17 @@
     </table>
     
     <ul id="clients" class="clients"></ul>
+
+    <table>
+      <tr>
+        <td colspan="2" class="tight">
+          Collect: 
+          <button onclick="collect_dice();  ">Dice</button>
+          <button onclick="collect_pieces();">Pieces</button>
+          <button onclick="collect_boards();">Boards</button>
+        </td>
+      </tr>
+    </table>
   </div>
   
     
@@ -115,7 +125,7 @@
   <!-- chat box -->
   <div id="chat" class="chat-container raised">
     <!-- user info -->
-    <table class="tight" style="width:100%"><tr>
+  <table class="tight" style="width:100%"><tr>
 	  <td class="tight">
         <b>Name</b>
       </td><td class="tight">
@@ -127,7 +137,8 @@
       </td><td class="tight">
         <select id="teams" onchange="team_onchange()"></select>
 	  </td>
-    </tr></table>
+    </tr>
+  </table>
     
     <!-- where chat messages will appear -->
     <ul id="messages" class="chat"></ul>
@@ -135,7 +146,6 @@
     <!-- chat area -->
     
     <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2"/></form>
-    
   </div>
  
   

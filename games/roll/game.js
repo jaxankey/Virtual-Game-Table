@@ -38,9 +38,9 @@ board.pan_step = 250;
 // Collection and expansion settings
 board.collect_r_piece  = null; // Rotates the piece to the current view
 board.collect_r_stack  = null; // Rotates the stack offsets to the current view
-board.expand_spacing_x = 100;
-board.expand_spacing_y = 100;
-board.expand_number_per_row = 10;
+board.expand_spacing_x = 70;
+board.expand_spacing_y = 70;
+board.expand_number_per_row = 5;
 
 //////////////////////////
 // TEAMS               
@@ -63,15 +63,20 @@ board.add_team('manager',  ['hand_white.png', 'fist_white.png' ], '#cccccc');
 // PIECES  
 /////////////
 board.new_piece_rotates_with_canvas = true;
-board.new_piece_r_step              = 45;
 board.new_piece_movable_by          = null; // errbody
-board.new_piece_physical_shape      = 'inner_circle';
 
 // Measurement tools
-ring = board.add_piece(['measurement/rings.png'])
+board.new_piece_r_step = 5;
+grid1 = board.add_piece(['measurement/grid.png']);
+//grid2 = board.add_piece(['measurement/grid.png']);
+board.new_piece_physical_shape = 'inner_circle';
+ring1 = board.add_piece(['measurement/rings.png']);
+//ring2 = board.add_piece(['measurement/rings.png']);
+
 
 
 // Add all the dice
+board.new_piece_r_step = 45;
 function add_dice(sides, quantity) {
   var images = [];
   for(var m=sides; m>=1; m--) images.push('dice-fancy/'+String(sides)+'d'+String(m)+'.png');
@@ -96,7 +101,7 @@ function add_pieces(image_paths, quantity) {
   for(n=0; n<quantity; n++) pieces.push(board.add_piece(image_paths));
   return pieces;
 }
-var number_of_each_piece=10;
+var number_of_each_piece=5;
 red_pawns   = add_pieces(['chess/pawn_red.png'],   number_of_each_piece);
 blue_pawns  = add_pieces(['chess/pawn_blue.png'],  number_of_each_piece);
 white_pawns = add_pieces(['chess/pawn_white.png'], number_of_each_piece);
@@ -172,7 +177,7 @@ function sort_and_expand_dice() {
 
 function collect_dice() {
   // collect the dice into piles (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
-  var x=-550;
+  var x=-510;
   var y=-300; 
   var dy=100;
   board.collect_pieces(d20, x, y     , false, 0);
@@ -188,7 +193,7 @@ function collect_pieces() {
   var dx=70;
   var x=-dx*5;
   var dy=70;
-  var y=550;
+  var y=500;
   var first_row = [blue_pawns, red_pawns, white_pawns, 
                blue_bishops, red_bishops, white_bishops,
                blue_knights, red_knights, white_knights,
@@ -202,18 +207,18 @@ function collect_pieces() {
   for(var n in second_row) board.collect_pieces(second_row[n], x+n*dx, y+dy, false, 0);
 }
 
+function collect_boards() {
+  ring1.set_target(900,0,0);
+  grid1.set_target(0,0,0);
+}
+
 // setup the board with N players
 function setup() {
-  console.log('setup');
-
-  // Collect the dice
+  
+  // Collect all three!
   collect_dice();
-  
-  // Collect the pieces
   collect_pieces();
-
-  ring.set_target(0,0,0);
-  
+  collect_boards();
 }
 
 // Load cookies, ask for the config, and start accepting piece packets.
