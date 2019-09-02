@@ -161,7 +161,7 @@ function scramble_pieces(pieces, x, y, space, scale) {
   // Now find the basis vectors based on the radius of the last piece
   var d  = pieces[pieces.length-1].get_dimensions()
   var D  = scale*Math.sqrt(d.width*d.width+d.height*d.height);
-  var ax = 1.5*D;
+  var ax = D;
   var ay = 0;
   var bx = ax*cos(60);
   var by = ax*sin(60);
@@ -181,7 +181,7 @@ function scramble_pieces(pieces, x, y, space, scale) {
   for(var n in pieces) {
     var p = pieces[n];
     var d = hex_spiral(spots.splice(rand_int(0, spots.length-1),1));
-    var v = rotate_vector(0.5*D*Math.random(), 0, 360.0*(Math.random()));
+    var v = rotate_vector(0.25*D*Math.random(), 0, 360.0*(Math.random()));
     
     //           x,y,r,                        angle,disable_snap,immediate
     p.set_target(x + d.n*a.x + d.m*b.x + v.x, 

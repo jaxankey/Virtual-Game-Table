@@ -66,9 +66,10 @@ board.new_piece_rotates_with_canvas = true;
 board.new_piece_movable_by          = null; // errbody
 
 // Measurement tools
-board.new_piece_r_step = 5;
+board.new_piece_r_step = 15;
 grid1 = board.add_piece(['measurement/grid.png']);
-//grid2 = board.add_piece(['measurement/grid.png']);
+ruler = board.add_piece(['measurement/ruler.png']);
+board.new_piece_r_step = 5;
 board.new_piece_physical_shape = 'inner_circle';
 ring1 = board.add_piece(['measurement/rings.png']);
 //ring2 = board.add_piece(['measurement/rings.png']);
@@ -77,6 +78,17 @@ ring1 = board.add_piece(['measurement/rings.png']);
 
 // Add all the dice
 board.new_piece_r_step = 45;
+var number_of_each_die=10;
+d90 = [];
+for(var n=0; n<number_of_each_die; n++) 
+  d90.push(board.add_piece([
+    'dice-fancy/90d90.png', 'dice-fancy/90d80.png',
+    'dice-fancy/90d70.png', 'dice-fancy/90d60.png',
+    'dice-fancy/90d50.png', 'dice-fancy/90d40.png',
+    'dice-fancy/90d30.png', 'dice-fancy/90d20.png',
+    'dice-fancy/90d10.png', 'dice-fancy/90d00.png',
+  ]));
+
 function add_dice(sides, quantity) {
   var images = [];
   for(var m=sides; m>=1; m--) images.push('dice-fancy/'+String(sides)+'d'+String(m)+'.png');
@@ -85,7 +97,6 @@ function add_dice(sides, quantity) {
   for(var m=1; m<=quantity; m++) dice.push(board.add_piece(images));
   return dice;
 }
-var number_of_each_die=10;
 d20 = add_dice(20, number_of_each_die);
 d12 = add_dice(12, number_of_each_die);
 d10 = add_dice(10, number_of_each_die);
@@ -101,38 +112,45 @@ function add_pieces(image_paths, quantity) {
   for(n=0; n<quantity; n++) pieces.push(board.add_piece(image_paths));
   return pieces;
 }
-var number_of_each_piece=5;
-red_pawns   = add_pieces(['chess/pawn_red.png'],   number_of_each_piece);
-blue_pawns  = add_pieces(['chess/pawn_blue.png'],  number_of_each_piece);
-white_pawns = add_pieces(['chess/pawn_white.png'], number_of_each_piece);
-
-red_bishops   = add_pieces(['chess/bishop_red.png'],   number_of_each_piece);
-blue_bishops  = add_pieces(['chess/bishop_blue.png'],  number_of_each_piece);
-white_bishops = add_pieces(['chess/bishop_white.png'], number_of_each_piece);
-
-red_knights   = add_pieces(['chess/knight_red.png'],   number_of_each_piece);
-blue_knights  = add_pieces(['chess/knight_blue.png'],  number_of_each_piece);
-white_knights = add_pieces(['chess/knight_white.png'], number_of_each_piece);
-
-red_rooks   = add_pieces(['chess/rook_red.png'],   number_of_each_piece);
-blue_rooks  = add_pieces(['chess/rook_blue.png'],  number_of_each_piece);
-white_rooks = add_pieces(['chess/rook_white.png'], number_of_each_piece);
-
-red_queens   = add_pieces(['chess/queen_red.png'],   number_of_each_piece);
-blue_queens  = add_pieces(['chess/queen_blue.png'],  number_of_each_piece);
-white_queens = add_pieces(['chess/queen_white.png'], number_of_each_piece);
-
-red_kings   = add_pieces(['chess/king_red.png'],   number_of_each_piece);
-blue_kings  = add_pieces(['chess/king_blue.png'],  number_of_each_piece);
-white_kings = add_pieces(['chess/king_white.png'], number_of_each_piece);
+function get_piece_names(name) {
+  var colors = ['white', 'red', 'blue'];
+  var names = [];
+  for(var n in colors) names.push(name+'_'+colors[n]+'.png');
+  return names;
+}
+var number_of_each_piece=10;
+pawns   = add_pieces(get_piece_names('chess/pawn'),   number_of_each_piece);
+bishops = add_pieces(get_piece_names('chess/bishop'),   number_of_each_piece);
+knights = add_pieces(get_piece_names('chess/knight'),   number_of_each_piece);
+rooks   = add_pieces(get_piece_names('chess/rook'),   number_of_each_piece);
+queens  = add_pieces(get_piece_names('chess/queen'),   number_of_each_piece);
+kings   = add_pieces(get_piece_names('chess/king'),   number_of_each_piece);
 
 black_chips = add_pieces(['chips/chip_black.png'], number_of_each_piece);
 blue_chips  = add_pieces(['chips/chip_blue.png'],  number_of_each_piece);
 red_chips   = add_pieces(['chips/chip_red.png'],   number_of_each_piece);
 white_chips = add_pieces(['chips/chip_white.png'], number_of_each_piece);
 
+// Add shapes
+var number_of_each_shape = 10;
+board.new_piece_r_step = 15;
 
-
+function get_shape_names(name) {
+  var colors = ['red', 'blue', 'orange', 'black'];
+  var names = [];
+  for(var n in colors) names.push(name+'-'+colors[n]+'.png');
+  return names;
+}
+circle8s = add_pieces(get_shape_names('shapes/circle8'), number_of_each_shape);
+circle4s = add_pieces(get_shape_names('shapes/circle4'), number_of_each_shape);
+board.new_piece_physical_shape = 'rectangle';
+square8s = add_pieces(get_shape_names('shapes/square8'), number_of_each_shape);
+square4s = add_pieces(get_shape_names('shapes/square4'), number_of_each_shape);
+log24s   = add_pieces(get_shape_names('shapes/log24'), number_of_each_shape);
+log16s   = add_pieces(get_shape_names('shapes/log16'), number_of_each_shape);
+log12s   = add_pieces(get_shape_names('shapes/log12'), number_of_each_shape);
+log8s   = add_pieces(get_shape_names('shapes/log8'), number_of_each_shape);
+log4s   = add_pieces(get_shape_names('shapes/log4'), number_of_each_shape);
 
 /////////////////////
 // FUNCTIONALITY
@@ -178,47 +196,56 @@ function sort_and_expand_dice() {
 function collect_dice() {
   // collect the dice into piles (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
   var x=-510;
-  var y=-300; 
+  var y=-350; 
   var dy=100;
-  board.collect_pieces(d20, x, y     , false, 0);
-  board.collect_pieces(d12, x, y+dy  , false, 0);
-  board.collect_pieces(d10, x, y+2*dy, false, 0);
-  board.collect_pieces(d8 , x, y+3*dy, false, 0);
-  board.collect_pieces(d6 , x, y+4*dy, false, 0);
-  board.collect_pieces(d4 , x, y+5*dy, false, 0);
-  board.collect_pieces(d2 , x, y+6*dy, false, 0);
+  board.collect_pieces(d20, x, y     , false, 0, 0);
+  board.collect_pieces(d12, x, y+dy  , false, 0, 0);
+  board.collect_pieces(d90, x, y+2*dy, false, 0, 0);
+  board.collect_pieces(d10, x, y+3*dy, false, 0, 0);
+  board.collect_pieces(d8 , x, y+4*dy, false, 0, 0);
+  board.collect_pieces(d6 , x, y+5*dy, false, 0, 0);
+  board.collect_pieces(d4 , x, y+6*dy, false, 0, 0);
+  board.collect_pieces(d2 , x, y+7*dy, false, 0, 0);
 }
 
 function collect_pieces() {
   var dx=70;
-  var x=-dx*5;
+  var x=-520;
   var dy=70;
-  var y=500;
-  var first_row = [blue_pawns, red_pawns, white_pawns, 
-               blue_bishops, red_bishops, white_bishops,
-               blue_knights, red_knights, white_knights,
-               black_chips, blue_chips];
-  var second_row = [blue_rooks, red_rooks, white_rooks,
-                blue_queens, red_queens, white_queens,
-                blue_kings, red_kings, white_kings,
-               red_chips, white_chips];
+  var y=450;
+  var first_row = [pawns, bishops, knights, rooks, queens, kings, black_chips, blue_chips, red_chips, white_chips];
   
-  for(var n in first_row)  board.collect_pieces(first_row[n],  x+n*dx, y   , false, 0);
-  for(var n in second_row) board.collect_pieces(second_row[n], x+n*dx, y+dy, false, 0);
+  for(var n=first_row.length-1; n>=0; n--)  board.collect_pieces(first_row[n],  x-n*dx, y   , false, 0, 0);
 }
 
 function collect_boards() {
-  ring1.set_target(900,0,0);
-  grid1.set_target(0,0,0);
+  ring1.set_target(-934, 950,  0);
+  grid1.set_target(-934, 950,  0);
+  ruler.set_target(-493, 950, 90);
+}
+
+function collect_shapes() {
+  board.collect_pieces(log24s, -600, 0, false, 0, 90);
+  board.collect_pieces(log4s,  -670, 289, false, 0, 90);
+  board.collect_pieces(log16s, -670, -89, false, 0, 90);
+  board.collect_pieces(log8s, -740, 223, false, 0, 90);
+  board.collect_pieces(log12s, -740, -156, false, 0, 90);
+  board.collect_pieces(square4s, -870, 286, false, 0, 90);
+  board.collect_pieces(circle4s, -870, 120, false, 0, 90);
+  board.collect_pieces(square8s, -1120, 220, false, 0, 90);
+  board.collect_pieces(circle8s, -930, -100, false, 0, 90);
+  
 }
 
 // setup the board with N players
 function setup() {
   
-  // Collect all three!
+  // Collect all four!
   collect_dice();
   collect_pieces();
   collect_boards();
+  collect_shapes();
+
 }
 
 // Load cookies, ask for the config, and start accepting piece packets.
