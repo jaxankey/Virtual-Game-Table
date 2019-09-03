@@ -1,7 +1,7 @@
 # Virtual Game Table
 This is a general-purpose, browser-based board game table, aimed at online game nights and rapid game development. No rules will ever be hard coded, so you can play however you like. The purpose of this is only to provide a simple, intuitive, synchronized game table in everyone's browser.
 
-![Strategy Game Screenshot](https://github.com/jaxankey/Virtual-Game-Table/blob/master/common/screenshots/strategy.png)
+![Strategy Game Screenshot](https://raw.githubusercontent.com/jaxankey/Virtual-Game-Table/master/common/images/screenshots/strategy.png)
 
 The client software currently requires [Chrome](https://www.google.com/chrome/) to run. 
 
