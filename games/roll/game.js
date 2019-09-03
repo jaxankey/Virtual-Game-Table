@@ -195,7 +195,7 @@ function sort_and_expand_dice() {
 
 function collect_dice() {
   // collect the dice into piles (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
-  var x=-510;
+  var x=-10;
   var y=-350; 
   var dy=100;
   board.collect_pieces(d20, x, y     , false, 0, 0);
@@ -210,7 +210,7 @@ function collect_dice() {
 
 function collect_pieces() {
   var dx=70;
-  var x=-520;
+  var x=-20;
   var dy=70;
   var y=450;
   var first_row = [pawns, bishops, knights, rooks, queens, kings, black_chips, blue_chips, red_chips, white_chips];
@@ -219,21 +219,21 @@ function collect_pieces() {
 }
 
 function collect_boards() {
-  ring1.set_target(-934, 950,  0);
-  grid1.set_target(-934, 950,  0);
-  ruler.set_target(-493, 950, 90);
+  ring1.set_target(-434, 950,  0);
+  grid1.set_target(-434, 950,  0);
+  ruler.set_target(   7, 950, 90);
 }
 
 function collect_shapes() {
-  board.collect_pieces(log24s, -600, 0, false, 0, 90);
-  board.collect_pieces(log4s,  -670, 289, false, 0, 90);
-  board.collect_pieces(log16s, -670, -89, false, 0, 90);
-  board.collect_pieces(log8s, -740, 223, false, 0, 90);
-  board.collect_pieces(log12s, -740, -156, false, 0, 90);
-  board.collect_pieces(square4s, -870, 286, false, 0, 90);
-  board.collect_pieces(circle4s, -870, 120, false, 0, 90);
-  board.collect_pieces(square8s, -1120, 220, false, 0, 90);
-  board.collect_pieces(circle8s, -930, -100, false, 0, 90);
+  board.collect_pieces(log24s, -100, 0, false, 0, 90);
+  board.collect_pieces(log4s,  -170, 289, false, 0, 90);
+  board.collect_pieces(log16s, -170, -89, false, 0, 90);
+  board.collect_pieces(log8s, -240, 223, false, 0, 90);
+  board.collect_pieces(log12s, -240, -156, false, 0, 90);
+  board.collect_pieces(square4s, -370, 286, false, 0, 90);
+  board.collect_pieces(circle4s, -370, 120, false, 0, 90);
+  board.collect_pieces(square8s, -620, 220, false, 0, 90);
+  board.collect_pieces(circle8s, -430, -100, false, 0, 90);
   
 }
 

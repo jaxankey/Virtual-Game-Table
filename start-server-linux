@@ -4,13 +4,7 @@ read -p 'game: ' game
 read -p 'port: ' port
 
 cd "${0%/*}"
-
 pwd
-
-read pants
-
-echo $PATH
-
 node server.js $game $port
 
-read shoes
+read -p '<enter> to exit: '
