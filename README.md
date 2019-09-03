@@ -21,7 +21,7 @@ Both scripts will prompt you for a valid game name (any directory name from eith
 
 A successfully booted server should declare something like `listening on port 37777` after initializing. At this point, you can test the server by opening a few Chrome browser windows side-by-side and typing in the address `localhost:37777`. Things moving around in one window should also move around in the other. Push a few buttons (especially the `New Game` or `Setup` buttons, click a few things, see what happens. 
 
-Definitely take a look at the "controls" link in the upper right to see what kind of keyboard shortcuts you have access to. It is well worth your time to learn a few of these!
+You can do most things with the mouse and "shift" button, but it is *well* worth your time to click the "controls" link in the upper right panel and learning the keyboard shortcuts.
 
 ## Games
 The games I have coded thus far include:
