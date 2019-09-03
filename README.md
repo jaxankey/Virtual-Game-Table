@@ -10,7 +10,7 @@ The client software currently requires [Chrome](https://www.google.com/chrome/) 
 This program runs directly from the source code, so no compiling or binaries are required (other than downloading / installing [https://nodejs.org/](Node.js)). This server has been tested on Linux & Windows, but should work on OSX as well.
 
 Linux
- 1. Install [https://nodejs.org/](Node.js): For me, this meant downloading the binaries, unpacking them in a convenient folder, adding the binary path to `.profile` (with a line like `PATH=$PATH:/path/to/node/bin`) then logging out back in.
+ 1. Install [https://nodejs.org/](Node.js): For me, this meant downloading the binaries, unpacking them in a convenient folder, adding the binary path to `.profile` (with a line like `PATH=$PATH:/path/to/node/bin`) then logging out & back in.
  2. Run `start-server-linux` from the terminal. 
  
 Windows
@@ -24,12 +24,14 @@ A successfully booted server should declare something like `listening on port 37
 You can do most things with the mouse and "shift" button, but it is *well* worth your time to click the "controls" link in the upper right panel and learning the keyboard shortcuts.
 
 ## Games
-The games I have coded thus far include:
+The games I have coded thus far include some basics:
  * `checkers`: Checkers & board (double-click pieces to king them)
  * `chess`: Chess pieces & board
  * `go`: Go table & board
  * `cards`: A standard deck of cards with 8 private viewing zones
- * `poker`: Same as cards, but with poker chips
+ * `poker`: Same as cards, but with poker chips on the table
+ 
+and some more complicated systems:
  * `roll`: All the nerd-dice and a few more pieces (press / hold `r` to roll)
  * `strategy`: Pieces for my own strategy game
  * `puerto-rico`: Puerto Rico (can't publish images; check vassal and `image_list.txt`?)
