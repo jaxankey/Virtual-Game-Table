@@ -1,6 +1,16 @@
 #!/bin/bash
 
-game=$1
-port=$2
+read -p 'game: ' game
+read -p 'port: ' port
+
+cd "${0%/*}"
+
+pwd
+
+read pants
+
+echo $PATH
 
 node server.js $game $port
+
+read shoes
