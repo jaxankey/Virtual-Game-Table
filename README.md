@@ -3,9 +3,11 @@ This is a general-purpose, browser-based board game table, aimed at online game 
 
 ![Strategy Game Screenshot](https://github.com/jaxankey/Virtual-Game-Table/blob/master/common/screenshots/strategy.png)
 
-The client software currently requires [Chrome](https://www.google.com/chrome/) to run, and the server has been tested on Linux and Windows (but should work on osx). 
+The client software currently requires [Chrome](https://www.google.com/chrome/) to run. 
 
 ## Starting and testing a server
+
+This program runs directly from the source code, so no compiling or binaries are required (other than downloading / installing [https://nodejs.org/](Node.js)!). This server has been tested on Linux & Windows, but should work on OSX as well.
 
 Linux
  1. Install [https://nodejs.org/](Node.js): For me, this meant downloading the binaries, unpacking them in a convenient folder, adding the binary path to `.profile` (with a line like `PATH=$PATH:/home/jack/Applications/node-v10.16.0-linux-x64/bin`) then logging out back in.
