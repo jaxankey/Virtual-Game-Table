@@ -47,7 +47,6 @@ board.expand_number_per_row = 5;
 //////////////////////////
 
 // Add some teams
-board.add_team('observer', ['hand_white.png', 'fist_white.png' ], '#cccccc');
 board.add_team('red',      ['hand_red.png',   'fist_red.png'   ], '#ff2a2a'); 
 board.add_team('gray',     ['hand_gray.png',  'fist_gray.png'  ], '#808080'); 
 board.add_team('yellow',   ['hand_yellow.png','fist_yellow.png'], '#ffe84b'); 
@@ -132,6 +131,7 @@ red_chips   = add_pieces(['chips/chip_red.png'],   number_of_each_piece);
 white_chips = add_pieces(['chips/chip_white.png'], number_of_each_piece);
 
 // Add shapes
+// board.new_piece_movable_by = [8]; // manager only
 var number_of_each_shape = 10;
 board.new_piece_r_step = 15;
 

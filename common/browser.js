@@ -2400,8 +2400,8 @@ BOARD.prototype.event_mousewheel = function(e) {
   // Limit the number of wheel events per second
   if(!this._last_wheel_t) this._last_wheel_t = Date.now();
   var t = Date.now();
-  if(e.shiftKey) limit = 400;
-  else           limit = 150;
+  if(e.shiftKey) limit = 250;
+  else           limit = 100;
   if(t-this._last_wheel_t < limit) return;
   this._last_wheel_t = t;
   
