@@ -17,7 +17,7 @@ Windows
  1. Install [https://nodejs.org/](Node.js): Download the appropriate windows installer and run it.
  2. Double-click `start-server-windows.bat` in one of the game directories. 
  
-Both scripts will prompt you for a game name, and you can type any of the subdirectory names in either `games/` or `private/` (which you must create). They will then ask for a port number, and you can provide any valid port, e.g., `37777`. You can also launch a server directly with a command similar to `node server.js cards 37777`. 
+Both scripts will prompt you for a valid game name (any directory name from either `games/` or `private/`, e.g., `cards`). They will then ask for a port number, and you can provide any valid port (e.g., `37777`). You can also launch a server directly with a command similar to `node server.js cards 37777`. 
 
 A successfully booted server should declare something like `listening on port 37777` after initializing. At this point, you can test the server by opening a few Chrome browser windows side-by-side and typing in the address `localhost:37777`. Things moving around in one window should also move around in the other. Push a few buttons (especially the `New Game` or `Setup` buttons, click a few things, see what happens. 
 
