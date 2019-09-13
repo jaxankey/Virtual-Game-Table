@@ -103,7 +103,7 @@ board.new_piece_movable_by = null;
 board.new_piece_collect_offset_x = 0.1;
 board.new_piece_collect_offset_y = 0.1;
 cards = [];
-for(n in names) cards.push(board.add_piece(['cards/back.png', 'cards/'+names[n]+'.png'], ['cards/'+names[n]+'p.png', 'cards/'+names[n]+'.png']));
+for(n in names) cards.push(board.add_piece(['cards/back.png', 'cards/'+names[n]+'.png'], ['cards/'+names[n]+'.png', 'cards/'+names[n]+'p.png']));
 
 
 
