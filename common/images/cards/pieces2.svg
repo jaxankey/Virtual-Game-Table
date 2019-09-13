@@ -134,11 +134,11 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5.6"
-     inkscape:cx="935.64505"
-     inkscape:cy="919.84077"
+     inkscape:zoom="1.4"
+     inkscape:cx="878.50219"
+     inkscape:cy="205.55505"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="layer2"
      showgrid="false"
      inkscape:snap-to-guides="false"
      inkscape:object-paths="true"
@@ -1433,17 +1433,6 @@
        cx="275.73364"
        cy="215.16815"
        r="5.2916665" />
-    <rect
-       style="opacity:1;vector-effect:none;fill:#800080;fill-opacity:1;stroke:#800080;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;filter:url(#filter6650-3)"
-       id="rect880-9-4-4-1-6"
-       width="13.229167"
-       height="23.8125"
-       x="291.65823"
-       y="195.95937"
-       ry="2.6458333"
-       inkscape:export-filename="sjp.png"
-       inkscape:export-xdpi="74.175827"
-       inkscape:export-ydpi="74.175827" />
   </g>
   <g
      inkscape:label="Graphics"
@@ -2818,17 +2807,6 @@
          x="193.7905"
          y="209.71591"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Times New Roman';-inkscape-font-specification:'Times New Roman, ';fill:#ffffff;stroke:#ffffff;stroke-width:0.32919359">J</tspan></text>
-    <text
-       id="text819-4-57-5-7-0"
-       y="212.72421"
-       x="291.65823"
-       style="font-style:normal;font-weight:normal;font-size:22.89954376px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0.57248861;stroke-opacity:1"
-       xml:space="preserve"><tspan
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Times New Roman';-inkscape-font-specification:'Times New Roman, ';fill:#ffffff;stroke:#ffffff;stroke-width:0.57248861"
-         y="212.72421"
-         x="291.65823"
-         id="tspan817-6-02-4-7-1"
-         sodipodi:role="line">?</tspan></text>
     <path
        sodipodi:nodetypes="ccsscscscc"
        inkscape:connector-curvature="0"
@@ -3313,7 +3291,7 @@
     <g
        style="stroke-width:0.5;stroke-miterlimit:4;stroke-dasharray:none"
        id="g1376"
-       transform="translate(-45.829613,3.3450892)">
+       transform="translate(-46.018601,3.5340773)">
       <path
          sodipodi:nodetypes="cccccccc"
          inkscape:connector-curvature="0"
