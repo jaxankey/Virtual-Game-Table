@@ -123,6 +123,30 @@ function array_compare(a1, a2) {
   return true;
  }
 
+// Generates a date string for logs
+function get_date_string() {
+  
+  // get the date
+  var today = new Date();
+  var ss = today.getSeconds();
+  var mm = today.getMinutes();
+  var hh = today.getHours();
+  var dd = today.getDate();
+  var MM = today.getMonth()+1; //January is 0!
+  var yyyy = today.getFullYear();
+  
+  // format the string
+  if(ss<10) ss='0'+ss;
+  if(hh<10) hh='0'+hh
+  if(dd<10) dd='0'+dd;
+  if(mm<10) mm='0'+mm;
+  if(MM<10) MM='0'+MM;
+  
+  // return formatted
+  console.log(ss)
+  return yyyy+'-'+MM+'-'+dd+' '+hh+'.'+mm;
+}
+
 // get / set your team number
 // These set the gui values, which trigger the event team_onchange()
 function get_team_number()  {return document.getElementById("teams").selectedIndex;}
@@ -140,6 +164,30 @@ function get_team_zone_packets() {
   return packets;
 }
 
+/**
+ * Returns a list of active team indices.
+ */
+function get_active_teams() {
+  var teams = [];
+  for(n in board.client_teams) {
+
+    // If we don't already have this team and it's not the observer or admin, add it to the list!
+    if(!teams.includes(board.client_teams[n]) && ![0,9].includes(board.client_teams[n]))
+      teams.push(board.client_teams[n]);
+  }
+  return teams;
+}
+
+/**
+ * Sorts the selected items.
+ */
+function sort_selected() {
+  // Get the selected pieces
+  sps = board.client_selected_pieces[get_my_client_index()]
+  
+  // Sort them
+  board.sort_and_pop_pieces(sps);
+}
 
 /**
  * Scramble the supplied pieces, like rolling dice: randomizes locations in a pattern determined by the 
@@ -1547,6 +1595,7 @@ BOARD.prototype.add_team = function(name, hand_image_paths, color) {
   } // end of loop over hand image paths
 }
 
+
 /**
  * Sorts the supplied piece list by piece_id, then pops them all to the top.
  * @param {list} pieces list of pieces to sort, then pop to the top.
@@ -1555,7 +1604,7 @@ BOARD.prototype.add_team = function(name, hand_image_paths, color) {
 BOARD.prototype.sort_and_pop_pieces = function(pieces) {
   
   var my_index = get_my_client_index();
-  var pieces   = or_default(pieces,   this.client_selected_pieces[my_index]);
+  var pieces   = or_default(pieces, this.client_selected_pieces[my_index]);
   
   // Sort them
   pieces.sort(function(a, b){return a.piece_id-b.piece_id});
@@ -1777,19 +1826,11 @@ BOARD.prototype.add_piece = function(image_paths, private_image_paths) {
   return p;
 }
 
-// add multiple copies of pieces; arguments are N, [images], N, [images]...
-// This is for users making games.
-BOARD.prototype.add_pieces = function() {
-  
-  // create an array and add multiple copies of the piece
-  ps = [];
-  
-  // loop over the supplied pairs of arguments
-  for(n=0; n<arguments.length; n+=2) 
-    for(m=0; m<arguments[n]; m++) 
-      ps.push(this.add_piece(arguments[n+1]));
-  
-  return ps;
+// Adds many copies of the same piece, returning the array of pieces.
+BOARD.prototype.add_pieces = function(quantity, image_paths, private_image_paths) {
+  var pieces = [];
+  for(n=0; n<quantity; n++) pieces.push(board.add_piece(image_paths, private_image_paths));
+  return pieces;
 }
 
 /** 
@@ -3379,19 +3420,9 @@ BOARD.prototype.send_stream_update = function() {
   }
 } 
 
-// Very occasionally sends all piece coordinates to the server, just to be safe.
-// This will be called some time after the last full update.
-BOARD.prototype.send_full_update   = function(force) {
+BOARD.prototype.get_piece_datas = function() {
   
-  // normally we only send an update if we haven't had one in awhile
-  // "force" allows you to make sure it gets sent
-  force = or_default(force, false); 
-  
-  // check if we should send an update
-  if (!force && Date.now()-this.last_update_ms < update_interval_ms) return 0;
-  this.last_update_ms = Date.now();
-
-  // assemble the data to send to the server
+  // assemble the data.
   var piece_datas = [];
 
   // loop over all pieces
@@ -3417,6 +3448,111 @@ BOARD.prototype.send_full_update   = function(force) {
     p.previous_n = n;
     p.previous_active_image = p.active_image;
   }
+
+  return piece_datas;
+}
+
+BOARD.prototype.get_piece_datas_string = function() {
+  
+  // Get all the piece datas
+  var pds = this.get_piece_datas();
+
+  // Loop over the piece datas assembling the string.
+  var s = '';
+  for(var n in pds)
+    s = s + '\n' + String(pds[n].id) + ','  + String(pds[n].x) + ','  + String(pds[n].y) + ','  + String(pds[n].r) + ','  + String(pds[n].i) + ','  + String(pds[n].n)
+  return s;
+}
+
+BOARD.prototype.get_piece_datas_from_string = function(s) {
+
+  // Split it into lines
+  var lines = s.split('\n');
+
+  // Loop over the lines to make piece datas.
+  var piece_datas = [];
+  for(var n in lines) {
+    
+    // Split by the comma delimiter
+    a = lines[n].split(',');
+    
+    // Assemble the piece datas
+    if(a.length > 5) {
+      piece_datas.push({
+        id: parseInt(a[0]),
+        x:  parseFloat(a[1]),
+        y:  parseFloat(a[2]),
+        r:  parseFloat(a[3]),
+        i:  parseInt(a[4]),
+        n:  parseInt(a[5]),
+      });
+    } // End of "if line is valid"
+  } // End of loop over lines
+
+  return piece_datas;
+}
+
+BOARD.prototype.save = function() {
+  var text     = this.get_piece_datas_string();
+  var filename = get_date_string() + ' ' + this.game_name + '.txt';
+
+  // Create a link element for downloading
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  // Click it (download the file).
+  element.click();
+
+  // Clean up.
+  document.body.removeChild(element);
+}
+
+BOARD.prototype.load = function() {
+  
+  // Create a temporary input element
+  input = document.createElement('input');
+  input.type = 'file';
+
+  // Code to grab the content of the file.
+  input.onchange = e => { 
+
+    // getting a hold of the file reference
+    var file = e.target.files[0]; 
+
+    // setting up the reader
+    var reader = new FileReader();
+    reader.readAsText(file,'UTF-8');
+
+    // here we tell the reader what to do when it's done reading...
+    reader.onload = readerEvent => {
+        var content = readerEvent.target.result; // this is the content!
+
+        // now update the pieces
+        server_update(board.get_piece_datas_from_string(content));
+        board.send_full_update(true);
+    }
+  }
+
+  // Run it
+  input.click();
+}
+
+// Very occasionally sends all piece coordinates to the server, just to be safe.
+// This will be called some time after the last full update.
+BOARD.prototype.send_full_update   = function(force) {
+  
+  // normally we only send an update if we haven't had one in awhile
+  // "force" allows you to make sure it gets sent
+  force = or_default(force, false); 
+  
+  // check if we should send an update
+  if (!force && Date.now()-this.last_update_ms < update_interval_ms) return 0;
+  this.last_update_ms = Date.now();
+
+  var piece_datas = this.get_piece_datas();
 
   console.log('sending full update:', piece_datas.length, 'pieces');
   my_socket.emit('u', piece_datas, true); // true clears the old values from the server's memory

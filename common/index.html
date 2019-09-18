@@ -61,14 +61,14 @@
            
     /* USER AND CHAT */
     
-    .user-container {width:         240px; 
+    .user-container {width:         235px; 
                      margin-bottom: 10px; 
                      position:      fixed; 
                      top:           10px; 
                      right:         10px;
                      background-color: white;}
     
-    .chat-container {width: 240px; 
+    .chat-container {width: 235px; 
                      margin-bottom: 10px;
                      position:      fixed; 
                      bottom:        10px; 
@@ -100,8 +100,12 @@
       <tr>
         <td class="tight">
           <a href="/rules" target="new">Rules</a> <a href='/controls' target="new">Controls</a>
-        </td><td class="tight" style="text-align:right" width="100%">
+        </td>
+      </tr><tr>
+        <td class="tight" width="100%">
           <button onclick="board.setup();">New Game</button>
+          <button onclick="board.save();">Save</button>
+          <button onclick="board.load();">Load</button>
           <button onclick="board.tantrum();">HAT.</button>
       </td></tr>
     </table>

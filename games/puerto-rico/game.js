@@ -109,12 +109,12 @@ roles.push(board.add_piece(['role-prospector.jpg']));
 governor = board.add_piece(['governor.jpg']);
 
 // PLANTATIONS & QUARRIES
-plantations = board.add_pieces(
-  10, ['tile-back.jpg', 'tile-corn.jpg'],
-  12, ['tile-back.jpg', 'tile-indigo.jpg'],
-  8,  ['tile-back.jpg', 'tile-coffee.jpg'],
-  9,  ['tile-back.jpg', 'tile-tobacco.jpg'],
-  11, ['tile-back.jpg', 'tile-sugar.jpg']);
+corn    = board.add_pieces(10, ['tile-back.jpg', 'tile-corn.jpg']);
+indigo  = board.add_pieces(12, ['tile-back.jpg', 'tile-indigo.jpg']);
+coffee  = board.add_pieces( 8,  ['tile-back.jpg', 'tile-coffee.jpg']);
+tobacco = board.add_pieces( 9,  ['tile-back.jpg', 'tile-tobacco.jpg']);
+sugar   = board.add_pieces(11, ['tile-back.jpg', 'tile-sugar.jpg']);
+plantations = corn.concat(indigo).concat(coffee).concat(tobacco).concat(sugar);
 
 // used for initial setup
 special_corn1 = plantations[0];
@@ -269,8 +269,11 @@ function setup(N) {
   }
   
   // PLANTATIONS AND QUARRIES
-  shuffle_pieces(plantations);
-  for(n=0;   n<N+1; n++)                plantations[n].set_target(-500+170*(n+1),     970,    0).set_active_image(1);
+  shuffle_array(plantations);
+  for(n=0;   n<N+1; n++) {
+    console.log(n, plantations[n]);
+    plantations[n].set_target(-500+170*(n+1),     970,    0).set_active_image(1);
+  }
   for(n=N+1; n<plantations.length; n++) plantations[n].set_target(-500-1*n,           970-1*n,0);
   for(n in quarries)                       quarries[n].set_target(-500+170*(N+2)-2*n, 970-2*n,0);
   

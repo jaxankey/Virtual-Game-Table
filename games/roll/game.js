@@ -156,32 +156,6 @@ log4s   = add_pieces(get_shape_names('shapes/log4'), number_of_each_shape);
 // FUNCTIONALITY
 /////////////////////
 
-function sort_selected() {
-  // Get the selected pieces
-  sps = board.client_selected_pieces[get_my_client_index()]
-  
-  // Sort them
-  sps.sort(function(a, b){return a.piece_id-b.piece_id});
-
-  // Loop over them, putting them on top of the stack
-  for(n in sps) {
-    p = sps[n];
-    i = board.find_piece_index(p.piece_id);
-    board.pop_piece(i);
-    board.insert_piece(p, board.pieces.length);
-  }
-}
-
-function get_active_teams() {
-  var teams = [];
-  for(n in board.client_teams) {
-
-    // If we don't already have this team and it's not the observer or admin, add it to the list!
-    if(!teams.includes(board.client_teams[n]) && ![0,9].includes(board.client_teams[n]))
-      teams.push(board.client_teams[n]);
-  }
-  return teams;
-}
 
 function sort_and_expand_dice() {
   for(var n=0; n<number_of_each_die; n++) 

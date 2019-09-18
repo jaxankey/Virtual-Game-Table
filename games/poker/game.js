@@ -157,24 +157,6 @@ function collect_all_cards() {
   board.collect_pieces(sps, d.x, d.y, true, 0, board.r_target, board.r_target);
 }
 
-/**
- * Sorts the selected items.
- */
-function sort_selected() {
-  // Get the selected pieces
-  sps = board.client_selected_pieces[get_my_client_index()]
-  
-  // Sort them
-  sps.sort(function(a, b){return a.piece_id-b.piece_id});
-
-  // Loop over them, putting them on top of the stack
-  for(n in sps) {
-    p = sps[n];
-    i = board.find_piece_index(p.piece_id);
-    board.pop_piece(i);
-    board.insert_piece(p, board.pieces.length);
-  }
-}
 
 
 /**
@@ -244,17 +226,6 @@ function collect_pot() {
     d = rotate_vector((Math.random()-0.5)*50, R2*0.7+(Math.random()-0.5)*50, (get_team_number()-1)*45);
     free_chips[n].set_target(d.x, d.y, (Math.random()-0.5)*360);
   }
-}
-
-function get_active_teams() {
-  var teams = [];
-  for(n in board.client_teams) {
-
-    // If we don't already have this team and it's not the observer or admin, add it to the list!
-    if(!teams.includes(board.client_teams[n]) && ![0,9].includes(board.client_teams[n]))
-      teams.push(board.client_teams[n]);
-  }
-  return teams;
 }
 
 function deal(face_up) {

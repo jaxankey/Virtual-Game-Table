@@ -47,7 +47,7 @@ function get_date_string() {
   var mm = today.getMinutes();
   var hh = today.getHours();
   var dd = today.getDate();
-  var mm = today.getMonth()+1; //January is 0!
+  var MM = today.getMonth()+1; //January is 0!
   var yyyy = today.getFullYear();
   
   // format the string
@@ -55,9 +55,10 @@ function get_date_string() {
   if(hh<10) hh='0'+hh
   if(dd<10) dd='0'+dd;
   if(mm<10) mm='0'+mm;
+  if(MM<10) MM='0'+MM;
   
   // return formatted
-  return yyyy+'-'+mm+'-'+dd+' '+hh+':'+mm+'.'+ss+' - '
+  return yyyy+'-'+MM+'-'+dd+' '+hh+':'+mm+'.'+ss+' - '
 }
 
 

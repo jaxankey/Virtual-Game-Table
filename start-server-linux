@@ -1,7 +1,18 @@
 #!/bin/bash
 
-read -p 'game: ' game
-read -p 'port: ' port
+if [ $# -eq 0 ]
+  then
+    read -p 'game: ' game
+  else
+    game=$1
+fi
+
+if [ $# -lt 2 ]
+  then
+    read -p 'port: ' port
+  else
+    port=$2
+fi
 
 cd "${0%/*}"
 pwd

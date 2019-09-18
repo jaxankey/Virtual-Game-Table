@@ -20,7 +20,7 @@
 <!doctype html>
 <html>
 <head>
-  <title>Puerto Rico</title>
+  <title>Dominion</title>
   <style>
 
 	
@@ -78,7 +78,6 @@
                      bottom:        20px; 
                      right:         20px;
                      background-color: white;}
-    
     .chat-input {width:235px;}
 	
   </style>
@@ -111,17 +110,13 @@
       <tr>
         
         <td class="tight">
-          <button onclick="board.setup(3);">3</button>
-          <button onclick="board.setup(4);">4</button>
-          <button onclick="board.setup(5);">5</button>
+          <button onclick="board.setup();">New Game</button>
           <button onclick="board.save();">Save</button>
           <button onclick="board.load();">Load</button>
           <button onclick="board.tantrum();">HAT.</button>
         </td>
       </tr>
     </table>
-
-    
     
     <ul id="clients" class="clients"></ul>
   </div>
@@ -134,12 +129,20 @@
     <table class="tight" width="100%"><tr>
       <td class="tight">
         Name:
-      </td><td class="tight">
-        <input id="name" onchange="name_onchange()" maxlength=16 autocomplete="off" value="n00b" style="width: 90%"/>
-      </td><td class="tight">
+        <input id="name" onchange="name_onchange()" maxlength=16 autocomplete="off" value="n00b" style="width: 55px"/>
+        Team:
         <select id="teams" onchange="team_onchange()"></select>
       </td>
-    </tr></table>
+    </tr>
+    <tr>
+      <td class="tight">
+        Cards:
+        <button id="shuffle"    onclick="shuffle_selected_pieces(0, null, null, 0.1, 0.1);">(Z)huffle</button>
+        <button id="sort_cards" onclick="board.sort_and_pop_pieces();">Sort</button>
+      </td>
+    </tr>
+    
+  </table>
     
     <!-- where chat messages will appear -->
     <ul id="messages" class="chat"></ul>
@@ -147,7 +150,6 @@
     <!-- chat area -->
     
     <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2" width="100%"/></form>
-    
   </div>
  
   

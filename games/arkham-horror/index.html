@@ -67,19 +67,18 @@
            
     /* USER AND CHAT */
     
-    .user-container {width:         263px; 
+    .user-container {width:         235px; 
                      margin-bottom: 20px; 
                      position:      fixed; 
                      top:           20px; 
                      right:         20px;
                      background-color: white;}
-    .chat-container {width:         263px; 
+    .chat-container {width:         235px; 
                      position:      fixed; 
                      bottom:        20px; 
                      right:         20px;
                      background-color: white;}
-    
-    .chat-input {width:210px;}
+    .chat-input {width:235px;}
 	
   </style>
 
@@ -102,19 +101,20 @@
     
     <table class="tight" style="width:100%">
       <tr>
-        
-        <td class="tight">
-          <button onclick="board.setup();">Setup</button>
-          <button onclick="board.tantrum();">Tantrum</button>
-        </td>
-      </tr><tr>
       
         <td class="tight" colspan="1">
-          <b>Table</b> 
-          <a href="/rules.pdf" target="new">Rules</a> 
-          <a href="/controls"  target="new">Controls</a>
+          <a href="/controls" target="Controls">Controls</a>
+          <a href="/rules.pdf" target="Rules">Rules</a>
         </td>
-      
+      </tr>
+      <tr>
+        
+        <td class="tight">
+          <button onclick="board.setup();">New Game</button>
+          <button onclick="board.save();">Save</button>
+          <button onclick="board.load();">Load</button>
+          <button onclick="board.tantrum();">HAT.</button>
+        </td>
       </tr>
     </table>
     
@@ -147,7 +147,7 @@
     <!-- chat area -->
     <table class="tight" width="100%"><tr>
         <td class="tight">
-          <form><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2"/><button tabindex="3">Chat</button></form>
+          <form><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2"/></form>
         </td>
       </tr>
       <tr>
