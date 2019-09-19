@@ -1356,6 +1356,7 @@ function BOARD(canvas) {
   this.next_hand_id  = 0;
   
   // background image
+  this.background_color        = "#F7EEEE";
   this.background_image        = new Image();
   this.background_image.onload = this.on_background_image_load.bind(this);
   
@@ -3120,7 +3121,8 @@ BOARD.prototype.draw = function() {
     
     // clears the canvas
     context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = this.background_color;
+    context.fillRect(0, 0, canvas.width, canvas.height);
     
     // figure out the center of the board
     var cx = Math.round(canvas.width  / 2);
