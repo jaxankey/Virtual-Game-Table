@@ -172,10 +172,22 @@ function setup(resources) {
     board.collect_pieces(copper.slice(n*7,n*7+7).concat(estate.slice(n*3,n*3+3)), 
       v.x, v.y, true, 0, angle, angle);
   }
+  
+  // Number of estate, duchy and province cards
+  if(teams.length == 2) var N = 8;
+  else                  var N = 12;
 
   // collect the cards that are always present
   make_piles([copper.slice(teams.length*7,1000), silver, gold], -dx*1, -dy*1.5, dx);
-  make_piles([estate.slice(teams.length*3,1000), duchy, province, curse], -dx*1.5, -dy*0.5, dx);
+  make_piles([estate.slice(teams.length*3,teams.length*3+N), 
+    duchy.slice(0,N), province.slice(0,N), curse.slice(0,(teams.length-1)*10)], -dx*1.5, -dy*0.5, dx);
+
+  // Move the unused elsewhere
+  make_piles([estate  .slice(teams.length*3+N, 1000), 
+              duchy   .slice(N,1000),
+              province.slice(N,1000),
+              curse   .slice((teams.length-1)*10,1000)], -dx*2, 4500-dy, dx);
+
 
   // choose 10 resources randomly if not specified
   if(!resources) {

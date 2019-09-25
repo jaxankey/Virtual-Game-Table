@@ -1356,7 +1356,7 @@ function BOARD(canvas) {
   this.next_hand_id  = 0;
   
   // background image
-  this.background_color        = "#F7EEEE";
+  this.background_color        = "#F4EFEE";
   this.background_image        = new Image();
   this.background_image.onload = this.on_background_image_load.bind(this);
   

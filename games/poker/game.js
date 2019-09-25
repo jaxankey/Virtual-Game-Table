@@ -168,16 +168,16 @@ function bet() {
 
   // By default we bet all selected pieces
   already_bet = false;
-  for(var i in sps) 
+  /*for(var i in sps) 
   {
     // Only throw in the chips!
     if(chips.indexOf(sps[i]) >= 0) {
-      sps[i].set_target(sps[i].x*0.5+(Math.random()-0.5)*20, 
-                                      sps[i].y*0.5+(Math.random()-0.5)*20, 
+      sps[i].set_target(sps[i].x*0.25+(Math.random()-0.5)*20, 
+                                      sps[i].y*0.25+(Math.random()-0.5)*20, 
                                       Math.random()*360);
       already_bet = true;
     }
-  }
+  }*/
   
   // Clear the selection.
   sps.length=0;
@@ -193,8 +193,8 @@ function bet() {
       // Found one!
       if(i >= 0) {
         // Fire it off
-        board.pieces[i].set_target(board.pieces[i].x*0.5+(Math.random()-0.5)*20, 
-                                   board.pieces[i].y*0.5+(Math.random()-0.5)*20,
+        board.pieces[i].set_target(board.pieces[i].x*0.25+(Math.random()-0.5)*20, 
+                                   board.pieces[i].y*0.25+(Math.random()-0.5)*20,
                                    Math.random()*360);
         
         // Put it on top
