@@ -103,15 +103,22 @@ board.new_piece_movable_by = null;
 board.new_piece_collect_offset_x = 0.1;
 board.new_piece_collect_offset_y = 0.1;
 cards = [];
-for(n in names) cards.push(board.add_piece(['cards/back.png', 'cards/'+names[n]+'.png'], ['cards/'+names[n]+'.png', 'cards/'+names[n]+'p.png']));
+for(var n in names) cards.push(board.add_piece(['cards/back.png', 'cards/'+names[n]+'.png'], ['cards/'+names[n]+'.png', 'cards/'+names[n]+'p.png']));
+
+
+/////////////////////
+// AVATARS
+/////////////////////
+board.new_piece_scale               = 0.7;
+board.new_piece_rotates_with_canvas = false;
+board.new_piece_physical_shape      = 'inner_circle';
+board.add_avatars();
 
 
 
 /////////////////////
 // FUNCTIONALITY
 /////////////////////
-
-
 
 function collect_all_cards() {
   console.log('collect_all_cards');
@@ -185,6 +192,8 @@ function setup() {
   // collect the  cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
   board.collect_pieces(   cards,0,0,   true,           0,      0,      0);
   
+  // Avatars
+  board.expand_pieces(board.avatars, 8, 0, 1000, 100, 100, 0, 0, 0);
 }
 
 

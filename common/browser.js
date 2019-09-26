@@ -531,8 +531,9 @@ function is_below_line(x,y, x1,y1, x2,y2) {
  * @param {*} image_paths           // list of public (visible to everyone) impage path strings
  * @param {*} private_image_paths   // list of private (visible to team) image path strings
  *                                  // if not specified, these are identical to the image_paths
+ * @param {*} avatar                // If true, doesn't prepend /images to the path
  */
-function PIECE(board, piece_id, image_paths, private_image_paths) {
+function PIECE(board, piece_id, image_paths, private_image_paths, scale) {
 
   // by default, use the same set of image paths
   private_image_paths = or_default(private_image_paths, image_paths);
@@ -547,6 +548,7 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
   this.is_tray                   = this.board.new_piece_is_tray; // whether selecting this piece selects those within its bounds and above it.
   this.collect_offset_x          = this.board.new_piece_collect_offset_x;
   this.collect_offset_y          = this.board.new_piece_collect_offset_y;
+  this.scale                     = or_default(board.new_piece_scale, scale);
 
   // Index in the main piece stack (determines drawing order)
   this.previous_n = null;
@@ -610,12 +612,15 @@ function PIECE(board, piece_id, image_paths, private_image_paths) {
     } else {
     
       // tell Jack that we're loading it...
-      console.log("  loading /images/"+this.image_paths[i]);
+      console.log("  loading "+this.image_paths[i]);
 
       // create the image object
       var I = new Image();
       this.images.push(I);
-      I.src = '/images/'+this.image_paths[i];
+      if(this.image_paths[i].slice(0,7) == 'common/' || 
+         this.image_paths[i].slice(0,8) == 'private/') 
+           I.src =        '/' + this.image_paths[i];
+      else I.src = '/images/' + this.image_paths[i];
       
       // store this image for the future
       this.board.images[this.image_paths[i]] = I;
@@ -813,8 +818,8 @@ PIECE.prototype.ellipse  = function(x, y) {
   var d = rotate_vector(x-this.x, y-this.y, r_deg);
   
   // get width and height
-  var w = 0.5*this.images[this.active_image].width;
-  var h = 0.5*this.images[this.active_image].height;
+  var w = this.scale*0.5*this.images[this.active_image].width;
+  var h = this.scale*0.5*this.images[this.active_image].height;
   
   // elliptical bounds
   return d.x*d.x/(w*w) + d.y*d.y/(h*h) <= 1;
@@ -831,8 +836,8 @@ PIECE.prototype.outer_circle  = function(x, y) {
   var d = rotate_vector(x-this.x, y-this.y, r_deg);
   
   // get width
-  var w = Math.max(0.5*this.images[this.active_image].width, 
-                   0.5*this.images[this.active_image].height);
+  var w = this.scale*Math.max(0.5*this.images[this.active_image].width, 
+                              0.5*this.images[this.active_image].height);
   
   // circular bounds
   return d.x*d.x + d.y*d.y <= w*w;
@@ -849,8 +854,8 @@ PIECE.prototype.inner_circle  = function(x, y) {
   d = rotate_vector(x-this.x, y-this.y, r_deg);
   
   // get width
-  w = Math.min(0.5*this.images[this.active_image].width, 
-               0.5*this.images[this.active_image].height);
+  w = this.scale*Math.min(0.5*this.images[this.active_image].width, 
+                          0.5*this.images[this.active_image].height);
   
   // circular bounds
   return d.x*d.x + d.y*d.y <= w*w;
@@ -867,8 +872,8 @@ PIECE.prototype.rectangle = function(x,y) {
   d = rotate_vector(x-this.x, y-this.y, r_deg);
   
   // rectangular bounds
-  return (Math.abs(d.x) <= 0.5*this.images[this.active_image].width 
-       && Math.abs(d.y) <= 0.5*this.images[this.active_image].height);
+  return (Math.abs(d.x) <= this.scale*0.5*this.images[this.active_image].width 
+       && Math.abs(d.y) <= this.scale*0.5*this.images[this.active_image].height);
 }
 
 // Returns true if x,y are in the piece bounds
@@ -896,12 +901,22 @@ PIECE.prototype.needs_redraw    = function() {
 // draws the selection rectangle or whatever around the piece.
 PIECE.prototype.draw_selection = function() {
   
-  context = this.board.context;
+  var context = this.board.context;
   
   // get the piece dimensions
-  w = this.images[this.active_image].width;
-  h = this.images[this.active_image].height;
+  var w = this.images[this.active_image].width;
+  var h = this.images[this.active_image].height;
   
+  // if we're not allowed to zoom, adjust the size
+  if(!this.zooms_with_canvas) {
+    w = w*100.0/this.z;
+    h = h*100.0/this.z;
+  }
+
+  // Rescale.
+  w = w*this.scale;
+  h = h*this.scale;
+
   switch(this.physical_shape) {
     
     case this.rectangle:
@@ -1041,6 +1056,10 @@ PIECE.prototype.move_and_draw = function() {
       w = w*100.0/this.board.z;
       h = h*100.0/this.board.z;
     }
+
+    // scale it
+    w = w*this.scale;
+    h = h*this.scale;
     
     // shift to where we're drawing the piece
     context.translate(this.x,this.y);
@@ -1052,7 +1071,7 @@ PIECE.prototype.move_and_draw = function() {
     if(!this.rotates_with_canvas) context.rotate(-this.board.r*Math.PI/180.0);
     
     // draw the piece
-	context.drawImage(images[this.active_image], -0.5*w, -0.5*h, w, h);
+	  context.drawImage(images[this.active_image], -0.5*w, -0.5*h, w, h);
     
     // unrotate
     context.rotate(-this.r*Math.PI/180.0);
@@ -1269,6 +1288,7 @@ function BOARD(canvas) {
   this.new_piece_active_image        = 0;
   this.new_piece_rotates_with_canvas = true;
   this.new_piece_zooms_with_canvas   = true;
+  this.new_piece_scale               = 1.0;
   this.new_piece_physical_shape      = 'rectangle';
   this.new_piece_alpha               = 1.0;
   this.new_piece_box_x               = 0;
@@ -1394,6 +1414,10 @@ function BOARD(canvas) {
   
   this._t_previous_draw = Date.now();
   
+  //// Get the avatar paths
+  this.avatar_paths     = [];
+  this.avatars          = [];
+  
   //// EVENTS 
   
   // eliminates text selection on the canvas
@@ -1416,6 +1440,10 @@ function BOARD(canvas) {
   
   //// COOKIE STUFF
   this.cookie_expire_days = 28;
+}
+
+BOARD.prototype.add_avatars = function() {
+  my_socket.emit('avatars?');
 }
 
 BOARD.prototype.go = function() {
@@ -1704,8 +1732,9 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
     if(from_top) {x = x-d.x; y = y+d.y;}
     else         {x = x+d.x; y = y-d.y;}
     
-    //           x, y,  r,       angle, disable_snap, immediate
-    p.set_target(x, y, -r_piece, null,  true,         false);
+    //                                     x, y,  r,       angle, disable_snap, immediate
+    if(p.rotates_with_canvas) p.set_target(x, y, -r_piece, null,  true,         false);
+    else                      p.set_target(x, y, this.r_target-r_piece, null,  true,         false);
 
     // If we have an active image specified, set it
     if(active_image != null) p.set_active_image(active_image);
@@ -1725,7 +1754,7 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
  * @param {float} r_piece rotation of the pieces (defaults to this.expand_r)
  */
 
-BOARD.prototype.expand_pieces = function(pieces, number_per_row, x, y, spacing_x, spacing_y, active_image, r_piece) {
+BOARD.prototype.expand_pieces = function(pieces, number_per_row, x, y, spacing_x, spacing_y, active_image, r_piece, r_stack) {
 
   // Things will move, so let's trigger a redraw to be safe / responsive.
   this.trigger_redraw = true;
@@ -1764,7 +1793,8 @@ BOARD.prototype.expand_pieces = function(pieces, number_per_row, x, y, spacing_x
       dx = spacing_x*(nx-0.5*rows[ny].length+0.5);
       
       // Rotate the dx,dy vector
-      d = rotate_vector(dx,dy,this.r_target);
+      if(r_stack != undefined) d = rotate_vector(dx,dy,r_stack);
+      else                     d = rotate_vector(dx,dy,this.r_target);
 
       // Push the piece on the top of the stack
       p = rows[ny][nx];
@@ -1777,8 +1807,8 @@ BOARD.prototype.expand_pieces = function(pieces, number_per_row, x, y, spacing_x
       sps.push(p);
 
       // Now set the coordinates x,y,r,angle,disable_snap,immediate
-      p.set_target(x+d.x,y+d.y,r_piece-this.r_target, null, true, false);
-
+      if(p.rotates_with_canvas) p.set_target(x+d.x,y+d.y,r_piece-this.r_target, null, true, false);
+      else                      p.set_target(x+d.x,y+d.y,r_piece              , null, true, false);
       // Set the image
       if(active_image != null) p.active_image = active_image;
     }
@@ -1800,8 +1830,8 @@ BOARD.prototype.new_client_hand = function() {
 }
 
 
-// add a piece to this.pieces
-BOARD.prototype.add_piece = function(image_paths, private_image_paths) {
+// add a piece to this.pieces. avatar=True for avatars
+BOARD.prototype.add_piece = function(image_paths, private_image_paths, scale) {
   
   // by default, use the same image paths for public and private images
   private_image_paths = or_default(private_image_paths, image_paths);
@@ -1813,7 +1843,7 @@ BOARD.prototype.add_piece = function(image_paths, private_image_paths) {
   id = this.next_piece_id++;
 
   // create the piece 
-  p = new PIECE(board, id, image_paths, private_image_paths);
+  p = new PIECE(board, id, image_paths, private_image_paths, scale);
 
   // push the specified piece onto the stack
   this.pieces.push(p);
@@ -1826,6 +1856,7 @@ BOARD.prototype.add_piece = function(image_paths, private_image_paths) {
 
   return p;
 }
+
 
 // Adds many copies of the same piece, returning the array of pieces.
 BOARD.prototype.add_pieces = function(quantity, image_paths, private_image_paths) {
@@ -1845,7 +1876,8 @@ BOARD.prototype.pop_piece = function(n) {
   p = this.pieces.splice(n,1)[0];
 
   // decrement the piece indices above this
-  for(i=n; i<this.pieces.length; i++) this.pieces[i].previous_n--;
+  for(i=n; i<this.pieces.length; i++) 
+    if(this.pieces[i]) this.pieces[i].previous_n--;
   
   return p;
 }
@@ -1856,19 +1888,20 @@ BOARD.prototype.pop_piece = function(n) {
  */
 BOARD.prototype.insert_piece = function(piece, n) {
   
-  // Find the bottom index
-  n = Math.max(n, this.bottom_index);
+  if(piece) {
+    // Find the bottom index
+    n = Math.max(n, this.bottom_index);
 
-  // Insert it
-  this.pieces.splice(n,0,piece);
+    // Insert it
+    this.pieces.splice(n,0,piece);
 
-  // Update its internal number
-  piece.previous_n = n;
+    // Update its internal number
+    piece.previous_n = n;
 
-  // Increment the piece indices above this, so that they don't get updated
-  for(i=n+1; i<this.pieces.length; i++) this.pieces[i].previous_n++;
+    // Increment the piece indices above this, so that they don't get updated
+    for(i=n+1; i<this.pieces.length; i++) this.pieces[i].previous_n++;
+  }
 }
-
 /**
  * Find the piece by id, starting from the top (most common location).
  */
@@ -3189,18 +3222,8 @@ BOARD.prototype.draw = function() {
         if(j>=0) {
           var sp = sps[j];
 
-          // if the piece is selected, draw the rectangle
+          // if the piece is selected, draw the selection border
           if (sp.active_image != null) {
-            
-            // get the width and height 
-            var w = sp.images[sp.active_image].width+4;
-            var h = sp.images[sp.active_image].height+4;
-            
-            // if we're not allowed to zoom, adjust the size
-            if(!sp.zooms_with_canvas) {
-              w = w*100.0/this.z;
-              h = h*100.0/this.z;
-            }
             
             // shift to piece coordinates
             context.translate(sp.x, sp.y);
@@ -3566,7 +3589,20 @@ BOARD.prototype.send_full_update   = function(force) {
 
 // socket object for communication
 var my_socket = io();
+
+// Send user and get avatar info 
+// response handled by socket code below
 my_socket.emit('user', get_name(), get_team_number());
+
+server_avatar = function(avatar_paths) {
+  // server sent a list of avatar paths
+  console.log('Received avatar list:', avatar_paths);
+  board.avatar_paths = avatar_paths;
+
+  // Load the avatar pieces
+  for(var n in avatar_paths) board.avatars.push(board.add_piece([avatar_paths[n]], undefined, true));
+}
+my_socket.on('avatars', server_avatar);
 
 server_test = function(x){
   // server sent a "chat"
@@ -3813,23 +3849,26 @@ server_update = function(piece_datas){
     // We do this for ALL updating pieces, even those that are held, just to preserve
     // the order
     p = board.pop_piece(m,true); 
-    ps.push(p); // save this as an ordered list, matching piece_datas, for later sorting by n & re-insertion
-    
-    // If someone is NOT holding the piece, do the update (held pieces will update themselves)
-    if (!board.client_is_holding[m] || !board.client_selected_pieces.includes(board.pieces[m])) {
-    
-      // set the new values
-      p.set_target(pd.x, pd.y, pd.r, null, true); // disable snap
-      p.active_image = pd.i;
-      // There is no p.n, only the index in the stack
-      
-      // store the new coordinates so we don't re-update the server!
-      p.previous_x            = p.x_target;
-      p.previous_y            = p.y_target;
-      p.previous_r            = p.r_target;
-      p.previous_active_image = p.active_image;
 
-    } // end of "if not held by someone"
+    if(p) {
+      ps.push(p); // save this as an ordered list, matching piece_datas, for later sorting by n & re-insertion
+      
+      // If someone is NOT holding the piece, do the update (held pieces will update themselves)
+      if (!board.client_is_holding[m] || !board.client_selected_pieces.includes(board.pieces[m])) {
+      
+        // set the new values
+        p.set_target(pd.x, pd.y, pd.r, null, true); // disable snap
+        p.active_image = pd.i;
+        // There is no p.n, only the index in the stack
+        
+        // store the new coordinates so we don't re-update the server!
+        p.previous_x            = p.x_target;
+        p.previous_y            = p.y_target;
+        p.previous_r            = p.r_target;
+        p.previous_active_image = p.active_image;
+
+      } // end of "if not held by someone"
+    } // end of piece exists
 
   } // end of loop over supplied pieces
 

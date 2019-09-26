@@ -26,6 +26,7 @@
 
 // short name needed for differentiating the games in the cookies
 board.game_name = 'dominion';
+scale           = 1;
 
 // set the allowed rotations and initial zoom (out)
 board.z_target = 80;
@@ -89,6 +90,7 @@ board.shortcut_coordinates = [
 /////////////
 // PIECES  
 /////////////
+board.new_piece_scale               = scale;
 board.new_piece_rotates_with_canvas = true;
 board.new_piece_r_step              = 90;
 //board.set_background_image('table.png');
@@ -138,6 +140,14 @@ province = add_cards(12, 'province.jpg');
 
 curse  = add_cards(30, 'curse.jpg');
 
+///////////////
+// AVATARS
+//////////////
+board.new_piece_scale               = 5;
+board.new_piece_rotates_with_canvas = false;
+board.new_piece_physical_shape      = 'inner_circle';
+board.add_avatars();
+
 /////////////////////
 // FUNCTIONALITY
 /////////////////////
@@ -147,7 +157,6 @@ curse  = add_cards(30, 'curse.jpg');
 function make_piles(piles, x0, y0, dx) {
   for(n in piles) 
     board.collect_pieces(piles[n], x0+n*dx, y0, false, 1, 0, 0);
-  
 }
 
 // setup the board
@@ -209,6 +218,9 @@ function setup(resources) {
 
   // Move the rest elsewhere
   make_piles(others, -dx*7, 4500, dx);
+
+  // Avatars
+  board.expand_pieces(board.avatars, 8, 0, 5100, 500, 500, 0, 0, 0);
 
 }
 

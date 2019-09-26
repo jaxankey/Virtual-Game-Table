@@ -36,8 +36,6 @@ var app  = require('express')();        // routing handler
 var http = require('http').Server(app); // listening
 var io   = require('socket.io')(http);  // fast input/output
 
-
-
 // Generates a date string for logs
 function get_date_string() {
   
@@ -71,22 +69,38 @@ function log() {
   console.log.apply(this, arguments);
 }
 
-
-
 // get the directories
 var root_directory     = process.cwd();
 
 // This is the order of searching for files.
 var private_directory  = root_directory + '/private/'  + game_name
-var games_directory     = root_directory + '/games/'    + game_name;
-var common_directory = root_directory + '/common';
+var games_directory    = root_directory + '/games/'    + game_name;
+var common_directory   = root_directory + '/common';
 
 
 // change to the root directory
 console.log('\nSearch Order:');
-console.log(private_directory);
-console.log(games_directory);
-console.log(common_directory+'\n');
+console.log('  '+private_directory);
+console.log('  '+games_directory);
+console.log('  '+common_directory);
+console.log('  '+root_directory+'\n');
+
+// Get the images from the avatars folder
+function get_avatars() {
+  common_avatars  = fs.readdirSync(common_directory +'/avatars');
+  if(fs.existsSync(root_directory+'/private/avatars/')) private_avatars = fs.readdirSync(root_directory+'/private/avatars/');
+  else                                                  private_avatars = [];
+
+  // Get all the avatar paths
+  avatars = [];
+  for(var n in common_avatars)  avatars.push('common/avatars/'+common_avatars[n]);
+  for(var n in private_avatars) avatars.push('private/avatars/'+private_avatars[n]);
+
+  return avatars;
+}
+
+
+
 
 /**
  * See if the full path exists.
@@ -102,11 +116,13 @@ function file_exists(path) {
  */
 function find_file(path) {
   //console.log(' Searching for', path, 'in');
-  paths = [
+  var paths = [
     private_directory +'/'+path,
     games_directory   +'/'+path,
     common_directory  +'/'+path,
+    root_directory    +'/'+path
   ] 
+  
   for(var n in paths) {
     //console.log('  ', paths[n]);
     if(file_exists(paths[n])) return paths[n];
@@ -114,6 +130,7 @@ function find_file(path) {
   console.log('  FILE NOT FOUND:', path);
   return common_directory+'/images/nofile.png';
 }
+
 
 /**
  * Searches for the path, and, if found, sends it using the response object
@@ -140,8 +157,8 @@ app.get('/:f',        function(request, response) {send(response, request.params
 app.get('/images/:i',       function(request, response) {send(response, 'images/'+request.params.i                                          );} );
 app.get('/images/:d/:i',    function(request, response) {send(response, 'images/'+request.params.d+'/'+request.params.i                     );} );
 app.get('/images/:a/:b/:c', function(request, response) {send(response, 'images/'+request.params.a+'/'+request.params.b+'/'+request.params.c);} );
-  
-  
+app.get('/common/avatars/:i', function(request, response) {send(response, 'common/avatars/' +request.params.i);} );
+app.get('/private/avatars/:i',function(request, response) {send(response, 'private/avatars/'+request.params.i);} );
   
 // Last known board configuration
 
@@ -210,7 +227,7 @@ io.on('connection', function(socket) {
   client_sockets       .push(socket);  // each client gets a socket
   client_names         .push("n00b");  // each client gets a name string
   client_teams         .push(0);       // each client gets a team index
-  client_is_holding    .push(false);      // each client gets a list of held pieces 
+  client_is_holding    .push(false);   // each client gets a list of held pieces 
   client_selected_piece_ids.push([]);  // each client gets a list of selected pieces
   client_drag_offsets  .push([]);      // for each held piece, there is a list of [dx,dy] offsets
 
@@ -226,6 +243,18 @@ io.on('connection', function(socket) {
   // Welcome them to the server.
   socket.emit('chat', '<b>Server:</b> Welcome!');
   
+  // Query for avatar paths
+  socket.on('avatars?', function() {
+    // get the client id
+    var client_index = client_sockets.indexOf(socket);
+    var client_id    = client_ids[client_index];
+
+    log('Received "avatars?" from client', client_id, client_index);
+    avatars = get_avatars();
+    log('Sending avatar image path list:', avatars.length, 'items');
+    socket.emit('avatars', avatars);
+  });
+
   // Received a "ready to go" query
   socket.on('?', function() {
     // get the client id

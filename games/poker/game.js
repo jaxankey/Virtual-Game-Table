@@ -119,10 +119,18 @@ for(n in names) cards.push(board.add_piece(['cards/back.png', 'cards/'+names[n]+
 
 
 /////////////////////
+// AVATARS
+/////////////////////
+board.new_piece_scale               = 0.7;
+board.new_piece_rotates_with_canvas = false;
+board.new_piece_physical_shape      = 'inner_circle';
+board.add_avatars();
+
+
+
+/////////////////////
 // FUNCTIONALITY
 /////////////////////
-
-
 
 function collect_all_cards() {
   console.log('collect_all_cards');
@@ -305,7 +313,8 @@ function setup() {
     board.collect_pieces(chips_white.slice(n*20+15, n*20+20), d.x, d.y, false, 0, 0, -n*board.r_step);
   }
 
-  
+  // Avatars
+  board.expand_pieces(board.avatars, 8, 0, 1000, 100, 100, 0, 0, 0);
 }
 
 
