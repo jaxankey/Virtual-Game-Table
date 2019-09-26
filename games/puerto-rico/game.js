@@ -111,8 +111,8 @@ governor = board.add_piece(['governor.jpg']);
 // PLANTATIONS & QUARRIES
 corn    = board.add_pieces(10, ['tile-back.jpg', 'tile-corn.jpg']);
 indigo  = board.add_pieces(12, ['tile-back.jpg', 'tile-indigo.jpg']);
-coffee  = board.add_pieces( 8,  ['tile-back.jpg', 'tile-coffee.jpg']);
-tobacco = board.add_pieces( 9,  ['tile-back.jpg', 'tile-tobacco.jpg']);
+coffee  = board.add_pieces( 8, ['tile-back.jpg', 'tile-coffee.jpg']);
+tobacco = board.add_pieces( 9, ['tile-back.jpg', 'tile-tobacco.jpg']);
 sugar   = board.add_pieces(11, ['tile-back.jpg', 'tile-sugar.jpg']);
 plantations = corn.concat(indigo).concat(coffee).concat(tobacco).concat(sugar);
 
@@ -140,23 +140,20 @@ building_sugar        = board.add_pieces(3, ['build-sugar.jpg']);
 building_tobacco      = board.add_pieces(3, ['build-tobacco.jpg']);
 building_coffee       = board.add_pieces(3, ['build-coffee.jpg']);
 
-buildings_1 = board.add_pieces(
-  2, ['build-market-small.jpg'],
-  2, ['build-hacienda.jpg'],
-  2, ['build-constructionhut.jpg'],
-  2, ['build-warehouse-small.jpg']);
+buildings_1 = board.add_pieces(2, ['build-market-small.jpg'])    .concat(
+              board.add_pieces(2, ['build-hacienda.jpg']))       .concat(
+              board.add_pieces(2, ['build-constructionhut.jpg'])).concat(
+              board.add_pieces(2, ['build-warehouse-small.jpg']));
 
-buildings_2 = board.add_pieces(
-  2, ['build-hospice.jpg'],
-  2, ['build-office.jpg'],
-  2, ['build-market-large.jpg'],
-  2, ['build-warehouse-large.jpg']);
+buildings_2 = board.add_pieces(2, ['build-hospice.jpg'])         .concat(
+              board.add_pieces(2, ['build-office.jpg']))         .concat(
+              board.add_pieces(2, ['build-market-large.jpg']))   .concat(
+              board.add_pieces(2, ['build-warehouse-large.jpg']));
 
-buildings_3 = board.add_pieces(
-  2, ['build-factory.jpg'],
-  2, ['build-university.jpg'],
-  2, ['build-harbor.jpg'],
-  2, ['build-wharf.jpg']);
+buildings_3 = board.add_pieces(2, ['build-factory.jpg'])         .concat(
+              board.add_pieces(2, ['build-university.jpg']))         .concat(
+              board.add_pieces(2, ['build-harbor.jpg']))   .concat(
+              board.add_pieces(2, ['build-wharf.jpg']));
 
 // No more pieces that hold other pieces
 board.new_piece_is_tray = false;
@@ -186,6 +183,15 @@ coffee  = board.add_pieces(9,  ['goods-coffee.png']);
 tobacco = board.add_pieces(9,  ['goods-tobacco.png']);
 sugar   = board.add_pieces(11, ['goods-sugar.png']);
 indigo  = board.add_pieces(11, ['goods-indigo.png']);
+
+
+/////////////////////
+// AVATARS
+/////////////////////
+board.new_piece_scale               = 1.2;
+board.new_piece_rotates_with_canvas = false;
+board.new_piece_physical_shape      = 'inner_circle';
+board.add_avatars();
 
 
 /////////////
@@ -313,7 +319,8 @@ function setup(N) {
     
   } // end of loop over 5 players
   
-  
+  // Avatars
+  board.expand_pieces(board.avatars, 8, 0, -1500, 100, 100, 0, 0, 0);
 }
 
 

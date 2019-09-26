@@ -212,6 +212,15 @@ for(n=0; n<5; n++) dice.push(board.add_piece(['dice/6d1.png','dice/6d2.png','dic
 
 
 
+/////////////////////
+// AVATARS
+/////////////////////
+board.new_piece_scale               = 1;
+board.new_piece_rotates_with_canvas = false;
+board.new_piece_physical_shape      = 'inner_circle';
+board.add_avatars();
+
+
 
 //////////////////////////
 // SETUP
@@ -323,6 +332,9 @@ function setup() {
   for(n in dice) dice[n].set_target(120*(Math.random()-0.5), 
               470*R/120*N/3 + 200 + 120*(Math.random()-0.5), 
                                     720*(Math.random()-0.5));
+
+  // Avatars          (pieces,        x,              y, shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
+  board.collect_pieces(board.avatars, 0, -580*R/120*N/3, false,  0,           undefined, undefined, 1,1);
 
 }
 

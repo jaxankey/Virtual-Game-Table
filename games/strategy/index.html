@@ -1,0 +1,158 @@
+<!--
+/**
+ * This file is part of the Virtual Game Table distribution 
+ * (https://github.com/jaxankey/Virtual-Game-Table).
+ * Copyright (c) 2015-2019 Jack Childress (Sankey).
+ * 
+ * This program is free software: you can redistribute it and/or modify  
+ * it under the terms of the GNU General Public License as published by  
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License 
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+-->
+<!doctype html>
+<html>
+<head>
+  <title>Strategy</title>
+  <style>
+
+	
+  
+    body { font: 14px Helvetica, Arial;
+           padding: 0px;
+           margin: 0px}
+
+    td   { padding: 10px;}
+    
+    div   {display:  table;}
+    
+    canvas{vertical-align: bottom;}
+
+    .tight {padding: 0px; border: 0px; margin: 0px; margin-bottom: 5px; width:0%}
+
+    .raised { padding:    5px;
+              box-shadow: 2px 2px 10px #ccc;
+              margin: 10px;}
+
+    ul.chat {overflow-y: auto;
+             height:     300px;
+             font:       14px Helvetica, Arial;}
+    
+    #messages { list-style-type: none; margin: 0; padding: 0; }
+    #messages li { padding: 5px 5px; }
+    #messages li:nth-child(odd) { background: #fff5f5; }
+
+    ul.clients {overflow-y: auto;
+                height:     150px;
+                font:       14px Helvetica, Arial;}
+    
+    #clients { list-style-type: none; margin: 0; padding: 0; }
+    #clients li { padding: 5px 5px; }
+    #clients li:nth-child(odd) { background: #fff5f5; }
+
+    
+           
+    /* USER AND CHAT */
+    
+    .user-container {width:         235px; 
+                     margin-bottom: 10px; 
+                     position:      fixed; 
+                     top:           10px; 
+                     right:         10px;
+                     background-color: white;}
+    
+    .chat-container {width: 235px; 
+                     margin-bottom: 10px;
+                     position:      fixed; 
+                     bottom:        10px; 
+                     right:         10px;
+                     background-color: white;}
+    
+    .chat-input {width:235px;}
+	
+  </style>
+
+  <link rel="shortcut icon" type="image/ico" href="images/favicon.ico" />
+
+</head>
+
+
+
+<body id="everything">
+  
+  <canvas id="table" width="580px" height="450px" tabindex="1">
+        Your browser doesn't support HTML5 canvases. We do all of our testing in
+        chrome. IE is garbage. I'd love for someone to code Firefox & Safari support.
+  </canvas>
+  
+ 
+  <!-- user box -->
+  <div id="controls" class="user-container raised">
+    
+    <table class="tight" style="width:100%">
+      <tr>
+        <td class="tight">
+          <a href="/rules" target="new">Rules</a> <a href='/controls' target="new">Controls</a>
+        </td>
+      </tr><tr>
+        <td class="tight" width="100%">
+          <button onclick="board.setup();">New Game</button>
+          <button onclick="board.save();">Save</button>
+          <button onclick="board.load();">Load</button>
+          <button onclick="board.tantrum();">HAT.</button>
+      </td></tr>
+    </table>
+    
+    <ul id="clients" class="clients"></ul>
+  </div>
+  
+    
+        
+  <!-- chat box -->
+  <div id="chat" class="chat-container raised">
+    <!-- user info -->
+    <table class="tight" style="width:100%"><tr>
+	  <td class="tight">
+        <b>Name</b>
+      </td><td class="tight">
+	    <b>Team</b>
+	  
+	  </td></tr><tr>
+	  </td><td class="tight">
+	    <input id="name" onchange="name_onchange()" maxlength=16 autocomplete="off" value="n00b" style="width: 90%"/>
+      </td><td class="tight">
+        <select id="teams" onchange="team_onchange()"></select>
+	  </td>
+    </tr><tr>
+	  </td><td class="tight">
+	    <button onclick="collect_pieces();">Collect Pieces</button>
+	  </td>
+    </tr></table>
+    
+    <!-- where chat messages will appear -->
+    <ul id="messages" class="chat"></ul>
+
+    <!-- chat area -->
+    
+    <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2"/></form>
+    
+  </div>
+ 
+  
+  <!-- libraries -->
+  <script src="/external_scripts/socket.io.js"></script>
+  <script src="/external_scripts/jquery.js"></script>
+
+  <!-- my scripts -->
+  <script src="browser.js"></script>
+  <script src="game.js"></script>
+ 
+</body>
+</html>
