@@ -3601,6 +3601,9 @@ server_avatar = function(avatar_paths) {
 
   // Load the avatar pieces
   for(var n in avatar_paths) board.avatars.push(board.add_piece([avatar_paths[n]], undefined, true));
+
+  // Reset the scale
+  board.new_piece_scale = 1;
 }
 my_socket.on('avatars', server_avatar);
 
