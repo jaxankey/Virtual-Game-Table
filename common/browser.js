@@ -17,7 +17,7 @@
  */
 
 // TO DO: massive overhaul & code simplification:
-//         * all piece lists become piece_id lists; function get_piece_by_id() 
+//         * all piece lists become id lists; function get_piece_by_id() 
 //         * combine all groups of parallel arrays into a single dictionary
 //         * use these dictionaries to send info to the server and back
 //         * all objects become server packets, and functions to draw, etc take 
@@ -176,6 +176,24 @@ function get_active_teams() {
       teams.push(board.client_teams[n]);
   }
   return teams;
+}
+
+/**
+ * Sorts the provided array of pieces so that their order matches that of board.pieces.
+ * @param {array} pieces 
+ */
+function sort_pieces_by_position(pieces) {
+  pieces.sort(function(p1,p2) {return board.pieces.indexOf(p1)-board.pieces.indexOf(p2);});
+  return pieces
+}
+
+/**
+ * Sorts the provided array of pieces by their id number
+ * @param {array} pieces 
+ */
+function sort_pieces_by_id(pieces) {
+  pieces.sort(function(p1,p2) {return p1.id-p2.id;});
+  return pieces
 }
 
 /**
@@ -525,22 +543,22 @@ function is_below_line(x,y, x1,y1, x2,y2) {
 /**
  * Piece constructor. Note the games do not directly use this, rather they
  * call board.add_piece(['list.png','of.png','images.png'],['private.png','images.png','optional.png'])
- * which assigns a unique piece_id and creates the images from their paths.
+ * which assigns a unique id and creates the images from their paths.
  * @param {BOARD} board             // board instance 
- * @param {*} piece_id              // unique id for the piece
+ * @param {*} id              // unique id for the piece
  * @param {*} image_paths           // list of public (visible to everyone) impage path strings
  * @param {*} private_image_paths   // list of private (visible to team) image path strings
  *                                  // if not specified, these are identical to the image_paths
  * @param {*} avatar                // If true, doesn't prepend /images to the path
  */
-function PIECE(board, piece_id, image_paths, private_image_paths, scale) {
+function PIECE(board, id, image_paths, private_image_paths, scale) {
 
   // by default, use the same set of image paths
   private_image_paths = or_default(private_image_paths, image_paths);
   
   // equivalent of storing object properties (or defaults)
   this.board                     = board;                        // board instance for this piece
-  this.piece_id                  = piece_id;                     // unique piece id
+  this.id                  = id;                     // unique piece id
   this.image_paths               = image_paths;                  // list of available images (seen by everyone)
   this.private_image_paths       = private_image_paths;          // list of available private image path strings, e.g. 'pants.png' (seen by team)
   this.private_images_everywhere = this.board.new_piece_private_images_everywhere; // Whether the private image is also visible outside the team zone.
@@ -668,6 +686,38 @@ function PIECE(board, piece_id, image_paths, private_image_paths, scale) {
   this.previous_active_image = this.active_image;
 }
 
+/**
+ * Sends the piece to position n.
+ */
+PIECE.prototype.send_to = function(n) {
+
+  // Get the current index for popping.
+  var n0 = this.board.find_piece_index(this.id);
+
+  // Pop it
+  this.board.pop_piece(n0);
+
+  // Now insert it at the new location
+  this.board.insert_piece(this, n);
+  
+  return this;
+}
+
+/**
+ * Send the piece to the bottom of the stack.
+ */
+PIECE.prototype.send_to_bottom = function() {
+  this.send_to(0);
+  return this;
+}
+
+/**
+ * Send the piece to the top of the stack.
+ */
+PIECE.prototype.send_to_top = function() {
+  this.send_to(this.board.pieces.length);
+  return this;
+}
 
 // Put it in its box;
 PIECE.prototype.put_away = function() {
@@ -902,8 +952,9 @@ PIECE.prototype.needs_redraw    = function() {
 PIECE.prototype.draw_selection = function() {
   
   var context = this.board.context;
-  
+
   // get the piece dimensions
+  if(!this.images[this.active_image]) return;
   var w = this.images[this.active_image].width;
   var h = this.images[this.active_image].height;
   
@@ -1626,7 +1677,7 @@ BOARD.prototype.add_team = function(name, hand_image_paths, color) {
 
 
 /**
- * Sorts the supplied piece list by piece_id, then pops them all to the top.
+ * Sorts the supplied piece list by id, then pops them all to the top.
  * @param {list} pieces list of pieces to sort, then pop to the top.
  */
 
@@ -1636,11 +1687,11 @@ BOARD.prototype.sort_and_pop_pieces = function(pieces) {
   var pieces   = or_default(pieces, this.client_selected_pieces[my_index]);
   
   // Sort them
-  pieces.sort(function(a, b){return a.piece_id-b.piece_id});
+  pieces.sort(function(a, b){return a.id-b.id});
 
   // Loop over them, putting them on top of the stack
   for(n=0; n<pieces.length; n++) {
-    i = this.find_piece_index(sps[n].piece_id);
+    i = this.find_piece_index(sps[n].id);
     this.pop_piece(i);
     this.insert_piece(sps[n], this.pieces.length);
   }
@@ -1689,6 +1740,9 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
   // Defaults
   var r_piece  = or_default(r_piece,  this.collect_r_piece);
   var r_stack  = or_default(r_stack,  this.collect_r_stack);
+  var offset_x = or_default(offset_x, null);
+  var offset_y = or_default(offset_y, null);
+  var active_image = or_default(active_image, null);
   
   // shuffle if we're supposed to
   if(shuffle) {
@@ -1697,11 +1751,15 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
     shuffle_array(pieces);
 
     // Animation: randomize rotation and displacement (doesn't affect r_target)
-    for(var n in pieces)
+    for(var n in pieces) { var p = pieces[n];
     // x,y,r,angle,disable_snap,immediate
-      pieces[n].set_target(pieces[n].x + (Math.random()-0.5)*this.shuffle_distance,
-                           pieces[n].y + (Math.random()-0.5)*this.shuffle_distance,
-                           (Math.random()-0.5)*720, null, true, true);
+      p.set_target(pieces[n].x + (Math.random()-0.5)*this.shuffle_distance,
+                   pieces[n].y + (Math.random()-0.5)*this.shuffle_distance,
+                   (Math.random()-0.5)*720, null, true, true);
+
+      // If we have an active image specified, set it
+      if(active_image != null) p.set_active_image(active_image);
+    }
     
     // Trigger an update to tell everyone the new locations
     this.send_stream_update();
@@ -1714,14 +1772,13 @@ BOARD.prototype.collect_pieces = function(pieces,x,y,shuffle,active_image,r_piec
 
   // Collect all selected piece to the specified coordinates
   for(var i in pieces) {
-
     // Put this piece on top, in order, regardless of from_top
     this.pop_piece(this.pieces.indexOf(pieces[i])); // take it out, but avoid triggering an update for the rest.
     this.pieces.push(pieces[i]);                    // Push the piece on top, triggering an update
 
     if(from_top) var p = pieces[pieces.length-i-1];
     else         var p = pieces[i];
-    
+
     // Get the rotated stack step.
     if(offset_x != null && typeof offset_x !== 'undefined') ox = offset_x;
     else                                                    ox = p.collect_offset_x;
@@ -1896,25 +1953,30 @@ BOARD.prototype.insert_piece = function(piece, n) {
     this.pieces.splice(n,0,piece);
 
     // Update its internal number
-    piece.previous_n = n;
+    //piece.previous_n = n;
 
     // Increment the piece indices above this, so that they don't get updated
     for(i=n+1; i<this.pieces.length; i++) this.pieces[i].previous_n++;
   }
 }
+
+
+
+
+
 /**
  * Find the piece by id, starting from the top (most common location).
  */
-BOARD.prototype.find_piece_index = function(piece_id) {
-  // find a piece by piece_id
-  return board.pieces.lastIndexOf(board.piece_lookup[piece_id]);
+BOARD.prototype.find_piece_index = function(id) {
+  // find a piece by id
+  return board.pieces.lastIndexOf(board.piece_lookup[id]);
 }
 
 /**
  * Find the pieces associated with the array of piece ids.
  */
 BOARD.prototype.find_piece_indices = function(piece_ids) {
-  // find piece indices by piece_id
+  // find piece indices by id
   pids = [];
   for(n in piece_ids) pids.push(this.find_piece_index(piece_ids[n])); 
   return pids;
@@ -1923,8 +1985,8 @@ BOARD.prototype.find_piece_indices = function(piece_ids) {
 /**
  * Finds the actual piece object of this id.
  */
-BOARD.prototype.find_piece = function(piece_id) {
-  return board.piece_lookup[piece_id];
+BOARD.prototype.find_piece = function(id) {
+  return board.piece_lookup[id];
 }
 
 /**
@@ -2063,66 +2125,43 @@ BOARD.prototype.find_selected_piece_client_index = function(piece) {
  * @param{PIECE}   piece
  * @param{send_to} where to send it. -1 = bottom, 0 = nowhere, 1 = top.
  */
-BOARD.prototype.select_piece = function(piece, send_to, top, bottom) {
+BOARD.prototype.select_piece = function(piece) {
 
-  // Where to send this piece
-  var send_to   = or_default(send_to, 0);
-  var top = or_default(top, this.pieces.length);
-  var bottom    = or_default(bottom,    this.bottom_index); 
-  
-  console.log('select_piece', send_to, top);
+  console.log('select_piece', piece.id);
 
-  // Get my index
+  // Get my index and selected pieces array
   var my_index = get_my_client_index();
-
-  // Get my selected pieces
-  var sps = this.client_selected_pieces[my_index];
-
-  // Don't mess with it if someone else is already holding it (not just selected, but held!)
+  var sps      = this.client_selected_pieces[my_index];
+  
+  // Don't do anything with the supplied piece if someone else is already 
+  // holding it (not just selected, but held!)
   var holder = this.find_holding_client_index(piece);
   if(holder >= 0 && holder != my_index) return;
 
-  // If someone else had this selected, remove their selection
+  // If someone else DID have this selected but ISN'T holding it, remove their selection
   var client2 = this.find_selected_piece_client_index(piece);  
   if(client2 >= 0 && client2 != my_index) this.deselect_piece(piece);
 
-  // Only add it if we haven't already selected it.
+  // Only add it to our selection if we don't already have it.
   var m = sps.indexOf(piece);
-  if(m < 0) {
-
-    // Add this piece
-    sps.push(piece);
-    
-    // Record the initial index of the piece
+  if(m < 0) sps.push(piece);
+  
+  // If it's a tray, also select all the pieces that are on it.
+  if(piece.is_tray) {
+      
+    // get the index of this piece
     var i0 = this.pieces.lastIndexOf(piece)
+  
+    // Loop over all pieces above this one, recursively selecting if on top of this piece
+    for(var n=i0+1; n<this.pieces.length; n++) {
+      p = this.pieces[n];
+      
+      // If this piece is "on" the original, select it
+      // TO DO: This is inefficient, double checking many pieces, but only with trays on trays, I suppose...
+      if(piece.contains(p.x, p.y)) this.select_piece(p); 
 
-    // If we're supposed to, send it to the top or bottom
-    if(send_to > 0) {
-      this.pop_piece(i0);
-      this.insert_piece(piece, this.pieces.length);
-      top--; // Don't want to keep adding this piece to the selection!
-    }
-    else if(send_to < 0) {
-      this.pop_piece(i0);
-      this.insert_piece(piece, bottom); // function handles the bottom index.
-      bottom++;
-    }
-    
-    // If it's a tray, also select all the pieces that are on it.
-    if(piece.is_tray) {
-      // Loop over all pieces above this one, recursively selecting if on top of this piece
-      for(var n=i0; n<top; n++) {
-        p = this.pieces[n];
-        if(piece.contains(p.x, p.y)) {
-          this.select_piece(p, send_to, top, bottom); // don't sort till the end
-          if(send_to > 0) {
-            n--;
-            top--;
-          } // sending to top means we need to repeat an index
-        }
-      }
-    } 
-  } // End of "wasn't already selected"
+    } // End of recursive loop
+  } // End of "is tray"
 }
 
 /**
@@ -2185,61 +2224,54 @@ BOARD.prototype.event_mousedown = function(e) {
           p.movable_by.indexOf(team)>=0)) {
              
           // Find out where to send it
-          if      (e.button == 0) send_to = 1;
-          else if (e.button == 2) send_to = -1;
-          else                    send_to = 0; 
+          if      (e.button == 0) var send_to = 1;
+          else if (e.button == 2) var send_to = -1;
+          else                    var send_to = 0; 
           
-          // get the piece index
+          // get the piece index (will be -1 if we don't have it already)
           var client_piece_index = this.client_selected_pieces[my_index].indexOf(p);
-          var piece_index        = this.pieces.indexOf(p);
-
+          
           // If we're holding shift, toggle the selection.
           if(e.shiftKey) {
             
             // If it's not selected, select it
-            if(client_piece_index < 0) this.select_piece(p, 0);
+            if(client_piece_index < 0) {
+              this.select_piece(p);
+              sort_pieces_by_position(this.client_selected_pieces[my_index]);
+            }
 
             // Otherwise, deselect it and don't bother with the popping / holding stuff.
             else {
-              this.deselect_piece(p);
+              this.deselect_piece(p); // remains sorted
               this.client_is_holding[my_index] = false;
               this.trigger_h_stream = true;
-              return;
             }
-          } 
 
-          // Otherwise, if we don't have it already, treat it like a new selection
-          else if(client_piece_index < 0) {
-            this.client_selected_pieces[my_index].length = 0;
-            this.select_piece(p, send_to);
-          }
+            // Sort the selected pieces so they match the order of the stack.
+            return;
 
-          // Otherwise, we do have it and this is a normal shiftless click. Pop all selected pieces to the top or bottom
-          else {
-            var sps = this.client_selected_pieces[my_index];
+          } // Done with shift key toggling
 
-            if(send_to > 0) {
-              for(var n in sps) {
-                var sp = this.pop_piece(this.pieces.indexOf(sps[n]));
-                this.insert_piece(sp, this.pieces.length);
-              }
-            }
-            else if(send_to < 0) {
-              for(var n=sps.length-1; n>=0; n--) {
-                var sp = this.pop_piece(this.pieces.indexOf(sps[n]));
-                this.insert_piece(sp, 0);
-              }
-            }
-          } // End of "we do have it and normal shiftless click"
+          // Otherwise, if we don't have it already, deselect everything else
+          else if(client_piece_index < 0) this.client_selected_pieces[my_index].length = 0;
 
-          // At this point, we have selected something new.
+          // Select this piece (no need to sort, since only one piece now)
+          this.select_piece(p);
 
-          // Sort the selected pieces to match the order of the board.
-          this.client_selected_pieces[my_index].sort(function(p1,p2) {return board.pieces.indexOf(p1)-board.pieces.indexOf(p2);});
+          // At this point we have selected something with a non-toggle click or clicked
+          // on an existing set of selected pieces.
+          var sps = this.client_selected_pieces[my_index];
 
+          // Sort them
+          sort_pieces_by_position(sps);
+
+          // If we're sending to the top or bottom
+          if     (send_to > 0) for(var n in sps)                  sps[n].send_to_top(); 
+          else if(send_to < 0) for(var n=sps.length-1; n>=0; n--) sps[n].send_to_bottom();
+          
           // Let's treat them as held until the mouseup happens
           this.client_is_holding[my_index] = true;
-          this.trigger_h_stream = true;
+          this.trigger_h_stream            = true;
 
           // Also stop the movement and remember the initial coordinates
           for(var j in this.client_selected_pieces[my_index]) {
@@ -2302,15 +2334,6 @@ BOARD.prototype.event_mousemove = function(e) {
     this.mouse_event = e;
   }
 
-  // Mouse edge pan calculation (disabled in the send_stream_update)
-  /*this._mouse_pan_x = null;
-  this._mouse_pan_y = null;
-  var N = 70
-  if(e.clientX<N) this._mouse_pan_x = N+1-e.clientX;            
-  if(e.clientY<N) this._mouse_pan_y = N+1-e.clientY;
-  if(this.canvas.clientWidth -e.clientX < 40) this._mouse_pan_x = this.canvas.clientWidth -e.clientX-N-1;
-  if(this.canvas.clientHeight-e.clientY < 40) this._mouse_pan_y = this.canvas.clientHeight-e.clientY-N-1;*/
-  
   // get the team index
   var team     = get_team_number();
   var my_index = get_my_client_index(); // my_index = -1 until the server assigns us one.
@@ -2355,8 +2378,9 @@ BOARD.prototype.event_mousemove = function(e) {
     // Update the selection based on these coordinates
     // Loop over all pieces
     for(n in this.pieces) {
-      var p = this.pieces[n];
-      var i = this.client_selected_pieces[my_index].indexOf(p);
+      var p   = this.pieces[n];
+      var sps = this.client_selected_pieces[my_index];
+      var i   = sps.indexOf(p);
 
       // If this piece is not in someone else's team zone
       team_zone = this.in_team_zone(p.x, p.y)
@@ -2379,7 +2403,7 @@ BOARD.prototype.event_mousemove = function(e) {
     } // End of loop over all pieces
 
     // Sort the selected pieces to match the order of the board.
-    this.client_selected_pieces[my_index].sort(function(p1,p2) {return board.pieces.indexOf(p1)-board.pieces.indexOf(p2);});
+    sort_pieces_by_position(sps);
 
   } // End of if we have a selection box
 
@@ -2438,7 +2462,13 @@ BOARD.prototype.event_mouseup = function(e) {
   my_socket.emit('m', this.mouse.x, this.mouse.y, [], // no held piece ids
                       [], this.r_target, // no held piece coordinates
                       null); // no selection boxes. 
+  
+  // User event handler
+  after_event_mouseup(e);
 }
+
+// User function.
+function after_event_mouseup(e) {return;}
 
 BOARD.prototype.event_dblclick = function(e) {
   console.log('event_dblclick', e);
@@ -2562,9 +2592,15 @@ BOARD.prototype.event_keyup  = function(e) {
     }
 
     // at this point, we call the user function
-    event_keyup(e,p);
+    after_event_keyup(e,p);
   } // end of canvas has focus
 }
+
+// User function
+function after_event_keyup(event_data, piece, piece_index) {
+  return;
+}
+
 
 // whenever someone pushes down a keyboard button
 BOARD.prototype.event_keydown = function(e) {
@@ -2844,18 +2880,15 @@ BOARD.prototype.event_keydown = function(e) {
     }
 
     // at this point, we call the user function
-    event_keydown(e,p,i);
+    after_event_keydown(e,p,i);
   } // end of canvas has focus
 }
 
 // User functions
-function event_keydown(event_data, piece, piece_index) {
+function after_event_keydown(event_data, piece, piece_index) {
   return;  
 }
 
-function event_keyup(event_data, piece, piece_index) {
-  return;
-}
 
 // called when someone double clicks. Feel free to overwrite this!
 function event_dblclick(event_data, piece, piece_index) {
@@ -2999,16 +3032,16 @@ BOARD.prototype.set_team_zone = function(team_index, x1,y1, x2,y2, x3,y3, x4,y4,
 
 
 function setup() {
-  console.log("function setup(): Overwrite me to setup your game's pieces!")
+  console.log("function setup(): Overwrite me to setup your game's pieces!");
 }
-BOARD.prototype.setup = function() {
+/*BOARD.prototype.setup = function() {
   
   // setup the pieces
   setup.apply(this, arguments);
   
   // send a full update
   this.send_full_update(true);
-}
+}*/
 BOARD.prototype.tantrum = function() {
   
   // loop over all pieces and send them in random directions
@@ -3356,7 +3389,7 @@ BOARD.prototype.send_stream_update = function() {
   // We should only check / send if our own team's piece selection has changed  
   // Get the selected pieces
   var sp_ids = [];
-  for(var i in sps) sp_ids.push(sps[i].piece_id);
+  for(var i in sps) sp_ids.push(sps[i].id);
   
   // If the arrays are different
   if(!array_compare(sps, this.client_previous_selected_pieces[my_index])) { 
@@ -3419,7 +3452,7 @@ BOARD.prototype.send_stream_update = function() {
       
       // push the piece data
       changed_pieces.push({
-        id: p.piece_id,
+        id: p.id,
         x:  p.x_target,
         y:  p.y_target,
         r:  p.r_target,
@@ -3458,7 +3491,7 @@ BOARD.prototype.get_piece_datas = function() {
 
     // add to all the arrays
     piece_datas.push({
-      id: p.piece_id,
+      id: p.i,
       x:  p.x_target,
       y:  p.y_target,
       r:  p.r_target,

@@ -14,7 +14,7 @@
    viewBox="0 0 300 297"
    version="1.1"
    id="svg8"
-   inkscape:version="0.92.4 (unknown)"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
    sodipodi:docname="pieces2.svg">
   <defs
      id="defs2">
@@ -126,6 +126,150 @@
          in2="offset"
          in="SourceGraphic" />
     </filter>
+    <filter
+       y="-0.1"
+       x="-0.2"
+       height="1.2"
+       width="1.4"
+       id="filter6650-7"
+       inkscape:label="Card Shadow"
+       style="color-interpolation-filters:sRGB">
+      <feFlood
+         id="feFlood6640-9"
+         result="flood"
+         flood-color="rgb(0,0,0)"
+         flood-opacity="0.40000000000000002" />
+      <feComposite
+         id="feComposite6642-6"
+         result="composite1"
+         operator="in"
+         in2="SourceGraphic"
+         in="flood" />
+      <feGaussianBlur
+         id="feGaussianBlur6644-0"
+         result="blur"
+         stdDeviation="0.8"
+         in="composite1" />
+      <feOffset
+         id="feOffset6646-4"
+         result="offset"
+         dy="0"
+         dx="0" />
+      <feComposite
+         id="feComposite6648-1"
+         result="composite2"
+         operator="over"
+         in2="offset"
+         in="SourceGraphic" />
+    </filter>
+    <filter
+       y="-0.1"
+       x="-0.2"
+       height="1.2"
+       width="1.4"
+       id="filter6650-4"
+       inkscape:label="Card Shadow"
+       style="color-interpolation-filters:sRGB">
+      <feFlood
+         id="feFlood6640-8"
+         result="flood"
+         flood-color="rgb(0,0,0)"
+         flood-opacity="0.40000000000000002" />
+      <feComposite
+         id="feComposite6642-70"
+         result="composite1"
+         operator="in"
+         in2="SourceGraphic"
+         in="flood" />
+      <feGaussianBlur
+         id="feGaussianBlur6644-8"
+         result="blur"
+         stdDeviation="0.8"
+         in="composite1" />
+      <feOffset
+         id="feOffset6646-6"
+         result="offset"
+         dy="0"
+         dx="0" />
+      <feComposite
+         id="feComposite6648-2"
+         result="composite2"
+         operator="over"
+         in2="offset"
+         in="SourceGraphic" />
+    </filter>
+    <filter
+       y="-0.1"
+       x="-0.2"
+       height="1.2"
+       width="1.4"
+       id="filter6650-4-1"
+       inkscape:label="Card Shadow"
+       style="color-interpolation-filters:sRGB">
+      <feFlood
+         id="feFlood6640-8-5"
+         result="flood"
+         flood-color="rgb(0,0,0)"
+         flood-opacity="0.40000000000000002" />
+      <feComposite
+         id="feComposite6642-70-4"
+         result="composite1"
+         operator="in"
+         in2="SourceGraphic"
+         in="flood" />
+      <feGaussianBlur
+         id="feGaussianBlur6644-8-9"
+         result="blur"
+         stdDeviation="0.8"
+         in="composite1" />
+      <feOffset
+         id="feOffset6646-6-2"
+         result="offset"
+         dy="0"
+         dx="0" />
+      <feComposite
+         id="feComposite6648-2-5"
+         result="composite2"
+         operator="over"
+         in2="offset"
+         in="SourceGraphic" />
+    </filter>
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Drop Shadow"
+       id="filter1463"
+       x="-0.20000000000000001"
+       width="1.3999999999999999"
+       y="-0.14999999999999999"
+       height="1.3">
+      <feFlood
+         flood-opacity="0.670588"
+         flood-color="rgb(153,153,153)"
+         result="flood"
+         id="feFlood1453" />
+      <feComposite
+         in="flood"
+         in2="SourceGraphic"
+         operator="in"
+         result="composite1"
+         id="feComposite1455" />
+      <feGaussianBlur
+         in="composite1"
+         stdDeviation="3"
+         result="blur"
+         id="feGaussianBlur1457" />
+      <feOffset
+         dx="0"
+         dy="0"
+         result="offset"
+         id="feOffset1459" />
+      <feComposite
+         in="SourceGraphic"
+         in2="offset"
+         operator="over"
+         result="composite2"
+         id="feComposite1461" />
+    </filter>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -134,9 +278,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.4"
-     inkscape:cx="878.50219"
-     inkscape:cy="205.55505"
+     inkscape:zoom="1.979899"
+     inkscape:cx="850.53299"
+     inkscape:cy="702.76214"
      inkscape:document-units="mm"
      inkscape:current-layer="layer2"
      showgrid="false"
@@ -145,16 +289,16 @@
      inkscape:snap-intersection-paths="true"
      inkscape:snap-smooth-nodes="true"
      inkscape:snap-text-baseline="true"
-     inkscape:snap-object-midpoints="false"
+     inkscape:snap-object-midpoints="true"
      inkscape:object-nodes="true"
      inkscape:window-width="1920"
-     inkscape:window-height="1006"
+     inkscape:window-height="1003"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
      inkscape:snap-others="true"
      showguides="false"
-     inkscape:snap-nodes="false">
+     inkscape:snap-nodes="true">
     <inkscape:grid
        type="xygrid"
        id="grid815" />
@@ -1433,6 +1577,45 @@
        cx="275.73364"
        cy="215.16815"
        r="5.2916665" />
+    <rect
+       style="opacity:0.4;vector-effect:none;fill:#000080;fill-opacity:1;stroke:#ffffff;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal;filter:url(#filter1463)"
+       id="rect1310"
+       width="28.39572"
+       height="47.090454"
+       x="270.63651"
+       y="88.56675"
+       ry="3.3408692"
+       inkscape:export-filename="dealer.png"
+       inkscape:export-xdpi="74.175797"
+       inkscape:export-ydpi="74.175797" />
+    <g
+       id="g1419"
+       transform="translate(4.5127009,-13.424603)">
+      <rect
+         inkscape:export-ydpi="74.175797"
+         inkscape:export-xdpi="74.175797"
+         inkscape:export-filename="back.png"
+         ry="2.6458333"
+         y="62.314579"
+         x="280.72293"
+         height="23.8125"
+         width="13.229167"
+         id="rect880-8-8-1-9-1-4"
+         style="opacity:1;vector-effect:none;fill:#ff676e;fill-opacity:1;stroke:#ffffff;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;filter:url(#filter6650-4)" />
+      <rect
+         ry="1.3229184"
+         y="64.960426"
+         x="283.36877"
+         height="18.520834"
+         width="7.9375"
+         id="rect10633-7"
+         style="opacity:1;vector-effect:none;fill:#9d9dff;fill-opacity:1;stroke:#ffffff;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path10635-9"
+         d="m 284.69167,66.283333 v 15.875 h 5.29166 v -15.875 h -5.29166 1.32291 v 15.875 h 1.32292 v -15.875 h 1.32292 v 15.875 0"
+         style="fill:none;stroke:#ffffff;stroke-width:0.5;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    </g>
   </g>
   <g
      inkscape:label="Graphics"
@@ -3492,5 +3675,19 @@
          d="m 296.09108,203.35128 1.09698,0.64537 1.28091,1.09856 1.5798,1.70308 0.62411,-0.54359 -1.52315,-1.81473 -1.5384,-1.17189 -1.43704,-0.66589 z"
          style="fill:#ffcc00;fill-opacity:1;stroke:#ffff00;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
     </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:12.37674999px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;opacity:0.8;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.30941874"
+       x="272.5889"
+       y="99.180656"
+       id="text819-4-1-8-429-9"
+       inkscape:export-filename="./text819-4-1-8-429-9.png"
+       inkscape:export-xdpi="74.175797"
+       inkscape:export-ydpi="74.175797"><tspan
+         sodipodi:role="line"
+         id="tspan817-6-0-2-64-6"
+         x="272.5889"
+         y="99.180656"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Times New Roman';-inkscape-font-specification:'Times New Roman, ';fill:#ffffff;stroke-width:0.30941874">Deal</tspan></text>
   </g>
 </svg>

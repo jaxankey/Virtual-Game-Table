@@ -310,7 +310,7 @@ function select_monsters(delay) {select_from_board(monsters);          board.cle
 function select_dice()          {board.client_selected_pieces[get_my_client_index()] = [...dice];}
 function deselect(delay)        {board.client_selected_pieces[get_my_client_index()].length=0;}
 
-function event_keydown(event_data, piece, piece_index) {
+function after_event_keydown(event_data) {
   switch(event_data.keyCode) {
 
     // M for monsters on board 

@@ -77,7 +77,7 @@ board.new_piece_r_step              = 60;
 board.new_piece_movable_by          = [6];
 player_boards = [];
 for(n=0; n<5; n++) player_boards[n] = board.add_piece(['board-player.jpg']);
-board_supply = board.add_piece(['board-supply.jpg']);
+board.set_background_image('board-supply.jpg');
 
 // BOATS AND MARKET
 boats = [];
@@ -151,8 +151,8 @@ buildings_2 = board.add_pieces(2, ['build-hospice.jpg'])         .concat(
               board.add_pieces(2, ['build-warehouse-large.jpg']));
 
 buildings_3 = board.add_pieces(2, ['build-factory.jpg'])         .concat(
-              board.add_pieces(2, ['build-university.jpg']))         .concat(
-              board.add_pieces(2, ['build-harbor.jpg']))   .concat(
+              board.add_pieces(2, ['build-university.jpg']))     .concat(
+              board.add_pieces(2, ['build-harbor.jpg']))         .concat(
               board.add_pieces(2, ['build-wharf.jpg']));
 
 // No more pieces that hold other pieces
@@ -188,11 +188,10 @@ indigo  = board.add_pieces(11, ['goods-indigo.png']);
 /////////////////////
 // AVATARS
 /////////////////////
-board.new_piece_scale               = 1.2;
+board.new_piece_scale               = 1.0;
 board.new_piece_rotates_with_canvas = false;
 board.new_piece_physical_shape      = 'inner_circle';
 board.add_avatars();
-
 
 /////////////
 // SETUP
@@ -294,10 +293,7 @@ function setup(N) {
   if(N>4)            roles[7].set_target(-1004, (7-5.5)*400, 0);
   if(N<5)  governor.set_target(350, 1550, 0, 60);
   if(N==5) governor.set_target(350, 1550, 0, 120);
-  
-  // MAIN BOARD
-  board_supply.set_target(0,0,0);
-  
+    
   // Loop over N players, taking out what's necessary
   for(n=0; n<N; n++) {
     angle = (n-Math.floor(N/2))*60;
@@ -320,7 +316,7 @@ function setup(N) {
   } // end of loop over 5 players
   
   // Avatars
-  board.expand_pieces(board.avatars, 8, 0, -1500, 100, 100, 0, 0, 0);
+  board.expand_pieces(board.avatars, 8, 0, -1300, 100, 100, 0, 0, 0);
 }
 
 

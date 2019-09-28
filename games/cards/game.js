@@ -26,6 +26,7 @@
 
 // short name needed for differentiating the games in the cookies
 board.game_name = 'cards';
+board.shuffle_distance = 50;
 
 // set the allowed rotations and initial zoom (out)
 board.z_target = 80;
@@ -105,6 +106,10 @@ board.new_piece_collect_offset_y = 0.1;
 cards = [];
 for(var n in names) cards.push(board.add_piece(['cards/back.png', 'cards/'+names[n]+'.png'], ['cards/'+names[n]+'.png', 'cards/'+names[n]+'p.png']));
 
+// Dealer space
+dealer = board.add_piece(['cards/dealer.png']);
+dealer.is_tray = true;
+
 
 /////////////////////
 // AVATARS
@@ -120,6 +125,21 @@ board.add_avatars();
 // FUNCTIONALITY
 /////////////////////
 
+// setup the board with N players
+function setup() {
+  
+  // Dealer space underneath
+  dealer.send_to_bottom();
+  var d = rotate_vector(1,-16, board.r_target);
+  dealer.set_target(d.x,d.y,-board.r_target);
+  
+  // collect the cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
+  board.collect_pieces(cards, 0,0, true, 0, board.r_target, board.r_target);
+      
+  // Avatars
+  board.expand_pieces(board.avatars, 8, 0, 1000, 100, 100, 0, 0, 0);
+}
+
 function collect_all_cards() {
   console.log('collect_all_cards');
 
@@ -127,8 +147,7 @@ function collect_all_cards() {
   var team = get_team_number();
 
   // Unselect all cards from all clients
-  for(n in cards) {
-    var p = cards[n];
+  for(n in cards) { var p = cards[n];
     
     // Loop over every client, making sure it's not in their selected pieces.
     for(var i in board.client_selected_pieces) {
@@ -138,32 +157,52 @@ function collect_all_cards() {
   }
 
   // Make them your selection if they're within R2 (so you can disable cards)
-  var sps = board.client_selected_pieces[get_my_client_index()];
-  sps.length = 0;
+  var sps = [];
   for(var n in cards) {
     var c = cards[n];
     if(c.x*c.x+c.y*c.y <= R2*R2) sps.push(c)
   }
 
   // Get the target for the deck
-  if(team == 0 || team == 9) d = rotate_vector(0, 0, 0);
-  else                       d = rotate_vector(R1*0.3, R1*0.8, 45*(team-1));
-  
+  if(team == 0 || team == 9) {
+    team_angle = board.r_target;
+    var d = {x:0, y:0};
+  }
+  else {
+    team_angle=45*(team-1);
+    var d = rotate_vector(R1*0.289, R1*0.803, team_angle);
+  }
+
   // collect the cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
-  board.collect_pieces(sps, d.x, d.y, true, 0, board.r_target, board.r_target);
+  board.collect_pieces(sps, d.x, d.y, true, 0, team_angle, team_angle);
+  
+  // Dealer space underneath
+  dealer.send_to_bottom();
+  var d = rotate_vector(R1*0.29, R1*0.77, team_angle);
+  dealer.set_target(d.x,d.y,-team_angle);
 }
 
 
-
-function deal(face_up) {
-  console.log('deal');
+// Deal the card with the supplied image index
+function deal(image) {
+  
+  // Get the image index (default is down)
+  image = or_default(image, 0);
 
   // Find which teams are in the game
   var teams = get_active_teams();
+  console.log('deal', teams.length);
 
-  // Find my selected pieces
-  sps = board.client_selected_pieces[get_my_client_index()];
+  // First move the dealer rectangle to the bottom.
+  dealer.send_to_bottom();
 
+  // Select the pieces that are in the dealer tray
+  var sps = [];
+  for(var n=board.pieces.indexOf(dealer)+1; n<board.pieces.length; n++) {
+    p = board.pieces[n];
+    if(dealer.contains(p.x_target, p.y_target)) sps.push(p);
+  }
+  
   // Throw the top card from my selected pieces to each team, popping them off my held pieces
   for(i in teams) {
     team = teams[i];
@@ -172,40 +211,95 @@ function deal(face_up) {
       // Get the rotated coordinate of the dealt card
       d = rotate_vector((Math.random()-0.5)*50,-R1*0.7+(Math.random()-0.5)*50,-(team-1)*45);
 
-      // Pop it and send it
+      // Pop it, send it to the player, and put it on top of the stack.
       p = sps.pop();
       p.set_target(d.x, -d.y, -(team-1)*45+720);
-
-      if(face_up) p.active_image = 1;
-
-      // Put it on top of the stack
-      board.pop_piece(board.pieces.lastIndexOf(p));
-      board.insert_piece(p, board.pieces.length);
+      p.active_image = image;
+      p.send_to_top()
     } 
   } // end of loop over active teams
 }
 
-// setup the board with N players
-function setup() {
-  console.log('setup');
-
-  // collect the  cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
-  board.collect_pieces(   cards,0,0,   true,           0,      0,      0);
-  
-  // Avatars
-  board.expand_pieces(board.avatars, 8, 0, 1000, 100, 100, 0, 0, 0);
-}
-
 
 // Overloading keydown dummy function for our game-specific keys
-function event_keydown(e, p, i) {
+function after_event_keydown(e) {
   switch (e.keyCode) {
     case 66: // B for bet.
+    case 84: // T for toss
       bet();
     break;
     case 76: // L for deaL
-      deal(e.shiftKey);
+      if(e.shiftKey) deal(1);
+      else           deal(0);
     break;
+    case 90: // Z for shuffle
+      if(board.client_selected_pieces[get_my_client_index()].length==0) shuffle();
+    break;
+    case 80: // P for Pot
+      collect_pot();
+    break;
+    case 75: // Get dec(K)
+      collect_all_cards();
+    break;
+
+  }
+}
+
+/**
+ * Throws pieces under mouse into the pot.
+ */
+function bet() {
+  // Get the selected pieces
+  var sps = board.client_selected_pieces[get_my_client_index()];
+
+  // By default we bet all selected pieces
+  already_bet = false;
+  
+  // Clear the selection.
+  sps.length=0;
+
+  // Otherwise we use the one just under the mouse.
+  if(!already_bet) {
+
+    // Only do so if we're not in someone else's team zone
+    team_zone = board.in_team_zone(board.mouse.x, board.mouse.y);
+    if(team_zone < 0 || team_zone == get_team_number()) {
+      var i = board.find_top_piece_at_location(board.mouse.x, board.mouse.y);
+      
+      // Found one!
+      if(i >= 0) {
+        // Fire it off
+        board.pieces[i].set_target(board.pieces[i].x*0.25+(Math.random()-0.5)*20, 
+                                   board.pieces[i].y*0.25+(Math.random()-0.5)*20,
+                                   Math.random()*360);
+        
+        // Put it on top
+        p = board.pop_piece(i);
+        board.insert_piece(p, board.pieces.length);
+
+      } // End of "found a piece"
+    } // End of if hovering in a grab zone
+  } // "haven't already bet, look under mouse"
+}
+
+// Overloading the mouse up function
+function after_event_mouseup(e) {
+  board.deselect_piece(dealer);
+}
+
+// Shuffle selection or cards on platter
+function shuffle() {
+  var my_index = get_my_client_index();
+  var sps = board.client_selected_pieces[my_index];
+  if(sps.length) shuffle_selected_pieces(0, null, null, 0.1, 0.1);
+  else {
+    // Select the pieces that are in the dealer tray
+    var sps = [];
+    for(var n=board.pieces.indexOf(dealer)+1; n<board.pieces.length; n++) {
+      p = board.pieces[n];
+      if(dealer.contains(p.x_target, p.y_target)) sps.push(p);
+    }
+    board.shuffle_pieces(sps, 0, dealer.r_target, -dealer.r_target, 0.1, 0.1);
   }
 }
 

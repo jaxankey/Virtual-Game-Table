@@ -67,19 +67,21 @@
            
     /* USER AND CHAT */
     
-    .user-container {width:         263px; 
-                     margin-bottom: 20px; 
+    .user-container {width:         235px; 
+                     margin-bottom: 10px; 
                      position:      fixed; 
-                     top:           20px; 
-                     right:         20px;
-                     background-color: white;}
-    .chat-container {width:         263px; 
-                     position:      fixed; 
-                     bottom:        20px; 
-                     right:         20px;
+                     top:           10px; 
+                     right:         10px;
                      background-color: white;}
     
-    .chat-input {width:212px;}
+    .chat-container {width: 235px; 
+                     margin-bottom: 10px;
+                     position:      fixed; 
+                     bottom:        10px; 
+                     right:         10px;
+                     background-color: white;}
+    
+    .chat-input {width:235px;}
 	
   </style>
 
@@ -110,7 +112,7 @@
       <tr>
         
         <td class="tight">
-          <button onclick="board.setup();">New Game</button>
+          <button onclick="setup();">New Game</button>
           <button onclick="board.save();">Save</button>
           <button onclick="board.load();">Load</button>
           <button onclick="board.tantrum();">HAT.</button>
@@ -129,19 +131,16 @@
     <table class="tight" width="100%"><tr>
       <td class="tight">
         Name:
-        <input id="name" onchange="name_onchange()" maxlength=16 autocomplete="off" value="n00b" style="width: 70px"/>
+        <input id="name" onchange="name_onchange()" maxlength=16 autocomplete="off" value="n00b" style="width: 55px"/>
         Team:
         <select id="teams" onchange="team_onchange()"></select>
       </td>
     </tr>
     <tr>
       <td class="tight">
-        Cards:
-      
-        <button id="collect"    onclick="collect_all_cards();">Get</button>
-        <button id="shuffle"    onclick="shuffle_selected_pieces(0, null, null, 0.1, 0.1);">(Z)huffle</button>
+        <button id="collect"    onclick="collect_all_cards();">Get Dec(K)</button>
+        <button id="shuffle"    onclick="shuffle();">(Z)huffle</button>
         <button id="deal"       onclick="deal();">Dea(L)</button>
-        <button id="sort_cards" onclick="sort_selected();">Sort</button>
       </td>
     </tr>
     
@@ -152,15 +151,13 @@
 
     <!-- chat area -->
     
-    <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2" width="100%"/><button tabindex="3">Chat</button></form>
+    <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2" width="100%"/></form>
     <table class="tight">
       <tr>
         <td class="tight">
-          Chips:
+          <button id="pot" onclick="collect_pot();">Collect (P)ot</button>
           
-          <button id="pot" onclick="collect_pot();">Collect Pot</button>
-          <button id="sort_chips" onclick="sort_selected();">Sort</button> 
-          (B key to bet)
+          (T)oss chips/cards
         </td>
       </tr>
     </table>
