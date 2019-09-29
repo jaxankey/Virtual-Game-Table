@@ -298,15 +298,11 @@ function collect_pot() {
 }
 
 // Deal the card with the supplied image index
-function deal(event) {
+function deal(event, single) {
   
-  // Find which teams are in the game
-  var teams = get_active_teams();
-  console.log('deal', teams.length);
-
   // First move the dealer rectangle to the bottom.
   dealer.send_to_bottom();
-
+  
   // Select the pieces that are in the dealer tray
   var sps = [];
   for(var n=board.pieces.indexOf(dealer)+1; n<board.pieces.length; n++) {
@@ -314,22 +310,43 @@ function deal(event) {
     if(dealer.contains(p.x_target, p.y_target)) sps.push(p);
   }
   
-  // Throw the top card from my selected pieces to each team, popping them off my held pieces
-  for(i in teams) {
-    team = teams[i];
+  // Throw the top card to the mouse coordinates
+  if(single) {
+    var x = board.mouse.x;
+    var y = board.mouse.y;
+    var a = Math.atan2(y,x)*180.0/Math.PI;
+    var ar = Math.round(a/45)*45;
+    p = sps.pop();
+    p.set_target(board.mouse.x+(Math.random()-0.5)*50, board.mouse.y+(Math.random()-0.5)*50, ar-90+720);
+    if(event.shiftKey) p.active_image = 1;
+    else               p.active_image = 0;
+    p.send_to_top();
+  }
 
-    if(sps.length) {
-      // Get the rotated coordinate of the dealt card
-      d = rotate_vector((Math.random()-0.5)*50,-R1*0.7+(Math.random()-0.5)*50,-(team-1)*45);
+  // Throw one card to each active team
+  else {
 
-      // Pop it, send it to the player, and put it on top of the stack.
-      p = sps.pop();
-      p.set_target(d.x, -d.y, -(team-1)*45+720);
-      if(event.shiftKey) p.active_image = 1;
-      else               p.active_image = 0;
-      p.send_to_top()
-    } 
-  } // end of loop over active teams
+    // Find which teams are in the game
+    var teams = get_active_teams();
+    console.log('deal', teams.length);
+
+    // Throw the top card from my selected pieces to each team, popping them off my held pieces
+    for(i in teams) {
+      team = teams[i];
+
+      if(sps.length) {
+        // Get the rotated coordinate of the dealt card
+        d = rotate_vector((Math.random()-0.5)*50,-R1*0.7+(Math.random()-0.5)*50,-(team-1)*45);
+
+        // Pop it, send it to the player, and put it on top of the stack.
+        p = sps.pop();
+        p.set_target(d.x, -d.y, -(team-1)*45+720);
+        if(event.shiftKey) p.active_image = 1;
+        else               p.active_image = 0;
+        p.send_to_top()
+      } 
+    } // end of loop over active teams
+  }
 }
 
 
@@ -341,8 +358,10 @@ function after_event_keydown(e) {
       bet();
     break;
     case 76: // L for deaL
-      if(e.shiftKey) deal(1);
-      else           deal(0);
+      deal(e);
+    break;
+    case 79: // O for deal One
+      deal(e,true);
     break;
     case 90: // Z for shuffle
       if(board.client_selected_pieces[get_my_client_index()].length==0) shuffle();
