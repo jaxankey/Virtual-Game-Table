@@ -279,8 +279,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.979899"
-     inkscape:cx="850.53299"
-     inkscape:cy="702.76214"
+     inkscape:cx="1016.9659"
+     inkscape:cy="621.94994"
      inkscape:document-units="mm"
      inkscape:current-layer="layer2"
      showgrid="false"
@@ -1580,10 +1580,10 @@
     <rect
        style="opacity:1;vector-effect:none;fill:#5858ba;fill-opacity:1;stroke:#ffffff;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal;filter:url(#filter1463)"
        id="rect1310"
-       width="28.39572"
-       height="47.090454"
+       width="28.395721"
+       height="44.417751"
        x="270.63651"
-       y="88.56675"
+       y="91.239449"
        ry="3.3408692"
        inkscape:export-filename="dealer.png"
        inkscape:export-xdpi="74.175797"
@@ -3677,17 +3677,17 @@
     </g>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:12.37674999px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;opacity:1;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.30941874;"
-       x="272.5889"
-       y="99.180656"
+       style="font-style:normal;font-weight:normal;font-size:8.56958771px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;opacity:1;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.2142397"
+       x="272.90637"
+       y="133.16518"
        id="text819-4-1-8-429-9"
        inkscape:export-filename="./text819-4-1-8-429-9.png"
        inkscape:export-xdpi="74.175797"
        inkscape:export-ydpi="74.175797"><tspan
          sodipodi:role="line"
          id="tspan817-6-0-2-64-6"
-         x="272.5889"
-         y="99.180656"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Times New Roman';-inkscape-font-specification:'Times New Roman, ';fill:#ffffff;stroke-width:0.30941874;">Deal</tspan></text>
+         x="272.90637"
+         y="133.16518"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Times New Roman';-inkscape-font-specification:'Times New Roman, ';fill:#ffffff;stroke-width:0.2142397">Dealer</tspan></text>
   </g>
 </svg>
