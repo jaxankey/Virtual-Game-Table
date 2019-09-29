@@ -130,7 +130,7 @@ function setup() {
   
   // Dealer space underneath
   dealer.send_to_bottom();
-  var d = rotate_vector(1,-16, board.r_target);
+  var d = rotate_vector(1,11, board.r_target);
   dealer.set_target(d.x,d.y,-board.r_target);
   
   // collect the cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
@@ -170,7 +170,7 @@ function collect_all_cards() {
   }
   else {
     team_angle=45*(team-1);
-    var d = rotate_vector(R1*0.289, R1*0.803, team_angle);
+    var d = rotate_vector(R1*0.289, R1*0.75, team_angle);
   }
 
   // collect the cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
@@ -178,17 +178,14 @@ function collect_all_cards() {
   
   // Dealer space underneath
   dealer.send_to_bottom();
-  var d = rotate_vector(R1*0.29, R1*0.77, team_angle);
+  var d = rotate_vector(R1*0.289, R1*0.77, team_angle);
   dealer.set_target(d.x,d.y,-team_angle);
 }
 
 
 // Deal the card with the supplied image index
-function deal(image) {
+function deal(event) {
   
-  // Get the image index (default is down)
-  image = or_default(image, 0);
-
   // Find which teams are in the game
   var teams = get_active_teams();
   console.log('deal', teams.length);
@@ -214,7 +211,8 @@ function deal(image) {
       // Pop it, send it to the player, and put it on top of the stack.
       p = sps.pop();
       p.set_target(d.x, -d.y, -(team-1)*45+720);
-      p.active_image = image;
+      if(event.shiftKey) p.active_image = 1;
+      else               p.active_image = 0;
       p.send_to_top()
     } 
   } // end of loop over active teams
@@ -229,8 +227,7 @@ function after_event_keydown(e) {
       bet();
     break;
     case 76: // L for deaL
-      if(e.shiftKey) deal(1);
-      else           deal(0);
+      deal(e);
     break;
     case 90: // Z for shuffle
       if(board.client_selected_pieces[get_my_client_index()].length==0) shuffle();

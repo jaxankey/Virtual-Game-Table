@@ -34,7 +34,7 @@
     div   { display: table;}
     
     canvas{ vertical-align: bottom;}
-
+    
     .tight{ padding: 0px; 
             border: 0px; 
             margin: 0px; 
@@ -67,21 +67,21 @@
            
     /* USER AND CHAT */
     
-    .user-container {width:         235px; 
+    .user-container {width:         240px; 
                      margin-bottom: 10px; 
                      position:      fixed; 
                      top:           10px; 
                      right:         10px;
                      background-color: white;}
     
-    .chat-container {width: 235px; 
+    .chat-container {width: 240px; 
                      margin-bottom: 10px;
                      position:      fixed; 
                      bottom:        10px; 
                      right:         10px;
                      background-color: white;}
     
-    .chat-input {width:235px;}
+    .chat-input {width:231px;}
 	
   </style>
 
@@ -140,7 +140,7 @@
       <td class="tight">
         <button id="collect"    onclick="collect_all_cards();">Get Dec(K)</button>
         <button id="shuffle"    onclick="shuffle();">(Z)huffle</button>
-        <button id="deal"       onclick="deal();">Dea(L)</button>
+        <button id="deal"       onclick="deal(event);">Dea(L)</button>
       </td>
     </tr>
     
@@ -151,8 +151,10 @@
 
     <!-- chat area -->
     
-    <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2" width="100%"/></form>
     <table class="tight">
+      <tr><td class="tight">
+        <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2" width="100%"/></form>
+      </td></tr>
       <tr>
         <td class="tight">
           <button id="pot" onclick="collect_pot();">Collect (P)ot</button>

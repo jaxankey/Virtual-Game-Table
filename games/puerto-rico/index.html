@@ -25,7 +25,7 @@
 
 	
   
-    body  { font:    14px Helvetica, Arial;
+body  { font:    14px Helvetica, Arial;
             padding: 0px;
             margin:  0px;}
 
@@ -67,18 +67,17 @@
            
     /* USER AND CHAT */
     
-    .user-container {width:         235px; 
+    .user-container {width:         240px; 
                      margin-bottom: 20px; 
                      position:      fixed; 
                      top:           20px; 
                      right:         20px;
                      background-color: white;}
-    .chat-container {width:         235px; 
+    .chat-container {width:         240px; 
                      position:      fixed; 
                      bottom:        20px; 
                      right:         20px;
                      background-color: white;}
-    
     .chat-input {width:235px;}
 	
   </style>
@@ -132,10 +131,10 @@
   <div id="chat" class="chat-container raised">
     <!-- user info -->
     <table class="tight" width="100%"><tr>
-      <td class="tight">
+     <td class="tight">
         Name:
       </td><td class="tight">
-        <input id="name" onchange="name_onchange()" maxlength=16 autocomplete="off" value="n00b" style="width: 90%"/>
+        <input id="name" onchange="name_onchange()" maxlength=16 autocomplete="off" value="n00b" style="width: 70px"/>
       </td><td class="tight">
         <select id="teams" onchange="team_onchange()"></select>
       </td>
@@ -146,7 +145,7 @@
 
     <!-- chat area -->
     
-    <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2" width="100%"/></form>
+    <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2"/></form>
     
   </div>
  
