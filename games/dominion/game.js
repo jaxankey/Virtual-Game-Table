@@ -143,7 +143,7 @@ curse  = add_cards(30, 'curse.jpg');
 ///////////////
 // AVATARS
 //////////////
-board.new_piece_scale               = 5;
+board.new_piece_scale               = 3;
 board.new_piece_rotates_with_canvas = false;
 board.new_piece_physical_shape      = 'inner_circle';
 board.add_avatars();
@@ -195,7 +195,7 @@ function setup(resources) {
   make_piles([estate  .slice(teams.length*3+N, 1000), 
               duchy   .slice(N,1000),
               province.slice(N,1000),
-              curse   .slice((teams.length-1)*10,1000)], -dx*2, 4500-dy, dx);
+              curse   .slice((teams.length-1)*10,1000)], -dx*1.5, 4500-dy, dx);
 
 
   // choose 10 resources randomly if not specified
@@ -220,7 +220,7 @@ function setup(resources) {
   make_piles(others, -dx*7, 4500, dx);
 
   // Avatars
-  board.expand_pieces(board.avatars, 8, 0, 5100, 500, 500, 0, 0, 0);
+  board.expand_pieces(board.avatars, 8, 0, 5300, 400, 400, 0, 0, 0);
 
 }
 
