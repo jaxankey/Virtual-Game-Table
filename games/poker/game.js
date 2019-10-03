@@ -220,11 +220,13 @@ function collect_all_cards() {
   // Get the target for the deck
   if(team == 0 || team == 9) {
     team_angle = board.r_target;
-    var d = {x:0, y:0};
+    var d  = {x:0, y:0};
+    var dd = rotate_vector(1, 11, team_angle);
   }
   else {
     team_angle=45*(team-1);
-    var d = rotate_vector(R1*0.289, R1*0.75, team_angle);
+    var d  = rotate_vector(R1*0.289, R1*0.75, team_angle);
+    var dd = rotate_vector(R1*0.289, R1*0.77, team_angle);
   }
 
   // collect the cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
@@ -232,8 +234,7 @@ function collect_all_cards() {
   
   // Dealer space underneath
   dealer.send_to_bottom();
-  var d = rotate_vector(R1*0.289, R1*0.77, team_angle);
-  dealer.set_target(d.x,d.y,-team_angle);
+  dealer.set_target(dd.x,dd.y,-team_angle);
 }
 
 
