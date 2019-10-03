@@ -124,6 +124,7 @@ dealer.is_tray = true;
 /////////////////////
 // AVATARS
 /////////////////////
+
 board.new_piece_scale               = 0.7;
 board.new_piece_rotates_with_canvas = false;
 board.new_piece_physical_shape      = 'inner_circle';

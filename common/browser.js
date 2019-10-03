@@ -3504,7 +3504,7 @@ BOARD.prototype.get_piece_datas = function() {
 
     // add to all the arrays
     piece_datas.push({
-      id: p.i,
+      id: p.id,
       x:  p.x_target,
       y:  p.y_target,
       r:  p.r_target,
@@ -3564,7 +3564,11 @@ BOARD.prototype.get_piece_datas_from_string = function(s) {
 }
 
 BOARD.prototype.save = function() {
-  var text     = this.get_piece_datas_string();
+
+  // Convert the current configuration into a string.
+  var text = this.get_piece_datas_string();
+
+  // Get the filename.
   var filename = get_date_string() + ' ' + this.game_name + '.txt';
 
   // Create a link element for downloading
