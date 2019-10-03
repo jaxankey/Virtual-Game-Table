@@ -299,7 +299,7 @@ function collect_pot() {
 }
 
 // Deal the card with the supplied image index
-function deal(event, single) {
+function deal(event, single, up) {
   
   // First move the dealer rectangle to the bottom.
   dealer.send_to_bottom();
@@ -320,8 +320,8 @@ function deal(event, single) {
     p = sps.pop();
     if(p) {
       p.set_target(board.mouse.x+(Math.random()-0.5)*30, board.mouse.y+(Math.random()-0.5)*30, ar-90+720);
-      if(event.shiftKey) p.active_image = 1;
-      else               p.active_image = 0;
+      if(event.shiftKey || up) p.active_image = 1;
+      else                     p.active_image = 0;
       p.send_to_top();
     }
   }
@@ -380,7 +380,10 @@ function after_event_keydown(e) {
 }
 
 function after_event_mousedown(e,mouse) {
-  if(e.button != 0 && e.button != 2 || e.ctrlKey) deal(e,true);
+  if(e.button != 0 && e.button != 2 || e.ctrlKey) {
+    if(e.button == 2) deal(e,true,true); // face up
+    else              deal(e,true);
+  }
 }
 
 // Overloading the mouse up function
