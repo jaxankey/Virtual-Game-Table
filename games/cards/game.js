@@ -206,10 +206,12 @@ function deal(event, single) {
     var a = Math.atan2(y,x)*180.0/Math.PI;
     var ar = Math.round(a/45)*45;
     p = sps.pop();
-    p.set_target(board.mouse.x+(Math.random()-0.5)*50, board.mouse.y+(Math.random()-0.5)*50, ar-90+720);
-    if(event.shiftKey) p.active_image = 1;
-    else               p.active_image = 0;
-    p.send_to_top();
+    if(p) {
+      p.set_target(board.mouse.x+(Math.random()-0.5)*30, board.mouse.y+(Math.random()-0.5)*30, ar-90+720);
+      if(event.shiftKey) p.active_image = 1;
+      else               p.active_image = 0;
+      p.send_to_top();
+    }
   }
 
   // Throw one card to each active team
@@ -263,6 +265,10 @@ function after_event_keydown(e) {
     break;
 
   }
+}
+
+function after_event_mousedown(e,mouse) {
+  if(e.button != 0 && e.button != 2 || e.ctrlKey) deal(e,true);
 }
 
 /**

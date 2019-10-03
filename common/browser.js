@@ -2202,7 +2202,13 @@ BOARD.prototype.event_mousedown = function(e) {
   
   // report the coordinates
   console.log("event_mousedown", this.mouse);
-  
+
+  // Bail if we don't have mouse 0 or 2 (left and right clicks).
+  if(e.button != 0 && e.button != 2 || e.ctrlKey) {
+    after_event_mousedown(e, this.mouse);
+    return;
+  }
+
   // If we're not in someone else's team zone, see if we have clicked on a piece.
   
   // Figure out the team zone we clicked in.
@@ -2247,7 +2253,8 @@ BOARD.prototype.event_mousedown = function(e) {
               this.trigger_h_stream = true;
             }
 
-            // Sort the selected pieces so they match the order of the stack.
+            // all done for now
+            after_event_mousedown(e, this.mouse);
             return;
 
           } // Done with shift key toggling
@@ -2281,6 +2288,7 @@ BOARD.prototype.event_mousedown = function(e) {
           }
 
           // Quit out of the whole function
+          after_event_mousedown(e, this.mouse);
           return;
       } // end of mouse click near movable piece
     } // end of loop over all pieces
@@ -2306,6 +2314,11 @@ BOARD.prototype.event_mousedown = function(e) {
     this.client_selection_boxes[my_index] = {x0: this.mouse.x, y0: this.mouse.y,
                                              x1: this.mouse.x, y1: this.mouse.y,
                                              r : this.r,};
+  
+  after_event_mousedown(e, this.mouse);
+}
+function after_event_mousedown(event_data, mouse) {
+  console.log("after_event_mousedown(event_data, mouse): feel free to write your own function.");
 }
 
 BOARD.prototype.event_mouseover = function(e) {
@@ -2468,7 +2481,7 @@ BOARD.prototype.event_mouseup = function(e) {
 }
 
 // User function.
-function after_event_mouseup(e) {return;}
+function after_event_mouseup(e) {console.log('after_event_mouseup(event_data): feel free to write your own function.');}
 
 BOARD.prototype.event_dblclick = function(e) {
   console.log('event_dblclick', e);
