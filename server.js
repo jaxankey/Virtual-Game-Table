@@ -161,8 +161,6 @@ app.get('/common/avatars/:i', function(request, response) {send(response, 'commo
 app.get('/private/avatars/:i',function(request, response) {send(response, 'private/avatars/'+request.params.i);} );
   
 // Last known board configuration
-
-// Piece information
 pieces = [];
 /** each piece contains 
  * id   piece id
@@ -195,31 +193,10 @@ client_is_holding         = []; // lists of last known held piece indices for ea
 client_selected_piece_ids = []; // Lists of the last known selected pieces for each socket
 client_drag_offsets       = []; // list of [dx,dy] offset coordinates for each held piece
 
-/**
- * Data sent by clients:
- * 
- * Disconnecting
- *  'disconnect' ()
- * 
- * User information
- *  'user' (name, team) 
- * 
- * Chat message 
- *  'chat' (msg)
- *  
- * 
- * Coordinates of multiple pieces
- *  'u' (incoming_pieces, clear)  
- * 
- * Piece selected 
- *  's' (piece_ids, team_number)
- *    piece_ids   : list of piece ids (different than piece indices).
- *    team_number : team that selected (or deselected) the piece
- *  On the client side, selected_pieces is a per-team list of indices.
- *  Meanwhile, the held_piece_ids data (not implemented) should be a per-client list of indices.
-*/
 
-// Thread for what to do with new client
+///////////////////////////////////////////
+// Thread for what to do with new client //
+///////////////////////////////////////////
 io.on('connection', function(socket) {
   
   // update the global list of clients
@@ -235,14 +212,14 @@ io.on('connection', function(socket) {
 
   // Tell this user their id.
   socket.emit('id', last_client_id);
-
-  // send last full update -- now handled by client query.
-  //log('sending last known config:', pieces.length, "pieces");
-  //socket.emit('u', pieces);
   
   // Welcome them to the server.
   socket.emit('chat', '<b>Server:</b> Welcome!');
   
+  ////////////////////////////
+  // Queries
+  ////////////////////////////
+
   // Query for avatar paths
   socket.on('avatars?', function() {
     // get the client id
@@ -271,19 +248,7 @@ io.on('connection', function(socket) {
     // Send the selected pieces of all the other clients
     for(var n in client_selected_piece_ids) 
       if(n != client_index) socket.emit('s', client_selected_piece_ids[n], client_ids[n]);
-
-    // Send the team zones
-    /*socket.emit('tz', team_zones);*/
   });
-
-  /* socket.on('tz', function(incoming_team_zones) {
-    
-    log('tz:', incoming_team_zones);
-    team_zones = [...incoming_team_zones];
-
-    // send messages to everyone but this socket
-    socket.broadcast.emit('tz', team_zones);
-  });*/
 
   // Received a name or team change triggers a full user information dump, including held pieces.
   socket.on('user', function(name, team) {
@@ -301,12 +266,12 @@ io.on('connection', function(socket) {
     client_teams[i] = team;
     log('User index', i, 'change:', old_name + " -> " + client_names[i], ' and ' + old_team, '->', team);
     
-    // Send a chat with this information
+    // Send a chat to everyone with this information
     if(old_name != client_names[i] && old_name != 'n00b') 
-      socket.broadcast.emit('chat', '<b>Server:</b> '+old_name+' is now '+client_names[i]);
+      io.emit('chat', '<b>Server:</b> '+old_name+' is now '+client_names[i]);
     
     if(old_team != client_teams[i]) 
-      socket.broadcast.emit('chat', '<b>Server:</b> '+client_names[i]+" joins Team "+String(team));
+      io.emit('chat', '<b>Server:</b> '+client_names[i]+" joins Team "+String(team));
     
     // tell everyone about the current list.
     io.emit('users', client_ids, client_names, client_teams, client_is_holding, client_selected_piece_ids);
@@ -339,18 +304,9 @@ io.on('connection', function(socket) {
     client_id    = client_ids[client_index];
     log('m:', client_id, x, y, hp_ids.length, hp_coords.length, client_r, selection_box);
     
-    // send messages to everyone but this socket
+    // This information will never be sent by another client, because it only 
+    // comes from the person holding the pieces. As such, send messages to everyone ELSE only.
     socket.broadcast.emit('m', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
-  });
-
-  socket.on('test', function(x) {
-    
-    // Figure out the client
-    client_index = client_sockets.indexOf(socket);
-    log('test:', x);
-    
-    // send messages to everyone but this socket
-    socket.emit('test', x);
   });
 
   /**
@@ -362,8 +318,9 @@ io.on('connection', function(socket) {
     client_index = client_sockets.indexOf(socket);
     log(client_index, 'u:', incoming_pieces.length, 'pieces');
 
-    // emit to the rest
-    socket.broadcast.emit('u', incoming_pieces);
+    // Emit to EVERYONE, including the original client, to resolve collisions.
+    // The client software should ignore data about pieces they're holding.
+    io.emit('u', incoming_pieces); 
 
     // Now update our private memory to match!
 
@@ -406,7 +363,6 @@ io.on('connection', function(socket) {
       // increment the subsequent piece indices
       for(var j=p.n+1; j<pieces.length; j++) pieces[j].n++;
     }
-    
   });
 
   // Deal with selection changes at the team level, 
@@ -422,8 +378,8 @@ io.on('connection', function(socket) {
     // pieces is a list
     log('s: client', client_id, piece_ids.length, 'pieces');
 
-    // emit to everyone else
-    socket.broadcast.emit('s', piece_ids, client_id);
+    // emit to EVERYONE, including the sender
+    io.emit('s', piece_ids, client_id);
   });
 
   // someone sent a held pieces change
@@ -436,10 +392,27 @@ io.on('connection', function(socket) {
     // pieces is a list
     log('h:', client_id, 'is_holding =', is_holding);
 
-    // emit to everyone else
-    socket.broadcast.emit('h', client_id, is_holding);
+    // emit to EVERYONE, including the sender (avoids network lag issues)
+    io.emit('h', client_id, is_holding);
   });
   
+
+
+
+  // Test function to ping back.
+  socket.on('ping', function(x) {
+    
+    // Figure out the client
+    client_index = client_sockets.indexOf(socket);
+    log('ping:', x);
+    
+    // send messages to just this socket
+    socket.emit('ping', x);
+  });
+
+
+
+
   // handle the disconnect
   socket.on('disconnect', function() {
     
