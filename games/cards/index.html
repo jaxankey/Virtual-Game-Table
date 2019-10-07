@@ -34,11 +34,11 @@
     div   { display: table;}
     
     canvas{ vertical-align: bottom;}
-
+    
     .tight{ padding: 0px; 
             border: 0px; 
             margin: 0px; 
-            margin-bottom: 5px; 
+            margin-bottom: 0px; 
             width:0%;}
 
     .raised { padding:    5px;
@@ -81,7 +81,7 @@
                      right:         10px;
                      background-color: white;}
     
-    .chat-input {width:235px;}
+    .chat-input {width:231px;}
 	
   </style>
 
@@ -106,7 +106,7 @@
       <tr>
       
         <td class="tight" colspan="1">
-          <a href="/controls" target="new">Controls</a>
+          <a href="/controls" target="new">Introduction</a>
         </td>
       </tr>
       <tr>
@@ -121,6 +121,19 @@
     </table>
     
     <ul id="clients" class="clients"></ul>
+
+    <!-- Cards and chips controls -->
+    <table class="tight">
+    <tr><td class="tight" style="color:blue;">
+        <p></p>
+
+        <button id="collect"    onclick="collect_all_cards();" style="color:blue;">Get / Shuffle Dec[K]</button>
+        <button id="deal"       onclick="deal(event);" style="color:blue;">Dea[L] All</button>
+        <p style="color:blue">Deal [O]ne with [Ctrl]+[Mouse1]</p>
+        Use [Shift] or [Mouse2] for face [U]p
+
+    </td></tr>
+  </table>
   </div>
   
     
@@ -136,13 +149,7 @@
         <select id="teams" onchange="team_onchange()"></select>
       </td>
     </tr>
-    <tr>
-      <td class="tight">
-        <button id="collect"    onclick="collect_all_cards();">Get / Shuffle Dec(K)</button>
-        <button id="deal"       onclick="deal(event);">Dea(L)</button>
-        (O)ne
-      </td>
-    </tr>
+    
     
   </table>
     
@@ -151,8 +158,13 @@
 
     <!-- chat area -->
     
-    <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2" width="100%"/></form>
+    <table class="tight">
+      <tr><td class="tight">
+        <form width="100%"><input id="chat-box" class="chat-input" autocomplete="off" tabindex="2" width="100%"/></form>
+      </td></tr>
+
     
+    </table>
   </div>
  
   
