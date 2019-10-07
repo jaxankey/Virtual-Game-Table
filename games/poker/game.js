@@ -345,8 +345,8 @@ function deal(event, single, up) {
         // Pop it, send it to the player, and put it on top of the stack.
         p = sps.pop();
         p.set_target(d.x, -d.y, -(team-1)*45+720);
-        if(event.shiftKey) p.active_image = 1;
-        else               p.active_image = 0;
+        if(event.shiftKey || event.button==2) p.active_image = 1;
+        else                                  p.active_image = 0;
         p.send_to_top()
       } 
     } // end of loop over active teams
