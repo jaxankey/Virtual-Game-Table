@@ -254,12 +254,13 @@ function after_event_keydown(e) {
     case 79: // O for deal One
       deal(e,true);
     break;
+    case 85: // U for deal one Up
+      deal(e, true, true);
+    break;
     case 90: // Z for shuffle
       if(board.client_selected_pieces[get_my_client_index()].length==0) shuffle();
     break;
-    case 80: // P for Pot
-      collect_pot();
-    break;
+    
     case 75: // Get dec(K)
       collect_all_cards();
     break;
