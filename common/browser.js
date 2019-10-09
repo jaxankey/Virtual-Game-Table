@@ -13,7 +13,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License 
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenfses/>.
  */
 
 // TO DO: massive overhaul & code simplification:
@@ -39,7 +39,7 @@
 //// OPTIONS
 
 var stream_interval_ms = 150;   //150;   // how often to send a stream update (ms)
-var update_interval_ms = 10000; // how often to send a full update (ms)
+var update_interval_ms = 20000; // how often to send a full update (ms)
 var draw_interval_ms   = 10;    // how often to draw the canvas (ms)
 
 if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {

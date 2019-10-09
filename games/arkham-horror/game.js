@@ -420,6 +420,8 @@ function setup() {
   clues[9].set_target(135.61813311487606, -840.816635940202);
   clues[10].set_target(132.3928565620677, -1092.8626848277966);
   
+  // Deselecte everything
+  board.deselect_pieces();
 }
 
 // Start the show!
