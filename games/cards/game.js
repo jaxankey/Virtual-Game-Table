@@ -138,6 +138,9 @@ function setup() {
       
   // Avatars
   board.expand_pieces(board.avatars, 8, 0, 1000, 100, 100, 0, 0, 0);
+
+  // Deselect everything
+  board.deselect_pieces();
 }
 
 function collect_all_cards() {
@@ -147,7 +150,7 @@ function collect_all_cards() {
   var team = get_team_number();
 
   // Unselect all cards from all clients
-  for(var n in cards) board.deselect_piece(cards[n]);
+  board.deselect_pieces(cards);
 
   // Make them your selection if they're within R2 (so you can disable cards)
   var sps = [];

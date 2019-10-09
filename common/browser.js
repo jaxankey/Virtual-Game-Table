@@ -2205,6 +2205,14 @@ BOARD.prototype.deselect_piece = function(piece) {
   }
 }
 
+/**
+ * Deselects the supplied list (or all pieces if none supplied)
+ */
+BOARD.prototype.deselect_pieces = function(pieces) {
+  pieces = or_default(pieces, board.pieces);
+  for(var n in pieces) this.deselect_piece(pieces[n]);
+}
+
 // whenever someone clicks the mouse
 BOARD.prototype.event_mousedown = function(e) {
   
