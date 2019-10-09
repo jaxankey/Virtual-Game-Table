@@ -147,14 +147,7 @@ function collect_all_cards() {
   var team = get_team_number();
 
   // Unselect all cards from all clients
-  for(n in cards) { var p = cards[n];
-    
-    // Loop over every client, making sure it's not in their selected pieces.
-    for(var i in board.client_selected_pieces) {
-      var j = board.client_selected_pieces[i].indexOf(p);
-      if(j>=0) board.client_selected_pieces[i].splice(j,1);
-    }
-  }
+  for(var n in cards) board.deselect_piece(cards[n]);
 
   // Make them your selection if they're within R2 (so you can disable cards)
   var sps = [];

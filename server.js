@@ -369,11 +369,14 @@ io.on('connection', function(socket) {
   // and held piece changes at the client level.
 
   // someone sent a selection change
-  socket.on('s', function(piece_ids) {
+  socket.on('s', function(piece_ids, client_id) {
     
-    // get the client id
-    var client_index = client_sockets.indexOf(socket);
-    var client_id    = client_ids[client_index];
+    // Optional client_id supplied by user
+    if(client_id == undefined) {
+      // get the client id
+      var client_index = client_sockets.indexOf(socket);
+      var client_id    = client_ids[client_index];
+    }
 
     // pieces is a list
     log('s: client', client_id, piece_ids.length, 'pieces');

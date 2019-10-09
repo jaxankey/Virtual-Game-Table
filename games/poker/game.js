@@ -204,11 +204,6 @@ function collect_all_cards() {
   // Unselect all cards from all clients
   for(var n in cards) board.deselect_piece(cards[n]);
 
-  // Normally, we only send selection changes about our own selection. Here we need to 
-  // send information about other people's changes too!
-  for(var n in board.client_selected_pieces) 
-    my_socket.emit('s', board.client_selected_pieces[n], n);
-
   // Make them your selection if they're within R2 (so you can disable cards)
   var sps = [];
   for(var n in cards) {

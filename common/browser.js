@@ -3397,7 +3397,8 @@ BOARD.prototype.send_stream_update = function() {
  
   // Always trigger a redraw to handle things like slow loading of images
   this.trigger_redraw = true;
-
+  var my_index = get_my_client_index();
+  
   // Allows one to add a delay to an update, e.g., when shuffle animating.
   if(this.ignore_next_streams > 0) {
     this.ignore_next_streams--;
@@ -3408,36 +3409,51 @@ BOARD.prototype.send_stream_update = function() {
   var my_index = get_my_client_index();
   var sps = this.client_selected_pieces[my_index];
   
+
+
   // Allows one to temporarily highlight some pieces (countdown)
   if(this.clear_selected_after > 0) {
     this.clear_selected_after--;
     if(this.clear_selected_after == 0) this.client_selected_pieces[my_index].length = 0;
   }
 
+
+
   // If we're charging a hadoken, scramble the selected images
   if(this._hadoken_charge_t0 != null && sps.length)
     for(n=0; n<sps.length; n++) sps[n].active_image = rand_int(0,sps[n].images.length-1);
 
-  // We should only check / send if our own team's piece selection has changed  
-  // Get the selected pieces
-  var sp_ids = [];
-  for(var i in sps) sp_ids.push(sps[i].id);
-  
-  // If the arrays are different
-  if(!array_compare(sps, this.client_previous_selected_pieces[my_index])) { 
-    
-    console.log('send_stream_update(): Detected a selection change.');
-    
-    // emit the selection changed event
-    my_socket.emit('s', sp_ids, my_index);
 
-    // Remember the change so this doesn't happen again. 
-    // Make a copy, not a reference!
-    this.client_previous_selected_pieces[my_index] = [...sps]; 
-  
-  } // end of selected pieces have changed
- 
-  // If we've triggered an h stream
+
+  // Check if any of the client selections have changed
+  for(var client_index in this.client_selected_pieces) {
+    
+    // Get this client's selected pieces and id
+    var csps = this.client_selected_pieces[client_index];
+    var client_id = this.client_ids[client_index];
+
+    // If the current selection doesn't match the previous
+    if(!array_compare(csps, this.client_previous_selected_pieces[client_index])) { 
+
+      console.log('send_stream_update(): Detected a selection change, client_index =', client_index, ', my_index =', my_index);
+      
+      // Assemble just the selected piece ids
+      var csp_ids = [];
+      for(var i in csps) csp_ids.push(csps[i].id);  
+
+      // emit the selection changed event
+      console.log('Sending s with', csp_ids.length, 'pieces, client_id =', client_id, ', my_id =', this.client_id, csp_ids);
+      my_socket.emit('s', csp_ids, client_id);
+
+      // Remember the change so this doesn't happen again. 
+      // Make a copy, not a reference!
+      this.client_previous_selected_pieces[client_index] = [...csps]; 
+    } // end of selected pieces have changed
+  } // end of loop over clients
+
+
+
+  // If we've manually triggered an h stream
   if(this.trigger_h_stream) {
     console.log('send_stream_update(): Detected held piece change.');
 
@@ -3449,6 +3465,8 @@ BOARD.prototype.send_stream_update = function() {
     my_socket.emit('h', this.client_is_holding[my_index]);
 
   } // end of held pieces have changed
+
+
 
   // update the mouse coordinates (if they're different!)
   if (this.mouse.x  != this.previous_mouse.x || 
@@ -3467,6 +3485,10 @@ BOARD.prototype.send_stream_update = function() {
       p.previous_r = p.r_target;
     }
     
+    // Get the selected piece ids
+    var sp_ids = [];
+    for(var i in sps) sp_ids.push(sps[i].id);  
+
     // emit the mouse update event, which includes the held piece ids and their target coordinates,
     // So that the hand and pieces move as a unit. 
     console.log('Sending m:', this.mouse.x, this.mouse.y, sp_ids.length, 'pieces');
@@ -3478,6 +3500,8 @@ BOARD.prototype.send_stream_update = function() {
     this.previous_r     = this.r_target;
   } // end of updating mouse coordinates
   
+
+
   // Now loop over ALL the pieces to see if their coordinates or position have changed
   var changed_pieces = [];
   for (var n=0; n<this.pieces.length; n++) {
@@ -3510,7 +3534,6 @@ BOARD.prototype.send_stream_update = function() {
     } // end of "if anything has changed" about this piece
   } // end of loop over all pieces
   
-
   // if we found something, send it
   if (changed_pieces.length > 0) {
     console.log('sending "u" with', changed_pieces.length, 'pieces');
@@ -3803,7 +3826,7 @@ server_selectionchange = function(piece_ids, client_id){
   if(!board._ready_for_packets) return;
   
   // server sent a selection change
-  console.log('Received s:', piece_ids, client_id);
+  console.log('Received s: client_id =', client_id, ', my_id =', board.client_id, ', pieces =', piece_ids);
   
   // Get the client index
   client_index = board.client_ids.indexOf(client_id);
