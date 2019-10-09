@@ -2199,7 +2199,6 @@ BOARD.prototype.deselect_piece = function(piece) {
   // Find the piece in the client's array
   var i = this.client_selected_pieces[client_index].indexOf(piece);
   if(i < 0) console.log('OOPS! deselect_piece failed!');
-
   else {
     // Pop the piece out of our selection.
     this.client_selected_pieces[client_index].splice(i,1); 
@@ -3842,15 +3841,18 @@ server_heldchange = function(client_id, is_holding) {
   client_index = board.client_ids.indexOf(client_id);
 
   // Server sent a change in held pieces
-  console.log('Received h: client id =', client_id, 'index =', client_index, 'is_holding =', is_holding);
+  console.log('Received h: client id =', client_id, 'client index =', client_index, 'is_holding =', is_holding);
   
-  // Update whether the client's selection is held
-  board.client_is_holding[client_index] = is_holding;
-  
-  // Make the hand appear again
-  if(client_index != get_my_client_index()) 
-    board.client_hands[client_index].t_previous_move = Date.now();
+  // Don't let the server tell us if we're holding something!
+  if(client_index != get_my_client_index()) {
+    
+    // Update the held piece status
+    board.client_is_holding[client_index] = is_holding;
 
+    // Make the hand appear again.
+    board.client_hands[client_index].t_previous_move = Date.now();
+  }
+  
   // trigger a redraw
   board.trigger_redraw = true;
 }
