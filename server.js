@@ -312,8 +312,7 @@ io.on('connection', function(socket) {
   /**
    * Someone sent information about a bunch of pieces.
    */
-  socket.on('u', function(incoming_pieces, clear) {
-
+  function update_pieces(incoming_pieces, clear) {
     // pieces is a list
     client_index = client_sockets.indexOf(socket);
     log(client_index, 'u:', incoming_pieces.length, 'pieces');
@@ -330,14 +329,14 @@ io.on('connection', function(socket) {
     // Now we wish to overwrite all the existing pieces with the new ones,
     // and make sure they're in the right places.
 
-    // Sort the piece datas by n's (must be increasing!)
+    // Sort the piece datas by n's (position in the stack must be increasing for the algorithm below)
     incoming_pieces.sort(function(a, b){return a.n-b.n});
 
-    // run through the list of ids, find the index m in the stack of the pieces by id
+    // Pop all the incoming pieces out of the existing list (if present)
     for(var i in incoming_pieces) {
-      pd = incoming_pieces[i]; // incoming piece
+      pd = incoming_pieces[i]; 
       
-      // find the current index
+      // find the index in the current list
       var m = find_piece(pd.id); // index of incoming piece
       
       // if the piece exists, pop it (to be replaced below) and update the rest
@@ -346,24 +345,26 @@ io.on('connection', function(socket) {
         // Remove it
         pieces.splice(m,1);
 
-        // Decrement the indices of the subsequent pieces
+        // Decrement the indices of the subsequent pieces so they match the actual indices
         for(var j=m; j<pieces.length; j++) pieces[j].n--;
       }
     } // end of loop over supplied pieces
 
-    // Loop over the pieces again to insert them into the main stack, which currently should not contain them. We do this 
-    // in separate loops so that pieces removed from random locations and sent to 
+    // Loop over the incoming pieces again to insert them into the main stack, which currently should not contain them. 
+    // We do this in separate loops so that pieces removed from random locations and sent to 
     // random locations do not interact. The value of ns is the final value in the pieces array.
     for(var i in incoming_pieces) {
       p = incoming_pieces[i]; // incoming piece
 
-      // insert the piece at it's index (WHAT IF THIS IS HIGHER THAN THE SIZE OF THE STACK?)
+      // insert the piece at it's index
+      if(p.n > pieces.length) io.emit('chat', 'Server warning: p.n='+String(p.n)+' length='+pieces.length);
       pieces.splice(p.n, 0, p);
       
       // increment the subsequent piece indices
       for(var j=p.n+1; j<pieces.length; j++) pieces[j].n++;
     }
-  });
+  }
+  socket.on('u', update_pieces);
 
   // Deal with selection changes at the team level, 
   // and held piece changes at the client level.

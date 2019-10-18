@@ -128,8 +128,8 @@
           <p></p>
 
           <button id="collect"    onclick="collect_all_cards();" style="color:blue;">Get / Shuffle Dec[K]</button>
-          <button id="deal"       onmousedown="deal(event);" oncontextmenu="return false;" style="color:blue;">Dea[L] to All</button>
-          <p style="color:blue">Deal [O]ne with [Ctrl]+[Mouse1]</p>
+          <button id="deal"       onmousedown="deal(event, false, event.ctrlKey);" oncontextmenu="return false;" style="color:blue;">Dea[L] to All</button>
+        <p style="color:blue">Deal [O]ne with [Ctrl]+[Mouse1]</p>
           <p style="color:blue">Use [Shift] or [Mouse2] for face [U]p</p>
           
           <button id="pot" onclick="collect_pot();" style="color:blue;">Collect Pot</button>

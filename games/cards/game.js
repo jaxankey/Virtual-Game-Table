@@ -184,7 +184,8 @@ function collect_pot() {return;}
 
 // Deal the card with the supplied image index
 function deal(event, single, up) {
-  
+  console.log('deal()', event, single, up);
+
   // First move the dealer rectangle to the bottom.
   dealer.send_to_bottom();
   
@@ -205,7 +206,7 @@ function deal(event, single, up) {
     if(p) {
       p.set_target(board.mouse.x+(Math.random()-0.5)*30, board.mouse.y+(Math.random()-0.5)*30, ar-90+720);
       if(event.shiftKey || up) p.active_image = 1;
-      else                     p.active_image = 0;
+      else                                      p.active_image = 0;
       p.send_to_top();
     }
   }
@@ -228,8 +229,8 @@ function deal(event, single, up) {
         // Pop it, send it to the player, and put it on top of the stack.
         p = sps.pop();
         p.set_target(d.x, -d.y, -(team-1)*45+720);
-        if(event.shiftKey || event.button==2) p.active_image = 1;
-        else                                  p.active_image = 0;
+        if(event.shiftKey || event.button==2 || up) p.active_image = 1;
+        else                                        p.active_image = 0;
         p.send_to_top()
       } 
     } // end of loop over active teams

@@ -1767,10 +1767,14 @@ BOARD.prototype.collect_pieces = async function(pieces,x,y,shuffle,active_image,
 
     // Animation: randomize rotation and displacement
     for(var n in pieces) { var p = pieces[n];
-    // x,y,r,angle,disable_snap,immediate
+      
+      // Send the piece to the top of the stack in the newly shuffled order.
+      //p.send_to_top();
+
+      // x,y,r,angle,disable_snap,immediate
       p.set_target(x + (Math.random()-0.5)*this.shuffle_distance,
                    y + (Math.random()-0.5)*this.shuffle_distance,
-                   (Math.random()-0.5)*720, null);
+                   -(Math.random())*720, null);
 
       // If we have an active image specified, set it
       if(active_image != null) p.set_active_image(active_image);
@@ -1794,9 +1798,9 @@ BOARD.prototype.collect_pieces = async function(pieces,x,y,shuffle,active_image,
   // Collect all selected piece to the specified coordinates
   for(var i in pieces) {
     // Put this piece on top, in order, regardless of from_top
-    this.pop_piece(this.pieces.indexOf(pieces[i])); // take it out, but avoid triggering an update for the rest.
-    this.pieces.push(pieces[i]);                    // Push the piece on top, triggering an update
+    pieces[i].send_to_top();
 
+    // Get the piece from top or bottom for it's position & offset.
     if(from_top) var p = pieces[pieces.length-i-1];
     else         var p = pieces[i];
 
@@ -2148,7 +2152,7 @@ BOARD.prototype.find_selected_piece_client_index = function(piece) {
  */
 BOARD.prototype.select_piece = function(piece) {
 
-  console.log('select_piece', piece.id);
+  //console.log('select_piece', piece.id);
 
   // Get my index and selected pieces array
   var my_index = get_my_client_index();
@@ -2366,7 +2370,9 @@ BOARD.prototype.event_mouseout = function(e) {
 // whenever the mouse moves in the canvas
 BOARD.prototype.event_mousemove = function(e) { 
   
-  // Make sure the board is in focus.
+  // get my information
+  var team     = get_team_number();
+  var my_index = get_my_client_index(); // my_index = -1 until the server assigns us one.
 
   // get the new mouse coordinates
   if(e) {
@@ -2375,10 +2381,6 @@ BOARD.prototype.event_mousemove = function(e) {
     this.mouse_event = e;
   }
 
-  // get the team index
-  var team     = get_team_number();
-  var my_index = get_my_client_index(); // my_index = -1 until the server assigns us one.
-  
   // if we're holding pieces, move them with us
   if(my_index >= 0 && this.client_is_holding[my_index]) { 
     
@@ -2437,9 +2439,7 @@ BOARD.prototype.event_mousemove = function(e) {
         }
         
         // Otherwise, deselect it.
-        else if(i >= 0 && !e.shiftKey) {
-          this.client_selected_pieces[my_index].splice(i,1);
-        }
+        else if(i >= 0 && !e.shiftKey) this.client_selected_pieces[my_index].splice(i,1);
       }
     } // End of loop over all pieces
 
@@ -3487,10 +3487,14 @@ BOARD.prototype.send_stream_update = function() {
       var p = sps[n];
       sp_coords.push([p.x_target, p.y_target, p.r_target]);
     
-      // update the last values so we don't double send this with a usual update
-      p.previous_x = p.x_target;
-      p.previous_y = p.y_target;
-      p.previous_r = p.r_target;
+      // DO NOT update the last values: here we send fast updates for the server to
+      // rebroadcast; the bigger 'u' updates triggered below will update the server's memory
+      // TO DO: This could be fixed at the server level too, which would save some bandwidth
+      // Alternatively, we could optionally send hand information with 'u' if the mouse has moved,
+      // so that the hands and selected pieces move in the same step.
+      //p.previous_x = p.x_target;
+      //p.previous_y = p.y_target;
+      //p.previous_r = p.r_target;
     }
     
     // Get the selected piece ids
