@@ -167,13 +167,15 @@ function get_team_zone_packets() {
 /**
  * Returns a list of active team indices.
  */
-function get_active_teams() {
+function get_active_teams(exclude) {
+  var exclude = or_default([0,9], exclude); 
+
   var teams = [];
   for(n in board.client_teams) {
 
     // If we don't already have this team and it's not the observer or admin, add it to the list!
-    if(!teams.includes(board.client_teams[n]) && ![0,9].includes(board.client_teams[n]))
-      teams.push(board.client_teams[n]);
+    if(!teams.includes(board.client_teams[n]) && !exclude.includes(board.client_teams[n]))
+      teams.push(parseInt(board.client_teams[n]));
   }
   return teams;
 }
@@ -567,7 +569,7 @@ function PIECE(board, id, image_paths, private_image_paths, scale) {
   this.is_tray                   = this.board.new_piece_is_tray; // whether selecting this piece selects those within its bounds and above it.
   this.collect_offset_x          = this.board.new_piece_collect_offset_x;
   this.collect_offset_y          = this.board.new_piece_collect_offset_y;
-  this.scale                     = or_default(board.new_piece_scale, scale);
+  this.scale                     = or_default(scale, board.new_piece_scale);
 
   // Index in the main piece stack (determines drawing order)
   this.previous_n = null;
@@ -1344,6 +1346,7 @@ function BOARD(canvas) {
   this.new_piece_rotates_with_canvas = true;
   this.new_piece_zooms_with_canvas   = true;
   this.new_piece_scale               = 1.0;
+  this.new_hand_scale                = 1.0;
   this.new_piece_physical_shape      = 'rectangle';
   this.new_piece_alpha               = 1.0;
   this.new_piece_box_x               = 0;
@@ -1900,7 +1903,7 @@ BOARD.prototype.expand_pieces = function(pieces, number_per_row, x, y, spacing_x
 BOARD.prototype.new_client_hand = function() {
   
   // create the hand
-  h = new PIECE(this, 0, []);
+  h = new PIECE(this, 0, [], [], this.new_hand_scale);
   h.t_fade_ms           = this.hand_fade_ms;
   h.zooms_with_canvas   = false;
   h.rotates_with_canvas = true;
@@ -3715,7 +3718,7 @@ server_avatar = function(avatar_paths) {
   for(var n in avatar_paths) board.avatars.push(board.add_piece([avatar_paths[n]], undefined, true));
 
   // Reset the scale
-  board.new_piece_scale = 1;
+  board.new_piece_scale = 1.0;
 }
 my_socket.on('avatars', server_avatar);
 

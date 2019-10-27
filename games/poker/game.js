@@ -54,13 +54,12 @@ board.add_team('blue',     ['hand_blue.png',  'fist_blue.png'  ], '#5599ff');
 board.add_team('green',    ['hand_green.png', 'fist_green.png' ], '#118855'); 
 board.add_team('violet',   ['hand_violet.png','fist_violet.png'], '#d62cff'); 
 board.add_team('brown',    ['hand_brown.png', 'fist_brown.png' ], '#883300'); 
-board.add_team('manager',  ['hand_white.png', 'fist_white.png' ], '#cccccc');
 
 // Set up the team zones based on the number of seats
 number_of_teams = 8;
 theta = 0.5*(360/number_of_teams)*Math.PI/180.0;  // Wedge angle in radians
 R1    = 500;                                      // Inner radius of team zones
-R2    = (R1*Math.cos(theta)+250)/Math.cos(theta); // Outer radius of team zones
+R2    = (R1*Math.cos(theta)+300)/Math.cos(theta); // Outer radius of team zones
 board.r_step = 360.0/number_of_teams;
 
 // Unrotated coordinates of the team zone (same for each team)
@@ -120,6 +119,9 @@ for(n in names) cards.push(board.add_piece(['cards/back.png', 'cards/'+names[n]+
 // Dealer space
 dealer = board.add_piece(['cards/dealer.png']);
 dealer.is_tray = true;
+
+// Fold plates
+folders = []; for(n=0; n<8; n++) folders.push(board.add_piece(['chips/playing.png', 'chips/folded.png']));
 
 /////////////////////
 // AVATARS
@@ -191,6 +193,9 @@ function setup() {
     board.collect_pieces(chips_white.slice(n*25+20, n*25+25), d.x, d.y, false, 0, 0, -n*board.r_step);
   }
 
+  // Folders
+  distribute_folders();
+
   // Avatars
   board.expand_pieces(board.avatars, 8, 0, 1000, 100, 100, 0, 0, 0);
 
@@ -232,45 +237,63 @@ function collect_all_cards() {
   // Dealer space underneath
   dealer.send_to_bottom();
   dealer.set_target(dd.x,dd.y,-team_angle);
+
+  // Redistribute folders
+  distribute_folders();
 }
 
+
+function fold(team) {
+    team = or_default(team, get_team_number());
+
+    // Deselect everything
+    board.deselect_pieces();
+
+    // Flip it.
+    folders[team].set_active_image(1);
+
+    // Get all the cards in the team zone
+    for(var n=0; n<cards.length; n++) {
+      var c = cards[n];
+      if(board.team_zones[team].contains(c.x, c.y)) {
+        c.set_active_image(0);
+        c.set_target(c.x*0.42+(Math.random()-0.5)*20, c.y*0.42+(Math.random()-0.5)*20, Math.random()*360)
+      }
+    }
+}
 
 
 /**
  * Throws selected pieces into the pot.
  */
-function bet() {
-  // Get the selected pieces
-  var sps = board.client_selected_pieces[get_my_client_index()];
+function bet(R) {
+  var R = or_default(R, 0.2)
 
-  // By default we bet all selected pieces
-  already_bet = false;
-  
-  // Clear the selection.
-  sps.length=0;
+  // Throws in the piece under the mouse. If it's 
+  // the fold plate, flip it and send all the cards.
 
-  // Otherwise we use the one just under the mouse.
-  if(!already_bet) {
+  // Only do so if we're not in someone else's team zone
+  team_zone = board.in_team_zone(board.mouse.x, board.mouse.y);
+  if(team_zone < 0 || team_zone == get_team_number()) {
+    var i = board.find_top_piece_at_location(board.mouse.x, board.mouse.y);
+    
+    // Found one!
+    if(i >= 0) {
+      // Send it to the top
+      var p = board.pieces[i];
 
-    // Only do so if we're not in someone else's team zone
-    team_zone = board.in_team_zone(board.mouse.x, board.mouse.y);
-    if(team_zone < 0 || team_zone == get_team_number()) {
-      var i = board.find_top_piece_at_location(board.mouse.x, board.mouse.y);
-      
-      // Found one!
-      if(i >= 0) {
-        // Fire it off
-        board.pieces[i].set_target(board.pieces[i].x*0.25+(Math.random()-0.5)*20, 
-                                   board.pieces[i].y*0.25+(Math.random()-0.5)*20,
-                                   Math.random()*360);
-        
-        // Put it on top
-        p = board.pop_piece(i);
-        board.insert_piece(p, board.pieces.length);
+      // See if it's a folder
+      var team = folders.indexOf(p);
+      if(team>=0) fold(team);
 
-      } // End of "found a piece"
-    } // End of if hovering in a grab zone
-  } // "haven't already bet, look under mouse"
+      // Otherwise, fire it off
+      else {
+        p.send_to_top();
+        p.set_target(p.x*R+(Math.random()-0.5)*20, p.y*R+(Math.random()-0.5)*20, Math.random()*360);
+      }
+
+    } // End of "found a piece"
+  } // End of if hovering in a grab zone
 }
 
 // Find the free chips in the middle of the board
@@ -326,30 +349,56 @@ function deal(event, single, up) {
 
   // Throw one card to each active team
   else {
+    
+    // Throw the top card from my selected pieces to each team having an active folder, 
+    // popping them off my held pieces
 
-    // Find which teams are in the game
-    var teams = get_active_teams();
-    console.log('deal', teams.length);
+    // Loop over all folders
+    for(var i=0; i<folders.length; i++) {
+      console.log(i, folders[i].active_image);
+      // If the folder is enabled
+      if(folders[i].active_image == 0) {
 
-    // Throw the top card from my selected pieces to each team, popping them off my held pieces
-    for(i in teams) {
-      team = teams[i];
+        // Get the associated team index
+        var team = i;
 
-      if(sps.length) {
-        // Get the rotated coordinate of the dealt card
-        d = rotate_vector((Math.random()-0.5)*50,-R1*0.7+(Math.random()-0.5)*50,-(team-1)*45);
+        if(sps.length) {
+          // Get the rotated coordinate of the dealt card
+          d = rotate_vector((Math.random()-0.5)*50,-R1*0.7+(Math.random()-0.5)*50,-(team-1)*45);
 
-        // Pop it, send it to the player, and put it on top of the stack.
-        p = sps.pop();
-        p.set_target(d.x, -d.y, -(team-1)*45+720);
-        if(event.shiftKey || event.button==2 || up) p.active_image = 1;
-        else                                        p.active_image = 0;
-        p.send_to_top()
-      } 
+          // Pop it, send it to the player, and put it on top of the stack.
+          p = sps.pop();
+          p.set_target(d.x, -d.y, -(team-1)*45+720);
+          if(event.shiftKey || event.button==2 || up) p.active_image = 1;
+          else                                        p.active_image = 0;
+          p.send_to_top()
+        } 
+      } // End of "folder says 'in'"
     } // end of loop over active teams
   }
 }
 
+// Sends fold plates to everyone, setting the face based on whether the team is active.
+function distribute_folders() {
+
+  // Find which team indices are in the game
+  var pants = get_active_teams();
+
+  // Throw the top card from my selected pieces to each team, popping them off my held pieces
+  for(var i=0; i<folders.length; i++) {
+    // Get the piece
+    var p = folders[i];
+
+    // Get the rotated coordinate of the dealt plate
+    var d = rotate_vector(0,-R1*0.88,-(i-1)*45);
+
+    p.set_target(d.x, -d.y, -(i-1)*45);
+    console.log(pants, pants.includes(i), i);
+    if(pants.includes(i)) p.active_image = 0;
+    else                  p.active_image = 1;
+         
+  } // end of loop over active teams
+}
 
 // Overloading keydown dummy function for our game-specific keys
 function after_event_keydown(e) {
