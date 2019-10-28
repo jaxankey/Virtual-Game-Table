@@ -54,6 +54,7 @@ board.add_team('blue',     ['hand_blue.png',  'fist_blue.png'  ], '#5599ff');
 board.add_team('green',    ['hand_green.png', 'fist_green.png' ], '#118855'); 
 board.add_team('violet',   ['hand_violet.png','fist_violet.png'], '#d62cff'); 
 board.add_team('brown',    ['hand_brown.png', 'fist_brown.png' ], '#883300'); 
+board.add_team('manager',  ['hand_white.png', 'fist_white.png' ], '#cccccc', true);
 
 // Set up the team zones based on the number of seats
 number_of_teams = 8;
@@ -127,7 +128,7 @@ folders = []; for(n=0; n<8; n++) folders.push(board.add_piece(['chips/playing.pn
 // AVATARS
 /////////////////////
 
-board.new_piece_scale               = 0.7;
+board.new_avatar_scale              = 0.64;
 board.new_piece_rotates_with_canvas = false;
 board.new_piece_physical_shape      = 'inner_circle';
 board.add_avatars();
@@ -197,7 +198,7 @@ function setup() {
   distribute_folders();
 
   // Avatars
-  board.expand_pieces(board.avatars, 8, 0, 1000, 100, 100, 0, 0, 0);
+  board.expand_pieces(board.avatars, 8, 0, 1000, 70, 70, 0, 0, 0);
 
   // Deselect everything
   board.deselect_pieces();

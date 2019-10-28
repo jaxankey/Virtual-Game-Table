@@ -1347,6 +1347,7 @@ function BOARD(canvas) {
   this.new_piece_zooms_with_canvas   = true;
   this.new_piece_scale               = 1.0;
   this.new_hand_scale                = 1.0;
+  this.new_avatar_scale              = 1.0;
   this.new_piece_physical_shape      = 'rectangle';
   this.new_piece_alpha               = 1.0;
   this.new_piece_box_x               = 0;
@@ -1380,6 +1381,7 @@ function BOARD(canvas) {
   this.team_colors                   = [];
   this.team_zones                    = [];  
   this.team_hand_images              = [];
+  this.managers = [];
 
   // Each client has a unique id, name, team index, and list of held pieces.
   // We leave these as separate lists to aid setting to new values from the server.
@@ -1635,10 +1637,11 @@ BOARD.prototype.add_snap_grid = function(x_left, y_top, width, height, x0, y0, d
   return this.snap_grids.length-1;
 }
 
-BOARD.prototype.add_team = function(name, hand_image_paths, color) {
+BOARD.prototype.add_team = function(name, hand_image_paths, color, manager) {
   console.log('add_team()', name, hand_image_paths, color);
 
-  color = or_default(color, '#777777');
+  var color   = or_default(color, '#777777');
+  var manager = or_default(manager, false);
 
   // add team to GUI list
   var teams  = document.getElementById("teams");
@@ -1650,7 +1653,8 @@ BOARD.prototype.add_team = function(name, hand_image_paths, color) {
   this.team_colors.push(color);
   this.team_zones.push(null);
   this.team_hand_images.push([]);
-  team = this.team_hand_images.length-1;
+  var team = this.team_hand_images.length-1;
+  if(manager) this.managers.push(team);
 
   // loop over the hand image paths and load up the images
   for (var i in hand_image_paths) {
@@ -1777,7 +1781,7 @@ BOARD.prototype.collect_pieces = async function(pieces,x,y,shuffle,active_image,
       // x,y,r,angle,disable_snap,immediate
       p.set_target(x + (Math.random()-0.5)*this.shuffle_distance,
                    y + (Math.random()-0.5)*this.shuffle_distance,
-                   -(Math.random())*720, null);
+                      -(Math.random())*720, null);
 
       // If we have an active image specified, set it
       if(active_image != null) p.set_active_image(active_image);
@@ -2250,7 +2254,7 @@ BOARD.prototype.event_mousedown = function(e) {
   var team_zone = this.in_team_zone(this.mouse.x, this.mouse.y)
   
   // Our team zone or no team zone or team zone with grab enabled
-  if(team_zone == team || team_zone < 0 || this.team_zones[team_zone].grab_mode == 1) {
+  if(team_zone == team || team_zone < 0 || this.team_zones[team_zone].grab_mode == 1 || this.managers.includes(team)) {
     
     // loop over ALL pieces from top to bottom
     for (var i=this.pieces.length-1; i>=0; i--) {
@@ -2432,7 +2436,7 @@ BOARD.prototype.event_mousemove = function(e) {
       team_zone = this.in_team_zone(p.x, p.y)
 
       // Our team zone or no team zone or team zone with grab enabled
-      if(team_zone == team || team_zone < 0 || this.team_zones[team_zone].grab_mode == 1) {
+      if(team_zone == team || team_zone < 0 || this.team_zones[team_zone].grab_mode == 1 || this.managers.includes(team)) {
         
         // If it's within the rectangle and ok to move, select it. 
         if(is_within_selection_box(p.x, p.y, this.client_selection_boxes[my_index]) &&
@@ -2845,8 +2849,8 @@ BOARD.prototype.event_keydown = function(e) {
       
       case 90: // z for zhuffle
         
-        // Normal z just shuffles in place
-        this.shuffle_pieces(this.client_selected_pieces[my_index]);
+        // Normal z just shuffles in place (disable ctrl-z to avoid reflex "undo")
+        if(!e.ctrlKey) this.shuffle_pieces(this.client_selected_pieces[my_index]);
         break;
 
       case 82: // r for roll / randomize
@@ -3709,13 +3713,14 @@ var my_socket = io();
 // response handled by socket code below
 my_socket.emit('user', get_name(), get_team_number());
 
+// When the server sends avatars
 server_avatar = function(avatar_paths) {
   // server sent a list of avatar paths
   console.log('Received avatar list:', avatar_paths);
   board.avatar_paths = avatar_paths;
 
   // Load the avatar pieces
-  for(var n in avatar_paths) board.avatars.push(board.add_piece([avatar_paths[n]], undefined, true));
+  for(var n in avatar_paths) board.avatars.push(board.add_piece([avatar_paths[n]], undefined, board.new_avatar_scale));
 
   // Reset the scale
   board.new_piece_scale = 1.0;

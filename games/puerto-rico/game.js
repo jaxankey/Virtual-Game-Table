@@ -188,7 +188,7 @@ indigo  = board.add_pieces(11, ['goods-indigo.png']);
 /////////////////////
 // AVATARS
 /////////////////////
-board.new_piece_scale               = 1.0;
+board.new_avatar_scale              = 1.5;
 board.new_piece_rotates_with_canvas = false;
 board.new_piece_physical_shape      = 'inner_circle';
 board.add_avatars();
