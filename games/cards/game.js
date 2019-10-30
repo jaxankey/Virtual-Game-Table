@@ -59,7 +59,7 @@ board.add_team('manager',  ['hand_white.png', 'fist_white.png' ], '#cccccc', tru
 // Set up the team zones based on the number of seats
 number_of_teams = 8;
 theta = 0.5*(360/number_of_teams)*Math.PI/180.0;  // Wedge angle in radians
-R1    = 500;                                      // Inner radius of team zones
+R1    = 525;                                      // Inner radius of team zones
 R2    = (R1*Math.cos(theta)+250)/Math.cos(theta); // Outer radius of team zones
 board.r_step = 360.0/number_of_teams;
 
@@ -167,8 +167,8 @@ function collect_all_cards() {
   }
   else {
     team_angle=45*(team-1);
-    var d  = rotate_vector(R1*0.289, R1*0.75, team_angle);
-    var dd = rotate_vector(R1*0.289, R1*0.77, team_angle);
+    var d  = rotate_vector(R1*0.270, R1*0.831, team_angle);
+    var dd = rotate_vector(R1*0.270, R1*0.851, team_angle);
   }
 
   // collect the cards (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
