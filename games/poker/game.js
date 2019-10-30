@@ -280,19 +280,21 @@ function bet(R) {
     
     // Found one!
     if(i >= 0) {
+
       // Send it to the top
       var p = board.pieces[i];
 
       // See if it's a folder
-      var team = folders.indexOf(p);
-      if(team>=0) fold(team);
+      var team = folders.indexOf(p)+1;
+      if(team>=1) fold(team);
 
       // Otherwise, fire it off
       else {
         p.send_to_top();
-        p.set_target(p.x*R+(Math.random()-0.5)*20, p.y*R+(Math.random()-0.5)*20, Math.random()*360);
+        p.set_target(p.x*R+(Math.random()-0.5)*20, 
+                     p.y*R+(Math.random()-0.5)*20, 
+                     Math.random()*360);
       }
-
     } // End of "found a piece"
   } // End of if hovering in a grab zone
 }
