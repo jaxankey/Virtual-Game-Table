@@ -112,7 +112,6 @@ chapel       = add_cards(10, 'chapel.jpg');
 councilroom  = add_cards(10, 'councilroom.jpg');
 feast        = add_cards(10, 'feast.jpg');
 festival     = add_cards(10, 'festival.jpg');
-gardens      = add_cards(10, 'gardens.jpg');
 laboratory   = add_cards(10, 'laboratory.jpg');
 library      = add_cards(10, 'library.jpg');
 market       = add_cards(10, 'market.jpg');
@@ -134,6 +133,7 @@ copper = add_cards(60, 'copper2.jpg');
 silver = add_cards(40, 'silver2.jpg');
 gold   = add_cards(30, 'gold2.jpg');
 
+gardens  = add_cards(10, 'gardens.jpg');
 estate   = add_cards(24, 'estate.jpg');
 duchy    = add_cards(12, 'duchy.jpg');
 province = add_cards(12, 'province.jpg');
@@ -143,7 +143,7 @@ curse  = add_cards(30, 'curse.jpg');
 ///////////////
 // AVATARS
 //////////////
-board.new_piece_scale               = 3;
+board.new_avatar_scale               = 3;
 board.new_piece_rotates_with_canvas = false;
 board.new_piece_physical_shape      = 'inner_circle';
 board.add_avatars();
