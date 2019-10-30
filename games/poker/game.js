@@ -251,7 +251,7 @@ function fold(team) {
     board.deselect_pieces();
 
     // Flip it.
-    folders[team].set_active_image(1);
+    folders[team-1].set_active_image(1);
 
     // Get all the cards in the team zone
     for(var n=0; n<cards.length; n++) {
@@ -356,12 +356,12 @@ function deal(event, single, up) {
 
     // Loop over all folders
     for(var i=0; i<folders.length; i++) {
-      console.log(i, folders[i].active_image);
+      
       // If the folder is enabled
       if(folders[i].active_image == 0) {
 
         // Get the associated team index
-        var team = i;
+        var team = i+1;
 
         if(sps.length) {
           // Get the rotated coordinate of the dealt card
@@ -391,12 +391,12 @@ function distribute_folders() {
     var p = folders[i];
 
     // Get the rotated coordinate of the dealt plate
-    var d = rotate_vector(0,-R1*0.88,-(i-1)*45);
+    var d = rotate_vector(0,-R1*0.88,-i*45);
 
-    p.set_target(d.x, -d.y, -(i-1)*45);
-    console.log(pants, pants.includes(i), i);
-    if(pants.includes(i)) p.active_image = 0;
-    else                  p.active_image = 1;
+    p.set_target(d.x, -d.y, -i*45);
+    console.log('pants', i+1, pants.includes(i+1));
+    if(pants.includes(i+1)) p.active_image = 0;
+    else                    p.active_image = 1;
          
   } // end of loop over active teams
 }
