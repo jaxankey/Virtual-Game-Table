@@ -294,6 +294,7 @@ function bet(R) {
         p.set_target(p.x*R+(Math.random()-0.5)*20, 
                      p.y*R+(Math.random()-0.5)*20, 
                      Math.random()*360);
+        if(cards.includes(p)) p.set_active_image(0);
       }
     } // End of "found a piece"
   } // End of if hovering in a grab zone
@@ -431,10 +432,12 @@ function after_event_keydown(e) {
 }
 
 function after_event_mousedown(e,mouse) {
-  if(e.button != 0 && e.button != 2 || e.ctrlKey) {
+  console.log('mouse button', e.button);
+  if(e.ctrlKey) {
     if(e.button == 2) deal(e,true,true); // face up
     else              deal(e,true);
   }
+  else if (e.button != 0 && e.button != 2) bet();
 }
 
 // Overloading the mouse up function

@@ -266,10 +266,12 @@ function after_event_keydown(e) {
 }
 
 function after_event_mousedown(e,mouse) {
-  if(e.button != 0 && e.button != 2 || e.ctrlKey) {
+  console.log('mouse button', e.button);
+  if(e.ctrlKey) {
     if(e.button == 2) deal(e,true,true); // face up
     else              deal(e,true);
   }
+  else if (e.button != 0 && e.button != 2) bet();
 }
 
 /**
@@ -303,6 +305,7 @@ function bet() {
         // Put it on top
         p = board.pop_piece(i);
         board.insert_piece(p, board.pieces.length);
+        if(cards.includes(p)) p.set_active_image(0);
 
       } // End of "found a piece"
     } // End of if hovering in a grab zone

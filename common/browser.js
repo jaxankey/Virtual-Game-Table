@@ -39,8 +39,8 @@
 //// OPTIONS
 
 var stream_interval_ms = 150;   //150;   // how often to send a stream update (ms)
-var update_interval_ms = 20000; // how often to send a full update (ms)
-var draw_interval_ms   = 10;    // how often to draw the canvas (ms)
+var update_interval_ms = 3000; // how often to get a full update (ms)
+var draw_interval_ms   = 10;   // how often to draw the canvas (ms)
 
 if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
   document.getElementById("everything").innerHTML = "<h2>Sorry, this requires the non-mobile Chrome web browser to run.<br><br>xoxoxo,<br>Jack</h2>";}
@@ -1522,7 +1522,7 @@ BOARD.prototype.go = function() {
 
   // Start the timers
   setInterval(this.send_stream_update.bind(this), stream_interval_ms);
-  //setInterval(this.send_full_update.bind(this), update_interval_ms);  
+  //setInterval(this.get_full_update   .bind(this), update_interval_ms);  
 }
 
 // cookie stuff
@@ -2271,7 +2271,7 @@ BOARD.prototype.event_mousedown = function(e) {
           // Find out where to send it
           if      (e.button == 0) var send_to = 1;
           else if (e.button == 2) var send_to = -1;
-          else                    var send_to = 0; 
+          else                    var send_to = 0;  // No longer reached due to after_mousedown code above.
           
           // get the piece index (will be -1 if we don't have it already)
           var client_piece_index = this.client_selected_pieces[my_index].indexOf(p);
@@ -2295,10 +2295,10 @@ BOARD.prototype.event_mousedown = function(e) {
             // all done for now
             after_event_mousedown(e, this.mouse);
             return;
-
           } // Done with shift key toggling
 
-          // Otherwise, if we don't have it already, deselect everything else
+          // Otherwise (no shift key), if we don't have it already, 
+          // deselect everything else
           else if(client_piece_index < 0) this.client_selected_pieces[my_index].length = 0;
 
           // Select this piece (no need to sort, since only one piece now)
@@ -2519,7 +2519,7 @@ BOARD.prototype.event_mouseup = function(e) {
 function after_event_mouseup(e) {console.log('after_event_mouseup(event_data): feel free to write your own function.');}
 
 BOARD.prototype.event_dblclick = function(e) {
-  console.log('event_dblclick', e);
+  console.log('event_dblclick');
   
   // prevents default
   e.preventDefault();
@@ -2997,8 +2997,13 @@ BOARD.prototype.set_rotation = function(r_deg, immediate) {
   
   // If we're holding pieces, rotate them as well
   my_index = get_my_client_index();
-  if(this.client_is_holding[my_index] && this.client_selected_pieces[my_index].length)
+  if(this.client_is_holding[my_index] && this.client_selected_pieces[my_index].length) {
+    // Do the rotation
     rotate_pieces(this.client_selected_pieces[my_index], -r_deg+this.previous_r, immediate, this.mouse.x, this.mouse.y);
+    
+    // Trigger the mouse move
+    this.event_mousemove(this.mouse_event);
+  }
   
   // trigger a redraw
   this.trigger_redraw  = true;
@@ -3065,6 +3070,9 @@ BOARD.prototype.set_pan = function(px, py, immediate) {
   // trigger a redraw
   this.trigger_redraw  = true;
   this._t_previous_draw = Date.now();
+
+  // Mouse event (in case caps is down)
+  this.event_mousemove(this.mouse_event);
   
   this.set_cookie('px_target', px);
   this.set_cookie('py_target', py);
@@ -3081,14 +3089,7 @@ BOARD.prototype.set_team_zone = function(team_index, x1,y1, x2,y2, x3,y3, x4,y4,
 function setup() {
   console.log("function setup(): Overwrite me to setup your game's pieces!");
 }
-/*BOARD.prototype.setup = function() {
-  
-  // setup the pieces
-  setup.apply(this, arguments);
-  
-  // send a full update
-  this.send_full_update(true);
-}*/
+
 BOARD.prototype.tantrum = function() {
   
   // loop over all pieces and send them in random directions
@@ -3684,11 +3685,22 @@ BOARD.prototype.load = function() {
   input.click();
 }
 
-// Very occasionally sends all piece coordinates to the server, just to be safe.
-// This will be called some time after the last full update.
+// This will query the server with a '?', which should then return
+// all the piece coordinates with a 'u' packet. The 'u' handler will
+// then update all the non-held pieces.
+BOARD.prototype.get_full_update = function() {
+  console.log('Sending a "?" query...')
+  my_socket.emit('?');
+  return;
+}
+
+// This function used to be occasionally called by a timer (if we haven't received 
+// a full update in awhile, but now that's handled by each client periodically sending
+// a '?' query to get the server state. Now this function is only used when the server
+// is first started and doesn't know any piece coordinates, or when we do something
+// crazy like tantrum.
 BOARD.prototype.send_full_update   = function(force) {
   
-  // normally we only send an update if we haven't had one in awhile
   // "force" allows you to make sure it gets sent
   force = or_default(force, false); 
   
