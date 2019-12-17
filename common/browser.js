@@ -3071,8 +3071,8 @@ BOARD.prototype.set_pan = function(px, py, immediate) {
   this.trigger_redraw  = true;
   this._t_previous_draw = Date.now();
 
-  // Mouse event (in case caps is down)
-  this.event_mousemove(this.mouse_event);
+  // Mouse event (in case caps is down) // JACK NEEDS FIXING!!!
+  //this.event_mousemove(this.mouse_event);
   
   this.set_cookie('px_target', px);
   this.set_cookie('py_target', py);
