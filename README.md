@@ -7,14 +7,14 @@ The client software currently requires [Chrome](https://www.google.com/chrome/) 
 
 ## Starting and testing a server
 
-This program runs directly from the source code (see [https://github.com/jaxankey/Virtual-Game-Table/releases](Releases)), so no compiling or binaries are required (other than downloading / installing [https://nodejs.org/](Node.js)). This server has been tested on Linux & Windows, but should work on OSX as well.
+This program runs directly from the source code (see [Releases](https://github.com/jaxankey/Virtual-Game-Table/releases)) so no compiling or binaries are required (other than downloading / installing [Node.js](https://nodejs.org/)). This server has been tested on Linux & Windows, but should work on OSX as well.
 
 Linux
- 1. Install [https://nodejs.org/](Node.js): For me, this meant downloading the binaries, unpacking them in a convenient folder, adding the binary path to `.profile` (with a line like `PATH=$PATH:/path/to/node/bin`) then logging out & back in.
+ 1. Install [Node.js](https://nodejs.org/): For me, this meant downloading the binaries, unpacking them in a convenient folder, adding the binary path to `.profile` (with a line like `PATH=$PATH:/path/to/node/bin`) then logging out & back in.
  2. Run `start-server-linux` from the terminal. 
  
 Windows
- 1. Install [https://nodejs.org/](Node.js): Download the appropriate windows installer and run it.
+ 1. Install [Node.js](https://nodejs.org/): Download the appropriate windows installer and run it.
  2. Double-click `start-server-windows.bat` in one of the game directories. 
  
 Both scripts will prompt you for a valid game name (any directory name from either `games/` or `private/`, e.g., `cards`). They will then ask for a port number, and you can provide any valid port (e.g., `37777`). You can also launch a server directly with a command similar to `node server.js cards 37777`. 
