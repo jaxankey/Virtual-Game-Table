@@ -124,6 +124,9 @@ dealer.is_tray = true;
 // Fold plates
 folders = []; for(n=0; n<8; n++) folders.push(board.add_piece(['chips/playing.png', 'chips/folded.png']));
 
+// Bat
+bat = board.add_piece(['chips/bat.png'])
+
 /////////////////////
 // AVATARS
 /////////////////////

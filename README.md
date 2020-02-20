@@ -7,14 +7,14 @@ The client software currently requires [Chrome](https://www.google.com/chrome/) 
 
 ## Starting and testing a server
 
-This program runs directly from the source code, so no compiling or binaries are required (other than downloading / installing [https://nodejs.org/](Node.js)). This server has been tested on Linux & Windows, but should work on OSX as well.
+This program runs directly from the source code (see [Releases](https://github.com/jaxankey/Virtual-Game-Table/releases)) so no compiling or binaries are required (other than downloading / installing [Node.js](https://nodejs.org/)). This server has been tested on Linux & Windows, but should work on OSX as well.
 
 Linux
- 1. Install [https://nodejs.org/](Node.js): For me, this meant downloading the binaries, unpacking them in a convenient folder, adding the binary path to `.profile` (with a line like `PATH=$PATH:/path/to/node/bin`) then logging out & back in.
+ 1. Install [Node.js](https://nodejs.org/): For me, this meant downloading the binaries, unpacking them in a convenient folder, adding the binary path to `.profile` (with a line like `PATH=$PATH:/path/to/node/bin`) then logging out & back in.
  2. Run `start-server-linux` from the terminal. 
  
 Windows
- 1. Install [https://nodejs.org/](Node.js): Download the appropriate windows installer and run it.
+ 1. Install [Node.js](https://nodejs.org/): Download the appropriate windows installer and run it.
  2. Double-click `start-server-windows.bat` in one of the game directories. 
  
 Both scripts will prompt you for a valid game name (any directory name from either `games/` or `private/`, e.g., `cards`). They will then ask for a port number, and you can provide any valid port (e.g., `37777`). You can also launch a server directly with a command similar to `node server.js cards 37777`. 
@@ -24,12 +24,14 @@ A successfully booted server should declare something like `listening on port 37
 You can do most things with the mouse and "shift" button, but it is *well* worth your time to click the "controls" link in the upper right panel and learning the keyboard shortcuts.
 
 ## Games
+![Strategy Game Screenshot](https://raw.githubusercontent.com/jaxankey/Virtual-Game-Table/master/common/images/screenshots/poker.png)
+
 The games I have coded thus far include some basics:
  * `checkers`: Checkers & board (double-click pieces to king them)
  * `chess`: Chess pieces & board
  * `go`: Go table & board
  * `cards`: A standard deck of cards with 8 private viewing zones
- * `poker`: Same as cards, but with poker chips on the table
+ * `poker`: Same as cards, but with poker chips on the table and a whole bunch of related functionality and hot keys.
  
 and some more complicated systems:
  * `roll`: All the nerd-dice and a few more pieces (press / hold `r` to roll)
