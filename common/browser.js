@@ -3969,7 +3969,7 @@ server_update = function(piece_datas) {
       ps.push(p); // save this as an ordered list, matching piece_datas, for later sorting by position n in stack & re-insertion
       
       // Only make any modifications if the pieces are not currently held by me
-      if(board.find_holding_client_index(board.pieces[m]) != my_index) {
+      if(board.find_holding_client_index(p) != my_index) {
 
         // set the new values
         p.set_target(pd.x, pd.y, pd.r, null, true); // disable snap
