@@ -16,25 +16,27 @@
  * along with this program. If not, see <http://www.gnu.org/licenfses/>.
  */
 
-// TO DO: massive overhaul & code simplification:
-//         * all piece lists become id lists; function get_piece_by_id() 
-//         * combine all groups of parallel arrays into a single dictionary
-//         * use these dictionaries to send info to the server and back
-//         * all objects become server packets, and functions to draw, etc take 
-//           their instance as a first argument? This makes net traffic super simple.
-//         * Pieces have held_by value, rather than client_is_holding lists.
-// TO DO: var before every local variable. Avoids overwriting by other functions in loops!
-// TO DO: keyboard keys with a lookup table and functions that can be overwritten?
-// TO DO: Switch the gameplay updates to UDP, even though the data rate is low, or 
-//        add a check to see if the previous packet was received. Or see the failure mechanism
-//        https://stackoverflow.com/questions/11382495/how-to-be-sure-that-message-via-socket-io-has-been-received-to-the-client
-//
-// TO DO: middle mouse click = focus
-// TO DO: Find a way to switch back to the more responsive piece rotation in board.draw(). (Make incremental changes to piece coordinates, rather than setting targets?)
-// TO DO: Add new_piece_layer integer for automatic layered drawing. It has to naturally stay sorted, or 
-//        else is_tray will not work, and selecting pieces would be a problem. Perhaps board.pieces should be {0:[], 1:[], ...}? 
-//        Alternatively, insert_piece() could auto-sort by checking piece layers and incrementing/decrementing when out of order.
-// TO DO: Cookies assigned per web address AND game name.
+/* 
+TO DO: massive overhaul & code simplification:
+  * all piece lists become id lists; function get_piece_by_id() 
+  * combine all groups of parallel arrays into a single dictionary
+  * use these dictionaries to send info to the server and back
+  * all objects become server packets, and functions to draw, etc take 
+    their instance as a first argument? This makes net traffic super simple.
+  * Pieces have held_by value, rather than client_is_holding lists.
+    var before every local variable. Avoids overwriting by other functions in loops!
+TO DO: keyboard keys with a lookup table and functions that can be overwritten?
+TO DO: Switch the gameplay updates to UDP, even though the data rate is low, or 
+       add a check to see if the previous packet was received. Or see the failure mechanism
+       https://stackoverflow.com/questions/11382495/how-to-be-sure-that-message-via-socket-io-has-been-received-to-the-client
+
+TO DO: middle mouse click = focus
+TO DO: Find a way to switch back to the more responsive piece rotation in board.draw(). (Make incremental changes to piece coordinates, rather than setting targets?)
+TO DO: Add new_piece_layer integer for automatic layered drawing. It has to naturally stay sorted, or 
+       else is_tray will not work, and selecting pieces would be a problem. Perhaps board.pieces should be {0:[], 1:[], ...}? 
+       Alternatively, insert_piece() could auto-sort by checking piece layers and incrementing/decrementing when out of order.
+TO DO: Cookies assigned per web address AND game name.
+*/
 
 //// OPTIONS
 
@@ -239,11 +241,8 @@ function scramble_pieces(pieces, x, y, space, scale) {
   var a = rotate_vector(ax, ay, r);
   var b = rotate_vector(bx, by, r);
 
-  // Generate all the available grid spots
-  var spots =[]; for(var n=0; n<pieces.length*space; n++) spots.push(n);
-  
-  // Pop off the spot under your hand if there is only one die.
-  if(pieces.length < 2 && spots.length > 1) spots.splice(0,1);
+  // Generate all the available hex grid indices, skipping the one below your hand.
+  var spots =[]; for(var n=1; n<pieces.length*space+1; n++) spots.push(n);
   
   // Set the piece coordinates on the hex grid
   for(var n in pieces) {
@@ -1522,7 +1521,7 @@ BOARD.prototype.go = function() {
 
   // Start the timers
   setInterval(this.send_stream_update.bind(this), stream_interval_ms);
-  //setInterval(this.get_full_update   .bind(this), update_interval_ms);  
+  setInterval(this.get_full_update   .bind(this), update_interval_ms);  
 }
 
 // cookie stuff
@@ -2201,6 +2200,8 @@ BOARD.prototype.select_piece = function(piece) {
  */
 BOARD.prototype.deselect_piece = function(piece) {
   
+  //console.log('deselect_piece', piece.id);
+
   // Find the client index of the piece
   client_index = this.find_selected_piece_client_index(piece);
   
@@ -2429,25 +2430,25 @@ BOARD.prototype.event_mousemove = function(e) {
     // Loop over all pieces
     for(n in this.pieces) {
       var p   = this.pieces[n];
-      var sps = this.client_selected_pieces[my_index];
-      var i   = sps.indexOf(p);
+      var sps = this.client_selected_pieces[my_index]; // my selected pieces list
+      var i   = sps.indexOf(p); // index indicating if it's already selected; will be -1
 
       // If this piece is not in someone else's team zone
-      team_zone = this.in_team_zone(p.x, p.y)
+      var in_team_zone = this.in_team_zone(p.x, p.y);
 
-      // Our team zone or no team zone or team zone with grab enabled
-      if(team_zone == team || team_zone < 0 || this.team_zones[team_zone].grab_mode == 1 || this.managers.includes(team)) {
+      // Our team zone, no team zone, or team zone with grab enabled
+      if(in_team_zone == team || in_team_zone < 0 || this.team_zones[in_team_zone].grab_mode == 1 || this.managers.includes(team)) {
         
+        var in_box = is_within_selection_box(p.x, p.y, this.client_selection_boxes[my_index]);
+
         // If it's within the rectangle and ok to move, select it. 
-        if(is_within_selection_box(p.x, p.y, this.client_selection_boxes[my_index]) &&
-          (p.movable_by == null ||
-          p.movable_by.indexOf(team)>=0)) {
-          if(i < 0) this.client_selected_pieces[my_index].push(p);
-        }
-        
-        // Otherwise, deselect it.
-        else if(i >= 0 && !e.shiftKey) this.client_selected_pieces[my_index].splice(i,1);
-      }
+        if(i < 0  && // not selected
+           in_box && // in our selection box
+          (p.movable_by == null ||         // movable by everyone
+           p.movable_by.indexOf(team)>=0)) // movable by my team 
+            this.select_piece(p);
+
+      } // end of "available piece"
     } // End of loop over all pieces
 
     // Sort the selected pieces to match the order of the board.
@@ -3071,8 +3072,8 @@ BOARD.prototype.set_pan = function(px, py, immediate) {
   this.trigger_redraw  = true;
   this._t_previous_draw = Date.now();
 
-  // Mouse event (in case caps is down)
-  this.event_mousemove(this.mouse_event);
+  // JACK: DELETE THIS ONCE STABLE Mouse event (in case caps is down)
+  //this.event_mousemove(this.mouse_event);
   
   this.set_cookie('px_target', px);
   this.set_cookie('py_target', py);
@@ -3441,24 +3442,27 @@ BOARD.prototype.send_stream_update = function() {
 
 
 
-  // Check if any of the client selections have changed
+  // Check if any of the client selections have changed; we affect other clients' selections when 
+  // we grab their selected pieces.
   for(var client_index in this.client_selected_pieces) {
     
     // Get this client's selected pieces and id
-    var csps = this.client_selected_pieces[client_index];
+    var csps      = this.client_selected_pieces[client_index];
     var client_id = this.client_ids[client_index];
 
     // If the current selection doesn't match the previous
     if(!array_compare(csps, this.client_previous_selected_pieces[client_index])) { 
 
-      console.log('send_stream_update(): Detected a selection change, client_index =', client_index, ', my_index =', my_index);
+      console.log('send_stream_update(): Detected a selection change, client_index =', client_index, 
+                  ', my_index =', my_index, 
+                  'previous =',   this.client_previous_selected_pieces[client_index]);
       
       // Assemble just the selected piece ids
       var csp_ids = [];
       for(var i in csps) csp_ids.push(csps[i].id);  
 
       // emit the selection changed event
-      console.log('Sending s with', csp_ids.length, 'pieces, client_id =', client_id, ', my_id =', this.client_id, csp_ids);
+      console.log('Sending-s with', csp_ids.length, 'pieces, client_id =', client_id, ', my_id =', this.client_id, csp_ids);
       my_socket.emit('s', csp_ids, client_id);
 
       // Remember the change so this doesn't happen again. 
@@ -3511,7 +3515,7 @@ BOARD.prototype.send_stream_update = function() {
 
     // emit the mouse update event, which includes the held piece ids and their target coordinates,
     // So that the hand and pieces move as a unit. 
-    console.log('Sending m:', this.mouse.x, this.mouse.y, sp_ids.length, 'pieces');
+    console.log('Sending-m:', this.mouse.x, this.mouse.y, sp_ids.length, 'pieces');
     my_socket.emit('m', this.mouse.x, this.mouse.y, sp_ids, sp_coords, this.r_target, 
                     this.client_selection_boxes[my_index]);
   
@@ -3556,7 +3560,7 @@ BOARD.prototype.send_stream_update = function() {
   
   // if we found something, send it
   if (changed_pieces.length > 0) {
-    console.log('sending "u" with', changed_pieces.length, 'pieces');
+    console.log('Sending-u with', changed_pieces.length, 'pieces');
     my_socket.emit('u', changed_pieces);
   }
 } 
@@ -3689,7 +3693,7 @@ BOARD.prototype.load = function() {
 // all the piece coordinates with a 'u' packet. The 'u' handler will
 // then update all the non-held pieces.
 BOARD.prototype.get_full_update = function() {
-  console.log('Sending a "?" query...')
+  console.log('Sending-?...')
   my_socket.emit('?');
   return;
 }
@@ -3710,7 +3714,7 @@ BOARD.prototype.send_full_update   = function(force) {
 
   var piece_datas = this.get_piece_datas();
 
-  console.log('sending full update:', piece_datas.length, 'pieces');
+  console.log('Sending-full update:', piece_datas.length, 'pieces');
   my_socket.emit('u', piece_datas, true); // true clears the old values from the server's memory
 }
 
@@ -3728,7 +3732,7 @@ my_socket.emit('user', get_name(), get_team_number());
 // When the server sends avatars
 server_avatar = function(avatar_paths) {
   // server sent a list of avatar paths
-  console.log('Received avatar list:', avatar_paths);
+  console.log('Received-avatar list:', avatar_paths);
   board.avatar_paths = avatar_paths;
 
   // Load the avatar pieces
@@ -3741,7 +3745,7 @@ my_socket.on('avatars', server_avatar);
 
 server_ping = function(x){
   // server sent a "chat"
-  console.log('Received ping:', x);
+  console.log('Received-ping:', x);
   ping_x = x;
 }
 my_socket.on('ping', server_ping);
@@ -3749,7 +3753,7 @@ my_socket.on('ping', server_ping);
 // functions for handling incoming server messages
 server_chat = function(msg){
   // server sent a "chat"
-  console.log('Received chat:', msg);
+  console.log('Received-chat:', msg);
 
   // messages div object
   m = $('#messages');
@@ -3766,7 +3770,7 @@ my_socket.on('chat', server_chat);
 // Complete user information from server.
 server_users = function(client_ids, client_names, client_teams, client_is_holding, client_selected_piece_ids) {
   
-  console.log("Received users:", client_ids, client_names, client_teams, client_is_holding, client_selected_piece_ids);
+  console.log("Received-users:", client_ids, client_names, client_teams, client_is_holding, client_selected_piece_ids);
 
   // Clear out the old values
   board.client_ids                      = [];
@@ -3824,7 +3828,7 @@ server_mousemove = function(client_id, x, y, hp_ids, hp_coords, client_r, select
   if(!board._ready_for_packets) return;
 
   // server has sent a "mouse move"
-  //console.log('Received m:', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
+  //console.log('Received-m:', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
 
   // Get the client index whose mouse moved
   client_index = board.client_ids.indexOf(client_id);
@@ -3858,7 +3862,7 @@ server_selectionchange = function(piece_ids, client_id){
   if(!board._ready_for_packets) return;
   
   // server sent a selection change
-  console.log('Received s: client_id =', client_id, ', my_id =', board.client_id, ', pieces =', piece_ids);
+  console.log('Received-s: client_id =', client_id, ', my_id =', board.client_id, ', pieces =', piece_ids);
   
   // Get the client index
   client_index = board.client_ids.indexOf(client_id);
@@ -3896,7 +3900,7 @@ server_heldchange = function(client_id, is_holding) {
   client_index = board.client_ids.indexOf(client_id);
 
   // Server sent a change in held pieces
-  console.log('Received h: client id =', client_id, 'client index =', client_index, 'is_holding =', is_holding);
+  console.log('Received-h: client id =', client_id, 'client index =', client_index, 'is_holding =', is_holding);
   
   // Don't let the server tell us if we're holding something!
   if(client_index != get_my_client_index()) {
@@ -3916,14 +3920,14 @@ my_socket.on('h', server_heldchange);
 server_assigned_id = function(id) {
   
   // Server sent us our id
-  console.log('Received id:', id);
+  console.log('Received-id:', id);
   board.client_id = id;
 }
 my_socket.on('id', server_assigned_id);
 
 
 // Function to handle when the server sends a piece update ('u')
-server_update = function(piece_datas){
+server_update = function(piece_datas) {
   
   // Get my client index
   var my_index = get_my_client_index();
@@ -3932,7 +3936,9 @@ server_update = function(piece_datas){
   if(!board._ready_for_packets) return;
 
   // server has sent a pieces update
-  console.log('Received u:', piece_datas.length, 'pieces');
+  console.log('Received-u:', piece_datas.length, 'pieces');
+
+  // store the current time in case we have to do something based on when the last update happened
   board.last_update_ms = Date.now();
 
   // Special case: if we got nothing, send a full update to populate the server.
@@ -3941,32 +3947,30 @@ server_update = function(piece_datas){
     return;
   }
 
-  // Sort the piece datas by n's (must be increasing!)
+  // Sort the incoming piece datas by the target index (n).
+  // This must be monotonically increasing for the methods below to work.
   piece_datas.sort(function(a, b){return a.n-b.n});
-
-  // run through the list of ids, find the index m in the stack of the pieces by id
-  var ps = []; // List of pieces to modify (all those that exist and are not held by me)
-  var pd;
-  var m;
-  var p;
+  
+  // run through the list of ids, find the index in the stack (m) of the pieces by id
+  var ps = []; // List of pieces needing an update (all those that are not held by me)
   for(var i in piece_datas) {
-    pd = piece_datas[i];
+    var pd = piece_datas[i];
     
-    // find the current index
-    m = board.find_piece_index(pd.id);
+    // find the *current* index in the main stack
+    var m = board.find_piece_index(pd.id);
     
-    // Only make any modifications if the pieces are not currently held by me
-    if(board.find_holding_client_index(board.pieces[m]) != my_index) {
+    // Remove the actual piece from the main stack, to be re-inserted later.
+    // We do this for ALL updating pieces, even those that are held, just to preserve
+    // the order
+    var p = board.pop_piece(m,true); 
 
-      // Remove the actual piece from the main stack, to be re-inserted later.
-      // We do this for ALL updating pieces, even those that are held, just to preserve
-      // the order
-      p = board.pop_piece(m,true); 
+    // If the piece is valid, update its coordinates
+    if(p) {
+      ps.push(p); // save this as an ordered list, matching piece_datas, for later sorting by position n in stack & re-insertion
+      
+      // Only make any modifications if the pieces are not currently held by me
+      if(board.find_holding_client_index(board.pieces[m]) != my_index) {
 
-      // If the piece is valid, update its coordinates
-      if(p) {
-        ps.push(p); // save this as an ordered list, matching piece_datas, for later sorting by position n in stack & re-insertion
-        
         // set the new values
         p.set_target(pd.x, pd.y, pd.r, null, true); // disable snap
         p.active_image = pd.i;
@@ -3977,15 +3981,14 @@ server_update = function(piece_datas){
         p.previous_y            = p.y_target;
         p.previous_r            = p.r_target;
         p.previous_active_image = p.active_image;
-
-      } // end of piece exists
-    } // end of "not held by me"
+      } // end of "not held by me"
+    } // end of piece exists
   } // end of loop over supplied pieces
 
-  // Loop over the pieces again to insert them into the main stack, which currently should not contain them. We do this 
+  // Loop over the pieces again to insert them into the main stack, which currently 
+  // should not contain them. We do this 
   // in separate loops so that pieces removed from random locations and sent to 
   // random locations do not interact. The value of n is the final value in the pieces array.
-  console.log('  reinserting', ps.length);
   for(var i in ps) {
     board.insert_piece(ps[i], piece_datas[i].n, true);
     ps[i].previous_n = board.pieces.indexOf(ps[i]); // Don't want to resend this info next time we check

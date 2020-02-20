@@ -373,14 +373,20 @@ io.on('connection', function(socket) {
   socket.on('s', function(piece_ids, client_id) {
     
     // Optional client_id supplied by user
+    // get the client id and index from the socket
     if(client_id == undefined) {
-      // get the client id
       var client_index = client_sockets.indexOf(socket);
-      var client_id    = client_ids[client_index];
+      var client_id = client_ids[client_index];
     }
 
+    // Otherwise get the client_index from the client_id
+    else var client_index = client_ids.indexOf(client_id);
+      
+    // Update the selected pieces
+    client_selected_piece_ids[client_index] = [...piece_ids];
+
     // pieces is a list
-    log('s: client', client_id, piece_ids.length, 'pieces');
+    log('s: client', client_index, client_id, piece_ids.length, 'pieces');
 
     // emit to EVERYONE, including the sender
     io.emit('s', piece_ids, client_id);
