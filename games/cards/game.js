@@ -36,8 +36,8 @@ board.pan_step = 250;
 // Collection and expansion settings
 board.collect_r_piece  = null; // Rotates the piece to the current view
 board.collect_r_stack  = null; // Rotates the stack offsets to the current view
-board.expand_spacing_x = 35;
-board.expand_spacing_y = 55;
+board.expand_spacing_x = 45;
+board.expand_spacing_y = 58;
 board.expand_number_per_row = 10;
 
 //////////////////////////
@@ -103,10 +103,14 @@ board.new_piece_movable_by = null;
 // Add all the cards
 board.new_piece_collect_offset_x = 0.1;
 board.new_piece_collect_offset_y = 0.1;
+board.new_piece_width  = 48;
+board.new_piece_height = 79;
 cards = [];
 for(var n in names) cards.push(board.add_piece(['cards/back.png', 'cards/'+names[n]+'.png'], ['cards/'+names[n]+'.png', 'cards/'+names[n]+'p.png']));
 
 // Dealer space
+board.new_piece_width  = null;
+board.new_piece_height = null;
 dealer = board.add_piece(['cards/dealer.png']);
 dealer.is_tray = true;
 

@@ -560,7 +560,7 @@ function PIECE(board, id, image_paths, private_image_paths, scale) {
   
   // equivalent of storing object properties (or defaults)
   this.board                     = board;                        // board instance for this piece
-  this.id                  = id;                     // unique piece id
+  this.id                        = id;                     // unique piece id
   this.image_paths               = image_paths;                  // list of available images (seen by everyone)
   this.private_image_paths       = private_image_paths;          // list of available private image path strings, e.g. 'pants.png' (seen by team)
   this.private_images_everywhere = this.board.new_piece_private_images_everywhere; // Whether the private image is also visible outside the team zone.
@@ -569,6 +569,8 @@ function PIECE(board, id, image_paths, private_image_paths, scale) {
   this.collect_offset_x          = this.board.new_piece_collect_offset_x;
   this.collect_offset_y          = this.board.new_piece_collect_offset_y;
   this.scale                     = or_default(scale, board.new_piece_scale);
+  this.width                     = this.board.new_piece_width;
+  this.height                    = this.board.new_piece_height;
 
   // Index in the main piece stack (determines drawing order)
   this.previous_n = null;
@@ -750,8 +752,11 @@ PIECE.prototype.increment_active_image = function(randomize) {
 
 // Returns a vector {width, height, max, min} for the current active image.
 PIECE.prototype.get_dimensions = function() {
-  var w = this.images[this.active_image].width;
-  var h = this.images[this.active_image].height;
+  if(this.width != null) {var w = this.width;}
+  else                   {var w = this.images[this.active_image].width;}
+  
+  if(this.height != null) {var h = this.height;}
+  else                    {var h = this.images[this.active_image].height;}
   return {width: w, height: h, max: Math.max(w, h), min: Math.min(w, h)};
 }
 
@@ -873,8 +878,9 @@ PIECE.prototype.ellipse  = function(x, y) {
   var d = rotate_vector(x-this.x, y-this.y, r_deg);
   
   // get width and height
-  var w = this.scale*0.5*this.images[this.active_image].width;
-  var h = this.scale*0.5*this.images[this.active_image].height;
+  var x = this.get_dimensions();
+  var w = this.scale*0.5*x.width;
+  var h = this.scale*0.5*x.height;
   
   // elliptical bounds
   return d.x*d.x/(w*w) + d.y*d.y/(h*h) <= 1;
@@ -891,8 +897,8 @@ PIECE.prototype.outer_circle  = function(x, y) {
   var d = rotate_vector(x-this.x, y-this.y, r_deg);
   
   // get width
-  var w = this.scale*Math.max(0.5*this.images[this.active_image].width, 
-                              0.5*this.images[this.active_image].height);
+  var x = this.get_dimensions();
+  var w = this.scale*Math.max(0.5*x.width, 0.5*x.height);
   
   // circular bounds
   return d.x*d.x + d.y*d.y <= w*w;
@@ -906,11 +912,11 @@ PIECE.prototype.inner_circle  = function(x, y) {
   if (this.rotates_with_board) r_deg = r_deg-this.board.r;
   
   // get rotated coordinates
-  d = rotate_vector(x-this.x, y-this.y, r_deg);
+  var d = rotate_vector(x-this.x, y-this.y, r_deg);
   
   // get width
-  w = this.scale*Math.min(0.5*this.images[this.active_image].width, 
-                          0.5*this.images[this.active_image].height);
+  var x = this.get_dimensions();
+  w = this.scale*Math.min(0.5*x.width, 0.5*x.height);
   
   // circular bounds
   return d.x*d.x + d.y*d.y <= w*w;
@@ -924,11 +930,12 @@ PIECE.prototype.rectangle = function(x,y) {
   if (this.rotates_with_board) r_deg = r_deg-this.board.r;
   
   // get rotated coordinates
-  d = rotate_vector(x-this.x, y-this.y, r_deg);
+  var d = rotate_vector(x-this.x, y-this.y, r_deg);
   
   // rectangular bounds
-  return (Math.abs(d.x) <= this.scale*0.5*this.images[this.active_image].width 
-       && Math.abs(d.y) <= this.scale*0.5*this.images[this.active_image].height);
+  var x = this.get_dimensions();
+  return (Math.abs(d.x) <= this.scale*0.5*x.width 
+       && Math.abs(d.y) <= this.scale*0.5*x.height);
 }
 
 // Returns true if x,y are in the piece bounds
@@ -958,11 +965,14 @@ PIECE.prototype.draw_selection = function() {
   
   var context = this.board.context;
 
-  // get the piece dimensions
+  // Nothing to draw!
   if(!this.images[this.active_image]) return;
-  var w = this.images[this.active_image].width;
-  var h = this.images[this.active_image].height;
   
+  // get the piece dimensions
+  var x = this.get_dimensions();
+  var w = x.width;
+  var h = x.height;
+
   // if we're not allowed to zoom, adjust the size
   if(!this.zooms_with_canvas) {
     w = w*100.0/this.z;
@@ -1355,7 +1365,8 @@ function BOARD(canvas) {
   this.new_piece_is_tray             = false;
   this.new_piece_collect_offset_x    = 2;        // how much to shift each piece when collecting
   this.new_piece_collect_offset_y    = 2;        // how much to shift each piece when collecting
-  
+  this.new_piece_width               = null;
+  this.new_piece_height              = null;
 
   // master list of all image names and objects, used to prevent double-loading
   this.images = {};
@@ -3330,7 +3341,7 @@ BOARD.prototype.draw = function() {
             // untransform
             context.rotate(-sp.r*Math.PI/180.0);
             context.translate(-sp.x, -sp.y);
-          } // end of if piece selecte, draw rectangle
+          } // end of if piece selected, draw rectangle
         } // end of loop over selected pieces for team
       } // end of loop over team selected pieces
     } // end of piece draw loop
