@@ -571,6 +571,7 @@ function PIECE(board, id, image_paths, private_image_paths, scale) {
   this.scale                     = or_default(scale, board.new_piece_scale);
   this.width                     = this.board.new_piece_width;
   this.height                    = this.board.new_piece_height;
+  this.danger_image_index        = this.board.new_piece_danger_image_index;
 
   // Index in the main piece stack (determines drawing order)
   this.previous_n = null;
@@ -1064,20 +1065,23 @@ PIECE.prototype.move_and_draw = function() {
     else this.active_image = 0; 
   }
   
-  // by default, use the public image set
-  var images = this.images;
+  // by default, use the public image set, and we are NOT doing private images.
+  var images  = this.images;
+  var private = false;
   
   // if our team is in the owner list for this piece
   if(this.owners != null && 
      this.owners.indexOf(get_team_number()) > -1 &&
+     
      // and we're supposed to see private images everywhere
-     this.private_images_everywhere) 
+     this.private_images_everywhere) {
 
         // use the private images for sure.
-        images = this.private_images;
+        images  = this.private_images;
+        private = true;
   
   // otherwise, loop over the team zones to see if we should use private images.
-  else {
+  } else {
 	  for(var n=0; n<this.board.team_zones.length; n++) {
 
 		  // if the piece is in our own team zone, use the private images
@@ -1086,13 +1090,14 @@ PIECE.prototype.move_and_draw = function() {
 			 this.board.team_zones[n].contains(this.x, this.y)) {
 			 
 			// switch image sets 
-			images = this.private_images;
-			break;
+      images  = this.private_images;
+      private = true;
+			break; // Found a reason to quit the loop
 		  }
 	  }
   } 
   
-  // draw it.
+  // draw it if there is an active image index and an image to draw.
   if(this.active_image != null && images[this.active_image]) {
     
     // Calculate the new alpha.
@@ -1109,6 +1114,7 @@ PIECE.prototype.move_and_draw = function() {
       else a = this.alpha*(1.0 - Math.pow(1.0-Math.pow(dt/this.t_fade_ms-1.0, 2),8));
 
     } else a = this.alpha;
+    // End of alpha calculation
 
     // set the alpha
     context.globalAlpha = a;
@@ -1139,6 +1145,26 @@ PIECE.prototype.move_and_draw = function() {
     // draw the piece
 	  context.drawImage(images[this.active_image], -0.5*w, -0.5*h, w, h);
     
+    // If danger_image_index is enabled and the danger image is showing, add some color!
+    if(private && this.danger_image_index != null && this.danger_image_index == this.active_image) {
+      
+      var d = this.get_dimensions();
+
+      // set the box style
+      context.lineWidth   = 0*board.selected_border_width*50.0/board.z;
+      context.strokeStyle = board.team_colors[board.client_teams[c]]+'77';
+      context.fillStyle   = board.team_colors[board.client_teams[c]]+'77';
+      
+      // Actually draw it.
+      context.beginPath();
+      context.moveTo(-0.5*d.width, -0.5*d.height);
+      context.lineTo( 0.5*d.width, -0.5*d.height);
+      context.lineTo( 0.5*d.width,  0.5*d.height);
+      context.lineTo(-0.5*d.width,  0.5*d.height);
+      context.closePath();
+      context.fill();
+    }
+
     // unrotate
     context.rotate(-this.r*Math.PI/180.0);
     
@@ -1367,6 +1393,7 @@ function BOARD(canvas) {
   this.new_piece_collect_offset_y    = 2;        // how much to shift each piece when collecting
   this.new_piece_width               = null;
   this.new_piece_height              = null;
+  this.new_piece_danger_image_index  = null;
 
   // master list of all image names and objects, used to prevent double-loading
   this.images = {};
@@ -2633,7 +2660,7 @@ BOARD.prototype.event_keyup  = function(e) {
       case 70:  // F for focus
 
       // If we're rotating, make it immediate for vomiting reasons.
-      this.set_zoom(this._prefocus_zoom_level,                  caps || e.shiftKey);
+      this.set_zoom(this._prefocus_zoom_level,           caps || e.shiftKey);
       this.set_pan(this._prefocus_px, this._prefocus_py, caps || e.shiftKey);
       this.set_rotation(this._prefocus_r,              caps || e.shiftKey);
     

@@ -32,6 +32,7 @@ scale           = 1;
 board.z_target = 80;
 board.r_step   = 45;
 board.pan_step = 250;
+board.focus_zoom_level = 120;
 
 // Collection and expansion settings
 board.collect_r_piece  = null; // Rotates the piece to the current view
@@ -95,6 +96,7 @@ board.new_piece_rotates_with_canvas = true;
 board.new_piece_r_step              = 90;
 //board.set_background_image('table.png');
 board.new_piece_movable_by = null;
+board.new_piece_danger_image_index = 1;
 
 // Add all the cards
 board.new_piece_collect_offset_x = 1;
@@ -221,7 +223,6 @@ function setup(resources) {
 
   // Avatars
   board.expand_pieces(board.avatars, 8, 0, 5300, 400, 400, 0, 0, 0);
-
 }
 
 // Load cookies, ask for the config, and start accepting piece packets.
