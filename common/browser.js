@@ -41,7 +41,8 @@ TO DO: Cookies assigned per web address AND game name.
 //// OPTIONS
 
 var stream_interval_ms = 150;   //150;   // how often to send a stream update (ms)
-var update_interval_ms = 3000; // how often to get a full update (ms)
+var update_interval_ms = 10000; // how often to get a full update (ms)
+var undo_interval_ms   = 1000;
 var draw_interval_ms   = 10;   // how often to draw the canvas (ms)
 
 if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
@@ -1361,6 +1362,9 @@ function BOARD(canvas) {
   this.expand_r                = 0;        // What rotation to apply to xpanded pieces (null works, too)
   this.bottom_index            = 0;
 
+  // Undo array
+  this.undos = [];
+  this.max_undos = 1000;
 
   // needed to distinguish cookies from different games
   this.game_name = 'default';
@@ -1559,7 +1563,8 @@ BOARD.prototype.go = function() {
 
   // Start the timers
   setInterval(this.send_stream_update.bind(this), stream_interval_ms);
-  setInterval(this.get_full_update   .bind(this), update_interval_ms);  
+  //setInterval(this.get_full_update   .bind(this), update_interval_ms);
+  setInterval(this.store_undo        .bind(this), undo_interval_ms);  
 }
 
 // cookie stuff
@@ -2886,10 +2891,13 @@ BOARD.prototype.event_keydown = function(e) {
                            this.mouse.x, this.mouse.y);
         break;
       
-      case 90: // z for zhuffle
+      case 90: // z for zhuffle (or undo)
+        
+        // ctrl-z for undo.
+        if(e.ctrlKey) {this.undo();}
         
         // Normal z just shuffles in place (disable ctrl-z to avoid reflex "undo")
-        if(!e.ctrlKey) this.shuffle_pieces(this.client_selected_pieces[my_index]);
+        else {this.shuffle_pieces(this.client_selected_pieces[my_index]);}
         break;
 
       case 82: // r for roll / randomize
@@ -3444,12 +3452,57 @@ BOARD.prototype.draw = function() {
   } // end of needs redraw
 }
 
+BOARD.prototype.undo = function() {
+
+  // If we have no undos, quit out
+  if(this.undos.length == 0) {
+    console.log('no undos left!');
+    return;
+  }
+
+  console.log('undoing', this.undos.length);
+
+  // If the current configuration matches the most recent undo, pop it.
+  if(this.get_piece_datas_string() == this.undos[0]) 
+    this.undos.splice(0,1);
+
+  // Pop the first element
+  var save = this.undos.splice(0,1)[0];
+
+  // simulate an incoming update from the server
+  server_update(board.get_piece_datas_from_string(save));
+  board.send_full_update(true);
+  //board._ignore_next_store_undo = 5;
+}
+
+BOARD.prototype.store_undo = function() {
+  if(board._ignore_next_store_undo) {
+    board._ignore_next_store_undo--;
+    return;
+  }
+  
+  // Get the current layout and append it to the undos if necessary
+  var save = this.get_piece_datas_string();
+  
+  // If we have no undos yet or the last one is not identical to this one
+  if(this.undos.length == 0 || this.undos[0] != save) {
+    
+    console.log('Storing undo', this.undos.length);
+
+    // Prepend this undo
+    this.undos.splice(0,0,save);
+
+    // Strip the end ones off until we're at the right length
+    this.undos.length = Math.min(this.max_undos, this.undos.length);
+  }
+}
+
 /** 
  * Timer: sends quick updates every fraction of a second for things like
  * dragging a piece around, hand movement, etc.
  */
 BOARD.prototype.send_stream_update = function() {
- 
+
   // Always trigger a redraw to handle things like slow loading of images
   this.trigger_redraw = true;
   var my_index = get_my_client_index();
@@ -3599,6 +3652,8 @@ BOARD.prototype.send_stream_update = function() {
   // if we found something, send it
   if (changed_pieces.length > 0) {
     console.log('Sending-u with', changed_pieces.length, 'pieces');
+  
+    // Store an undo point.
     my_socket.emit('u', changed_pieces);
   }
 } 
@@ -3741,7 +3796,7 @@ BOARD.prototype.get_full_update = function() {
 // a '?' query to get the server state. Now this function is only used when the server
 // is first started and doesn't know any piece coordinates, or when we do something
 // crazy like tantrum.
-BOARD.prototype.send_full_update   = function(force) {
+BOARD.prototype.send_full_update = function(force) {
   
   // "force" allows you to make sure it gets sent
   force = or_default(force, false); 
@@ -3753,6 +3808,7 @@ BOARD.prototype.send_full_update   = function(force) {
   var piece_datas = this.get_piece_datas();
 
   console.log('Sending-full update:', piece_datas.length, 'pieces');
+  
   my_socket.emit('u', piece_datas, true); // true clears the old values from the server's memory
 }
 

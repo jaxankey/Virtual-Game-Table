@@ -258,8 +258,8 @@ function after_event_keydown(e) {
     case 85: // U for deal one Up
       deal(e, true, true);
     break;
-    case 90: // Z for shuffle
-      if(board.client_selected_pieces[get_my_client_index()].length==0) shuffle();
+    case 90: // Z for shuffle  
+      if(!e.ctrlKey && board.client_selected_pieces[get_my_client_index()].length==0) shuffle();
     break;
     
     case 75: // Get dec(K)
