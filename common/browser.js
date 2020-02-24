@@ -3466,9 +3466,8 @@ BOARD.prototype.undo = function() {
   }
   console.log('undoing', this.undos.length);
 
-  // If the current configuration matches the most recent undo, pop it and stick 
-  // it in the redo list
-  if(this.get_piece_datas_string() == this.undos[0]) this.undos.splice(0,1);
+  // Clean up all the states that match our current state (should be at most 1)
+  while(this.get_piece_datas_string() == this.undos[0]) this.undos.splice(0,1);
 
   // If we have no undos, quit out
   if(this.undos.length == 0) {
@@ -3476,16 +3475,12 @@ BOARD.prototype.undo = function() {
     return;
   }
   
-  // Pop the first element (our target)
-  var save = this.undos.splice(0,1)[0];
-  this._previous_undo_save = save;
-
   // Save the current view as a redo
   this.redos.splice(0,0,board.get_piece_datas_string());
   this.redos.length = Math.min(this.max_undos, this.redos.length);
 
   // simulate an incoming update from the server
-  server_update(board.get_piece_datas_from_string(save));
+  server_update(board.get_piece_datas_from_string(this.undos[0]));
   board.send_full_update();
   board._last_undo = Date.now();
 }
@@ -3497,17 +3492,14 @@ BOARD.prototype.redo = function() {
     console.log('no redos left!');
     return;
   }
-  console.log('redoing', this.redos);
+  console.log('redoing', this.redos.length);
 
-  // Pop the first element (our target)
-  var save = this.redos.splice(0,1)[0];
-  
-  // Store an undo without eliminating the redos
-  this.undos.splice(0,0,board.get_piece_datas_string());
+  // Pop the redo and stick it in the undos to restore the original state
+  this.undos.splice(0,0, this.redos.splice(0,1)[0]);
   this.undos.length = Math.min(this.max_undos, this.undos.length);
 
   // simulate an incoming update from the server
-  server_update(board.get_piece_datas_from_string(save));
+  server_update(board.get_piece_datas_from_string(this.undos[0]));
   this.send_full_update();
   this._last_undo = Date.now();
 }
@@ -3531,8 +3523,8 @@ BOARD.prototype.store_undo = function() {
     // reset the timer
     this._last_undo = Date.now();
 
-    // Remove everything from the redos
-    if(this._previous_undo_save != save) this.redos.length = 0;
+    // kill the redos because something changed.
+    this.redos.length = 0;
   }
 }
 
