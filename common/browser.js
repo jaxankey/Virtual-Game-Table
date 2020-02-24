@@ -42,7 +42,7 @@ TO DO: Cookies assigned per web address AND game name.
 
 var stream_interval_ms = 150;   //150;   // how often to send a stream update (ms)
 var update_interval_ms = 3000; // how often to get a full update (ms)
-var undo_interval_ms   = 2000; // how often to take an undo snapshot (ms)
+var undo_interval_ms   = 1000; // how often to take an undo snapshot (ms)
 var draw_interval_ms   = 10;   // how often to draw the canvas (ms)
 
 if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
@@ -3478,6 +3478,7 @@ BOARD.prototype.undo = function() {
   
   // Pop the first element (our target)
   var save = this.undos.splice(0,1)[0];
+  this._previous_undo_save = save;
 
   // Save the current view as a redo
   this.redos.splice(0,0,board.get_piece_datas_string());
@@ -3531,7 +3532,7 @@ BOARD.prototype.store_undo = function() {
     this._last_undo = Date.now();
 
     // Remove everything from the redos
-    this.redos.length = 0;
+    if(this._previous_undo_save != save) this.redos.length = 0;
   }
 }
 
