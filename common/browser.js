@@ -3123,9 +3123,6 @@ BOARD.prototype.set_pan = function(px, py, immediate) {
   this.trigger_redraw  = true;
   this._t_previous_draw = Date.now();
 
-  // JACK: DELETE THIS ONCE STABLE Mouse event (in case caps is down)
-  //this.event_mousemove(this.mouse_event);
-  
   this.set_cookie('px_target', px);
   this.set_cookie('py_target', py);
 }
@@ -3681,13 +3678,15 @@ BOARD.prototype.send_stream_update = function() {
   // Otherwise, if no small pieces have moved for awhile, send a full update.
   // If we recently sent a full update, wait a SHORTER period, to keep "in charge"
   else if (this._last_sent_full) {
-    if(Date.now()-this._last_update >= update_interval_ms) 
+    if(Date.now()-this._last_update >= update_interval_ms) {
       board.send_full_update(); 
+    }
   } 
 
   // If we didn't recently send a full update, wait longer than usual.
-  else if(Date.now()-this._last_update >= 1.5*update_interval_ms) 
+  else if(Date.now()-this._last_update >= 1.5*update_interval_ms) {
     board.send_full_update();
+  }
 
   // If it's been awhile, store an undo point
   if(Date.now()-this._last_undo > undo_interval_ms) board.store_undo();
@@ -3839,6 +3838,7 @@ BOARD.prototype.send_full_update = function() {
 
   console.log('Sending-full update:', piece_datas.length, 'pieces');
   this._last_sent_full = Date.now();
+  this._last_update    = Date.now();
   
   my_socket.emit('u', piece_datas, true); // true clears the old values from the server's memory
 }
