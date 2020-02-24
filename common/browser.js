@@ -42,7 +42,7 @@ TO DO: Cookies assigned per web address AND game name.
 
 var stream_interval_ms = 150;   //150;   // how often to send a stream update (ms)
 var update_interval_ms = 3000; // how often to get a full update (ms)
-var undo_interval_ms   = 1000; // how often to take an undo snapshot (ms)
+var undo_interval_ms   = 2000; // how often to take an undo snapshot (ms)
 var draw_interval_ms   = 10;   // how often to draw the canvas (ms)
 
 if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
