@@ -41,8 +41,8 @@ TO DO: Cookies assigned per web address AND game name.
 //// OPTIONS
 
 var stream_interval_ms = 150;   //150;   // how often to send a stream update (ms)
-var update_interval_ms = 10000; // how often to get a full update (ms)
-var undo_interval_ms   = 1000;
+var update_interval_ms = 3000; // how often to get a full update (ms)
+var undo_interval_ms   = 3000;
 var draw_interval_ms   = 10;   // how often to draw the canvas (ms)
 
 if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
@@ -690,7 +690,7 @@ function PIECE(board, id, image_paths, private_image_paths, scale) {
   this.previous_y = this.y_target;
   this.previous_r = this.r_target;
   this.previous_active_image = this.active_image;
-}
+} // end of PIECE
 
 /**
  * Sends the piece to position n.
@@ -1365,6 +1365,7 @@ function BOARD(canvas) {
   // Undo array
   this.undos = [];
   this.max_undos = 1000;
+  this.redos = [];
 
   // needed to distinguish cookies from different games
   this.game_name = 'default';
@@ -1481,8 +1482,9 @@ function BOARD(canvas) {
   this.background_image        = new Image();
   this.background_image.onload = this.on_background_image_load.bind(this);
   
-  // keep track of the last update
-  this.last_update_ms = Date.now();
+  // keep track of the last update time and last undo time
+  this._last_update = Date.now();
+  this._last_undo   = Date.now();
   
   // keep track of whether we're in peak mode
   this.peak_image_index = 0;
@@ -1536,7 +1538,7 @@ function BOARD(canvas) {
   canvas.addEventListener('keydown',     this.event_keydown    .bind(this), true);
   canvas.addEventListener('keyup',       this.event_keyup      .bind(this), true);
   
-  //// TIMERS 
+  //// TIMER that does not require the "go" command to commence.
   setInterval(this.draw.bind(this), draw_interval_ms);
   
   //// COOKIE STUFF
@@ -1564,7 +1566,7 @@ BOARD.prototype.go = function() {
   // Start the timers
   setInterval(this.send_stream_update.bind(this), stream_interval_ms);
   //setInterval(this.get_full_update   .bind(this), update_interval_ms);
-  setInterval(this.store_undo        .bind(this), undo_interval_ms);  
+  //setInterval(this.store_undo        .bind(this), undo_interval_ms);  
 }
 
 // cookie stuff
@@ -2894,7 +2896,10 @@ BOARD.prototype.event_keydown = function(e) {
       case 90: // z for zhuffle (or undo)
         
         // ctrl-z for undo.
-        if(e.ctrlKey) {this.undo();}
+        if(e.ctrlKey) {
+          if(e.shiftKey) this.redo();
+          else           this.undo();
+        }
         
         // Normal z just shuffles in place (disable ctrl-z to avoid reflex "undo")
         else {this.shuffle_pieces(this.client_selected_pieces[my_index]);}
@@ -3156,7 +3161,7 @@ BOARD.prototype.tantrum = function() {
   }
   
   // send a full update
-  this.send_full_update(true);
+  this.send_full_update();
 }
 
 BOARD.prototype.needs_redraw = function() {
@@ -3459,27 +3464,54 @@ BOARD.prototype.undo = function() {
     console.log('no undos left!');
     return;
   }
-
   console.log('undoing', this.undos.length);
 
-  // If the current configuration matches the most recent undo, pop it.
-  if(this.get_piece_datas_string() == this.undos[0]) 
-    this.undos.splice(0,1);
+  // If the current configuration matches the most recent undo, pop it and stick 
+  // it in the redo list
+  if(this.get_piece_datas_string() == this.undos[0]) this.undos.splice(0,1);
 
-  // Pop the first element
+  // If we have no undos, quit out
+  if(this.undos.length == 0) {
+    console.log('no undos left!');
+    return;
+  }
+  
+  // Pop the first element (our target)
   var save = this.undos.splice(0,1)[0];
+
+  // Save the current view as a redo
+  this.redos.splice(0,0,board.get_piece_datas_string());
+  this.redos.length = Math.min(this.max_undos, this.redos.length);
 
   // simulate an incoming update from the server
   server_update(board.get_piece_datas_from_string(save));
-  board.send_full_update(true);
-  //board._ignore_next_store_undo = 5;
+  board.send_full_update();
+  board._last_undo = Date.now();
+}
+
+BOARD.prototype.redo = function() {
+  
+  // If we have no undos, quit out
+  if(this.redos.length == 0) {
+    console.log('no redos left!');
+    return;
+  }
+  console.log('redoing', this.redos);
+
+  // Pop the first element (our target)
+  var save = this.redos.splice(0,1)[0];
+  
+  // Store an undo without eliminating the redos
+  this.undos.splice(0,0,board.get_piece_datas_string());
+  this.undos.length = Math.min(this.max_undos, this.undos.length);
+
+  // simulate an incoming update from the server
+  server_update(board.get_piece_datas_from_string(save));
+  this.send_full_update();
+  this._last_undo = Date.now();
 }
 
 BOARD.prototype.store_undo = function() {
-  if(board._ignore_next_store_undo) {
-    board._ignore_next_store_undo--;
-    return;
-  }
   
   // Get the current layout and append it to the undos if necessary
   var save = this.get_piece_datas_string();
@@ -3494,6 +3526,12 @@ BOARD.prototype.store_undo = function() {
 
     // Strip the end ones off until we're at the right length
     this.undos.length = Math.min(this.max_undos, this.undos.length);
+
+    // reset the timer
+    this._last_undo = Date.now();
+
+    // Remove everything from the redos
+    this.redos.length = 0;
   }
 }
 
@@ -3507,31 +3545,19 @@ BOARD.prototype.send_stream_update = function() {
   this.trigger_redraw = true;
   var my_index = get_my_client_index();
   
-  // Allows one to add a delay to an update, e.g., when shuffle animating.
-  if(this.ignore_next_streams > 0) {
-    this.ignore_next_streams--;
-    return;
-  }
-
   // Get client index and team
   var my_index = get_my_client_index();
   var sps = this.client_selected_pieces[my_index];
   
-
-
   // Allows one to temporarily highlight some pieces (countdown)
   if(this.clear_selected_after > 0) {
     this.clear_selected_after--;
     if(this.clear_selected_after == 0) this.client_selected_pieces[my_index].length = 0;
   }
 
-
-
   // If we're charging a hadoken, scramble the selected images
   if(this._hadoken_charge_t0 != null && sps.length)
     for(n=0; n<sps.length; n++) sps[n].active_image = rand_int(0,sps[n].images.length-1);
-
-
 
   // Check if any of the client selections have changed; we affect other clients' selections when 
   // we grab their selected pieces.
@@ -3617,7 +3643,7 @@ BOARD.prototype.send_stream_update = function() {
   
 
 
-  // Now loop over ALL the pieces to see if their coordinates or position have changed
+  // Now loop over ALL the pieces to see if their coordinates or images have changed
   var changed_pieces = [];
   for (var n=0; n<this.pieces.length; n++) {
     var p = this.pieces[n]; // TO DO: for some reason, n became a string with "for n in this.pieces!"
@@ -3649,14 +3675,31 @@ BOARD.prototype.send_stream_update = function() {
     } // end of "if anything has changed" about this piece
   } // end of loop over all pieces
   
-  // if we found something, send it
+  // Otherwise, if we found some pieces in different places, send that
   if (changed_pieces.length > 0) {
     console.log('Sending-u with', changed_pieces.length, 'pieces');
-  
-    // Store an undo point.
     my_socket.emit('u', changed_pieces);
+
+    // Reset the update timer. Board will only send a full update
+    // if no one has moved something for a few seconds.
+    board._last_update = Date.now();
   }
-} 
+  
+  // Otherwise, if no small pieces have moved for awhile, send a full update.
+  // If we recently sent a full update, wait a SHORTER period, to keep "in charge"
+  else if (this._last_sent_full) {
+    if(Date.now()-this._last_update >= update_interval_ms) 
+      board.send_full_update(); 
+  } 
+
+  // If we didn't recently send a full update, wait longer than usual.
+  else if(Date.now()-this._last_update >= 1.5*update_interval_ms) 
+    board.send_full_update();
+
+  // If it's been awhile, store an undo point
+  if(Date.now()-this._last_undo > undo_interval_ms) board.store_undo();
+
+} // end of send_stream_update
 
 BOARD.prototype.get_piece_datas = function() {
   
@@ -3680,11 +3723,11 @@ BOARD.prototype.get_piece_datas = function() {
     })
     
     // reset the previous values
-    p.previous_x = p.x_target;
+    /*p.previous_x = p.x_target;
     p.previous_y = p.y_target;
     p.previous_r = p.r_target;
     p.previous_n = n;
-    p.previous_active_image = p.active_image;
+    p.previous_active_image = p.active_image; JACK */
   }
 
   return piece_datas;
@@ -3774,7 +3817,7 @@ BOARD.prototype.load = function() {
 
         // now update the pieces
         server_update(board.get_piece_datas_from_string(content));
-        board.send_full_update(true);
+        board.send_full_update();
     }
   }
 
@@ -3796,18 +3839,13 @@ BOARD.prototype.get_full_update = function() {
 // a '?' query to get the server state. Now this function is only used when the server
 // is first started and doesn't know any piece coordinates, or when we do something
 // crazy like tantrum.
-BOARD.prototype.send_full_update = function(force) {
+BOARD.prototype.send_full_update = function() {
   
-  // "force" allows you to make sure it gets sent
-  force = or_default(force, false); 
-  
-  // check if we should send an update
-  if (!force && Date.now()-this.last_update_ms < update_interval_ms) return 0;
-  this.last_update_ms = Date.now();
-
+  // Get the piece datas
   var piece_datas = this.get_piece_datas();
 
   console.log('Sending-full update:', piece_datas.length, 'pieces');
+  this._last_sent_full = Date.now();
   
   my_socket.emit('u', piece_datas, true); // true clears the old values from the server's memory
 }
@@ -4029,16 +4067,22 @@ server_update = function(piece_datas) {
   // Board is not ready yet. Call board.go() after pieces are defined to start receiving.
   if(!board._ready_for_packets) return;
 
-  // server has sent a pieces update
+  // Reset the update timer. Board will only send a full update
+  board._last_update = Date.now();
+  
   console.log('Received-u:', piece_datas.length, 'pieces');
-
-  // store the current time in case we have to do something based on when the last update happened
-  board.last_update_ms = Date.now();
 
   // Special case: if we got nothing, send a full update to populate the server.
   if(piece_datas.length == 0) {
-    board.send_full_update(true); // force it.
+    board.send_full_update(); // force it.
     return;
+  }
+
+  // If we received a full update
+  if(piece_datas.length == board.pieces.length) {
+    
+    // If we did not recently send a full update
+    if(Date.now()-board._last_sent_full > update_interval_ms*0.5) board._last_sent_full = false;
   }
 
   // Sort the incoming piece datas by the target index (n).
