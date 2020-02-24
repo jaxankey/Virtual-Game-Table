@@ -104,7 +104,7 @@ board.new_piece_movable_by = null;
 board.new_piece_collect_offset_x = 0.1;
 board.new_piece_collect_offset_y = 0.1;
 board.new_piece_width  = 48;
-board.new_piece_height = 79;
+board.new_piece_height = 78;
 cards = [];
 for(var n in names) cards.push(board.add_piece(['cards/back.png', 'cards/'+names[n]+'.png'], ['cards/'+names[n]+'.png', 'cards/'+names[n]+'p.png']));
 
