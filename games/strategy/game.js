@@ -134,6 +134,7 @@ for (n=0; n<6; n++) {
   
   // Rectangular stuff
   board.new_piece_physical_shape = "inner_circle";
+  board.new_piece_rotates_with_canvas = false;
   board.new_piece_owners = [n+1];
   
   // add move pieces
@@ -174,6 +175,8 @@ for (n=0; n<6; n++) {
   for(m=0; m<32; m++) r.push(board.add_piece(['resource.png']));
   resources[n] = r;
   board.new_piece_scale = 1.0;
+
+  board.new_piece_rotates_with_canvas = true;
 }
 
 // add forts
@@ -256,14 +259,14 @@ function collect_pieces() {
       // Distribute the top row
       for (m=0; m<a.length; m++) {
         v = rotate_vector((m-3)*50, y1+75, angle);
-        a[m].set_target(v.x, v.y, -angle, null, true);
+        a[m].set_target(v.x, v.y);
         a[m].active_image = 0;
       }
 
       // Distribute the bottom row
       for (m=0; m<d.length; m++) {
         v = rotate_vector((m-3)*50, y1+130, angle);
-        d[m].set_target(v.x, v.y, -angle, null, true);
+        d[m].set_target(v.x, v.y);
         d[m].active_image = 0;
       } 
       
@@ -271,7 +274,7 @@ function collect_pieces() {
     // Hoard
     else {
       v = rotate_vector(-R*1.0, y1-150, angle);
-      board.collect_pieces(e, v.x, v.y, true, 0, angle, angle, 0, 1);
+      board.collect_pieces(e, v.x, v.y, true, 0, null, angle, 0, 1);
     }
   }
 }
