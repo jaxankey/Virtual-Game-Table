@@ -89,7 +89,7 @@ board.new_piece_physical_shape 		  = 'ellipse';
 hex_tiles = [];
 for(n=0; n<10; n++) hex_tiles.push(board.add_piece(['hex_forest.png']));
 for(n=0; n<4;  n++) hex_tiles.push(board.add_piece(['hex_city.png']));
-for(n=0; n<8;  n++) hex_tiles.push(board.add_piece(['hex_water.png']));
+for(n=0; n<8;  n++) hex_tiles.push(board.add_piece(['hex_desert.png']));
 for(n=0; n<10; n++) hex_tiles.push(board.add_piece(['hex_plains.png']));
 for(n=0; n<5;  n++) hex_tiles.push(board.add_piece(['hex_mountains.png']));
 
@@ -138,7 +138,7 @@ for (n=0; n<6; n++) {
   board.new_piece_owners = [n+1];
   
   // add move pieces
-  board.new_piece_scale = 0.9;
+  board.new_piece_scale = 0.8;
   a = [];
   a.push(board.add_piece(['move_hidden.png', 'attack_3.png'], ['attack_3.png', 'attack_3.png']));
   a.push(board.add_piece(['move_hidden.png', 'attack_2.png'], ['attack_2.png', 'attack_2.png']));
