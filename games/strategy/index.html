@@ -114,6 +114,9 @@
     </table>
     
     <ul id="clients" class="clients"></ul>
+    
+	    <button onclick="collect_pieces();">End Round</button>
+	  
   </div>
   
     
@@ -133,11 +136,8 @@
       </td><td class="tight">
         <select id="teams" onchange="team_onchange()"></select>
 	  </td>
-    </tr><tr>
-	  </td><td class="tight">
-	    <button onclick="collect_pieces();">Collect Pieces</button>
-	  </td>
-    </tr></table>
+    </tr>
+  </table>
     
     <!-- where chat messages will appear -->
     <ul id="messages" class="chat"></ul>

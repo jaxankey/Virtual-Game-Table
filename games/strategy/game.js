@@ -118,6 +118,7 @@ board.new_piece_movable_by  = null;
 board.new_piece_snap_index  = null;
 board.new_piece_rotates_with_canvas = true;
 board.new_piece_physical_shape = 'ellipse';
+board.new_piece_danger_image_index = 1;
 
 // add the action pieces for each player
 places    = [];
@@ -132,34 +133,33 @@ walls_defense = [];
 for (n=0; n<6; n++) {
   
   // Rectangular stuff
-  board.new_piece_physical_shape = "rectangle";
+  board.new_piece_physical_shape = "inner_circle";
   board.new_piece_owners = [n+1];
   
   // add move pieces
+  board.new_piece_scale = 0.9;
   a = [];
-  a.push(board.add_piece(['move_hidden.png', 'attack_3.png'], ['private_attack_3.png', 'attack_3.png']));
-  a.push(board.add_piece(['move_hidden.png', 'attack_2.png'], ['private_attack_2.png', 'attack_2.png']));
-  a.push(board.add_piece(['move_hidden.png', 'attack_2.png'], ['private_attack_2.png', 'attack_2.png']));
-  a.push(board.add_piece(['move_hidden.png', 'attack_1.png'], ['private_attack_1.png', 'attack_1.png']));
-  a.push(board.add_piece(['move_hidden.png', 'attack_1.png'], ['private_attack_1.png', 'attack_1.png']));
-  a.push(board.add_piece(['move_hidden.png', 'attack_1.png'], ['private_attack_1.png', 'attack_1.png']));
-  a.push(board.add_piece(['move_hidden.png', 'bluff.png'   ], ['private_bluff.png',    'bluff.png'   ]));
+  a.push(board.add_piece(['move_hidden.png', 'attack_3.png'], ['attack_3.png', 'attack_3.png']));
+  a.push(board.add_piece(['move_hidden.png', 'attack_2.png'], ['attack_2.png', 'attack_2.png']));
+  a.push(board.add_piece(['move_hidden.png', 'attack_2.png'], ['attack_2.png', 'attack_2.png']));
+  a.push(board.add_piece(['move_hidden.png', 'attack_1.png'], ['attack_1.png', 'attack_1.png']));
+  a.push(board.add_piece(['move_hidden.png', 'attack_1.png'], ['attack_1.png', 'attack_1.png']));
+  a.push(board.add_piece(['move_hidden.png', 'attack_1.png'], ['attack_1.png', 'attack_1.png']));
+  a.push(board.add_piece(['move_hidden.png', 'bluff.png'   ], ['bluff.png',    'bluff.png'   ]));
   attacks[n] = a;
   
   d = [];
-  d.push(board.add_piece(['move_hidden.png', 'defend_3.png'], ['private_defend_3.png', 'defend_3.png']));
-  d.push(board.add_piece(['move_hidden.png', 'defend_2.png'], ['private_defend_2.png', 'defend_2.png']));
-  d.push(board.add_piece(['move_hidden.png', 'defend_2.png'], ['private_defend_2.png', 'defend_2.png']));
-  d.push(board.add_piece(['move_hidden.png', 'defend_1.png'], ['private_defend_1.png', 'defend_1.png']));
-  d.push(board.add_piece(['move_hidden.png', 'defend_1.png'], ['private_defend_1.png', 'defend_1.png']));
-  d.push(board.add_piece(['move_hidden.png', 'defend_1.png'], ['private_defend_1.png', 'defend_1.png']));
-  d.push(board.add_piece(['move_hidden.png', 'bluff.png'   ], ['private_bluff.png',    'bluff.png'   ]));
+  d.push(board.add_piece(['move_hidden.png', 'defend_3.png'], ['defend_3.png', 'defend_3.png']));
+  d.push(board.add_piece(['move_hidden.png', 'defend_2.png'], ['defend_2.png', 'defend_2.png']));
+  d.push(board.add_piece(['move_hidden.png', 'defend_2.png'], ['defend_2.png', 'defend_2.png']));
+  d.push(board.add_piece(['move_hidden.png', 'defend_1.png'], ['defend_1.png', 'defend_1.png']));
+  d.push(board.add_piece(['move_hidden.png', 'defend_1.png'], ['defend_1.png', 'defend_1.png']));
+  d.push(board.add_piece(['move_hidden.png', 'defend_1.png'], ['defend_1.png', 'defend_1.png']));
+  d.push(board.add_piece(['move_hidden.png', 'bluff.png'   ], ['bluff.png',    'bluff.png'   ]));
   defends[n] = d;
-  
-  // Round stuff
-  board.new_piece_physical_shape = "outer_circle";
-  
+    
   // add walls
+  board.new_piece_scale = 1.2;
   wa = [];
   wd = [];
   for(m=0; m<7; m++) {
@@ -169,11 +169,11 @@ for (n=0; n<6; n++) {
   walls_offense[n] = wa;
   walls_defense[n] = wd;
   
-  
   // add resources
   r = [];
   for(m=0; m<32; m++) r.push(board.add_piece(['resource.png']));
   resources[n] = r;
+  board.new_piece_scale = 1.0;
 }
 
 // add forts
@@ -227,42 +227,52 @@ board.add_avatars();
 //////////////////////////
 
 // Collects all the pieces at setup and the end of a turn.
-function collect_pieces(n) {
-  console.log('collect()', n);
+function collect_pieces() {
   
-  n = or_default(n, get_team_number()-1);
-  
-  if (n<0 || n==undefined) return;
-  
-  // get a quick handle on the player pieces
-  angle = team_angles[n];
-  
-  // RESOURCES
-  r = resources[n];
-  for (m=0; m<r.length; m++) {
-    v = rotate_vector(R*1.25  + Math.random()*80-40, 
-                      y1+100 + Math.random()*80-40, angle);
-    r[m].set_target(v.x, v.y, -angle);
-  }
-  
-  // ACTIONS
-  e = attacks[n].concat(defends[n]);
-  shuffle_array(e);
-  a = e.slice(0,e.length/2)
-  d = e.slice(e.length/2,e.length)
-  
-  // Distribute the top row
-  for (m=0; m<a.length; m++) {
-    v = rotate_vector((m-3)*42, y1+80, angle);
-    a[m].set_target(v.x, v.y, -angle, null, true);
-    a[m].active_image = 0;
-  }
+  for (n=0; n<6; n++) {
+    
+    var is_an_active_team = board.client_teams.indexOf(n+1) >= 0;
+    console.log('collect()', n, is_an_active_team);
+    
+    // get a quick handle on the player pieces
+    var angle = team_angles[n];
+    
+    // RESOURCES
+    var r = resources[n];
+    for (m=0; m<r.length; m++) {
+      var v = rotate_vector(R*1.0 + Math.random()*80-40, 
+                            y1-120 + Math.random()*80-40, angle);
+      r[m].set_target(v.x, v.y, -angle);
+    }
+    
+    // ACTIONS
+    e = attacks[n].concat(defends[n]);
+    shuffle_array(e);
 
-  // Distribute teh bottom row
-  for (m=0; m<d.length; m++) {
-    v = rotate_vector((m-3)*42, y1+120, angle);
-    d[m].set_target(v.x, v.y, -angle, null, true);
-    d[m].active_image = 0;
+    if(is_an_active_team) {
+      a = e.slice(0,e.length/2)
+      d = e.slice(e.length/2,e.length)
+      
+      // Distribute the top row
+      for (m=0; m<a.length; m++) {
+        v = rotate_vector((m-3)*42, y1+80, angle);
+        a[m].set_target(v.x, v.y, -angle, null, true);
+        a[m].active_image = 0;
+      }
+
+      // Distribute the bottom row
+      for (m=0; m<d.length; m++) {
+        v = rotate_vector((m-3)*42, y1+120, angle);
+        d[m].set_target(v.x, v.y, -angle, null, true);
+        d[m].active_image = 0;
+      } 
+      
+    }
+    // Hoard
+    else {
+      v = rotate_vector(-R*1.0, y1-150, angle);
+      board.collect_pieces(e, v.x, v.y, true, 0, angle, angle, 0, 1);
+    }
   }
 }
 
@@ -283,36 +293,37 @@ function setup() {
     // random rotation
     //hex_tiles[n].set_rotation(Math.floor(Math.random()*5)*60);
   }
+  
+  // TURN PIECES
+  collect_pieces();
     
   // now deal out the pieces by team
-  for (n=0; n<6; n++) {
+  for (var n=0; n<6; n++) {
     
+    var is_an_active_team = board.client_teams.indexOf(n+1) >= 0;
+    console.log('setup team', n, is_an_active_team);
+
     // store the angle of the team
-    angle = team_angles[n];
+    var angle = team_angles[n];
   
-    // TURN PIECES
-    collect_pieces(n);
-    
     // MINICASTLE
-    v = rotate_vector(0, 405*R/120*N/3, angle);
+    var v = rotate_vector(0, 405*R/120*N/3, angle);
     mini_castles[n].set_target(v.x, v.y, 30-angle);
+    mini_castles[n].send_to_top();
     
     // OCCUPATION MARKERS
-    f  = forts[n];
-    v = rotate_vector(0, 350*R/120*N/3, angle);
-    for (m=0; m<f.length; m++) {
-      v = rotate_vector(-R*1.15, y1+60-0.5*m, angle);
-      f[m].set_target(v.x, v.y, -angle);
-    }
-    
+    var f = forts[n];
+    var v = rotate_vector(-R*0.8, y1-90, angle);
+    board.collect_pieces(f, v.x, v.y, false, 0, angle, angle, 0, 0.5);
+
     // BOMB CARS
-    v = rotate_vector(-R*1.15, y1+140, angle);
+    v = rotate_vector(-R*1.2, y1-90, angle);
     bombs[n].set_target(v.x, v.y, 0);
     
     // CORNER TOWERS
     wa = walls_offense[n];
     for (m=0; m<wa.length; m++) {
-      v = rotate_vector((m-3)*42, y1+40, angle);
+      v = rotate_vector((m-3)*50, y1+40, angle);
       wa[m].set_target(v.x, v.y, -angle);
     }
     wd = walls_defense[n];
