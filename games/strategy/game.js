@@ -259,14 +259,14 @@ function collect_pieces() {
       // Distribute the top row
       for (m=0; m<a.length; m++) {
         v = rotate_vector((m-3)*50, y1+75, angle);
-        a[m].set_target(v.x, v.y);
+        a[m].set_target(v.x, v.y, 0);
         a[m].active_image = 0;
       }
 
       // Distribute the bottom row
       for (m=0; m<d.length; m++) {
         v = rotate_vector((m-3)*50, y1+130, angle);
-        d[m].set_target(v.x, v.y);
+        d[m].set_target(v.x, v.y, 0);
         d[m].active_image = 0;
       } 
       
