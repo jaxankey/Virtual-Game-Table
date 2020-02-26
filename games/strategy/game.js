@@ -54,8 +54,8 @@ board.add_team('yellow',   ['hand_yellow.png','fist_yellow.png'], '#ffe84b');
 board.add_team('manager',  ['hand_white.png', 'fist_white.png' ], '#cccccc');
 
 // team zone and shortcut coordinates
-x1 = 190*R/120*N/3; y1 = 490*R/120*N/3; 
-x3 = x1+50;         y3 = y1+195;
+x1 = 173*R/120*N/3; y1 = 490*R/120*N/3; 
+x3 = x1+50;         y3 = y1+170;
 team_angles = [30, 90, 150, 210, 270, 330];
 board.shortcut_coordinates = [];
 for(n=0; n<6; n++) {
@@ -126,8 +126,8 @@ attacks   = [];
 defends   = [];
 resources = [];
 forts     = [];
-walls_offense = [];
-walls_defense = [];
+towers_offense = [];
+towers_defense = [];
 
 // add all the generic pieces
 for (n=0; n<6; n++) {
@@ -166,8 +166,8 @@ for (n=0; n<6; n++) {
     wd.push(board.add_piece(['wall_defense.png']));
     wa.push(board.add_piece(['wall_offense.png']));
   }
-  walls_offense[n] = wa;
-  walls_defense[n] = wd;
+  towers_offense[n] = wa;
+  towers_defense[n] = wd;
   
   // add resources
   r = [];
@@ -245,7 +245,7 @@ function collect_pieces() {
       r[m].set_target(v.x, v.y, -angle);
     }
     
-    // ACTIONS
+    // ORDERS
     e = attacks[n].concat(defends[n]);
     shuffle_array(e);
 
@@ -255,14 +255,14 @@ function collect_pieces() {
       
       // Distribute the top row
       for (m=0; m<a.length; m++) {
-        v = rotate_vector((m-3)*42, y1+80, angle);
+        v = rotate_vector((m-3)*50, y1+75, angle);
         a[m].set_target(v.x, v.y, -angle, null, true);
         a[m].active_image = 0;
       }
 
       // Distribute the bottom row
       for (m=0; m<d.length; m++) {
-        v = rotate_vector((m-3)*42, y1+120, angle);
+        v = rotate_vector((m-3)*50, y1+130, angle);
         d[m].set_target(v.x, v.y, -angle, null, true);
         d[m].active_image = 0;
       } 
@@ -320,15 +320,21 @@ function setup() {
     v = rotate_vector(-R*1.2, y1-90, angle);
     bombs[n].set_target(v.x, v.y, 0);
     
-    // CORNER TOWERS
-    wa = walls_offense[n];
+    // TOWERS
+    var dy = -23;
+    if(is_an_active_team) dy = 23;
+
+    var wa = towers_offense[n];
+    shuffle_array(wa);    
     for (m=0; m<wa.length; m++) {
-      v = rotate_vector((m-3)*50, y1+40, angle);
+      v = rotate_vector((m-6.5)*37, y1+dy, angle);
       wa[m].set_target(v.x, v.y, -angle);
     }
-    wd = walls_defense[n];
+
+    var wd = towers_defense[n];
+    shuffle_array(wd);
     for (m=0; m<wd.length; m++) {
-      v = rotate_vector((m-3)*42, y1+160, angle);
+      v = rotate_vector((m+0.5)*37, y1+dy, angle);
       wd[m].set_target(v.x, v.y, -angle);
     }
 
