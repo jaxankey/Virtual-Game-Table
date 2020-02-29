@@ -204,7 +204,7 @@ function quick_check() {
     timestamp_ms = Date.now();
     
     // Only proceed some time after the last update.
-    if(timestamp_ms-t_last_update_ms < update_interval_ms) return;
+    if(timestamp_ms-t_last_update_ms < update_interval_ms || client_ids.length == 0) return;
     
     // Send everything if we've been idle for awhile.
     log('Sending full update', pieces.length, 'pieces.');
