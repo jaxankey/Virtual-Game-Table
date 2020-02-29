@@ -49,11 +49,11 @@ x1 = 700; y1 = 1450;
 x3 = 780; y3 = 1590;
 team_angles = [-120, -60, 0, 60, 120];
 
-board.set_team_zone(1, -x1,y1, x1,y1, x3,y3, -x3,y3, team_angles[0], 1, 0, 1);
-board.set_team_zone(2, -x1,y1, x1,y1, x3,y3, -x3,y3, team_angles[1], 1, 0, 1);
-board.set_team_zone(3, -x1,y1, x1,y1, x3,y3, -x3,y3, team_angles[2], 1, 0, 1);
-board.set_team_zone(4, -x1,y1, x1,y1, x3,y3, -x3,y3, team_angles[3], 1, 0, 1);
-board.set_team_zone(5, -x1,y1, x1,y1, x3,y3, -x3,y3, team_angles[4], 1, 0, 1);
+board.add_team_zone(1, -x1,y1, x1,y1, x3,y3, -x3,y3, team_angles[0], 1, 0, 1);
+board.add_team_zone(2, -x1,y1, x1,y1, x3,y3, -x3,y3, team_angles[1], 1, 0, 1);
+board.add_team_zone(3, -x1,y1, x1,y1, x3,y3, -x3,y3, team_angles[2], 1, 0, 1);
+board.add_team_zone(4, -x1,y1, x1,y1, x3,y3, -x3,y3, team_angles[3], 1, 0, 1);
+board.add_team_zone(5, -x1,y1, x1,y1, x3,y3, -x3,y3, team_angles[4], 1, 0, 1);
 
 // Locations to go to when hitting the number keys
 board.shortcut_coordinates = [

@@ -41,7 +41,6 @@ TO DO: Cookies assigned per web address AND game name.
 //// OPTIONS
 
 var stream_interval_ms = 150;   //150;   // how often to send a stream update (ms)
-var update_interval_ms = 3000; // how often to get a full update (ms)
 var undo_interval_ms   = 2000; // how often to take an undo snapshot (ms)
 var draw_interval_ms   = 10;   // how often to draw the canvas (ms)
 
@@ -286,15 +285,6 @@ function is_within_selection_box(x,y,box) {
   return rp.x >= Math.min(r0.x,r1.x) && rp.x <= Math.max(r0.x,r1.x) &&
          rp.y >= Math.min(r0.y,r1.y) && rp.y <= Math.max(r0.y,r1.y) ;
 }
-
-/**
- * Sends all the team zone information to the server and other players.
- */
-/*function send_team_zones() {
-  packets = get_team_zone_packets();
-  console.log('Sending tz with', packets.length, 'team zones')
-  my_socket.emit('tz', get_team_zone_packets());
-}*/
 
 /**
  * Calculates the other two selection box corners based on the view rotation.
@@ -1200,23 +1190,63 @@ PIECE.prototype.move_and_draw = function() {
  * @param {int} draw_mode draw draw_mode: 0=bottom, 1=top
  * @param {int} grab_mode piece grabbing: 0=Only team, 1=anyone
  */
-function TEAMZONE(board, team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, draw_mode, grab_mode) {
+function TEAMZONE(board, team_index, x1, y1, x2, y2, x3, y3, x4, y4, r, alpha, draw_mode, grab_mode) {
 
-  // internal data
+  // internal data that cannot be adjusted
   this.board      = board;
   this.team_index = team_index;
-  this.draw_mode  = or_default(draw_mode, 1);  // 0 = draw on bottom (table), 1 = draw on top (opaque)
+  
+  // Default optional zone parameters
+  var r         = or_default(r, 0);
+  var alpha     = or_default(alpha, 1.0);
+  var draw_mode = or_default(draw_mode, 1); // 0 = draw on bottom (table), 1 = draw on top (opaque)
+  var grab_mode = or_default(grab_mode, 0);
+
+  // Set the parameters but don't broadcast (goes with send_full_update(), or is sent by server)
+  this.set_zone_parameters(x1, y1, x2, y2, x3, y3, x4, y4, r, alpha, draw_mode, grab_mode, false);
+  
+  console.log('New Team Zone', team_index);
+}
+
+/**
+ * Sets the teamzone parameters.
+ */
+TEAMZONE.prototype.set_zone_parameters = function(x1, y1, x2, y2, x3, y3, x4, y4, r, alpha, draw_mode, grab_mode, broadcast) {
+  
+  var broadcast = or_default(broadcast, true);
+
+  this.x1 = or_default(x1, this.x1); 
+  this.y1 = or_default(y1, this.y1);
+  this.x2 = or_default(x2, this.x2); 
+  this.y2 = or_default(y2, this.y2);
+  this.x3 = or_default(x3, this.x3); 
+  this.y3 = or_default(y3, this.y3);
+  this.x4 = or_default(x4, this.x4); 
+  this.y4 = or_default(y4, this.y4);
+  
+  this.r          = or_default(r, this.r);
+  this.alpha      = or_default(alpha, this.alpha);
+  this.draw_mode  = or_default(draw_mode, 1);  
   this.grab_mode  = or_default(grab_mode, 0);
 
-  this.x1 = x1; this.y1 = y1;
-  this.x2 = x2; this.y2 = y2;
-  this.x3 = x3; this.y3 = y3;
-  this.x4 = x4; this.y4 = y4;
-  
-  this.r     = or_default(r, 0);
-  this.alpha = alpha;
-  
-  console.log('New Team Zone:', team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, draw_mode);
+  // Tell everyone else.
+  if(board._ready_for_packets && broadcast) {
+    console.log('Sending_tz', this.team_index);
+    my_socket.emit('tz', this.get_packet());
+  }
+}
+
+TEAMZONE.prototype.get_packet = function() {
+  return {
+    team_index:this.team_index,
+    x1:this.x1, y1:this.y1,
+    x2:this.x2, y2:this.y2,
+    x3:this.x3, y3:this.y3,
+    x4:this.x4, y4:this.y4,
+    r:this.r, alpha:this.alpha,
+    draw_mode:this.draw_mode,
+    grab_mode:this.grab_mode
+  }
 }
 
 /**
@@ -1483,7 +1513,6 @@ function BOARD(canvas) {
   this.background_image.onload = this.on_background_image_load.bind(this);
   
   // keep track of the last update time and last undo time
-  this._last_update = Date.now();
   this._last_undo   = Date.now();
   
   // keep track of whether we're in peak mode
@@ -1565,8 +1594,6 @@ BOARD.prototype.go = function() {
 
   // Start the timers
   setInterval(this.send_stream_update.bind(this), stream_interval_ms);
-  //setInterval(this.get_full_update   .bind(this), update_interval_ms);
-  //setInterval(this.store_undo        .bind(this), undo_interval_ms);  
 }
 
 // cookie stuff
@@ -3128,15 +3155,10 @@ BOARD.prototype.set_pan = function(px, py, immediate) {
 }
 
 // set the team zone polygon
-BOARD.prototype.set_team_zone = function(team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, draw_mode, grab_mode) {
+BOARD.prototype.add_team_zone = function(team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, draw_mode, grab_mode) {
 
   // create a team zone object
   this.team_zones[team_index] = new TEAMZONE(this, team_index, x1,y1, x2,y2, x3,y3, x4,y4, r, alpha, draw_mode, grab_mode);
-}
-
-
-function setup() {
-  console.log("function setup(): Overwrite me to setup your game's pieces!");
 }
 
 BOARD.prototype.tantrum = function() {
@@ -3669,23 +3691,6 @@ BOARD.prototype.send_stream_update = function() {
   if (changed_pieces.length > 0) {
     console.log('Sending-u with', changed_pieces.length, 'pieces');
     my_socket.emit('u', changed_pieces);
-
-    // Reset the update timer. Board will only send a full update
-    // if no one has moved something for a few seconds.
-    board._last_update = Date.now();
-  }
-  
-  // Otherwise, if no small pieces have moved for awhile, send a full update.
-  // If we recently sent a full update, wait a SHORTER period, to keep "in charge"
-  else if (this._last_sent_full) {
-    if(Date.now()-this._last_update >= update_interval_ms) {
-      board.send_full_update(); 
-    }
-  } 
-
-  // If we didn't recently send a full update, wait longer than usual.
-  else if(Date.now()-this._last_update >= 1.5*update_interval_ms) {
-    board.send_full_update();
   }
 
   // If it's been awhile, store an undo point
@@ -3837,10 +3842,13 @@ BOARD.prototype.send_full_update = function() {
   var piece_datas = this.get_piece_datas();
 
   console.log('Sending-full update:', piece_datas.length, 'pieces');
-  this._last_sent_full = Date.now();
-  this._last_update    = Date.now();
   
   my_socket.emit('u', piece_datas, true); // true clears the old values from the server's memory
+
+  // Send the team zones
+  for(var n in board.team_zones) 
+    if(board.team_zones[n]) 
+      my_socket.emit('tz', board.team_zones[n].get_packet());
 }
 
 
@@ -4050,6 +4058,20 @@ server_assigned_id = function(id) {
 }
 my_socket.on('id', server_assigned_id);
 
+// Server sends a full update query
+function server_wants_full_update() {
+  console.log('Received_fu?');
+  board.send_full_update();
+}
+my_socket.on('fu?', server_wants_full_update);
+
+server_team_zone = function(p) {
+
+  // Update the team_zone.
+  board.team_zones[p.team_index].set_zone_parameters(p.x1, p.y1, p.x2, p.y2, p.x3, p.y3, p.x4, p.y4, p.r, p.alpha, p.draw_mode, p.grab_mode, false);
+
+}
+my_socket.on('tz', server_team_zone);
 
 // Function to handle when the server sends a piece update ('u')
 server_update = function(piece_datas) {
@@ -4069,13 +4091,6 @@ server_update = function(piece_datas) {
   if(piece_datas.length == 0) {
     board.send_full_update(); // force it.
     return;
-  }
-
-  // If we received a full update
-  if(piece_datas.length == board.pieces.length) {
-    
-    // If we did not recently send a full update
-    if(Date.now()-board._last_sent_full > update_interval_ms*0.5) board._last_sent_full = false;
   }
 
   // Sort the incoming piece datas by the target index (n).

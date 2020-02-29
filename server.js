@@ -16,9 +16,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Timing
+var update_interval_ms    = 5000; // Delay after last move before asking for a full update (ms)
+var t_last_update_ms      = Date.now(); // Reset the timer.
+
 // Versions included in external_scripts
-jquery_version    = 'jquery-1.11.1.js'
-socket_io_version = 'socket.io-1.2.0.js'
+var jquery_version    = 'jquery-1.11.1.js'
+var socket_io_version = 'socket.io-1.2.0.js'
 
 // port upon which the server listens
 var game_name = 'cards';
@@ -192,6 +196,23 @@ client_teams              = []; // team numbers associated with each socket
 client_is_holding         = []; // lists of last known held piece indices for each socket
 client_selected_piece_ids = []; // Lists of the last known selected pieces for each socket
 client_drag_offsets       = []; // list of [dx,dy] offset coordinates for each held piece
+team_zones                = {}; // dictionary of team zones by team_index
+
+// Timer to check for things that should happen periodically.
+function quick_check() {
+    
+    timestamp_ms = Date.now();
+    
+    // Only proceed some time after the last update.
+    if(timestamp_ms-t_last_update_ms < update_interval_ms) return;
+    
+    // Send everything if we've been idle for awhile.
+    log('Sending full update', pieces.length, 'pieces.');
+    io.emit('u', pieces); 
+    t_last_update_ms = Date.now();
+}
+setInterval(quick_check, 500);
+
 
 
 ///////////////////////////////////////////
@@ -245,9 +266,19 @@ io.on('connection', function(socket) {
     log('Sending last known config:', pieces.length, "pieces");
     socket.emit('u', pieces);
 
+    // Send the team zones
+    for(k in team_zones) socket.emit('tz', team_zones[k]);
+
     // Send the selected pieces of all the other clients
     for(var n in client_selected_piece_ids) 
       if(n != client_index) socket.emit('s', client_selected_piece_ids[n], client_ids[n]);
+  });
+
+  // Received team_zone parameters update
+  socket.on('tz', function(packet) {
+    log('Received and broadcasting tz', packet.team_index);
+    team_zones[packet.team_index] = packet;
+    io.emit('tz', packet);
   });
 
   // Received a name or team change triggers a full user information dump, including held pieces.
@@ -312,13 +343,19 @@ io.on('connection', function(socket) {
   /**
    * Someone sent information about a bunch of pieces.
    */
-  function update_pieces(incoming_pieces, clear) {
-    // pieces is a list
+  socket.on('u', function(incoming_pieces, clear) {
+    
+    // Reset the update clock
+    t_last_update_ms = Date.now();
+
+    // Get the client index
     client_index = client_sockets.indexOf(socket);
     log(client_index, 'u:', incoming_pieces.length, 'pieces');
 
     // Emit to EVERYONE, including the original client, to resolve collisions.
+    // Draw the diagram with and without the return ping to see why!
     // The client software should ignore data about pieces they're holding.
+    // The trick is to not have more than one client sending a mass update.
     io.emit('u', incoming_pieces); 
 
     // Now update our private memory to match!
@@ -332,39 +369,53 @@ io.on('connection', function(socket) {
     // Sort the piece datas by n's (position in the stack must be increasing for the algorithm below)
     incoming_pieces.sort(function(a, b){return a.n-b.n});
 
+    //////////////////////////////////////////////////////
+    // Inserting the pieces sorted into the master list.
+    //////////////////////////////////////////////////////
+
     // Pop all the incoming pieces out of the existing list (if present)
     for(var i in incoming_pieces) {
       pd = incoming_pieces[i]; 
       
       // find the index in the current list
-      var m = find_piece(pd.id); // index of incoming piece
+      var m = find_piece(pd.id);
       
-      // if the piece exists, pop it (to be replaced below) and update the rest
+      // if the piece exists in our list, pop it (to be replaced below) and update the rest
       if(m>=0) {
         
-        // Remove it
+        // Remove it (throw it away)
         pieces.splice(m,1);
 
         // Decrement the indices of the subsequent pieces so they match the actual indices
         for(var j=m; j<pieces.length; j++) pieces[j].n--;
       }
-    } // end of loop over supplied pieces
+    } // end of first loop over supplied pieces
 
     // Loop over the incoming pieces again to insert them into the main stack, which currently should not contain them. 
     // We do this in separate loops so that pieces removed from random locations and sent to 
     // random locations do not interact. The value of ns is the final value in the pieces array.
+    var timestamp_ms = Date.now(); // Time tag for the piece
     for(var i in incoming_pieces) {
       p = incoming_pieces[i]; // incoming piece
+      p.timestamp_ms = timestamp_ms;
 
+      // Reset if there is a problem
+      if(p.n > pieces.length) {
+        io.emit('chat', 'Server warning: p.n='+String(p.n)+' length='+pieces.length, '(resetting server pieces)');
+        log('WARNING: Mismatched piece count. RESETTING.')
+        pieces.length = 0;
+        client_sockets[0].emit('u', pieces);
+        return;
+      }
+      
       // insert the piece at it's index
-      if(p.n > pieces.length) io.emit('chat', 'Server warning: p.n='+String(p.n)+' length='+pieces.length);
       pieces.splice(p.n, 0, p);
       
       // increment the subsequent piece indices
       for(var j=p.n+1; j<pieces.length; j++) pieces[j].n++;
     }
-  }
-  socket.on('u', update_pieces);
+  });
+  
 
   // Deal with selection changes at the team level, 
   // and held piece changes at the client level.
@@ -406,7 +457,20 @@ io.on('connection', function(socket) {
     io.emit('h', client_id, is_holding);
   });
   
+  // User can update some variables.
+  socket.on('set', function(key, value) {
+    
+    switch(key) {
 
+      // How long the server waits after any update before requesting a full update
+      case 'update_interval_ms':
+        if(Number.isInteger(value)) {
+          log('Setting update_interval_ms =', value);
+          update_interval_ms = value;
+        }
+        break;
+    }
+  });
 
 
   // Test function to ping back.

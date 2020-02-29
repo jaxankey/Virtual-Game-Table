@@ -54,17 +54,19 @@ board.add_team('yellow',   ['hand_yellow.png','fist_yellow.png'], '#ffe84b');
 board.add_team('manager',  ['hand_white.png', 'fist_white.png' ], '#cccccc');
 
 // team zone and shortcut coordinates
-x1 = 173*R/120*N/3; y1 = 490*R/120*N/3; 
-x3 = x1+50;         y3 = y1+170;
-team_angles = [30, 90, 150, 210, 270, 330];
+var x1 = 173*R/120*N/3; 
+var y1 = 490*R/120*N/3; 
+var x3 = x1+50;         
+var y3 = y1+170;
+var team_angles = [30, 90, 150, 210, 270, 330];
 board.shortcut_coordinates = [];
 for(n=0; n<6; n++) {
-  board.set_team_zone(n+1,-x1,y1,x1,y1,x3,y3,-x3,y3,      team_angles[n]);
+  board.add_team_zone(n+1,-x1,y1,x1,y1,x3,y3,-x3,y3,      team_angles[n]);
   board.shortcut_coordinates.push([0, -405*R/120*N/3, 50, team_angles[n]]);
 }
 
 //////////////////////////
-// HEX TILES
+// TERRITORIES
 //////////////////////////
 
 // Add a snap grid
@@ -86,12 +88,11 @@ board.new_piece_r_step      		    = 60;
 board.new_piece_physical_shape 		  = 'ellipse';
 
 // add the hex tiles
-hex_tiles = [];
-for(n=0; n<10; n++) hex_tiles.push(board.add_piece(['hex_forest.png']));
-for(n=0; n<4;  n++) hex_tiles.push(board.add_piece(['hex_city.png']));
-for(n=0; n<8;  n++) hex_tiles.push(board.add_piece(['hex_desert.png']));
-for(n=0; n<10; n++) hex_tiles.push(board.add_piece(['hex_plains.png']));
-for(n=0; n<5;  n++) hex_tiles.push(board.add_piece(['hex_mountains.png']));
+forests   = board.add_pieces(10, ['hex_forest.png']);
+cities    = board.add_pieces(10, ['hex_city.png']);
+deserts   = board.add_pieces(10, ['hex_desert.png']);
+plains    = board.add_pieces(10, ['hex_plains.png']);
+mountains = board.add_pieces(10, ['hex_mountains.png']);
 
 // add the castles
 //castle = board.add_piece(['castle.png']);
@@ -121,7 +122,6 @@ board.new_piece_physical_shape = 'ellipse';
 board.new_piece_danger_image_index = 1;
 
 // add the action pieces for each player
-places    = [];
 attacks   = [];
 defends   = [];
 resources = [];
@@ -174,8 +174,8 @@ for (n=0; n<6; n++) {
   r = [];
   for(m=0; m<32; m++) r.push(board.add_piece(['resource.png']));
   resources[n] = r;
-  board.new_piece_scale = 1.0;
 
+  board.new_piece_scale = 1.0;
   board.new_piece_rotates_with_canvas = true;
 }
 
@@ -231,70 +231,141 @@ board.add_avatars();
 
 // Collects all the pieces at setup and the end of a turn.
 function collect_pieces() {
-  
-  for (n=0; n<6; n++) {
-    
-    var is_an_active_team = board.client_teams.indexOf(n+1) >= 0;
-    console.log('collect()', n, is_an_active_team);
-    
-    // get a quick handle on the player pieces
-    var angle = team_angles[n];
-    
-    // RESOURCES
-    var r = resources[n];
-    for (m=0; m<r.length; m++) {
-      var v = rotate_vector(R*1.0 + Math.random()*80-40, 
-                            y1-120 + Math.random()*80-40, angle);
-      r[m].set_target(v.x, v.y, -angle);
-    }
-    
-    // ORDERS
-    e = attacks[n].concat(defends[n]);
-    shuffle_array(e);
 
-    if(is_an_active_team) {
-      a = e.slice(0,e.length/2)
-      d = e.slice(e.length/2,e.length)
+  if(board_mode == 'big') {
+    for (n=0; n<6; n++) {
       
-      // Distribute the top row
-      for (m=0; m<a.length; m++) {
-        v = rotate_vector((m-3)*50, y1+75, angle);
-        a[m].set_target(v.x, v.y, 0);
-        a[m].active_image = 0;
+      var is_an_active_team = board.client_teams.indexOf(n+1) >= 0;
+      console.log('collect()', n, is_an_active_team);
+      
+      // get a quick handle on the player pieces
+      var angle = team_angles[n];
+      
+      // RESOURCES
+      var r = resources[n];
+      for (m=0; m<r.length; m++) {
+        var v = rotate_vector(R*1.0 + Math.random()*80-40, 
+                              y1-120 + Math.random()*80-40, angle);
+        r[m].set_target(v.x, v.y, -angle);
       }
-
-      // Distribute the bottom row
-      for (m=0; m<d.length; m++) {
-        v = rotate_vector((m-3)*50, y1+130, angle);
-        d[m].set_target(v.x, v.y, 0);
-        d[m].active_image = 0;
-      } 
       
+      // ORDERS
+      e = attacks[n].concat(defends[n]);
+      shuffle_array(e);
+
+      if(is_an_active_team) {
+        a = e.slice(0,e.length/2)
+        d = e.slice(e.length/2,e.length)
+        
+        // Distribute the top row
+        for (m=0; m<a.length; m++) {
+          v = rotate_vector((m-3)*50, y1+75, angle);
+          a[m].set_target(v.x, v.y, 0);
+          a[m].active_image = 0;
+        }
+
+        // Distribute the bottom row
+        for (m=0; m<d.length; m++) {
+          v = rotate_vector((m-3)*50, y1+130, angle);
+          d[m].set_target(v.x, v.y, 0);
+          d[m].active_image = 0;
+        } 
+        
+      }
+      // Hoard
+      else {
+        v = rotate_vector(-R*1.0, y1-150, angle);
+        board.collect_pieces(e, v.x, v.y, true, 0, null, angle, 0, 1);
+      }
     }
-    // Hoard
-    else {
-      v = rotate_vector(-R*1.0, y1-150, angle);
-      board.collect_pieces(e, v.x, v.y, true, 0, null, angle, 0, 1);
+  } // end of big
+
+  // lil board
+  else {
+
+    for (n=0; n<6; n++) {
+      
+      var is_an_active_team = board.client_teams.indexOf(n+1) >= 0;
+      console.log('collect()', n, is_an_active_team);
+      
+      // get a quick handle on the player pieces
+      var angle = team_angles[n];
+      
+      // RESOURCES
+      var r = resources[n];
+      for (m=0; m<r.length; m++) {
+        var v = rotate_vector(R*1.45 + Math.random()*70-35, 
+                              y1-270 + Math.random()*70-35, angle);
+        r[m].set_target(v.x, v.y, -angle);
+      }
+      
+      // ORDERS
+      e = attacks[n].concat(defends[n]);
+      shuffle_array(e);
+
+      if(is_an_active_team) {
+        a = e.slice(0,e.length/2)
+        d = e.slice(e.length/2,e.length)
+        
+        // Distribute the top row
+        for (m=0; m<a.length; m++) {
+          v = rotate_vector((m-3)*50, y1-90, angle);
+          a[m].set_target(v.x, v.y, 0);
+          a[m].active_image = 0;
+        }
+
+        // Distribute the bottom row
+        for (m=0; m<d.length; m++) {
+          v = rotate_vector((m-3)*50, y1-35, angle);
+          d[m].set_target(v.x, v.y, 0);
+          d[m].active_image = 0;
+        } 
+        
+      }
+      // Horders
+      else {
+        v = rotate_vector(0, 490, angle);
+        board.collect_pieces(e, v.x, v.y, true, 0, null, angle, 0, 1);
+      }
     }
-  }
+  } // end of lil
 }
 
 // Initial setup of the whole board
-function setup() {
-  console.log('setup()');
+function setup_big() {
+  console.log('setup_big()');
+  board_mode = 'big';
   
-  // shuffle the hex tiles
-  shuffle_array(hex_tiles);
+  var x1 = 173*R/120*N/3; 
+  var y1 = 490*R/120*N/3; 
+  var x3 = x1+50;         
+  var y3 = y1+170;
+  for(n=0; n<6; n++) {
+    board.team_zones[n+1].set_zone_parameters(-x1, y1, x1, y1, x3, y3, -x3, y3, team_angles[n], 1.0);
+    board.shortcut_coordinates.push([0, -405*R/120*N/3, 50, team_angles[n]]);
+  }
+
+  // Send all the territories to the bottom.
+  for(var n in forests)   forests[n]  .set_target_grid(0,0,30).send_to_bottom();
+  for(var n in cities)    cities[n]   .set_target_grid(0,0,30).send_to_bottom();
+  for(var n in mountains) mountains[n].set_target_grid(0,0,30).send_to_bottom();
+  for(var n in plains)    plains[n]   .set_target_grid(0,0,30).send_to_bottom();
+  for(var n in deserts)   deserts[n]  .set_target_grid(0,0,30).send_to_bottom();
+
+  // Assemble and shuffle the territories
+  var territories = forests.slice(0,10).concat(cities.slice(0,5)).concat(mountains.slice(0,5)).concat(plains.slice(0,10)).concat(deserts.slice(0,7));
+  shuffle_array(territories);
 
   // deal them out
-  for(n=0; n<hex_tiles.length; n++) {
+  for(n=0; n<territories.length; n++) {
 
     // get the spiral grid coordinates
     s = hex_spiral(n);
-    hex_tiles[n].set_target_grid(s.n, s.m, 30);
+    territories[n].set_target_grid(s.n, s.m, 30);
+    territories[n].send_to_top();
     
     // random rotation
-    //hex_tiles[n].set_rotation(Math.floor(Math.random()*5)*60);
+    //territories[n].set_rotation(Math.floor(Math.random()*5)*60);
   }
   
   // TURN PIECES
@@ -310,9 +381,8 @@ function setup() {
     var angle = team_angles[n];
   
     // MINICASTLE
-    var v = rotate_vector(0, 405*R/120*N/3, angle);
-    mini_castles[n].set_target(v.x, v.y, 30-angle);
-    mini_castles[n].send_to_top();
+    var v = rotate_vector(0, 400*R/120*N/3, angle);
+    mini_castles[n].set_target(v.x, v.y, 30-angle).send_to_top();
     
     // OCCUPATION MARKERS
     var f = forts[n];
@@ -341,7 +411,6 @@ function setup() {
       wd[m].set_target(v.x, v.y, -angle);
     }
 
-    
   } // end of dealing team pieces
   
   // special pieces
@@ -356,7 +425,104 @@ function setup() {
   // Avatars          (pieces,        x,              y, shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
   board.collect_pieces(board.avatars, 0, -580*R/120*N/3, false,  0,           undefined, undefined, 1,1);
 
-}
+} // end of setup_big
+
+
+
+
+
+// LIL SETUP
+function setup_lil() {
+  console.log('setup_lil()');
+  board_mode='lil';
+  
+  var x1 = 173*R/120*N/3; 
+  var y1 = 380*R/120*N/3; 
+  var x3 = x1+50;         
+  var y3 = y1+170;
+  for(n=0; n<6; n++) {
+    board.team_zones[n+1].set_zone_parameters(-x1, y1, x1, y1, x3, y3, -x3, y3, team_angles[n], 1.0);
+    board.shortcut_coordinates.push([0, -405*R/120*N/3, 50, team_angles[n]]);
+  }
+
+  // Send all the territories & castles to the bottom.
+  for(var n in forests)   forests[n]  .set_target_grid(0,0,30).send_to_bottom();
+  for(var n in cities)    cities[n]   .set_target_grid(0,0,30).send_to_bottom();
+  for(var n in mountains) mountains[n].set_target_grid(0,0,30).send_to_bottom();
+  for(var n in plains)    plains[n]   .set_target_grid(0,0,30).send_to_bottom();
+  for(var n in deserts)   deserts[n]  .set_target_grid(0,0,30).send_to_bottom();
+  for(var n in mini_castles) mini_castles[n].set_target_grid(0,0,30).send_to_bottom();
+
+  // Assemble and shuffle the territories
+  var territories = forests.slice(0,4).concat(cities.slice(0,5)).concat(mountains.slice(0,2)).concat(plains.slice(0,4)).concat(deserts.slice(0,4));
+  shuffle_array(territories);
+
+  // deal them out
+  for(n=0; n<territories.length; n++) {
+
+    // get the spiral grid coordinates
+    s = hex_spiral(n);
+    territories[n].set_target_grid(s.n, s.m, 30);
+    territories[n].send_to_top();
+    
+    // random rotation
+    //territories[n].set_rotation(Math.floor(Math.random()*5)*60);
+  }
+  
+  // TURN PIECES
+  collect_pieces();
+    
+  // now deal out the pieces by team
+  for (var n=0; n<6; n++) {
+    
+    var is_an_active_team = board.client_teams.indexOf(n+1) >= 0;
+    console.log('setup team', n, is_an_active_team);
+
+    // store the angle of the team
+    var angle = team_angles[n];
+  
+    // OCCUPATION MARKERS
+    var f = forts[n];
+    var v = rotate_vector(-90, 490, angle);
+    board.collect_pieces(f, v.x, v.y, false, 0, angle, angle, 0, 0.5);
+
+    // BOMB CARS
+    v = rotate_vector(90, 490, angle);
+    bombs[n].set_target(v.x, v.y, 0);
+    
+    // TOWERS
+    var dy = -23;
+    if(is_an_active_team) dy = 23;
+
+    var wa = towers_offense[n];
+    shuffle_array(wa);    
+    for (m=0; m<wa.length; m++) {
+      v = rotate_vector((m-6.5)*37, y1+dy, angle);
+      wa[m].set_target(v.x, v.y, -angle);
+    }
+
+    var wd = towers_defense[n];
+    shuffle_array(wd);
+    for (m=0; m<wd.length; m++) {
+      v = rotate_vector((m+0.5)*37, y1+dy, angle);
+      wd[m].set_target(v.x, v.y, -angle);
+    }
+
+  } // end of dealing team pieces
+  
+  // special pieces
+  poo .set_target(0, 470*R/120*N/3,0);
+  king.set_target(0,-470*R/120*N/3,0);
+
+  // put dice off to the side.
+  for(n in dice) dice[n].set_target(120*(Math.random()-0.5), 
+              470*R/120*N/3 + 200 + 120*(Math.random()-0.5), 
+                                    720*(Math.random()-0.5));
+
+  // Avatars          (pieces,        x,              y, shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
+  board.collect_pieces(board.avatars, 0, -580*R/120*N/3, false,  0,           undefined, undefined, 1,1);
+
+} // end of setup_lil
 
 // recall previous settings
 board.go();

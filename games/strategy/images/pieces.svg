@@ -2932,6 +2932,92 @@
          result="composite2"
          id="feComposite4326-9-6-0-3-2-7" />
     </filter>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath4570-0-9">
+      <rect
+         style="opacity:1;fill:none;fill-opacity:1;stroke:none;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:4, 4;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect4572-3-0"
+         width="110"
+         height="100.00001"
+         x="-51.317287"
+         y="170.13882" />
+    </clipPath>
+    <filter
+       style="color-interpolation-filters:sRGB"
+       inkscape:label="Drop Shadow"
+       id="filter4556-9-3">
+      <feFlood
+         flood-opacity="0.678431"
+         flood-color="rgb(0,0,0)"
+         result="flood"
+         id="feFlood4558-2-3" />
+      <feComposite
+         in="flood"
+         in2="SourceGraphic"
+         operator="in"
+         result="composite1"
+         id="feComposite4560-8-3" />
+      <feGaussianBlur
+         in="composite1"
+         stdDeviation="3"
+         result="blur"
+         id="feGaussianBlur4562-4-7" />
+      <feOffset
+         dx="0"
+         dy="0"
+         result="offset"
+         id="feOffset4564-1-3" />
+      <feComposite
+         in="SourceGraphic"
+         in2="offset"
+         operator="over"
+         result="composite2"
+         id="feComposite4566-8-2" />
+    </filter>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath4570-0-2">
+      <rect
+         style="opacity:1;fill:none;fill-opacity:1;stroke:none;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:4, 4;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect4572-3-8"
+         width="110"
+         height="100.00001"
+         x="-51.317287"
+         y="170.13882" />
+    </clipPath>
+    <filter
+       style="color-interpolation-filters:sRGB"
+       inkscape:label="Drop Shadow"
+       id="filter4556-9-9">
+      <feFlood
+         flood-opacity="0.678431"
+         flood-color="rgb(0,0,0)"
+         result="flood"
+         id="feFlood4558-2-6" />
+      <feComposite
+         in="flood"
+         in2="SourceGraphic"
+         operator="in"
+         result="composite1"
+         id="feComposite4560-8-0" />
+      <feGaussianBlur
+         in="composite1"
+         stdDeviation="3"
+         result="blur"
+         id="feGaussianBlur4562-4-70" />
+      <feOffset
+         dx="0"
+         dy="0"
+         result="offset"
+         id="feOffset4564-1-1" />
+      <feComposite
+         in="SourceGraphic"
+         in2="offset"
+         operator="over"
+         result="composite2"
+         id="feComposite4566-8-0" />
+    </filter>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -2940,9 +3026,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="7.9195959"
-     inkscape:cx="109.57752"
-     inkscape:cy="987.00758"
+     inkscape:zoom="2.8"
+     inkscape:cx="394.56933"
+     inkscape:cy="472.96941"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -5477,6 +5563,131 @@
          id="path4296-3-6-4-75-6-6"
          style="opacity:1;fill:#000000;fill-opacity:1;stroke:#ffffff;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
          sodipodi:type="star" />
+    </g>
+    <g
+       inkscape:export-ydpi="250.56"
+       inkscape:export-xdpi="250.56"
+       inkscape:export-filename="mini_castle.png"
+       clip-path="url(#clipPath4570-0-9)"
+       style="opacity:1;filter:url(#filter4556-9-3)"
+       id="g4457-4-6"
+       transform="translate(511.46013,459.53424)">
+      <g
+         id="g4454-7-3"
+         transform="matrix(1,0,0,0.95652178,0,7.1799417)">
+        <rect
+           y="165.13882"
+           x="-56.317287"
+           height="115.00001"
+           width="120"
+           id="rect4452-9-9"
+           style="opacity:1;fill:none;fill-opacity:1;stroke:none;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:4, 4;stroke-dashoffset:0;stroke-opacity:1" />
+      </g>
+    </g>
+    <g
+       inkscape:export-ydpi="250.56"
+       inkscape:export-xdpi="250.56"
+       inkscape:export-filename="mini_castle.png"
+       clip-path="url(#clipPath4570-0-2)"
+       style="opacity:1;filter:url(#filter4556-9-9)"
+       id="g4457-4-1"
+       transform="translate(486.62815,439.72335)">
+      <path
+         style="opacity:1;fill:#4d4d4d;fill-opacity:1;stroke:#ffffff;stroke-width:6;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         d="m 35.644258,216.11958 -51.961524,30 -15.000021,-25.98076 17.5,-30.31088 h 35 z"
+         id="path4156-5-34-9-3"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="cccccc" />
+      <g
+         id="g4329-0-7"
+         transform="translate(37.000001,19.803853)"
+         style="stroke:#ffffff">
+        <g
+           id="g4265-0"
+           transform="rotate(-30,-24.337157,202.52876)">
+          <g
+             inkscape:transform-center-y="-1.803584e-05"
+             inkscape:transform-center-x="5.0000104"
+             style="opacity:1;stroke:#ffffff"
+             id="g4382-0-8-2"
+             transform="matrix(1.5709131,-0.4209249,0.4209249,1.5709131,23.366339,119.89054)">
+            <path
+               sodipodi:nodetypes="cc"
+               inkscape:connector-curvature="0"
+               id="path4378-3-2-9"
+               d="m -43.339499,31.832195 0.954859,-3.563582"
+               style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:1px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1" />
+            <path
+               inkscape:connector-curvature="0"
+               id="path4380-7-1-09"
+               d="m -44.209073,30.326048 2.375721,0.636573"
+               style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+               sodipodi:nodetypes="cc" />
+          </g>
+          <path
+             inkscape:transform-center-y="-10.000004"
+             inkscape:transform-center-x="-5.0000007"
+             style="opacity:1;fill:#ffffff;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+             d="m -43.717285,192.13882 c 2e-6,4.8 2.400022,6 2.400022,6 0,0 2.39998,-1.2 2.399978,-6"
+             id="path4665-8-1-1-5-0-9"
+             inkscape:connector-curvature="0"
+             sodipodi:nodetypes="ccc" />
+          <circle
+             inkscape:transform-center-y="1.6127978e-05"
+             inkscape:transform-center-x="-5.0000009"
+             style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+             id="path4151-2-3-7-7-7-7-4"
+             cx="-21.317284"
+             cy="185.13882"
+             r="2.9999993" />
+          <path
+             inkscape:transform-center-y="-10.000004"
+             inkscape:transform-center-x="5.0000016"
+             style="opacity:1;fill:#ffffff;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+             d="m -43.717286,182.13882 c 1e-6,4.8 2.400021,6 2.400021,6 0,0 2.399979,-1.2 2.399978,-6"
+             id="path4665-8-1-1-5-0-7-5"
+             inkscape:connector-curvature="0"
+             sodipodi:nodetypes="ccc" />
+          <g
+             inkscape:transform-center-y="-1.803584e-05"
+             inkscape:transform-center-x="5.0000104"
+             style="opacity:1;stroke:#ffffff"
+             id="g4382-0-8-4-1"
+             transform="matrix(1.5709131,-0.4209249,0.4209249,1.5709131,23.366347,129.89054)">
+            <path
+               sodipodi:nodetypes="cc"
+               inkscape:connector-curvature="0"
+               id="path4378-3-2-0-0"
+               d="m -43.339499,31.832195 0.954859,-3.563582"
+               style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:1px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1" />
+            <path
+               inkscape:connector-curvature="0"
+               id="path4380-7-1-0-3"
+               d="m -44.209073,30.326048 2.375721,0.636573"
+               style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+               sodipodi:nodetypes="cc" />
+          </g>
+          <circle
+             inkscape:transform-center-y="1.6127978e-05"
+             inkscape:transform-center-x="-5.0000009"
+             style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#ffffff;stroke-width:0;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+             id="path4151-2-3-7-7-7-7-9-7"
+             cx="-21.317284"
+             cy="195.13882"
+             r="2.9999993" />
+        </g>
+      </g>
+      <g
+         id="g4454-7-8"
+         transform="matrix(1,0,0,0.95652178,0,7.1799417)">
+        <rect
+           y="165.13882"
+           x="-56.317287"
+           height="115.00001"
+           width="120"
+           id="rect4452-9-8"
+           style="opacity:1;fill:none;fill-opacity:1;stroke:none;stroke-width:4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:4, 4;stroke-dashoffset:0;stroke-opacity:1" />
+      </g>
     </g>
   </g>
 </svg>
