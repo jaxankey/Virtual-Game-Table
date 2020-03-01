@@ -954,7 +954,7 @@ PIECE.prototype.needs_redraw    = function() {
 }
 
 // draws the selection rectangle or whatever around the piece.
-PIECE.prototype.draw_selection = function() {
+PIECE.prototype.draw_selection = function(fill) {
   
   var context = this.board.context;
 
@@ -979,7 +979,9 @@ PIECE.prototype.draw_selection = function() {
   switch(this.physical_shape) {
     
     case this.rectangle:
-      this.board.context.strokeRect(-0.5*w,-0.5*h, w, h);
+      context.beginPath();
+      context.rect(-0.5*w,-0.5*h, w, h);
+      context.stroke();
       break;
 
     case this.outer_circle:
@@ -994,6 +996,9 @@ PIECE.prototype.draw_selection = function() {
       context.arc(0,0, Math.min(w,h)*0.5, 0, 2*Math.PI);
       context.stroke();
       break;
+  }
+  if(fill) {
+    context.fill();
   }
 }
 
@@ -1140,21 +1145,18 @@ PIECE.prototype.move_and_draw = function() {
     // If danger_image_index is enabled and the danger image is showing, add some color!
     if(private && this.danger_image_index != null && this.danger_image_index == this.active_image) {
       
-      var d = this.get_dimensions();
-
-      // set the box style
-      context.lineWidth   = 0*board.selected_border_width*50.0/board.z;
-      context.strokeStyle = board.team_colors[board.client_teams[c]]+'77';
-      context.fillStyle   = board.team_colors[board.client_teams[c]]+'77';
+      // draw white background
+      context.strokeStyle = '#FFFFFF00';
+      context.fillStyle   = '#FFFFFF70'
+      context.lineWidth   = 0;
+      this.draw_selection(true);
       
-      // Actually draw it.
-      context.beginPath();
-      context.moveTo(-0.5*d.width, -0.5*d.height);
-      context.lineTo( 0.5*d.width, -0.5*d.height);
-      context.lineTo( 0.5*d.width,  0.5*d.height);
-      context.lineTo(-0.5*d.width,  0.5*d.height);
-      context.closePath();
-      context.fill();
+      // Glow
+      context.strokeStyle = '#FFFFFF10';
+      for(var i=2; i<15; i++) {
+        context.lineWidth = board.selected_border_width*i*20.0/board.z; 
+        this.draw_selection();
+      }
     }
 
     // unrotate

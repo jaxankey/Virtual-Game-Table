@@ -72,7 +72,7 @@ board.shortcut_coordinates.length = 0;
 board.team_zones.length           = 0;
 for(n=0; n<number_of_teams; n++) {
   //                  team_index, x1, y1, x2, y2, x3, y3,  x4, y4,       rotation, alpha, draw_mode, grab_mode
-  board.add_team_zone(n+1,       -x1, y1, x1, y1, x3, y3, -x3, y3, team_angles[n], 0.5,   0);
+  board.add_team_zone(n+1,       -x1, y1, x1, y1, x3, y3, -x3, y3, team_angles[n], 1.0,   0);
   board.shortcut_coordinates.push([0, -y1+150, 100, team_angles[n]]);
 }
 
