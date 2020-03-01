@@ -28,7 +28,7 @@ TO DO: massive overhaul & code simplification:
 TO DO: keyboard keys with a lookup table and functions that can be overwritten?
 TO DO: Switch the gameplay updates to UDP, even though the data rate is low, or 
        add a check to see if the previous packet was received. Or see the failure mechanism
-       https://stackoverflow.com/questions/11382495/how-to-be-sure-that-message-via-socket-io-has-been-received-to-the-client
+       https://stackoverflow.com/questions/11382495/how-to-be-sure-that-message-via-socket-io-has-been-Received_to-the-client
 
 TO DO: middle mouse click = focus
 TO DO: Find a way to switch back to the more responsive piece rotation in board.draw(). (Make incremental changes to piece coordinates, rather than setting targets?)
@@ -40,9 +40,10 @@ TO DO: Cookies assigned per web address AND game name.
 
 //// OPTIONS
 
-var stream_interval_ms = 150;   //150;   // how often to send a stream update (ms)
-var undo_interval_ms   = 2000; // how often to take an undo snapshot (ms)
-var draw_interval_ms   = 10;   // how often to draw the canvas (ms)
+var stream_interval_ms    = 150;   //150;   // how often to send a stream update (ms)
+var undo_interval_ms      = 2000; // how often to take an undo snapshot (ms)
+var draw_interval_ms      = 10;   // how often to draw the canvas (ms)
+var post_roll_ignore_u_ms = 1500; // how long to maintain control over a piece after rolling it (hadoken)
 
 if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
   document.getElementById("everything").innerHTML = "<h2>Sorry, this requires the non-mobile Chrome web browser to run.<br><br>xoxoxo,<br>Jack</h2>";}
@@ -2212,7 +2213,7 @@ BOARD.prototype.in_team_zone = function(x,y) {
  * Searches for the supplied piece in BOARD.client_selected_pieces, returning
  * the client index if found. Returns -1 if not found.
  */
-BOARD.prototype.find_selected_piece_client_index = function(piece) {
+BOARD.prototype.find_selected_client_index = function(piece) {
 
   // Loop over the selected piece arrays for each team
   for(var i in this.client_selected_pieces) {
@@ -2242,7 +2243,7 @@ BOARD.prototype.select_piece = function(piece) {
   if(holder >= 0 && holder != my_index) return;
 
   // If someone else DID have this selected but ISN'T holding it, remove their selection
-  var client2 = this.find_selected_piece_client_index(piece);  
+  var client2 = this.find_selected_client_index(piece);  
   if(client2 >= 0 && client2 != my_index) this.deselect_piece(piece);
 
   // Only add it to our selection if we don't already have it.
@@ -2275,7 +2276,7 @@ BOARD.prototype.deselect_piece = function(piece) {
   //console.log('deselect_piece', piece.id);
 
   // Find the client index of the piece
-  client_index = this.find_selected_piece_client_index(piece);
+  client_index = this.find_selected_client_index(piece);
   
   // Nothing to deselect
   if(client_index < 0) return;
@@ -2706,7 +2707,6 @@ BOARD.prototype.event_keyup  = function(e) {
         // When we lift the r key, scramble the pieces, drop them, and unset the t0
         scramble_pieces(sps, this.mouse.x, this.mouse.y, 2);
         this.client_is_holding[my_index] = false;
-        this.trigger_h_stream = true;
         this._hadoken_charge_t0 = null;
 
       break;
@@ -2934,7 +2934,7 @@ BOARD.prototype.event_keydown = function(e) {
 
       case 82: // r for roll / randomize
         
-        // Only if we aren't already holding
+        // Only if we aren't already rolling
         if(this._hadoken_charge_t0 != null) break;
 
         // If we have selected pieces, use those
@@ -2950,6 +2950,11 @@ BOARD.prototype.event_keydown = function(e) {
         
           // Record the time that this started for animation reasons
           this._hadoken_charge_t0 = Date.now();
+          
+          // For each selected piece, set the "ignore_u_until_ms" so incoming events / rebounds
+          // Do not mess with the animation.
+          for(var n in this.client_selected_pieces[my_index])
+            this.client_selected_pieces[my_index][n].ignore_u_until_ms = Date.now()+post_roll_ignore_u_ms;
         }
         
         // Otherwise, scramble the piece under the mouse
@@ -3567,9 +3572,16 @@ BOARD.prototype.send_stream_update = function() {
     if(this.clear_selected_after == 0) this.client_selected_pieces[my_index].length = 0;
   }
 
-  // If we're charging a hadoken, scramble the selected images
-  if(this._hadoken_charge_t0 != null && sps.length)
-    for(n=0; n<sps.length; n++) sps[n].active_image = rand_int(0,sps[n].images.length-1);
+  // If we're charging a hadoken, scramble the selected images to simulate "rolling"
+  if(this._hadoken_charge_t0 != null && sps.length) 
+    for(n=0; n<sps.length; n++) {
+
+      // Changing this image will trigger an update that will ping back, possibly right 
+      // after a roll. As such, after we do a "scramble", update the time that we 
+      // ignore incoming 'u' events (and trigger our outbound 'u' when ignored)
+      sps[n].active_image = rand_int(0,sps[n].images.length-1);
+      sps[n].ignore_u_until_ms = Date.now()+post_roll_ignore_u_ms;
+    }
 
   // Check if any of the client selections have changed; we affect other clients' selections when 
   // we grab their selected pieces.
@@ -3591,7 +3603,7 @@ BOARD.prototype.send_stream_update = function() {
       for(var i in csps) csp_ids.push(csps[i].id);  
 
       // emit the selection changed event
-      console.log('Sending-s with', csp_ids.length, 'pieces, client_id =', client_id, ', my_id =', this.client_id, csp_ids);
+      console.log('Sending_s with', csp_ids.length, 'pieces, client_id =', client_id, ', my_id =', this.client_id, csp_ids);
       my_socket.emit('s', csp_ids, client_id);
 
       // Remember the change so this doesn't happen again. 
@@ -3627,15 +3639,6 @@ BOARD.prototype.send_stream_update = function() {
     for(n in sps) {  
       var p = sps[n];
       sp_coords.push([p.x_target, p.y_target, p.r_target]);
-    
-      // DO NOT update the last values: here we send fast updates for the server to
-      // rebroadcast; the bigger 'u' updates triggered below will update the server's memory
-      // TO DO: This could be fixed at the server level too, which would save some bandwidth
-      // Alternatively, we could optionally send hand information with 'u' if the mouse has moved,
-      // so that the hands and selected pieces move in the same step.
-      //p.previous_x = p.x_target;
-      //p.previous_y = p.y_target;
-      //p.previous_r = p.r_target;
     }
     
     // Get the selected piece ids
@@ -3644,7 +3647,7 @@ BOARD.prototype.send_stream_update = function() {
 
     // emit the mouse update event, which includes the held piece ids and their target coordinates,
     // So that the hand and pieces move as a unit. 
-    console.log('Sending-m:', this.mouse.x, this.mouse.y, sp_ids.length, 'pieces');
+    console.log('Sending_m:', this.mouse.x, this.mouse.y, sp_ids.length, 'pieces');
     my_socket.emit('m', this.mouse.x, this.mouse.y, sp_ids, sp_coords, this.r_target, 
                     this.client_selection_boxes[my_index]);
   
@@ -3655,17 +3658,18 @@ BOARD.prototype.send_stream_update = function() {
   
 
 
-  // Now loop over ALL the pieces to see if their coordinates or images have changed
+  // MAIN LOOP OVER ALL pieces to see if their coordinates or images have changed
   var changed_pieces = [];
-  for (var n=0; n<this.pieces.length; n++) {
-    var p = this.pieces[n]; // TO DO: for some reason, n became a string with "for n in this.pieces!"
+  for (var n=0; n<this.pieces.length; n++) { // For some reason, n became a string with "for n in this.pieces!"
+    var p = this.pieces[n];
     
-    // See if anything has changed
+    // See if anything has changed or we have manually triggered a 'u'
     if (p.previous_x != p.x_target ||
         p.previous_y != p.y_target ||
         p.previous_r != p.r_target ||
         p.previous_active_image != p.active_image ||
-        p.previous_n != n) {
+        p.previous_n != n ||
+        p.trigger_u_stream) {
       
       // push the piece data
       changed_pieces.push({
@@ -3683,13 +3687,14 @@ BOARD.prototype.send_stream_update = function() {
       p.previous_r = p.r_target;
       p.previous_n = n;
       p.previous_active_image = p.active_image;
+      p.trigger_u_stream = false;
 
     } // end of "if anything has changed" about this piece
   } // end of loop over all pieces
   
   // Otherwise, if we found some pieces in different places, send that
   if (changed_pieces.length > 0) {
-    console.log('Sending-u with', changed_pieces.length, 'pieces');
+    console.log('Sending_u with', changed_pieces.length, 'pieces');
     my_socket.emit('u', changed_pieces);
   }
 
@@ -3826,7 +3831,7 @@ BOARD.prototype.load = function() {
 // all the piece coordinates with a 'u' packet. The 'u' handler will
 // then update all the non-held pieces.
 BOARD.prototype.get_full_update = function() {
-  console.log('Sending-?...')
+  console.log('Sending_?...')
   my_socket.emit('?');
   return;
 }
@@ -3841,7 +3846,7 @@ BOARD.prototype.send_full_update = function() {
   // Get the piece datas
   var piece_datas = this.get_piece_datas();
 
-  console.log('Sending-full update:', piece_datas.length, 'pieces');
+  console.log('Sending_full update:', piece_datas.length, 'pieces');
   
   my_socket.emit('u', piece_datas, true); // true clears the old values from the server's memory
 
@@ -3865,7 +3870,7 @@ my_socket.emit('user', get_name(), get_team_number());
 // When the server sends avatars
 server_avatar = function(avatar_paths) {
   // server sent a list of avatar paths
-  console.log('Received-avatar list:', avatar_paths);
+  console.log('Received_avatar list:', avatar_paths);
   board.avatar_paths = avatar_paths;
 
   // Load the avatar pieces
@@ -3878,7 +3883,7 @@ my_socket.on('avatars', server_avatar);
 
 server_ping = function(x){
   // server sent a "chat"
-  console.log('Received-ping:', x);
+  console.log('Received_ping:', x);
   ping_x = x;
 }
 my_socket.on('ping', server_ping);
@@ -3886,7 +3891,7 @@ my_socket.on('ping', server_ping);
 // functions for handling incoming server messages
 server_chat = function(msg){
   // server sent a "chat"
-  console.log('Received-chat:', msg);
+  console.log('Received_chat:', msg);
 
   // messages div object
   m = $('#messages');
@@ -3903,7 +3908,7 @@ my_socket.on('chat', server_chat);
 // Complete user information from server.
 server_users = function(client_ids, client_names, client_teams, client_is_holding, client_selected_piece_ids) {
   
-  console.log("Received-users:", client_ids, client_names, client_teams, client_is_holding, client_selected_piece_ids);
+  console.log("Received_users:", client_ids, client_names, client_teams, client_is_holding, client_selected_piece_ids);
 
   // Clear out the old values
   board.client_ids                      = [];
@@ -3961,7 +3966,7 @@ server_mousemove = function(client_id, x, y, hp_ids, hp_coords, client_r, select
   if(!board._ready_for_packets) return;
 
   // server has sent a "mouse move"
-  //console.log('Received-m:', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
+  //console.log('Received_m:', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
 
   // Get the client index whose mouse moved
   client_index = board.client_ids.indexOf(client_id);
@@ -3995,7 +4000,7 @@ server_selectionchange = function(piece_ids, client_id){
   if(!board._ready_for_packets) return;
   
   // server sent a selection change
-  console.log('Received-s: client_id =', client_id, ', my_id =', board.client_id, ', pieces =', piece_ids);
+  console.log('Received_s: client_id =', client_id, ', my_id =', board.client_id, ', pieces =', piece_ids);
   
   // Get the client index
   client_index = board.client_ids.indexOf(client_id);
@@ -4033,7 +4038,7 @@ server_heldchange = function(client_id, is_holding) {
   client_index = board.client_ids.indexOf(client_id);
 
   // Server sent a change in held pieces
-  console.log('Received-h: client id =', client_id, 'client index =', client_index, 'is_holding =', is_holding);
+  console.log('Received_h: client id =', client_id, 'client index =', client_index, 'is_holding =', is_holding);
   
   // Don't let the server tell us if we're holding something!
   if(client_index != get_my_client_index()) {
@@ -4053,7 +4058,7 @@ my_socket.on('h', server_heldchange);
 server_assigned_id = function(id) {
   
   // Server sent us our id
-  console.log('Received-id:', id);
+  console.log('Received_id:', id);
   board.client_id = id;
 }
 my_socket.on('id', server_assigned_id);
@@ -4085,7 +4090,7 @@ server_update = function(piece_datas) {
   // Reset the update timer. Board will only send a full update
   board._last_update = Date.now();
   
-  console.log('Received-u:', piece_datas.length, 'pieces');
+  console.log('Received_u:', piece_datas.length, 'pieces');
 
   // Special case: if we got nothing, send a full update to populate the server.
   if(piece_datas.length == 0) {
@@ -4114,8 +4119,17 @@ server_update = function(piece_datas) {
     if(p) {
       ps.push(p); // save this as an ordered list, matching piece_datas, for later sorting by position n in stack & re-insertion
       
-      // Only make any modifications if the pieces are not currently held by me
-      if(board.find_holding_client_index(p) != my_index) {
+      // Only make local modifications if the pieces are not currently held by me
+      // Note if we try to ignore selected pieces, then things like "board setup" will
+      // be annoying ("everyone unselect everything!")
+      if(i==0) console.log(board.find_holding_client_index(p) != my_index, 
+                           p.ignore_u_until_ms, 
+                           Date.now()<p.ignore_u_until_ms)
+      if(board.find_holding_client_index(p) != my_index &&
+
+      // Also do not make modifications unless either ignore_u_until_ms is defined
+      // or we're still in the ignore window.
+         (!p.ignore_u_until_ms || Date.now() > p.ignore_u_until_ms)) { 
 
         // set the new values
         p.set_target(pd.x, pd.y, pd.r, null, true); // disable snap
@@ -4128,6 +4142,10 @@ server_update = function(piece_datas) {
         p.previous_r            = p.r_target;
         p.previous_active_image = p.active_image;
       } // end of "not held by me"
+
+      // If we ignored it, mark it for update (we control the truth)
+      else p.trigger_u_stream = true;
+
     } // end of piece exists
   } // end of loop over supplied pieces
 

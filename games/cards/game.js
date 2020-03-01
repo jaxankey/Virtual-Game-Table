@@ -145,6 +145,7 @@ function setup() {
 
   // Deselect everything
   board.deselect_pieces();
+
 }
 
 function collect_all_cards() {
@@ -190,7 +191,7 @@ function collect_pot() {return;}
 function deal(event, single, up) {
   console.log('deal()', event, single, up);
 
-  // First move the dealer rectangle to the bottom.
+  // First move the dealer tray to the bottom.
   dealer.send_to_bottom();
   
   // Select the pieces that are in the dealer tray
