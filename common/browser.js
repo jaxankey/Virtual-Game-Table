@@ -1140,6 +1140,8 @@ PIECE.prototype.move_and_draw = function() {
     if(!this.rotates_with_canvas) context.rotate(-this.board.r*Math.PI/180.0);
     
     // draw the piece
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
 	  context.drawImage(images[this.active_image], -0.5*w, -0.5*h, w, h);
     
     // If danger_image_index is enabled and the danger image is showing, add some color!
@@ -3331,9 +3333,12 @@ BOARD.prototype.draw = function() {
     // TO DO: also look up requestAnimationFrame API for faster rendering
 
     // draw the background image
-    if (this.background_image != null) 
+    if (this.background_image != null) {
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
       context.drawImage(this.background_image, 
         -this.background_image.width*0.5, -this.background_image.height*0.5);
+      }
     
     // draw the team zones that are supposed to appear below everything
     for (var i = 0; i < this.team_zones.length; i++) {
