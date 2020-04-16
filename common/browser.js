@@ -17,6 +17,11 @@
  */
 
 /* 
+BUG: Sometimes resets piece positions on reload
+BUG (once): all the pieces started disappearing!?
+
+TO DO: Redo this whole thing in PIXI.js, and overhaul netcode, now that I know what I'm doing. :)
+
 TO DO: massive overhaul & code simplification:
   * all piece lists become id lists; function get_piece_by_id() 
   * combine all groups of parallel arrays into a single dictionary
@@ -25,12 +30,7 @@ TO DO: massive overhaul & code simplification:
     their instance as a first argument? This makes net traffic super simple.
   * Pieces have held_by value, rather than client_is_holding lists.
     var before every local variable. Avoids overwriting by other functions in loops!
-TO DO: keyboard keys with a lookup table and functions that can be overwritten?
-TO DO: Switch the gameplay updates to UDP, even though the data rate is low, or 
-       add a check to see if the previous packet was received. Or see the failure mechanism
-       https://stackoverflow.com/questions/11382495/how-to-be-sure-that-message-via-socket-io-has-been-Received_to-the-client
 
-TO DO: middle mouse click = focus
 TO DO: Find a way to switch back to the more responsive piece rotation in board.draw(). (Make incremental changes to piece coordinates, rather than setting targets?)
 TO DO: Add new_piece_layer integer for automatic layered drawing. It has to naturally stay sorted, or 
        else is_tray will not work, and selecting pieces would be a problem. Perhaps board.pieces should be {0:[], 1:[], ...}? 
@@ -41,9 +41,9 @@ TO DO: Cookies assigned per web address AND game name.
 //// OPTIONS
 
 var stream_interval_ms    = 150;   //150;   // how often to send a stream update (ms)
-var undo_interval_ms      = 2000; // how often to take an undo snapshot (ms)
+//var undo_interval_ms    = 2000; // how often to take an undo snapshot (ms)
 var draw_interval_ms      = 10;   // how often to draw the canvas (ms)
-var post_roll_ignore_u_ms = 1500; // how long to maintain control over a piece after rolling it (hadoken)
+var post_u_ignore_u_ms    = 1500; // how long to maintain control over a piece after rolling it (hadoken)
 
 if(!window.chrome || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
   document.getElementById("everything").innerHTML = "<h2>Sorry, this requires the non-mobile Chrome web browser to run.<br><br>xoxoxo,<br>Jack</h2>";}
@@ -585,6 +585,9 @@ function PIECE(board, id, image_paths, private_image_paths, scale) {
   this.peakable_by      = this.board.new_piece_peakable_by;
   this.active_image     = this.board.new_piece_active_image;
   this.alpha            = this.board.new_piece_alpha;
+
+  // When we last sent an update (milliseconds)
+  this.t_last_update_ms = 0;
 
   // where it belongs in the box
   this.box_x = this.board.new_piece_box_x;
@@ -1164,7 +1167,7 @@ PIECE.prototype.move_and_draw = function() {
     // unrotate
     context.rotate(-this.r*Math.PI/180.0);
     
-    // If the piece is not allowed to rotate, undo the transform
+    // If the piece is not allowed to rotate, untransform
     if(!this.rotates_with_canvas) context.rotate(this.board.r*Math.PI/180.0);
     
     // unshift
@@ -1398,9 +1401,9 @@ function BOARD(canvas) {
   this.bottom_index            = 0;
 
   // Undo array
-  this.undos = [];
-  this.max_undos = 1000;
-  this.redos = [];
+  //this.undos = [];
+  //this.max_undos = 1000;
+  //this.redos = [];
 
   // needed to distinguish cookies from different games
   this.game_name = 'default';
@@ -1518,7 +1521,7 @@ function BOARD(canvas) {
   this.background_image.onload = this.on_background_image_load.bind(this);
   
   // keep track of the last update time and last undo time
-  this._last_undo   = Date.now();
+  //this._last_undo   = Date.now();
   
   // keep track of whether we're in peak mode
   this.peak_image_index = 0;
@@ -2928,8 +2931,8 @@ BOARD.prototype.event_keydown = function(e) {
         
         // ctrl-z for undo.
         if(e.ctrlKey) {
-          if(e.shiftKey) this.redo();
-          else           this.undo();
+          //if(e.shiftKey) this.redo();
+          //else           this.undo();
         }
         
         // Normal z just shuffles in place (disable ctrl-z to avoid reflex "undo")
@@ -2958,7 +2961,7 @@ BOARD.prototype.event_keydown = function(e) {
           // For each selected piece, set the "ignore_u_until_ms" so incoming events / rebounds
           // Do not mess with the animation.
           for(var n in this.client_selected_pieces[my_index])
-            this.client_selected_pieces[my_index][n].ignore_u_until_ms = Date.now()+post_roll_ignore_u_ms;
+            this.client_selected_pieces[my_index][n].ignore_u_until_ms = Date.now()+post_u_ignore_u_ms;
         }
         
         // Otherwise, scramble the piece under the mouse
@@ -3488,7 +3491,7 @@ BOARD.prototype.draw = function() {
   } // end of needs redraw
 }
 
-BOARD.prototype.undo = function() {
+/*BOARD.prototype.undo = function() {
 
   // If we have no undos, quit out
   if(this.undos.length == 0) {
@@ -3514,7 +3517,7 @@ BOARD.prototype.undo = function() {
   server_update(board.get_piece_datas_from_string(this.undos[0]));
   board.send_full_update();
   board._last_undo = Date.now();
-}
+} 
 
 BOARD.prototype.redo = function() {
   
@@ -3533,7 +3536,7 @@ BOARD.prototype.redo = function() {
   server_update(board.get_piece_datas_from_string(this.undos[0]));
   this.send_full_update();
   this._last_undo = Date.now();
-}
+} 
 
 BOARD.prototype.store_undo = function() {
   
@@ -3557,13 +3560,16 @@ BOARD.prototype.store_undo = function() {
     // kill the redos because something changed.
     this.redos.length = 0;
   }
-}
+} */
 
 /** 
  * Timer: sends quick updates every fraction of a second for things like
  * dragging a piece around, hand movement, etc.
  */
 BOARD.prototype.send_stream_update = function() {
+
+  // Don't send stream updates until we receive a response to our first '?'
+  if(!this.first_u_received) return;
 
   // Always trigger a redraw to handle things like slow loading of images
   this.trigger_redraw = true;
@@ -3587,7 +3593,7 @@ BOARD.prototype.send_stream_update = function() {
       // after a roll. As such, after we do a "scramble", update the time that we 
       // ignore incoming 'u' events (and trigger our outbound 'u' when ignored)
       sps[n].active_image = rand_int(0,sps[n].images.length-1);
-      sps[n].ignore_u_until_ms = Date.now()+post_roll_ignore_u_ms;
+      sps[n].ignore_u_until_ms = Date.now()+post_u_ignore_u_ms;
     }
 
   // Check if any of the client selections have changed; we affect other clients' selections when 
@@ -3706,7 +3712,7 @@ BOARD.prototype.send_stream_update = function() {
   }
 
   // If it's been awhile, store an undo point
-  if(Date.now()-this._last_undo > undo_interval_ms) board.store_undo();
+  //if(Date.now()-this._last_undo > undo_interval_ms) board.store_undo();
 
 } // end of send_stream_update
 
@@ -4102,7 +4108,7 @@ server_update = function(piece_datas) {
   // Special case: if we got nothing, send a full update to populate the server.
   if(piece_datas.length == 0) {
     board.send_full_update(); // force it.
-    return;
+    // JACK return; Do not return here because we need to tell send_stream_update when we're ready.
   }
 
   // Sort the incoming piece datas by the target index (n).
@@ -4164,6 +4170,9 @@ server_update = function(piece_datas) {
     board.insert_piece(ps[i], piece_datas[i].n, true);
     ps[i].previous_n = board.pieces.indexOf(ps[i]); // Don't want to resend this info next time we check
   }
+
+  // Lets self_stream_update start to actually do stuff, only after we're ready.
+  if(!board.first_u_received) board.first_u_received = true;
 }
 my_socket.on('u', server_update);
 
