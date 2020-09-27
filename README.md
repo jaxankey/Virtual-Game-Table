@@ -3,7 +3,7 @@ This is a general-purpose, browser-based board game table, aimed at online game 
 
 ![Strategy Game Screenshot](https://raw.githubusercontent.com/jaxankey/Virtual-Game-Table/master/common/images/screenshots/strategy.png)
 
-The client software currently requires [Chrome](https://www.google.com/chrome/) to run. 
+The client software currently requires [Chrome](https://www.google.com/chrome/) to run. Eventually (now that I've learned a bunch of stuff) this will be overhauled to [PixiJS](https://www.pixijs.com/), because awesome.
 
 ## Starting and testing a server
 
