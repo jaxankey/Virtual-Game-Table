@@ -208,7 +208,7 @@ function setup() {
   board.expand_pieces(board.avatars, 8, 0, 1000, 70, 70, 0, 0, 0);
 
   // bat
-  bat.set_target(120,0);
+  bat.set_target(10,120);
 
   // Deselect everything
   board.deselect_pieces();
@@ -279,6 +279,7 @@ function fold(team) {
  */
 function bet(R) {
   var R = or_default(R, 0.2)
+  var minimum_distance = 15;
 
   // Throws in the piece under the mouse. If it's 
   // the fold plate, flip it and send all the cards.
@@ -291,8 +292,33 @@ function bet(R) {
     // Found one!
     if(i >= 0) {
 
-      // Send it to the top
+      // Get the piece
       var p = board.pieces[i];
+
+      // Get the new coordinates
+      var x = p.x*R+(Math.random()-0.5)*20;
+      var y = p.y*R+(Math.random()-0.5)*20;
+
+      // If we have previous coordinates
+      if(this.last_x != undefined) {
+
+        // Get the distance
+        var dx = x-this.last_x;
+        var dy = y-this.last_y;
+
+        // Make sure the distance is big enough.
+        if(dx*dx+dy*dy < minimum_distance*minimum_distance) {
+          var theta = 2*Math.PI*Math.random();
+          dx = minimum_distance*Math.cos(theta);
+          dy = minimum_distance*Math.sin(theta);
+          x = this.last_x+dx;
+          y = this.last_y+dy;
+        }
+      }
+
+      // Remember the last value.
+      this.last_x = x; 
+      this.last_y = y;
 
       // See if it's a folder
       var team = folders.indexOf(p)+1;
@@ -301,9 +327,7 @@ function bet(R) {
       // Otherwise, fire it off
       else {
         p.send_to_top();
-        p.set_target(p.x*R+(Math.random()-0.5)*20, 
-                     p.y*R+(Math.random()-0.5)*20, 
-                     Math.random()*360);
+        p.set_target(x,y,Math.random()*360);
         if(cards.includes(p)) p.set_active_image(0);
       }
     } // End of "found a piece"
