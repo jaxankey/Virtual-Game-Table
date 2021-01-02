@@ -194,11 +194,36 @@ function bet(R) {
       // Send it to the top
       var p = board.pieces[i];
 
+      // Get the new coordinates
+      var x = p.x*R+(Math.random()-0.5)*20;
+      var y = p.y*R+(Math.random()-0.5)*20;
+
+      // If we have previous coordinates
+      if(this.last_x != undefined) {
+
+        // Get the distance
+        var dx = x-this.last_x;
+        var dy = y-this.last_y;
+
+        // Make sure the distance is big enough.
+        if(dx*dx+dy*dy < minimum_distance*minimum_distance) {
+          var theta = 2*Math.PI*Math.random();
+          dx = minimum_distance*Math.cos(theta);
+          dy = minimum_distance*Math.sin(theta);
+          x = this.last_x+dx;
+          y = this.last_y+dy;
+        }
+      }
+
+      // Remember the last value.
+      this.last_x = x; 
+      this.last_y = y;
+
       // See if it's a folder
       p.send_to_top();
-      p.set_target(p.x*R+(Math.random()-0.5)*100, 
-                   p.y*R+(Math.random()-0.5)*100, 
-                   Math.random()*360);
+      p.set_target(x, y, Math.random()*360);
+
+      // Roll the die
       p.set_active_image(rand_int(0,p.images.length-1));
 
     } // End of "found a piece"

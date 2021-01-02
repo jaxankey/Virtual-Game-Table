@@ -202,14 +202,18 @@ function sort_pieces_by_id(pieces) {
 }
 
 /**
+ * Get the selected pieces.
+ */
+function get_selected() {
+  return board.client_selected_pieces[get_my_client_index()];
+}
+
+/**
  * Sorts the selected items.
  */
-function sort_selected() {
-  // Get the selected pieces
-  sps = board.client_selected_pieces[get_my_client_index()]
-  
+function sort_selected() {  
   // Sort them
-  board.sort_and_pop_pieces(sps);
+  board.sort_and_pop_pieces(get_selected());
 }
 
 /**
@@ -4176,11 +4180,16 @@ server_update = function(piece_datas) {
 }
 my_socket.on('u', server_update);
 
+// Sends a chat.
+function send_chat(message) {
+  my_socket.emit('chat', "<b>"+get_name()+":</b> "+message);
+}
+
 // action when we click "send chat"
 form_submit = function(){
 
   // emit a "chat message" event with the value from the text box "m"
-  my_socket.emit('chat', "<b>"+get_name()+":</b> "+$('#chat-box').val());
+  send_chat($('#chat-box').val());
 
   // clear the text box
   $('#chat-box').val('');

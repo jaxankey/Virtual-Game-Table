@@ -457,6 +457,19 @@ function after_event_keydown(e) {
     case 90: // Z for shuffle
       if(!e.ctrlKey && board.client_selected_pieces[get_my_client_index()].length==0) shuffle();
     break;
+
+    case 13: // Enter key for counting
+      var total = 0;
+      var sps = get_selected();
+      for(n=0; n<sps.length; n++) {
+        p = sps[n];
+        if      (chips_white.includes(p)) total += 0.01;
+        else if (chips_red  .includes(p)) total += 0.05;
+        else if (chips_blue .includes(p)) total += 0.25;
+        else if (chips_black.includes(p)) total += 1.00;
+      }
+      send_chat('$'+total.toFixed(2));
+    break;
     
     case 75: // Get dec(K)
       collect_all_cards();
