@@ -38,8 +38,8 @@ board.pan_step = 250;
 // Collection and expansion settings
 board.collect_r_piece  = null; // Rotates the piece to the current view
 board.collect_r_stack  = null; // Rotates the stack offsets to the current view
-board.expand_spacing_x = 45;
-board.expand_spacing_y = 45;
+board.expand_spacing_x = 47;
+board.expand_spacing_y = 47;
 board.expand_number_per_row = 8;
 
 //////////////////////////
@@ -97,11 +97,14 @@ board.new_piece_movable_by          = null;
 board.new_piece_collect_offset_x = 2;
 board.new_piece_collect_offset_y = 2;
 board.new_piece_physical_shape = "inner_circle";
+board.new_piece_scale = 0.9
 chips = [];
-for(n=0;n<number_of_teams*chips_per_team; n++) chips.push(board.add_piece(['chips/chip_white.png', 'chips/chip_red.png']));
+for(n=0;n<number_of_teams*chips_per_team; n++) chips.push(board.add_piece(['dice/c6d6.png','dice/c6d5.png','dice/c6d4.png','dice/c6d3.png','dice/c6d2.png','dice/6d1.png']));
 
 chips2 = [];
-for(n=0;n<number_of_teams*chips_per_team; n++) chips2.push(board.add_piece(['chips/chip_white.png', 'chips/chip_red.png']));
+for(n=0;n<number_of_teams*chips_per_team; n++) chips2.push(board.add_piece(['dice/c6d6.png','dice/c6d5.png','dice/c6d4.png','dice/c6d3.png','dice/c6d2.png','dice/6d1.png']));
+
+board.new_piece_scale = 1.0;
 
 // DICE
 function add_dice(d, quantity) {
@@ -125,7 +128,7 @@ d4s  = add_dice( 4, number_of_teams*dice_per_team);
 //d2s  = add_dice( 2, number_of_teams*dice_per_team);
 dice = d90s.concat(d20s).concat(d12s).concat(d10s).concat(d8s).concat(d6s).concat(d4s);
 
-
+d12_counters = add_dice(12, number_of_teams)
 
 /////////////////////
 // FUNCTIONALITY
@@ -143,9 +146,14 @@ function team_collect(n) {
 
   // Collect the black chips
   d = rotate_vector(x0, y0-30, r0);
-  //                  (pieces, number_per_row, x, y, spacing_x, spacing_y, active_image, r_piece, r_stack)
-  board.expand_pieces(chips.slice(n*chips_per_team, n*chips_per_team+chips_per_team), 8, d.x, d.y, board.expand_spacing_x, 65, 0, null, r0);
-  d = rotate_vector(x0-dx*2, y0+yoff/2, r0); board.collect_pieces(chips2.slice(n*chips_per_team, (n+1)*chips_per_team), d.x, d.y, false, 0, r0, r0);
+  var my_chips = chips.slice(n*chips_per_team, n*chips_per_team+chips_per_team);
+  
+  //                 (pieces, number_per_row,  x,   y,      spacing_x,   spacing_y, active_image, r_piece, r_stack)
+  board.expand_pieces(my_chips, 8, d.x, d.y, board.expand_spacing_x, 65, 5, r0, r0);
+
+  // Disable those based on counter.
+  var max_E = 12-d12_counters[n].active_image;
+  for(var m=max_E; m<chips_per_team; m++) my_chips[m].set_active_image(1);
   
   // Collect the dice (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
   d = rotate_vector(x0-dx*3.5, y0+yoff, r0); board.collect_pieces(d90s.slice(n*dice_per_team, (n+1)*dice_per_team), d.x, d.y, false, 0, r0, r0);
@@ -155,7 +163,7 @@ function team_collect(n) {
   d = rotate_vector(x0+dx*0.5, y0+yoff, r0); board.collect_pieces(d8s.slice(n*dice_per_team, (n+1)*dice_per_team), d.x, d.y, false, 0, r0, r0);
   d = rotate_vector(x0+dx*1.5, y0+yoff, r0); board.collect_pieces(d6s.slice(n*dice_per_team, (n+1)*dice_per_team), d.x, d.y, false, 0, r0, r0);
   d = rotate_vector(x0+dx*2.5, y0+yoff, r0); board.collect_pieces(d4s.slice(n*dice_per_team, (n+1)*dice_per_team), d.x, d.y, false, 0, r0, r0);
-  d = rotate_vector(x0+dx*3.4, y0+yoff, r0); board.collect_pieces(chips2.slice(n*chips_per_team, (n+1)*chips_per_team), d.x, d.y, false, 0, r0, r0);
+  d = rotate_vector(x0+dx*3.4, y0+yoff, r0); board.collect_pieces(chips2.slice(n*chips_per_team, (n+1)*chips_per_team), d.x, d.y, false, 5, r0, r0);
 }
 
 
@@ -167,7 +175,15 @@ function setup() {
   //board.collect_pieces(chips,  0,0, false, 0, 0, 0);
   
   // distribute the chips to each team
-  for(var n=0; n<number_of_teams; n++) team_collect(n);
+  for(var n=0; n<number_of_teams; n++) {
+    var d = rotate_vector(0, 650, -n*board.r_step);
+    
+    // Counters
+    d12_counters[n].set_target(d.x,d.y,0+n*board.r_step).set_active_image(4);
+
+    // Not persistent pieces
+    team_collect(n);
+  }
 
   // Deselect everything
   board.deselect_pieces();
@@ -178,7 +194,8 @@ function setup() {
  * Throws selected pieces into the pot.
  */
 function bet(R) {
-  var R = or_default(R, 0.5)
+  var R = or_default(R, 0.5);
+  var minimum_distance = 40;
 
   // Throws in the piece under the mouse. If it's 
   // the fold plate, flip it and send all the cards.
@@ -243,6 +260,14 @@ function after_event_keydown(e) {
       team_collect();
     break;
 
+    case 219: // ] to increment image
+      var sps = get_selected();
+      for(var n=0; n<sps.length; n++) sps[n].increment_active_image()
+    break;
+    case 221: // [ to decrement image
+      var sps = get_selected();
+      for(var n=0; n<sps.length; n++) sps[n].decrement_active_image()
+    break;
   }
 }
 

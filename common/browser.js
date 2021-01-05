@@ -750,6 +750,19 @@ PIECE.prototype.increment_active_image = function(randomize) {
   }
 }
 
+// Increment the active image
+PIECE.prototype.decrement_active_image = function(randomize) {
+  
+  // Randomize the image
+  if(randomize) this.active_image = Math.floor(Math.random()*this.images.length);
+  
+  // Cycle the image
+  else {
+    this.active_image--;
+    if(this.active_image < 0) this.active_image = this.images.length-1;
+  }
+}
+
 // Returns a vector {width, height, max, min} for the current active image.
 PIECE.prototype.get_dimensions = function() {
   if(this.width != null) {var w = this.width;}
