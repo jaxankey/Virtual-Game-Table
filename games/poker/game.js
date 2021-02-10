@@ -283,6 +283,7 @@ function bet(R) {
 
   // Throws in the piece under the mouse. If it's 
   // the fold plate, flip it and send all the cards.
+  // If it's a chip in the middle, collect it.
 
   // Only do so if we're not in someone else's team zone
   team_zone = board.in_team_zone(board.mouse.x, board.mouse.y);
@@ -295,9 +296,23 @@ function bet(R) {
       // Get the piece
       var p = board.pieces[i];
 
-      // Get the new coordinates
-      var x = p.x*R+(Math.random()-0.5)*20;
-      var y = p.y*R+(Math.random()-0.5)*20;
+      // If it's a free chip, collect it
+      if(board.in_team_zone(p.x, p.y) < 0 && chips.includes(p)) {
+
+        // Get the collection coordinates
+        var d = rotate_vector((Math.random()-0.5)*50, R2*0.7+(Math.random()-0.5)*50, (get_team_number()-1)*45);
+        var x = d.x;
+        var y = d.y;
+      }
+
+      // Otherwise, it's a thing to throw into the middle.
+      else {
+      
+        // Get the new coordinates
+        var x = p.x*R+(Math.random()-0.5)*20;
+        var y = p.y*R+(Math.random()-0.5)*20;
+
+      }
 
       // If we have previous coordinates
       if(this.last_x != undefined) {

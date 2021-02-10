@@ -130,6 +130,10 @@ dice = d90s.concat(d20s).concat(d12s).concat(d10s).concat(d8s).concat(d6s).conca
 
 d12_counters = add_dice(12, number_of_teams)
 
+board.new_piece_scale = 1.2;
+d6_regions = board.add_pieces(number_of_teams, ['dice/body6d6.png','dice/body6d5.png','dice/body6d4.png','dice/body6d3.png','dice/body6d2.png','dice/body6d1.png'])
+board.new_piece_scale = 1.0;
+
 /////////////////////
 // FUNCTIONALITY
 /////////////////////
@@ -144,11 +148,15 @@ function team_collect(n) {
   var dx = 73;
   var yoff = 185;
 
-  // Collect the black chips
-  d = rotate_vector(x0, y0-30, r0);
+  // Place the region die
+  var d = rotate_vector(x0-140, y0+40, r0);
+  d6_regions[n].set_target(d.x,d.y,0+n*board.r_step).set_active_image(5);
+  
+  // Collect my chips
   var my_chips = chips.slice(n*chips_per_team, n*chips_per_team+chips_per_team);
   
   //                 (pieces, number_per_row,  x,   y,      spacing_x,   spacing_y, active_image, r_piece, r_stack)
+  d = rotate_vector(x0, y0-30, r0);
   board.expand_pieces(my_chips, 8, d.x, d.y, board.expand_spacing_x, 65, 5, r0, r0);
 
   // Disable those based on counter.
@@ -176,9 +184,10 @@ function setup() {
   
   // distribute the chips to each team
   for(var n=0; n<number_of_teams; n++) {
-    var d = rotate_vector(0, 650, -n*board.r_step);
-    
+    var y0 = y1+70;
+  
     // Counters
+    var d = rotate_vector(140, y0+40, -n*board.r_step);
     d12_counters[n].set_target(d.x,d.y,0+n*board.r_step).set_active_image(4);
 
     // Not persistent pieces
