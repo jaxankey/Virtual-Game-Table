@@ -26,8 +26,8 @@
 
 // short name needed for differentiating the games in the cookies
 board.game_name  = 'RPG';
-chips_per_team   = 8;
-dice_per_team    = 4;
+energies_per_team   = 8;
+fancy_dice_per_team    = 4;
 number_of_teams  = 8;
 
 // set the allowed rotations and initial zoom (out)
@@ -98,15 +98,19 @@ board.new_piece_collect_offset_x = 2;
 board.new_piece_collect_offset_y = 2;
 board.new_piece_physical_shape = "inner_circle";
 board.new_piece_scale = 0.9
-chips = [];
-for(n=0;n<number_of_teams*chips_per_team; n++) chips.push(board.add_piece(['dice/c6d6.png','dice/c6d5.png','dice/c6d4.png','dice/c6d3.png','dice/c6d2.png','dice/6d1.png']));
+energies = [];
+for(n=0;n<number_of_teams*energies_per_team; n++) energies.push(board.add_piece(['dice/c6d6.png','dice/c6d5.png','dice/c6d4.png','dice/c6d3.png','dice/c6d2.png','dice/6d1.png']));
 
-chips2 = [];
-for(n=0;n<number_of_teams*chips_per_team; n++) chips2.push(board.add_piece(['dice/c6d6.png','dice/c6d5.png','dice/c6d4.png','dice/c6d3.png','dice/c6d2.png','dice/6d1.png']));
+extra_energies = [];
+for(n=0;n<number_of_teams*energies_per_team; n++) extra_energies.push(board.add_piece(['dice/c6d6.png','dice/c6d5.png','dice/c6d4.png','dice/c6d3.png','dice/c6d2.png','dice/6d1.png']));
+
+regions = [];
+for(n=0;n<number_of_teams*energies_per_team; n++) regions.push(board.add_piece(['dice/body6d6.png','dice/body6d5.png','dice/body6d4.png','dice/body6d3.png','dice/body6d2.png','dice/body6d1.png']));
+
 
 board.new_piece_scale = 1.0;
 
-// DICE
+// FANCY DICE
 function add_dice(d, quantity) {
   var images = [];
 
@@ -118,21 +122,19 @@ function add_dice(d, quantity) {
   return dice;
 }
 
-d90s = add_dice(90, number_of_teams*dice_per_team);
-d20s = add_dice(20, number_of_teams*dice_per_team);
-d12s = add_dice(12, number_of_teams*dice_per_team);
-d10s = add_dice(10, number_of_teams*dice_per_team);
-d8s  = add_dice( 8, number_of_teams*dice_per_team);
-d6s  = add_dice( 6, number_of_teams*dice_per_team);
-d4s  = add_dice( 4, number_of_teams*dice_per_team);
-//d2s  = add_dice( 2, number_of_teams*dice_per_team);
+d90s = add_dice(90, number_of_teams*fancy_dice_per_team);
+d20s = add_dice(20, number_of_teams*fancy_dice_per_team);
+d12s = add_dice(12, number_of_teams*fancy_dice_per_team);
+d10s = add_dice(10, number_of_teams*fancy_dice_per_team);
+d8s  = add_dice( 8, number_of_teams*fancy_dice_per_team);
+d6s  = add_dice( 6, number_of_teams*fancy_dice_per_team);
+d4s  = add_dice( 4, number_of_teams*fancy_dice_per_team);
+//d2s  = add_dice( 2, number_of_teams*fancy_dice_per_team);
 dice = d90s.concat(d20s).concat(d12s).concat(d10s).concat(d8s).concat(d6s).concat(d4s);
 
+// Counters for your energy when recovering.
 d12_counters = add_dice(12, number_of_teams)
 
-board.new_piece_scale = 1.2;
-d6_regions = board.add_pieces(number_of_teams, ['dice/body6d6.png','dice/body6d5.png','dice/body6d4.png','dice/body6d3.png','dice/body6d2.png','dice/body6d1.png'])
-board.new_piece_scale = 1.0;
 
 /////////////////////
 // FUNCTIONALITY
@@ -145,33 +147,34 @@ function team_collect(n) {
   var x0 = 0;
   var y0 = y1+70;
   var r0 = -n*board.r_step;
-  var dx = 73;
+  var dx = 77;
   var yoff = 185;
 
-  // Place the region die
-  var d = rotate_vector(x0-140, y0+40, r0);
-  d6_regions[n].set_target(d.x,d.y,0+n*board.r_step).set_active_image(5);
+  // Place the region dice
+  var d = rotate_vector(x0, y0+20, r0); board.expand_pieces(regions.slice(n*energies_per_team, (n+1)*energies_per_team), 8, d.x, d.y, board.expand_spacing_x, 65, 5, -r0, r0);
   
-  // Collect my chips
-  var my_chips = chips.slice(n*chips_per_team, n*chips_per_team+chips_per_team);
+  // Place the extra energies stack
+  d = rotate_vector(x0-40, y0+90, r0); board.collect_pieces(extra_energies.slice(n*energies_per_team, (n+1)*energies_per_team), d.x, d.y, false, 5, r0, r0);
   
-  //                 (pieces, number_per_row,  x,   y,      spacing_x,   spacing_y, active_image, r_piece, r_stack)
+  // Collect my energies and expand them for easy counting
+  var my_energies = energies.slice(n*energies_per_team, n*energies_per_team+energies_per_team);
   d = rotate_vector(x0, y0-30, r0);
-  board.expand_pieces(my_chips, 8, d.x, d.y, board.expand_spacing_x, 65, 5, r0, r0);
-
+  board.expand_pieces(my_energies, 8, d.x, d.y, board.expand_spacing_x, 65, 5, r0, r0);
+  //                 (pieces, number_per_row,  x,   y,      spacing_x,   spacing_y, active_image, r_piece, r_stack)
+  
   // Disable those based on counter.
   var max_E = 12-d12_counters[n].active_image;
-  for(var m=max_E; m<chips_per_team; m++) my_chips[m].set_active_image(1);
+  for(var m=max_E; m<energies_per_team; m++) my_energies[m].set_active_image(1);
   
   // Collect the dice (pieces,x,y,shuffle,active_image,r_piece,r_stack,offset_x,offset_y,from_top)
-  d = rotate_vector(x0-dx*3.5, y0+yoff, r0); board.collect_pieces(d90s.slice(n*dice_per_team, (n+1)*dice_per_team), d.x, d.y, false, 0, r0, r0);
-  d = rotate_vector(x0-dx*2.5, y0+yoff, r0); board.collect_pieces(d20s.slice(n*dice_per_team, (n+1)*dice_per_team), d.x, d.y, false, 0, r0, r0);
-  d = rotate_vector(x0-dx*1.5, y0+yoff, r0); board.collect_pieces(d12s.slice(n*dice_per_team, (n+1)*dice_per_team), d.x, d.y, false, 0, r0, r0);
-  d = rotate_vector(x0-dx*0.5, y0+yoff, r0); board.collect_pieces(d10s.slice(n*dice_per_team, (n+1)*dice_per_team), d.x, d.y, false, 0, r0, r0);
-  d = rotate_vector(x0+dx*0.5, y0+yoff, r0); board.collect_pieces(d8s.slice(n*dice_per_team, (n+1)*dice_per_team), d.x, d.y, false, 0, r0, r0);
-  d = rotate_vector(x0+dx*1.5, y0+yoff, r0); board.collect_pieces(d6s.slice(n*dice_per_team, (n+1)*dice_per_team), d.x, d.y, false, 0, r0, r0);
-  d = rotate_vector(x0+dx*2.5, y0+yoff, r0); board.collect_pieces(d4s.slice(n*dice_per_team, (n+1)*dice_per_team), d.x, d.y, false, 0, r0, r0);
-  d = rotate_vector(x0+dx*3.4, y0+yoff, r0); board.collect_pieces(chips2.slice(n*chips_per_team, (n+1)*chips_per_team), d.x, d.y, false, 5, r0, r0);
+  d = rotate_vector(x0-dx*3, y0+yoff, r0); board.collect_pieces(d90s.slice(n*fancy_dice_per_team, (n+1)*fancy_dice_per_team), d.x, d.y, false, 0, r0, r0);
+  d = rotate_vector(x0-dx*2, y0+yoff, r0); board.collect_pieces(d20s.slice(n*fancy_dice_per_team, (n+1)*fancy_dice_per_team), d.x, d.y, false, 0, r0, r0);
+  d = rotate_vector(x0-dx*1, y0+yoff, r0); board.collect_pieces(d12s.slice(n*fancy_dice_per_team, (n+1)*fancy_dice_per_team), d.x, d.y, false, 0, r0, r0);
+  d = rotate_vector(x0-dx*0, y0+yoff, r0); board.collect_pieces(d10s.slice(n*fancy_dice_per_team, (n+1)*fancy_dice_per_team), d.x, d.y, false, 0, r0, r0);
+  d = rotate_vector(x0+dx*1, y0+yoff, r0); board.collect_pieces(d8s.slice(n*fancy_dice_per_team, (n+1)*fancy_dice_per_team), d.x, d.y, false, 0, r0, r0);
+  d = rotate_vector(x0+dx*2, y0+yoff, r0); board.collect_pieces(d6s.slice(n*fancy_dice_per_team, (n+1)*fancy_dice_per_team), d.x, d.y, false, 0, r0, r0);
+  d = rotate_vector(x0+dx*3, y0+yoff, r0); board.collect_pieces(d4s.slice(n*fancy_dice_per_team, (n+1)*fancy_dice_per_team), d.x, d.y, false, 0, r0, r0);
+
 }
 
 
@@ -179,15 +182,15 @@ function team_collect(n) {
 function setup() {
   console.log('setup');
 
-  // collect the chips way off to the side to start.
-  //board.collect_pieces(chips,  0,0, false, 0, 0, 0);
+  // collect the energies way off to the side to start.
+  //board.collect_pieces(energies,  0,0, false, 0, 0, 0);
   
-  // distribute the chips to each team
+  // distribute the energies to each team
   for(var n=0; n<number_of_teams; n++) {
     var y0 = y1+70;
   
     // Counters
-    var d = rotate_vector(140, y0+40, -n*board.r_step);
+    var d = rotate_vector(40, y0+85, -n*board.r_step);
     d12_counters[n].set_target(d.x,d.y,0+n*board.r_step).set_active_image(4);
 
     // Not persistent pieces
