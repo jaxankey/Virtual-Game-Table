@@ -104,13 +104,13 @@ for(n=0; n<=28; n++) {
   if(n in duplicates) m = duplicates[n];
 
   for(i=0; i<m; i++)
-    monsters.push(board.add_piece(['monsters/'+String(n)+'.jpg', 'monsters/'+String(n)+'_back.jpg']));
+    monsters.push(board.add_piece(['monsters/'+String(n)+'.png', 'monsters/'+String(n)+'_back.png']));
 }
 
 // CHARACTERS
 board.new_piece_is_tray = true;
 character_sheets = [];
-for(n=0; n<=15; n++) character_sheets.push(board.add_piece(['characters/'+String(n)+'.jpg', 'characters/'+String(n)+'b.jpg']));
+for(n=0; n<=15; n++) character_sheets.push(board.add_piece(['characters/'+String(n)+'.png', 'characters/'+String(n)+'b.png']));
 
 board.new_piece_is_tray = false;
 character_markers = [];
@@ -133,9 +133,9 @@ stamina = [];
 clues   = [];
 sliders = [];
 for(n=0; n<12; n++) {
-  sanity.push(board.add_piece(['Sanity3.gif']));
-  sanity.push(board.add_piece(['Sanity.gif']));
-  sanity.push(board.add_piece(['Sanity.gif']));
+  sanity.push(board.add_piece(['Sanity3.png']));
+  sanity.push(board.add_piece(['Sanity.png']));
+  sanity.push(board.add_piece(['Sanity.png']));
   stamina.push(board.add_piece(['Stamina3.png']));
   stamina.push(board.add_piece(['Stamina.png']));
   stamina.push(board.add_piece(['Stamina.png']));
@@ -143,24 +143,24 @@ for(n=0; n<12; n++) {
   clues.push(board.add_piece(['Clue.png']));
   clues.push(board.add_piece(['Clue.png']));
   clues.push(board.add_piece(['Clue.png']));
-  sliders.push(board.add_piece(['Slider.gif']));
-  sliders.push(board.add_piece(['Slider.gif']));
+  sliders.push(board.add_piece(['Slider.png']));
+  sliders.push(board.add_piece(['Slider.png']));
 }
 doom = [];
-for(n=0; n<20; n++) doom.push(board.add_piece(['DoomToken.png', 'ElderSign.gif']));
+for(n=0; n<20; n++) doom.push(board.add_piece(['DoomToken.png', 'ElderSign.png']));
 
 // MISC
 activity = [];
-activity.push(board.add_piece(['Activity_1.gif']));
-activity.push(board.add_piece(['Activity_2.gif']));
-activity.push(board.add_piece(['Activity_3.gif']));
+activity.push(board.add_piece(['Activity_1.png']));
+activity.push(board.add_piece(['Activity_2.png']));
+activity.push(board.add_piece(['Activity_3.png']));
 explored = [];
-for(n=0;n<3;n++) explored.push(board.add_piece(['Explored.gif']));
+for(n=0;n<3;n++) explored.push(board.add_piece(['Explored.png']));
 
 board.new_piece_physical_shape = "rectangle";
-terror = board.add_piece(['Terror.gif']);
+terror = board.add_piece(['Terror.png']);
 doors = [];
-for(n=0;n<3;n++) doors.push(board.add_piece(['Closed.gif']));
+for(n=0;n<3;n++) doors.push(board.add_piece(['Closed.png']));
 
 // DECKS
 function build_normal_deck(path, N, ext, duplicates) {
@@ -287,10 +287,10 @@ gate_tokens = [board.add_piece(['GMBack.png', 'GMAnotherDimension.png']),
 // dice
 board.new_piece_physical_shape = 'rectangle';
 dice = [];
-for(n=0; n<10; n++) dice.push(board.add_piece(['dice/6d1.png','dice/6d2.png','dice/6d3.png','dice/6d4.png','dice/6d5.png','dice/6d6.png']));
+for(n=0; n<10; n++) dice.push(board.add_piece(['dice/6d1.png','dice/6d2.png','dice/6d3.png','dice/6d4.png','dice/6d5.png','dice/6d6.png']).set_active_image(1));
 
 // First player marker
-first_player = board.add_piece(['FirstPlayer.gif']);
+first_player = board.add_piece(['FirstPlayer.png']);
 
 ////////////////////////
 // FUNCTIONALITY
@@ -363,7 +363,7 @@ function setup() {
   board.collect_pieces(deck_southside,  x0+2*dx, y0+3*dy, true, 0, r);
   
   // Small decks
-  var x0 = -1870;
+  var x0 = -1880;
   var dx = -240;
   var y0 = 750;
   var dy = 300;

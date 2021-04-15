@@ -748,6 +748,8 @@ PIECE.prototype.increment_active_image = function(randomize) {
     this.active_image++;
     if(this.active_image >= this.images.length) this.active_image = 0;
   }
+
+  return this;
 }
 
 // Increment the active image
