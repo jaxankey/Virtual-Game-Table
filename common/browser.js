@@ -593,6 +593,9 @@ function PIECE(board, id, image_paths, private_image_paths, scale) {
   // When we last sent an update (milliseconds)
   this.t_last_update_ms = 0;
 
+  // When we last held it
+  this.t_last_hold = 0;
+
   // where it belongs in the box
   this.box_x = this.board.new_piece_box_x;
   this.box_y = this.board.new_piece_box_y;
@@ -2576,20 +2579,24 @@ BOARD.prototype.event_mouseup = function(e) {
   this.trigger_redraw = true;
 
   // get the team index
-  team     = get_team_number();
-  my_index = get_my_client_index();
+  var my_index = get_my_client_index();
 
   // If we're holding our selected pieces, set the final coordinates to trigger a snap
+  var p;
   if(this.client_is_holding[my_index]) {
 
     // Loop over our selected pieces
     for(n in this.client_selected_pieces[my_index]) {
-      
+      p = this.client_selected_pieces[my_index][n];
+
       // Trigger a snap locally
-      this.client_selected_pieces[my_index][n].set_target(); 
+      p.set_target(); 
     
+      // Remember when we released it
+      p.t_last_hold = Date.now();
+
       // Trigger a snap for everyone else
-      this.client_selected_pieces[my_index][n].previous_x = null;
+      p.previous_x = null;
     }
 
     // remove it from our holding
@@ -4116,6 +4123,8 @@ server_update = function(piece_datas) {
   // Get my client index
   var my_index = get_my_client_index();
 
+  var t = Date.now();
+
   // Board is not ready yet. Call board.go() after pieces are defined to start receiving.
   if(!board._ready_for_packets) return;
 
@@ -4147,8 +4156,8 @@ server_update = function(piece_datas) {
     // the order
     var p = board.pop_piece(m,true); 
 
-    // If the piece is valid, update its coordinates
-    if(p) {
+    // If the piece is valid and we haven't updated coordinates recently, update its coordinates
+    if(p){
       ps.push(p); // save this as an ordered list, matching piece_datas, for later sorting by position n in stack & re-insertion
       
       // Only make local modifications if the pieces are not currently held by me
@@ -4161,7 +4170,7 @@ server_update = function(piece_datas) {
 
       // Also do not make modifications unless either ignore_u_until_ms is defined
       // or we're still in the ignore window.
-         (!p.ignore_u_until_ms || Date.now() > p.ignore_u_until_ms)) { 
+         (!p.ignore_u_until_ms || Date.now() > p.ignore_u_until_ms) && t-p.t_last_hold > 500) { 
 
         // set the new values
         p.set_target(pd.x, pd.y, pd.r, null, true); // disable snap
