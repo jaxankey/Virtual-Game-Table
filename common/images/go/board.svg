@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="2000"
    height="1160"
    viewBox="0 0 200 116"
    id="svg4136"
    version="1.1"
-   inkscape:version="0.91 r13725"
-   sodipodi:docname="board.svg">
+   inkscape:version="1.1 (1:1.1+202105261517+ce6663b3b7)"
+   sodipodi:docname="board.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <metadata
      id="metadata4152">
     <rdf:RDF>
@@ -23,7 +23,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -75,7 +75,11 @@
     <filter
        style="color-interpolation-filters:sRGB;"
        inkscape:label="Drop Shadow"
-       id="filter4302">
+       id="filter4302"
+       x="-0.04346774"
+       y="-0.04346774"
+       width="1.105047"
+       height="1.105047">
       <feFlood
          flood-opacity="0.498039"
          flood-color="rgb(0,0,0)"
@@ -150,7 +154,11 @@
     <filter
        style="color-interpolation-filters:sRGB"
        inkscape:label="Drop Shadow"
-       id="filter4302-3">
+       id="filter4302-3"
+       x="-0.04346774"
+       y="-0.04346774"
+       width="1.105047"
+       height="1.105047">
       <feFlood
          flood-opacity="0.498039"
          flood-color="rgb(0,0,0)"
@@ -182,7 +190,11 @@
     <filter
        style="color-interpolation-filters:sRGB;"
        inkscape:label="Drop Shadow"
-       id="filter4436">
+       id="filter4436"
+       x="-0.025"
+       y="-0.025"
+       width="1.0541667"
+       height="1.0541667">
       <feFlood
          flood-opacity="0.498039"
          flood-color="rgb(0,0,0)"
@@ -221,8 +233,8 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1366"
-     inkscape:window-height="706"
+     inkscape:window-width="1920"
+     inkscape:window-height="1016"
      id="namedview4148"
      showgrid="false"
      fit-margin-top="100"
@@ -230,12 +242,15 @@
      fit-margin-right="100"
      fit-margin-bottom="100"
      inkscape:zoom="0.56145833"
-     inkscape:cx="703.18846"
-     inkscape:cy="604.65778"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
+     inkscape:cx="144.26716"
+     inkscape:cy="489.79592"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="svg4136" />
+     inkscape:current-layer="svg4136"
+     inkscape:pagecheckerboard="0"
+     inkscape:snap-bbox="true"
+     inkscape:snap-intersection-paths="true" />
   <g
      id="g4556"
      inkscape:export-filename="board.png"
@@ -310,4 +325,20 @@
      inkscape:export-filename="stone_white.png"
      inkscape:export-xdpi="90"
      inkscape:export-ydpi="90" />
+  <rect
+     style="opacity:0.25;fill:none;stroke:#ffffff;stroke-width:0.7;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+     id="rect891"
+     width="45.126087"
+     height="45.126087"
+     x="35.436954"
+     y="35.436954"
+     ry="0" />
+  <rect
+     style="opacity:0.25;fill:none;stroke:#ffffff;stroke-width:0.7;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+     id="rect891-3"
+     width="65.177109"
+     height="65.177109"
+     x="25.411446"
+     y="25.411446"
+     ry="0" />
 </svg>
