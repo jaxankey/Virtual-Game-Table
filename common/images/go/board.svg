@@ -243,56 +243,16 @@
      fit-margin-bottom="100"
      inkscape:zoom="0.56145833"
      inkscape:cx="144.26716"
-     inkscape:cy="489.79592"
+     inkscape:cy="-80.148423"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg4136"
      inkscape:pagecheckerboard="0"
      inkscape:snap-bbox="true"
-     inkscape:snap-intersection-paths="true" />
-  <g
-     id="g4556"
-     inkscape:export-filename="board.png"
-     inkscape:export-xdpi="94.860001"
-     inkscape:export-ydpi="94.860001">
-    <rect
-       inkscape:export-ydpi="90"
-       inkscape:export-xdpi="90"
-       inkscape:export-filename="board.png"
-       style="fill:#dcb35c;filter:url(#filter4436)"
-       y="10"
-       x="10"
-       id="rect4138"
-       height="96"
-       width="96" />
-    <g
-       id="g4587"
-       style="stroke:#4d4d4d">
-      <rect
-         width="90"
-         height="90"
-         x="13"
-         y="13"
-         id="rect4140"
-         style="fill:none;stroke:#4d4d4d;stroke-width:0.23;stroke-miterlimit:4;stroke-dasharray:none" />
-      <path
-         d="m 13,18 90,0 m 0,5 -90,0 m 0,5 90,0 m 0,5 -90,0 m 0,5 90,0 m 0,5 -90,0 m 0,5 90,0 m 0,5 -90,0 m 0,5 90,0 m 0,5 -90,0 m 0,5 90,0 m 0,5 -90,0 m 0,5 90,0 m 0,5 -90,0 m 0,5 90,0 m 0,5 -90,0 m 0,5 90,0"
-         id="path4142"
-         inkscape:connector-curvature="0"
-         style="fill:none;stroke:#4d4d4d;stroke-width:0.23;stroke-miterlimit:4;stroke-dasharray:none" />
-      <path
-         d="m 18,13 0,90 m 5,0 0,-90 m 5,0 0,90 m 5,0 0,-90 m 5,0 0,90 m 5,0 0,-90 m 5,0 0,90 m 5,0 0,-90 m 5,0 0,90 m 5,0 0,-90 m 5,0 0,90 m 5,0 0,-90 m 5,0 0,90 m 5,0 0,-90 m 5,0 0,90 m 5,0 0,-90 m 5,0 0,90"
-         id="path4144"
-         inkscape:connector-curvature="0"
-         style="fill:none;stroke:#4d4d4d;stroke-width:0.23;stroke-miterlimit:4;stroke-dasharray:none" />
-      <path
-         d="m 28,88 0,0 m 30,0 0,0 m 30,0 0,0 m 0,-30 0,0 m -30,0 0,0 m -30,0 0,0 m 0,-30 0,0 m 30,0 0,0 m 30,0 0,0"
-         id="path4146"
-         inkscape:connector-curvature="0"
-         style="stroke:#4d4d4d;stroke-width:0.80000001;stroke-linecap:round" />
-    </g>
-  </g>
+     inkscape:snap-intersection-paths="true"
+     inkscape:snap-page="true"
+     inkscape:snap-object-midpoints="true" />
   <path
      style="opacity:1;fill:url(#radialGradient4172);fill-opacity:1;stroke:none;stroke-width:0.3125;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;filter:url(#filter4302)"
      id="path4154"
@@ -325,20 +285,80 @@
      inkscape:export-filename="stone_white.png"
      inkscape:export-xdpi="90"
      inkscape:export-ydpi="90" />
+  <g
+     id="g924"
+     transform="translate(-58,-58)"
+     inkscape:export-filename="board.png"
+     inkscape:export-xdpi="96.758896"
+     inkscape:export-ydpi="96.758896">
+    <g
+       id="g4556"
+       inkscape:export-filename="board.png"
+       inkscape:export-xdpi="96.758896"
+       inkscape:export-ydpi="96.758896">
+      <rect
+         inkscape:export-ydpi="90"
+         inkscape:export-xdpi="90"
+         inkscape:export-filename="board.png"
+         style="fill:#dcb35c;filter:url(#filter4436)"
+         y="10"
+         x="10"
+         id="rect4138"
+         height="96"
+         width="96" />
+      <g
+         id="g4587"
+         style="stroke:#4d4d4d">
+        <rect
+           width="90"
+           height="90"
+           x="13"
+           y="13"
+           id="rect4140"
+           style="fill:none;stroke:#4d4d4d;stroke-width:0.23;stroke-miterlimit:4;stroke-dasharray:none" />
+        <path
+           d="m 13,18 h 90 m 0,5 H 13 m 0,5 h 90 m 0,5 H 13 m 0,5 h 90 m 0,5 H 13 m 0,5 h 90 m 0,5 H 13 m 0,5 h 90 m 0,5 H 13 m 0,5 h 90 m 0,5 H 13 m 0,5 h 90 m 0,5 H 13 m 0,5 h 90 m 0,5 H 13 m 0,5 h 90"
+           id="path4142"
+           inkscape:connector-curvature="0"
+           style="fill:none;stroke:#4d4d4d;stroke-width:0.23;stroke-miterlimit:4;stroke-dasharray:none" />
+        <path
+           d="m 18,13 v 90 m 5,0 V 13 m 5,0 v 90 m 5,0 V 13 m 5,0 v 90 m 5,0 V 13 m 5,0 v 90 m 5,0 V 13 m 5,0 v 90 m 5,0 V 13 m 5,0 v 90 m 5,0 V 13 m 5,0 v 90 m 5,0 V 13 m 5,0 v 90 m 5,0 V 13 m 5,0 v 90"
+           id="path4144"
+           inkscape:connector-curvature="0"
+           style="fill:none;stroke:#4d4d4d;stroke-width:0.23;stroke-miterlimit:4;stroke-dasharray:none" />
+        <path
+           d="m 28,88 v 0 m 30,0 v 0 m 30,0 v 0 m 0,-30 v 0 m -30,0 v 0 m -30,0 v 0 m 0,-30 v 0 m 30,0 v 0 m 30,0 v 0"
+           id="path4146"
+           inkscape:connector-curvature="0"
+           style="stroke:#4d4d4d;stroke-width:0.8;stroke-linecap:round" />
+      </g>
+    </g>
+    <rect
+       style="opacity:0.25;fill:none;stroke:#ffffff;stroke-width:0.7;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect891"
+       width="45.126087"
+       height="45.126087"
+       x="35.436954"
+       y="35.436954"
+       ry="0" />
+    <rect
+       style="opacity:0.25;fill:none;stroke:#ffffff;stroke-width:0.7;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+       id="rect891-3"
+       width="65.177109"
+       height="65.177109"
+       x="25.411446"
+       y="25.411446"
+       ry="0" />
+  </g>
   <rect
-     style="opacity:0.25;fill:none;stroke:#ffffff;stroke-width:0.7;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
-     id="rect891"
-     width="45.126087"
-     height="45.126087"
-     x="35.436954"
-     y="35.436954"
-     ry="0" />
-  <rect
-     style="opacity:0.25;fill:none;stroke:#ffffff;stroke-width:0.7;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
-     id="rect891-3"
-     width="65.177109"
-     height="65.177109"
-     x="25.411446"
-     y="25.411446"
-     ry="0" />
+     style="opacity:0.01;fill:#ffffff;stroke:none;stroke-width:0.7;stroke-linecap:round"
+     id="rect948"
+     width="109.54"
+     height="109.51941"
+     x="-54.77"
+     y="-54.759705"
+     ry="2.45207"
+     inkscape:export-filename="board.png"
+     inkscape:export-xdpi="97.034859"
+     inkscape:export-ydpi="97.034859" />
 </svg>
