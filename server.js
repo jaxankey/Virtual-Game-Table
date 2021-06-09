@@ -354,7 +354,7 @@ io.on('connection', function(socket) {
   socket.on('say', function(data) {delay_function(on_say, data)});
 
   /** Player sends us their queue */
-  function on_q(data) { fun.log_date('NETR_q');
+  function on_q(data) { fun.log_date('NETR_q', socket.id, 'nq =', data[0], 'with', Object.keys(data[1]).length, 'Pieces', Object.keys(data[2]).length, 'Hands');
     var nq       = data[0];
     var q_pieces = data[1];
     var q_hands  = data[2];
@@ -364,7 +364,21 @@ io.on('connection', function(socket) {
 
       // Store all the supplied properties
       if(!state.pieces[id])      state.pieces[id]    = {};
-      for(var k in q_pieces[id]) state.pieces[id][k] = q_pieces[id][k];
+      for(var k in q_pieces[id]) {
+        
+        // Exception: if someone is updating who is the holder ('ih') 
+        // and someone ELSE is ALREADY holding (evidenced by a non-zero, not-undefined 'ih' value)
+        // Do not let the change happen and fix the q_pieces entry.
+        if(k == 'ih') { 
+          console.log('HAY', q_pieces[id][k], state.pieces[id][k])
+          if(state.pieces[id][k] && q_pieces[id][k]) q_pieces[id][k] = state.pieces[id][k];
+          console.log(' ->', q_pieces[id][k], state.pieces[id][k])
+        }
+
+        // Update the state for this piece
+        state.pieces[id][k] = q_pieces[id][k];
+
+      } // end of loop over pieces
     }
 
     // Loop over the hands q.

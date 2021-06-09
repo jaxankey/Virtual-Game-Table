@@ -17,19 +17,27 @@
 
 /* 
 METHODOLOGY
-Whenever attributes of our local things are updated, the changes are added to (or updated in) an outbound queue.
-All incoming packets from the server to us are similarly queued into an inbound queue.
-These queues are dealt with in bulk every quarter second or so. First the inbound queue is processed, then outbound is sent to the server.
- * Could choose not to update piece attributes that are already in the outbound queue!
-The server adds all such updates to a master list, then relays each incoming queue packet to everyone.
-  This includes returning it to the sender, to avoid lag-induced desync; the server state is sent as it's updated.
-  Upon receiving updated pieces, we will NOT update those pieces we are holding, because that's interferes with our local reality.
-    There is also a guaranteed update sent when pieces are released, so it cannot get too out of sync
-  When my OWN packet returns to me, I also do not update pieces I have recently held
-    This avoids a delayed packet from reversing something I've just sent.
-  Each outbound packet also has a packet index (nq) that increments each send.
-    This number is checked against the index of the packet I last sent, and is ignored for each piece if it's outdated.
-On connection, the server sends all the latest information in one big packet, like a big queue update.
+1. Whenever certain attributes (e.g. position, image index) of our local Things are updated, 
+   the changes are added to (or updated in) an outbound queue.
+
+2. All incoming packets from the server to us are similarly queued into an inbound queue.
+
+3. These queues are dealt with all at once every quarter second or so. 
+   First the inbound queue is processed, then outbound is sent to the server.
+
+4. The server adds all such updates to a master list, then relays each incoming queue packet to everyone.
+   This includes returning it to the sender, to avoid lag-induced desync; the latest server state is sent to EVERYONE
+   as it's updated.
+
+5. Upon receiving updated pieces, clients will NOT update those pieces they are holding, because that's interferes with 
+   their local reality (they have control!). The exception to this rule is if someone else says they're holding it.
+   If two people grab the same piece, the server enforces that the first one holds it.
+   There is a guaranteed update sent when pieces are released, so it cannot get too out of sync.
+
+6. Clients only update each piece attribute if either the sender is NOT us, 
+   or if it IS us AND we haven't sent a more recent update. (Each outbound packet also has a packet index (nq) that increments.)
+
+7. On connection, the server sends all the latest information in one big packet, like a big queue update.
 
 IDEAS 
 
@@ -185,30 +193,14 @@ class Net {
       // If the piece is valid and we're not holding it, update it.
       if(p && p.id_client_hold != net.id) {
 
-        // Only update this piece if
-        //
-        // We are NOT holding this piece
-        //if(p.id_client_hold != net.id 
-        
-        // AND it's been awhile since we dropped it (not necessary with in_q_out)
-        // JACK: This can lead to unsync if someone quickly grabs it, so we need to add
-        //       some kind of timing on the other client side to minimize, and rely on more frequenct full updates
-        //&& t - p.t_last_hold > game.settings.t_hold_block
-
-        // AND it's from someone else OR it's from us and we have NOT already sent a more recent update
-        //&& (c.id_client_sender != net.id) ) 
-        //{
-
-          // Only update each parameter if it came from someone else
-          // or we have not more recently sent it to q_out.
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['x']) p.set_xyrs_target(c.x, undefined, undefined, undefined, false, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['y']) p.set_xyrs_target(undefined, c.y, undefined, undefined, false, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['r']) p.set_xyrs_target(undefined, undefined, c.r, undefined, false, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['s']) p.set_xyrs_target(undefined, undefined, undefined, c.s, false, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['n']) p.set_texture_index(c.n, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ts']) p.select(c.ts, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ih']) p.hold(c.ih, true);
-        //}
+        // Only update each attribute if the sender is NOT us, or if it IS us AND we haven't sent a more recent update
+        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['x']) p.set_xyrs_target(c.x, undefined, undefined, undefined, false, true);
+        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['y']) p.set_xyrs_target(undefined, c.y, undefined, undefined, false, true);
+        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['r']) p.set_xyrs_target(undefined, undefined, c.r, undefined, false, true);
+        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['s']) p.set_xyrs_target(undefined, undefined, undefined, c.s, false, true);
+        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['n']) p.set_texture_index(c.n, true);
+        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ts']) p.select(c.ts, true);
+        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ih']) p.hold(c.ih, true);
       }
 
     }; this.q_pieces_in = {}; // End of loop over q_pieces_in
@@ -271,7 +263,7 @@ class Net {
   setup_listeners() {
   
     // Main listener for incoming data queue
-    this.io.on('q', function(data) { if(!this.ready) return; log('NETR_q', data);
+    this.io.on('q', function(data) { if(!this.ready) return; log('NETR_q_'+String(data[0]), data);
       var id_client = data[0];
       var nq        = data[1];
       var q_pieces  = data[2];
@@ -1290,7 +1282,7 @@ class Thing {
     if(id_client == undefined || id_client == this.id_client_hold) return;
 
     // If it's the server requesting, release
-    else if(id_client == 0) this.release();
+    else if(id_client == 0) this.release(do_not_send);
 
     // Otherwise, if it's not being held already (or the client is invalid), hold it.
     else if(this.id_client_hold == 0 || clients.all[this.id_client_hold] == undefined) {
