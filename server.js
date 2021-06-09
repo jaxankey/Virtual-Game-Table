@@ -369,11 +369,11 @@ io.on('connection', function(socket) {
       // Loop over attributes and transfer to state or defer to state, depending on who is holding the piece
       for(k in q_pieces[id]) {
         
-        // If someone holding who is NOT the requester, defer to state values
-        if(state.pieces[id]['ih'] && state.pieces[id]['ih'] != socket.id) q_pieces[id][k] = state.pieces[id][k];
-
-        // Otherwise, defer to incoming data
-        else state.pieces[id][k] = q_pieces[id][k];
+        // If no one is holding it OR the holder is this client, update the state
+        if(!state.pieces[id]['ih'] || state.pieces[id]['ih'] == socket.id) state.pieces[id][k] = q_pieces[id][k];
+        
+        // Otherwise someone is holding who is NOT this client, meaning this is not allowed, so defer to the state data
+        else q_pieces[id][k] = state.pieces[id][k];
 
       } // end of corrective loop over attributes
     } // end of loop over pieces
