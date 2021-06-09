@@ -1,6 +1,16 @@
+/*!
+ * express
+ * Copyright(c) 2009-2013 TJ Holowaychuk
+ * Copyright(c) 2013 Roman Shtylman
+ * Copyright(c) 2014-2015 Douglas Christopher Wilson
+ * MIT Licensed
+ */
+
+'use strict';
 
 /**
  * Module dependencies.
+ * @private
  */
 
 var Route = require('./route');
@@ -9,11 +19,13 @@ var methods = require('methods');
 var mixin = require('utils-merge');
 var debug = require('debug')('express:router');
 var deprecate = require('depd')('express');
+var flatten = require('array-flatten');
 var parseUrl = require('parseurl');
-var utils = require('../utils');
+var setPrototypeOf = require('setprototypeof')
 
 /**
  * Module variables.
+ * @private
  */
 
 var objectRegExp = /^\[object (\S+)\]$/;
@@ -23,26 +35,26 @@ var toString = Object.prototype.toString;
 /**
  * Initialize a new `Router` with the given `options`.
  *
- * @param {Object} options
+ * @param {Object} [options]
  * @return {Router} which is an callable function
- * @api public
+ * @public
  */
 
 var proto = module.exports = function(options) {
-  options = options || {};
+  var opts = options || {};
 
   function router(req, res, next) {
     router.handle(req, res, next);
   }
 
   // mixin Router class functions
-  router.__proto__ = proto;
+  setPrototypeOf(router, proto)
 
   router.params = {};
   router._params = [];
-  router.caseSensitive = options.caseSensitive;
-  router.mergeParams = options.mergeParams;
-  router.strict = options.strict;
+  router.caseSensitive = opts.caseSensitive;
+  router.mergeParams = opts.mergeParams;
+  router.strict = opts.strict;
   router.stack = [];
 
   return router;
@@ -79,7 +91,7 @@ var proto = module.exports = function(options) {
  * @param {String} name
  * @param {Function} fn
  * @return {app} for chaining
- * @api public
+ * @public
  */
 
 proto.param = function param(name, fn) {
@@ -108,7 +120,7 @@ proto.param = function param(name, fn) {
 
   // ensure we end up with a
   // middleware function
-  if ('function' != typeof fn) {
+  if ('function' !== typeof fn) {
     throw new Error('invalid param() call for ' + name + ', got ' + fn);
   }
 
@@ -118,20 +130,16 @@ proto.param = function param(name, fn) {
 
 /**
  * Dispatch a req, res into the router.
- *
- * @api private
+ * @private
  */
 
-proto.handle = function(req, res, done) {
+proto.handle = function handle(req, res, out) {
   var self = this;
 
   debug('dispatching %s %s', req.method, req.url);
 
-  var search = 1 + req.url.indexOf('?');
-  var pathlength = search ? search - 1 : req.url.length;
-  var fqdn = req.url[0] !== '/' && 1 + req.url.substr(0, pathlength).indexOf('://');
-  var protohost = fqdn ? req.url.substr(0, req.url.indexOf('/', 2 + fqdn)) : '';
   var idx = 0;
+  var protohost = getProtohost(req.url) || ''
   var removed = '';
   var slashAdded = false;
   var paramcalled = {};
@@ -146,7 +154,7 @@ proto.handle = function(req, res, done) {
   // manage inter-router variables
   var parentParams = req.params;
   var parentUrl = req.baseUrl || '';
-  done = restore(done, req, 'baseUrl', 'next', 'params');
+  var done = restore(out, req, 'baseUrl', 'next', 'params');
 
   // setup next layer
   req.next = next;
@@ -181,6 +189,12 @@ proto.handle = function(req, res, done) {
       req.baseUrl = parentUrl;
       req.url = protohost + removed + req.url.substr(protohost.length);
       removed = '';
+    }
+
+    // signal to exit router
+    if (layerError === 'router') {
+      setImmediate(done, null)
+      return
     }
 
     // no more matching layers
@@ -272,18 +286,19 @@ proto.handle = function(req, res, done) {
   }
 
   function trim_prefix(layer, layerError, layerPath, path) {
-    var c = path[layerPath.length];
-    if (c && '/' !== c && '.' !== c) return next(layerError);
-
-     // Trim off the part of the url that matches the route
-     // middleware (.use stuff) needs to have the path stripped
     if (layerPath.length !== 0) {
+      // Validate path breaks on a path separator
+      var c = path[layerPath.length]
+      if (c && c !== '/' && c !== '.') return next(layerError)
+
+      // Trim off the part of the url that matches the route
+      // middleware (.use stuff) needs to have the path stripped
       debug('trim prefix (%s) from url %s', layerPath, req.url);
       removed = layerPath;
       req.url = protohost + req.url.substr(protohost.length + removed.length);
 
       // Ensure leading slash
-      if (!fqdn && req.url[0] !== '/') {
+      if (!protohost && req.url[0] !== '/') {
         req.url = '/' + req.url;
         slashAdded = true;
       }
@@ -306,11 +321,10 @@ proto.handle = function(req, res, done) {
 
 /**
  * Process any parameters for the layer.
- *
- * @api private
+ * @private
  */
 
-proto.process_params = function(layer, called, req, res, done) {
+proto.process_params = function process_params(layer, called, req, res, done) {
   var params = this.params;
 
   // captured parameters from the layer, keys and values
@@ -342,11 +356,6 @@ proto.process_params = function(layer, called, req, res, done) {
 
     paramIndex = 0;
     key = keys[i++];
-
-    if (!key) {
-      return done();
-    }
-
     name = key.name;
     paramVal = req.params[name];
     paramCallbacks = params[name];
@@ -357,7 +366,8 @@ proto.process_params = function(layer, called, req, res, done) {
     }
 
     // param previously called with same value or error occurred
-    if (paramCalled && (paramCalled.error || paramCalled.match === paramVal)) {
+    if (paramCalled && (paramCalled.match === paramVal
+      || (paramCalled.error && paramCalled.error !== 'route'))) {
       // restore value
       req.params[name] = paramCalled.value;
 
@@ -412,7 +422,7 @@ proto.process_params = function(layer, called, req, res, done) {
  * handlers can operate without any code changes regardless of the "prefix"
  * pathname.
  *
- * @api public
+ * @public
  */
 
 proto.use = function use(fn) {
@@ -435,19 +445,21 @@ proto.use = function use(fn) {
     }
   }
 
-  var callbacks = utils.flatten(slice.call(arguments, offset));
+  var callbacks = flatten(slice.call(arguments, offset));
 
   if (callbacks.length === 0) {
-    throw new TypeError('Router.use() requires middleware functions');
+    throw new TypeError('Router.use() requires a middleware function')
   }
 
-  callbacks.forEach(function (fn) {
+  for (var i = 0; i < callbacks.length; i++) {
+    var fn = callbacks[i];
+
     if (typeof fn !== 'function') {
-      throw new TypeError('Router.use() requires middleware function but got a ' + gettype(fn));
+      throw new TypeError('Router.use() requires a middleware function but got a ' + gettype(fn))
     }
 
     // add the middleware
-    debug('use %s %s', path, fn.name || '<anonymous>');
+    debug('use %o %s', path, fn.name || '<anonymous>')
 
     var layer = new Layer(path, {
       sensitive: this.caseSensitive,
@@ -458,7 +470,7 @@ proto.use = function use(fn) {
     layer.route = undefined;
 
     this.stack.push(layer);
-  }, this);
+  }
 
   return this;
 };
@@ -473,10 +485,10 @@ proto.use = function use(fn) {
  *
  * @param {String} path
  * @return {Route}
- * @api public
+ * @public
  */
 
-proto.route = function(path){
+proto.route = function route(path) {
   var route = new Route(path);
 
   var layer = new Layer(path, {
@@ -517,6 +529,23 @@ function getPathname(req) {
   } catch (err) {
     return undefined;
   }
+}
+
+// Get get protocol + host for a URL
+function getProtohost(url) {
+  if (typeof url !== 'string' || url.length === 0 || url[0] === '/') {
+    return undefined
+  }
+
+  var searchIndex = url.indexOf('?')
+  var pathLength = searchIndex !== -1
+    ? searchIndex
+    : url.length
+  var fqdnIndex = url.substr(0, pathLength).indexOf('://')
+
+  return fqdnIndex !== -1
+    ? url.substr(0, url.indexOf('/', 3 + fqdnIndex))
+    : undefined
 }
 
 // get type for error message
@@ -566,9 +595,12 @@ function mergeParams(params, parent) {
   var o = 0;
 
   // determine numeric gaps
-  while (i === o || o in parent) {
-    if (i in params) i++;
-    if (o in parent) o++;
+  while (i in params) {
+    i++;
+  }
+
+  while (o in parent) {
+    o++;
   }
 
   // offset numeric indices in params before merge
@@ -581,7 +613,7 @@ function mergeParams(params, parent) {
     }
   }
 
-  return mixin(parent, params);
+  return mixin(obj, params);
 }
 
 // restore obj props after function
@@ -594,7 +626,7 @@ function restore(fn, obj) {
     vals[i] = obj[props[i]];
   }
 
-  return function(err){
+  return function () {
     // restore vals
     for (var i = 0; i < props.length; i++) {
       obj[props[i]] = vals[i];

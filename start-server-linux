@@ -1,16 +1,18 @@
 #!/bin/bash
 
-if [ $# -eq 0 ]
+# Defaults
+game='0'
+port='0'
+
+# If there are zero arguments, ask for the game
+if [ $# -ge 1 ]
   then
-    read -p 'game: ' game
-  else
     game=$1
 fi
 
-if [ $# -lt 2 ]
+# If there is only one argument, ask for the port
+if [ $# -ge 2 ]
   then
-    read -p 'port: ' port
-  else
     port=$2
 fi
 

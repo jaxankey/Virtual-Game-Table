@@ -1,0 +1,31 @@
+<!doctype html><html><body><script src="Tone.js"></script>Click anywhere to start.<script>
+
+    // Create the players for two loop chunks
+    var x = new Tone.Player('music/5.ogg' ).toMaster();
+    var y = new Tone.Player('music/55.ogg').toMaster();
+            
+    // Tranport configuration to match the audio files.
+    Tone.Transport.bpm.value = 90;
+    
+    // Click anywhere to start.
+    document.onclick = function() {
+
+        // Start the transport if we haven't already
+        if(Tone.Transport.state == 'stopped'){
+        
+            // Queue alternating loop segments.
+            x.start('2:0:0');
+            y.start('3:0:0');
+            x.start('4:0:0');
+            y.start('5:0:0');
+
+            // Schedule a log event at the start of each measure, so we know where we are
+            Tone.Transport.scheduleRepeat(function(){console.log(Tone.Transport.position);}, '1m', '0m');
+
+            // Fire it up.
+            Tone.Transport.start();
+        }
+        else Tone.Transport.stop();
+    }
+
+</script></body></html>

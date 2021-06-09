@@ -1,7 +1,6 @@
 /**
  * This file is part of the Virtual Game Table distribution 
- * (https://github.com/jaxankey/Virtual-Game-Table).
- * Copyright (c) 2015-2019 Jack Childress (Sankey).
+ * Copyright (c) 2015-2021 Jack Childress (Sankey).
  * 
  * This program is free software: you can redistribute it and/or modify  
  * it under the terms of the GNU General Public License as published by  
@@ -16,110 +15,91 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Timing
-var update_interval_ms    = 5000; // Delay after last move before asking for a full update (ms)
-var t_last_update_ms      = Date.now(); // Reset the timer.
+
+// Everything about the current game state that can be sent in a data packet
+var state = {
+  clients: {},              // List of client data
+  pieces : {},              // List of piece properties
+  hands  : {},              // list of hand properties
+  t_simulated_lag : 0,      // Simulated lag when routing packets.
+  t_full_update   : 4000,   // How often to send a full update
+  t_block_update  : 3000,   // How long to wait after the last update before including a piece in a full update
+}; // see also reset_game();
+
+// State keys that should not be set by clients with server commands (/set)
+var state_keys_no_set = [
+  'clients', 
+  'pieces', 
+  'hands',
+];
+
+
 
 // Versions included in external_scripts
-var jquery_version    = 'jquery-1.11.1.js'
-var socket_io_version = 'socket.io-1.2.0.js'
-
-// port upon which the server listens
-var game_name = 'cards';
-var port      = 37777;
-console.log('\nArguments:');
-for(var n in process.argv) console.log(process.argv[n]);
-
-// find out if a game name and port was supplied
-if (process.argv.length > 2) game_name = process.argv[2];
-if (process.argv.length > 3) port = parseInt(process.argv[3]);
+jquery_version    = 'jquery-3.5.1.min.js';
+pixi_version      = 'pixi.min.js';
+howler_version    = 'howler.min.js';
 
 // requirements
-var fs   = require('fs');               // file system stuff
-var app  = require('express')();        // routing handler
-var http = require('http').Server(app); // listening
-var io   = require('socket.io')(http);  // fast input/output
+var fs   = require('fs');                     // file system stuff
+var app  = require('express')();              // routing handler
+var http = require('http').createServer(app); // listening
+var io   = require('socket.io')(http);        // fast input/output
+var fun  = require('./common/fun');           // My common functions
 
-// Generates a date string for logs
-function get_date_string() {
-  
-  // get the date
-  var today = new Date();
-  var ss = today.getSeconds();
-  var mm = today.getMinutes();
-  var hh = today.getHours();
-  var dd = today.getDate();
-  var MM = today.getMonth()+1; //January is 0!
-  var yyyy = today.getFullYear();
-  
-  // format the string
-  if(ss<10) ss='0'+ss;
-  if(hh<10) hh='0'+hh
-  if(dd<10) dd='0'+dd;
-  if(mm<10) mm='0'+mm;
-  if(MM<10) MM='0'+MM;
-  
-  // return formatted
-  return yyyy+'-'+MM+'-'+dd+' '+hh+':'+mm+'.'+ss+' - '
+
+// Set the initial state without messing up the clients
+function reset_game() {
+  fun.log_date('Resetting game...');
+
+  // Reset the key components
+  state.pieces = {};
+  state.hands  = {};
+
+  // Now send all the clients this info
+  for(id in state.clients) send_state(id);
 }
+reset_game();
 
 
-// Logs events prepended by the date string
-function log() {
-  // prepend the date
-  arguments[0] = get_date_string()+String(arguments[0]);
-  
-  // forward the arguments to the log.
-  console.log.apply(this, arguments);
-}
+// port upon which the server listens
+fun.log_date('\nArguments:');
+for(var n in process.argv) fun.log_date(process.argv[n]);
+
+// find out if a game name and port was supplied
+game_name = process.argv[2];
+port      = parseInt(process.argv[3]);
+
+if(game_name == '0') game_name = 'default';
+if(port      ==  0 ) port      = 38000;
 
 // get the directories
-var root_directory     = process.cwd();
+var root_directory = process.cwd();
 
 // This is the order of searching for files.
 var private_directory  = root_directory + '/private/'  + game_name
 var games_directory    = root_directory + '/games/'    + game_name;
 var common_directory   = root_directory + '/common';
 
-
 // change to the root directory
-console.log('\nSearch Order:');
-console.log('  '+private_directory);
-console.log('  '+games_directory);
-console.log('  '+common_directory);
-console.log('  '+root_directory+'\n');
-
-// Get the images from the avatars folder
-function get_avatars() {
-  common_avatars  = fs.readdirSync(common_directory +'/avatars');
-  if(fs.existsSync(root_directory+'/private/avatars/')) private_avatars = fs.readdirSync(root_directory+'/private/avatars/');
-  else                                                  private_avatars = [];
-
-  // Get all the avatar paths
-  avatars = [];
-  for(var n in common_avatars)  avatars.push('common/avatars/'+common_avatars[n]);
-  for(var n in private_avatars) avatars.push('private/avatars/'+private_avatars[n]);
-
-  return avatars;
-}
-
-
-
+fun.log_date('\nSearch Order:');
+fun.log_date('  '+private_directory);
+fun.log_date('  '+games_directory);
+fun.log_date('  '+common_directory);
+fun.log_date('  '+root_directory+'\n');
 
 /**
  * See if the full path exists.
  * @param {string} path 
  */
-function file_exists(path) {
-  return fs.existsSync(path);
-}
+function file_exists(path) { return fs.existsSync(path); }
 
 /**
  * Returns the path to the appropriate file, following the priority
  * private_directory, games_directory, common_directory
  */
 function find_file(path) {
-  //console.log(' Searching for', path, 'in');
+  //fun.log_date(' Searching for', path, 'in');
   var paths = [
     private_directory +'/'+path,
     games_directory   +'/'+path,
@@ -127,390 +107,332 @@ function find_file(path) {
     root_directory    +'/'+path
   ] 
   
-  for(var n in paths) {
-    //console.log('  ', paths[n]);
-    if(file_exists(paths[n])) return paths[n];
-  }
-  console.log('  FILE NOT FOUND:', path);
+  for(var n in paths) {if(file_exists(paths[n])) return paths[n];}
+
+  fun.log_date('  FILE NOT FOUND:', path);
   return common_directory+'/images/nofile.png';
 }
-
 
 /**
  * Searches for the path, and, if found, sends it using the response object
  * @param {response} response
  * @param {path-like string} path 
  */
-function send(response, path) {
+function send_file(response, path) {
   var full_path = find_file(path);
   if(full_path) response.sendFile(full_path);
 }
 
-// File requests
-app.get('/external_scripts/socket.io.js', function(request, response) {
-  response.sendFile(root_directory + '/external_scripts/' + socket_io_version); } );
+function html_encode(s) {
+  // Thanks Stack Exchange.
+  return s.replace(/[\u00A0-\u9999<>\&]/gim, function(i) {return '&#'+i.charCodeAt(0)+';';});
+}
 
+
+
+///////////////////
+// FILE REQUESTS //
+///////////////////
+
+// External Scripts
+app.get('/external_scripts/pixi.js', function(request, response) {
+  response.sendFile(root_directory + '/external_scripts/' + pixi_version); } );
+
+app.get('/socket.io.js', function(request, response) {
+  response.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js'); } );
+
+app.get('/socket.io.js.map', function(request, response) {
+  response.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js.map'); } );
+  
 app.get('/external_scripts/jquery.js', function(request, response) {
   response.sendFile(root_directory + '/external_scripts/' + jquery_version); } );
 
-app.get('/',          function(request, response) {send(response, 'index.html')    ;} );
-app.get('/rules/',    function(request, response) {send(response, 'rules.html')    ;} );
-app.get('/controls/', function(request, response) {send(response, 'controls.html') ;} );
-app.get('/:f',        function(request, response) {send(response, request.params.f);} );
-
-app.get('/images/:i',       function(request, response) {send(response, 'images/'+request.params.i                                          );} );
-app.get('/images/:d/:i',    function(request, response) {send(response, 'images/'+request.params.d+'/'+request.params.i                     );} );
-app.get('/images/:a/:b/:c', function(request, response) {send(response, 'images/'+request.params.a+'/'+request.params.b+'/'+request.params.c);} );
-app.get('/common/avatars/:i', function(request, response) {send(response, 'common/avatars/' +request.params.i);} );
-app.get('/private/avatars/:i',function(request, response) {send(response, 'private/avatars/'+request.params.i);} );
+app.get('/external_scripts/howler.js', function(request, response) {
+  response.sendFile(root_directory + '/external_scripts/' + howler_version); } );
   
-// Last known board configuration
-pieces = [];
-/** each piece contains 
- * id   piece id
- * x    x position
- * y    y position
- * r    rotation
- * i    active image index
- * n    position in main stack
-*/
+app.get('/',          function(request, response) {send_file(response, 'index.html')    ;} );
+app.get('/:f',        function(request, response) {send_file(response, request.params.f);} );
+
+app.get('/:z/:i',       function(request, response) {send_file(response, request.params.z+'/'+request.params.i                                          );} );
+app.get('/:z/:d/:i',    function(request, response) {send_file(response, request.params.z+'/'+request.params.d+'/'+request.params.i                     );} );
+app.get('/:z/:a/:b/:c', function(request, response) {send_file(response, request.params.z+'/'+request.params.a+'/'+request.params.b+'/'+request.params.c);} );
+app.get('/common/avatars/:i', function(request, response) {send_file(response, 'common/avatars/' +request.params.i);} );
+app.get('/private/avatars/:i',function(request, response) {send_file(response, 'private/avatars/'+request.params.i);} );
+
+
+
+////////////////////////////
+// Lag simulator
+////////////////////////////
 
 /**
- * Find and return the index of the supplied piece id.
- * @param {int} id 
+ * Routes the supplied data to the supplied handler function after a delay.
+ * @param {function} handler // Function that receives the data after state.t_simulated_lag
+ * @param {*} data           // Incoming data.
  */
-function find_piece(id) {
-  for(var n in pieces) {
-    if(pieces[n].id == id) return n;
+function delay_function(handler, data) {
+
+  // If we have a simulated lag, delay the handling of this data
+  // Note I think it would be a bad simulation if we allow this lag to vary here,
+  // because this would re-order the data, which is ensured to be in order by the TCP 
+  // protocol.
+  if(state.t_simulated_lag) setTimeout(function(){handler(data)}, state.t_simulated_lag);
+  
+  // Otherwise, just run the handler on the data.
+  else handler(data);
+}
+
+/**
+ * Emits the data on the supplied socket with the supplied key, after a delay (if not zero).
+ * @param {socket} socket 
+ * @param {String} key 
+ * @param {*} data 
+ */
+function delay_send(socket, key, data) {
+  if(socket) {
+    if(state.t_simulated_lag) setTimeout(function(){socket.emit(key,data)}, t_simulated_lag);
+    else                                            socket.emit(key,data);
   }
-  return -1;
 }
-
-// Client information. These lists should match in length!
-// We break these into lists so the data is easy to send.
-last_client_id            = 0;
-client_ids                = []; // list of unique ids for each socket
-client_sockets            = []; // sockets
-client_names              = []; // names associated with each socket
-client_teams              = []; // team numbers associated with each socket
-client_is_holding         = []; // lists of last known held piece indices for each socket
-client_selected_piece_ids = []; // Lists of the last known selected pieces for each socket
-client_drag_offsets       = []; // list of [dx,dy] offset coordinates for each held piece
-team_zones                = {}; // dictionary of team zones by team_index
-
-// Timer to check for things that should happen periodically.
-function quick_check() {
-    
-    timestamp_ms = Date.now();
-    
-    // Only proceed some time after the last update.
-    if(timestamp_ms-t_last_update_ms < update_interval_ms || client_ids.length == 0) return;
-    
-    // Send everything if we've been idle for awhile.
-    log('Sending full update', pieces.length, 'pieces.');
-    io.emit('u', pieces); 
-    t_last_update_ms = Date.now();
-}
-setInterval(quick_check, 500);
 
 
 
 ///////////////////////////////////////////
 // Thread for what to do with new client //
 ///////////////////////////////////////////
+
+var sockets     = {}; // Socket objects, sorted by id
+var last_id     = 1;  // Last assigned id; incremented with each client
+
+// Names for new players
+var first_names = ['pants', 'n00b', '1337', 'dirt', 
+                   'trash', 'no', 'terrible', 'nono'];
+var last_names  = ['tastic', 'cakes', 'pants', 'face', 'n00b', 'juice', 
+                   'bag', 'hole', 'friend', 'skillet', 'person'];
+
+// Sends the game state to the specified client id
+function send_state(id) {
+  fun.log_date('NETS_state to', id);
+
+  // Send it
+  delay_send(sockets[id], 'state', [id, state]);
+}     
+
+
+
+
+
+// When a client connects
 io.on('connection', function(socket) {
-  
-  // update the global list of clients
-  client_ids           .push(++last_client_id);
-  client_sockets       .push(socket);  // each client gets a socket
-  client_names         .push("n00b");  // each client gets a name string
-  client_teams         .push(0);       // each client gets a team index
-  client_is_holding    .push(false);   // each client gets a list of held pieces 
-  client_selected_piece_ids.push([]);  // each client gets a list of selected pieces
-  client_drag_offsets  .push([]);      // for each held piece, there is a list of [dx,dy] offsets
 
-  log("New client id: ", last_client_id, ', sockets: '+client_sockets.length, client_teams);
+  // Put the id somewhere safe.
+  socket.id = last_id++;
 
-  // Tell this user their id.
-  socket.emit('id', last_client_id);
-  
-  // Welcome them to the server.
-  socket.emit('chat', '<b>Server:</b> Welcome!');
-  
-  ////////////////////////////
-  // Queries
-  ////////////////////////////
-
-  // Query for avatar paths
-  socket.on('avatars?', function() {
-    // get the client id
-    var client_index = client_sockets.indexOf(socket);
-    var client_id    = client_ids[client_index];
-
-    log('Received "avatars?" from client', client_id, client_index);
-    avatars = get_avatars();
-    log('Sending avatar image path list:', avatars.length, 'items');
-    socket.emit('avatars', avatars);
-  });
-
-  // Received a "ready to go" query
-  socket.on('?', function() {
-    // get the client id
-    var client_index = client_sockets.indexOf(socket);
-    var client_id    = client_ids[client_index];
-
-    // Log it
-    log('Received "?" from client', client_id, client_index);
-    
-    // Send the last known config
-    log('Sending last known config:', pieces.length, "pieces");
-    socket.emit('u', pieces);
-
-    // Send the team zones
-    for(k in team_zones) socket.emit('tz', team_zones[k]);
-
-    // Send the selected pieces of all the other clients
-    for(var n in client_selected_piece_ids) 
-      if(n != client_index) socket.emit('s', client_selected_piece_ids[n], client_ids[n]);
-  });
-
-  // Received team_zone parameters update
-  socket.on('tz', function(packet) {
-    log('Received and broadcasting tz', packet.team_index);
-    team_zones[packet.team_index] = packet;
-    io.emit('tz', packet);
-  });
-
-  // Received a name or team change triggers a full user information dump, including held pieces.
-  socket.on('user', function(name, team) {
-    
-    // get the client index
-    i = client_sockets.indexOf(socket);
-    
-    // Make sure the team is at least 0. Sometimes a -1 comes in from the html initializing.
-    if(team < 0) team = 0;
-
-    // update client names & teams
-    old_name        = client_names[i];
-    old_team        = client_teams[i];
-    client_names[i] = name.substring(0,24);
-    client_teams[i] = team;
-    log('User index', i, 'change:', old_name + " -> " + client_names[i], ' and ' + old_team, '->', team);
-    
-    // Send a chat to everyone with this information
-    if(old_name != client_names[i] && old_name != 'n00b') 
-      io.emit('chat', '<b>Server:</b> '+old_name+' is now '+client_names[i]);
-    
-    if(old_team != client_teams[i]) 
-      io.emit('chat', '<b>Server:</b> '+client_names[i]+" joins Team "+String(team));
-    
-    // tell everyone about the current list.
-    io.emit('users', client_ids, client_names, client_teams, client_is_holding, client_selected_piece_ids);
-  });
-
-  // received a chat message
-  socket.on('chat', function(msg) {
-
-    // update log
-    log('chat:', msg);
-
-    // send the message to everyone
-    io.emit('chat', msg);
-  });
+  // Save this socket, sorted by id
+  sockets[socket.id] = socket;
 
   /** 
-   * Someone is moving their mouse on the canvas. 
-   * Incoming data:
-   *  client_id
-   *  x,y           Mouse's x and y coordinates
-   *  hp_ids        List of this client's held piece ids
-   *  hp_coords     List of [dx,dy,r] coordinates, one for each hp_id. dx and dy are relative to x and y
-   *  client_r      Rotation of the client (for drawing the hand orientation)
-   *  selection_box Selection box for this client {x0_target, y0_target, x1_target, y1_target, r_target}
+   * My own function that sends the supplied data to everyone else; 
+   * socket.broadcast.emit is not working right. 
    */
-  socket.on('m', function(x, y, hp_ids, hp_coords, client_r, selection_box) {
-    
-    // Figure out the client
-    client_index = client_sockets.indexOf(socket);
-    client_id    = client_ids[client_index];
-    log('m:', client_id, x, y, hp_ids.length, hp_coords.length, client_r, selection_box);
-    
-    // This information will never be sent by another client, because it only 
-    // comes from the person holding the pieces. As such, send messages to everyone ELSE only.
-    socket.broadcast.emit('m', client_id, x, y, hp_ids, hp_coords, client_r, selection_box);
-  });
+  function broadcast(key, data) {
+    for (id in state.clients) 
+      if(id != socket.id) delay_send(sockets[id], key, data);
+  }
 
-  /**
-   * Someone sent information about a bunch of pieces.
-   */
-  socket.on('u', function(incoming_pieces, clear) {
-    
-    // Reset the update clock
-    t_last_update_ms = Date.now();
-
-    // Get the client index
-    client_index = client_sockets.indexOf(socket);
-    log(client_index, 'u:', incoming_pieces.length, 'pieces');
-
-    // Emit to EVERYONE, including the original client, to resolve collisions.
-    // Draw the diagram with and without the return ping to see why!
-    // The client software should ignore data about pieces they're holding.
-    // The trick is to not have more than one client sending a mass update.
-    io.emit('u', incoming_pieces); 
-
-    // Now update our private memory to match!
-
-    // If we're supposed to, get rid of the pieces in memory
-    if(clear==true) pieces.length=0;
-
-    // Now we wish to overwrite all the existing pieces with the new ones,
-    // and make sure they're in the right places.
-
-    // Sort the piece datas by n's (position in the stack must be increasing for the algorithm below)
-    incoming_pieces.sort(function(a, b){return a.n-b.n});
-
-    //////////////////////////////////////////////////////
-    // Inserting the pieces sorted into the master list.
-    //////////////////////////////////////////////////////
-
-    // Pop all the incoming pieces out of the existing list (if present)
-    for(var i in incoming_pieces) {
-      pd = incoming_pieces[i]; 
-      
-      // find the index in the current list
-      var m = find_piece(pd.id);
-      
-      // if the piece exists in our list, pop it (to be replaced below) and update the rest
-      if(m>=0) {
-        
-        // Remove it (throw it away)
-        pieces.splice(m,1);
-
-        // Decrement the indices of the subsequent pieces so they match the actual indices
-        for(var j=m; j<pieces.length; j++) pieces[j].n--;
-      }
-    } // end of first loop over supplied pieces
-
-    // Loop over the incoming pieces again to insert them into the main stack, which currently should not contain them. 
-    // We do this in separate loops so that pieces removed from random locations and sent to 
-    // random locations do not interact. The value of ns is the final value in the pieces array.
-    var timestamp_ms = Date.now(); // Time tag for the piece
-    for(var i in incoming_pieces) {
-      p = incoming_pieces[i]; // incoming piece
-      p.timestamp_ms = timestamp_ms;
-
-      // Reset if there is a problem
-      if(p.n > pieces.length) {
-        io.emit('chat', 'Server warning: p.n='+String(p.n)+' length='+pieces.length, '(resetting server pieces)');
-        log('WARNING: Mismatched piece count. RESETTING.')
-        pieces.length = 0;
-        client_sockets[0].emit('u', pieces);
-        return;
-      }
-      
-      // insert the piece at it's index
-      pieces.splice(p.n, 0, p);
-      
-      // increment the subsequent piece indices
-      for(var j=p.n+1; j<pieces.length; j++) pieces[j].n++;
-    }
-  });
+  // Add a new client to the list
+  if(state.clients) {
+    state.clients[socket.id] = {
+      'id'     : socket.id, 
+      'name'   : fun.random_array_element(first_names)+fun.random_array_element(last_names),
+      'team'   : 0,
+    };
+    fun.log_date('CLIENT', socket.id, 'CONNECTED');
+  } 
+  else fun.log_date('ERROR: state.clients does not exist!');
   
+  // Summarize existing state.clients
+  for(n in state.clients) fun.log_date(' ', n, state.clients[n]);
 
-  // Deal with selection changes at the team level, 
-  // and held piece changes at the client level.
+  ////////////////////////////
+  // Queries sent by client
+  ////////////////////////////
 
-  // someone sent a selection change
-  socket.on('s', function(piece_ids, client_id) {
+  // Client says hello, asks for game state.
+  function on_hallo(data) {
+    fun.log_date(socket.id, 'NETR_hallo', data);
+    var name = data[0]; // string
+    var team = data[1]; // integer
     
-    // Optional client_id supplied by user
-    // get the client id and index from the socket
-    if(client_id == undefined) {
-      var client_index = client_sockets.indexOf(socket);
-      var client_id = client_ids[client_index];
-    }
+    // Update the client name
+    if(name != '' && socket && state.clients) state.clients[socket.id].name = name;
+    if(              socket && state.clients) state.clients[socket.id].team = team;
 
-    // Otherwise get the client_index from the client_id
-    else var client_index = client_ids.indexOf(client_id);
-      
-    // Update the selected pieces
-    client_selected_piece_ids[client_index] = [...piece_ids];
+    // Send the full game state
+    send_state(socket.id);
 
-    // pieces is a list
-    log('s: client', client_index, client_id, piece_ids.length, 'pieces');
+    // Tell everyone else just the client list (socket.brodcast.emit is not working)
+    broadcast('clients', state.clients);
+  }
+  socket.on('hallo', function(data) {delay_function(on_hallo, data)});
 
-    // emit to EVERYONE, including the sender
-    io.emit('s', piece_ids, client_id);
-  });
 
-  // someone sent a held pieces change
-  socket.on('h', function(is_holding) {
+  // Team or name change from clients
+  function on_clients(clients) {
+    fun.log_date(socket.id, 'NETR_clients');
 
-    // get the client id
-    var client_index = client_sockets.indexOf(socket);
-    var client_id    = client_ids[client_index];
+    // Update the clients list
+    if(clients) state.clients = clients;
+    else fun.log_date('  ERROR: no clients provided!');
 
-    // pieces is a list
-    log('h:', client_id, 'is_holding =', is_holding);
+    // Send the game state
+    delay_send(io, 'clients', clients);
+  }
+  socket.on('clients', function(data) {delay_function(on_clients, data)});
 
-    // emit to EVERYONE, including the sender (avoids network lag issues)
-    io.emit('h', client_id, is_holding);
-  });
-  
-  // User can update some variables.
-  socket.on('set', function(key, value) {
-    
-    switch(key) {
 
-      // How long the server waits after any update before requesting a full update
-      case 'update_interval_ms':
-        if(Number.isInteger(value)) {
-          log('Setting update_interval_ms =', value);
-          update_interval_ms = value;
+
+  // received a chat message
+  function on_chat(message) {
+    fun.log_date(socket.id, 'Received-chat:', socket.id, state.clients[socket.id].name, message);
+
+    // If the message starts with "/" it's a server command
+    if(message[0]=='/') {
+
+      // Split it by space
+      var s = message.split(' ');
+
+      // Reset to defaults
+      if(s[0] == '/reset') reset_game();
+
+      // Boot client by name
+      else if(s[0] == '/boot') {
+
+        // Find the client by name and boot them
+        for(var id in state.clients) if(state.clients[id].name == s[1]) {
+          delay_send(io, 'chat', [0, 'Booting ' + s[1] + '.']);
+          sockets[id].emit('yabooted');
+          sockets[id].disconnect(true);
         }
-        break;
+      }
+
+      // Set a variable
+      else if(s[0] == '/set') {
+
+        // If we can set it
+        if(s[1] in state && !state_keys_no_set.includes(s[1]) && s.length==3) {
+        
+          // Update
+          state[s[1]] = parseFloat(s[2]);
+
+          // Remember for next time
+          state_defaults[s[1]] = state[s[1]];
+
+          // Send the state to everyone
+          for(var id in sockets) send_state(id);
+        }
+
+        // Send the current settings.
+        s = 'OPTIONS:';
+        for(var key in state) if(!state_keys_no_set.includes(key)) s = s + '\n' + key + ' ' + state[key];
+        delay_send(socket, 'chat', [socket.id,s]);
+      }
+    } // end of "message starts with /"
+
+    // Send a normal chat
+    else delay_send(io, 'chat', [socket.id,html_encode(message)]);
+  }
+  socket.on('chat', function(data) {delay_function(on_chat, data)});
+
+  // Player says something. data = [player_index, key, interrupt]
+  function on_say(data) {
+    fun.log_date('NETR_say', data);
+    
+    // Relay it to everyone else
+    broadcast('say', data);
+  }
+  socket.on('say', function(data) {delay_function(on_say, data)});
+
+  /** Player sends us their queue */
+  function on_q(data) { fun.log_date('NETR_q');
+    var nq       = data[0];
+    var q_pieces = data[1];
+    var q_hands  = data[2];
+
+    // Loop over the pieces q.
+    for(var id in q_pieces) {
+
+      // Store all the supplied properties
+      if(!state.pieces[id])      state.pieces[id]    = {};
+      for(var k in q_pieces[id]) state.pieces[id][k] = q_pieces[id][k];
     }
-  });
 
+    // Loop over the hands q.
+    for(var id in q_hands) {
 
-  // Test function to ping back.
-  socket.on('ping', function(x) {
-    
-    // Figure out the client
-    client_index = client_sockets.indexOf(socket);
-    log('ping:', x);
-    
-    // send messages to just this socket
-    socket.emit('ping', x);
-  });
+      // Store the supplied properties
+      if(!state.hands[id]) state.hands[id] = {};
+      for(var k in q_hands[id]) state.hands[id][k] = q_hands[id][k];
+    }
 
-
-
+    /* Broadcast will only work like this if the server sends corrections back to the 
+       sender */
+    delay_send(io, 'q', [socket.id, nq, q_pieces, q_hands]);
+    //broadcast('q', [socket.id, q_pieces, q_hands]);
+  }
+  socket.on('q', function(data) {delay_function(on_q, data)});
 
   // handle the disconnect
-  socket.on('disconnect', function() {
-    
-    // find the client index
-    i = client_sockets.indexOf(socket);
-    log("Client", i, "/", client_sockets.length-1, "disconnecting.");
-    
-    // pop the client
-    client_ids        .splice(i,1);
-    client_sockets    .splice(i,1);
-    client_names      .splice(i,1);
-    client_teams      .splice(i,1);
-    client_is_holding .splice(i,1);
-    client_selected_piece_ids.splice(i,1);
-    
-    // tell the world! TO DO!
-    io.emit('users', client_ids, client_names, client_teams, client_is_holding, client_selected_piece_ids);
-  });
+  function on_disconnect(data) {
+    // Get the id asap before it disappears (annoying)
+    var id = socket.id;
 
-}); // end of io
+    // find the client index
+    fun.log_date(id, "disconnecting.", data);
+    
+    // Delete the client data. Socket will delete itself
+    if(state.clients) delete state.clients[id];  
+
+    // tell the world!
+    delay_send(io, 'clients', state.clients);
+  }
+  socket.on('disconnect', function(data) {delay_function(on_disconnect, data)});
+
+}); // end of io.on('connection')
+
+
+
+// Send a full update to everyone, excluding recently touched pieces
+function send_full_update() { 
+  
+  // Loop over all the pieces we know about, and add the long untouched pieces to 
+  // the outbound queue
+  var q_pieces = {};
+  var t        = Date.now();
+  for(var id in state.pieces) { var p = state.pieces[id];
+    
+    // If it's been awhile since anyone touched this piece, add it.
+    if(t-p['tq'] > state.t_block_update) q_pieces[id] = p;
+  }
+
+  // Send the queue
+  fun.log_date('send_full_update()', Object.keys(q_pieces).length, 'pieces');
+  delay_send(io, 'q', [0, q_pieces, {}]);
+
+  // Start the next full update
+  setTimeout(send_full_update, state.t_full_update);
+
+}; send_full_update(); // end / launch of send_full_update()
+
+
+// Start a timer for maintenance / updates
+setInterval(function() {
+
+}, 250);
 
 
 
 // actually start listening for requests
 http.listen(port, function() {
-  log('listening on port '+String(port));
+  fun.log_date('listening on port '+String(port));
 });

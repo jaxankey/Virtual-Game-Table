@@ -1,56 +1,42 @@
-# Virtual Game Table
-This is a general-purpose, browser-based board game table, aimed at online game nights and rapid game development. No rules will ever be hard coded, so you can play however you like. The purpose of this is only to provide an intuitive, synchronized game table in everyone's browser.
+![Screenshot](https://raw.githubusercontent.com/jaxankey/TA2/master/common/images/screenshot.png)
 
-![Strategy Game Screenshot](https://raw.githubusercontent.com/jaxankey/Virtual-Game-Table/master/common/images/screenshots/strategy.png)
+Onboard a cargo ship orbiting a distant planet:
 
-The client software currently requires [Chrome](https://www.google.com/chrome/) to run. Eventually (now that I've learned a bunch of stuff) this will be overhauled to [PixiJS](https://www.pixijs.com/), because awesome.
+First officer: "Wow this planet is *crawing* with aliens."
+
+Down the hallway: "Wow, one of these crates is full of guns with unlimited ammo!"
+
+Captain: "Excellent. We move *immediately*."
+
+Helmsman: "Sir, there are absolutely no resources of value on that planet, and we are on a peaceful mission to -" (gun butt strikes forehead)
+
+Captain: "We don't have time for this. LOCK AND LOAD!"
+
+# Total A-Holes II
+
+Shoot aliens in your browser, alone or with friends. The goal of this project is to realize satisfying gameplay that facilitates conversation. The controls are simple, so that you can hold a beer in one hand while playing:
+
+![Controls](https://raw.githubusercontent.com/jaxankey/TA2/master/common/images/instructions-web.png)
+
+No mouse, no complications, works on any laptop. You can also use `ijkl` or the arrow keys, and / or `shift` to shoot. The advanced player can (for the time being) use `Q` and `E` or `U` and `O` to switch handedness. 
+
+This seemingly "funny" control scheme is inspired by [Phobia II](https://www.youtube.com/watch?v=XWGAd1dAPwQ), the greatest game ever made. It will take some getting used to, but, as it turns out, a 60-degree shooting angle is a beautiful thing. And you can drink.
+
+Note this project is definitely in its "early" stages (I have *many* plans for it), but it has already provided me countless hours of laughter with my brother and friends. 
 
 ## Starting and testing a server
 
-This program runs directly from the source code (see [Releases](https://github.com/jaxankey/Virtual-Game-Table/releases)) so no compiling or binaries are required (other than downloading / installing [Node.js](https://nodejs.org/)). This server has been tested on Linux & Windows, but should work on OSX as well.
+This program runs directly from the source code (see [Releases](https://github.com/jaxankey/TA2/releases)) so no compiling or binaries are required (other than downloading / installing [Node.js](https://nodejs.org/)). This server has been tested on Linux & Windows, but should work on OSX as well.
 
 Linux
  1. Install [Node.js](https://nodejs.org/): For me, this meant downloading the binaries, unpacking them in a convenient folder, adding the binary path to `.profile` (with a line like `PATH=$PATH:/path/to/node/bin`) then logging out & back in.
- 2. Run `start-server-linux` from the terminal. 
+ 2. Run `./start-server-linux` (default settings) or `./start-server-linux TA2 <port>` from the terminal, where `<port>` is a TCP port, e.g., `37777`. 
  
 Windows
  1. Install [Node.js](https://nodejs.org/): Download the appropriate windows installer and run it.
- 2. Double-click `start-server-windows.bat` in one of the game directories. 
- 
-Both scripts will prompt you for a valid game name (any directory name from either `games/` or `private/`, e.g., `cards`). They will then ask for a port number, and you can provide any valid port (e.g., `37777`). You can also launch a server directly with a command similar to `node server.js cards 37777`. 
+ 2. Double-click `start-server-windows.bat`.
+ 3. Provide the game name and port as requested (or just hit enter a bunch to use the defaults).
 
-A successfully booted server should declare something like `listening on port 37777` after initializing. At this point, you can test the server by opening a few Chrome browser windows side-by-side and typing in the address `localhost:37777`. Things moving around in one window should also move around in the other. Push a few buttons (especially the `New Game` or `Setup` buttons, click a few things, see what happens. 
+A successfully booted server should declare something like `listening on port 37777` after initializing. At this point, you can test the server by opening a few Chrome browser windows side-by-side and typing in the address `localhost:37777`. 
 
-You can do most things with the mouse and "shift" button, but it is *well* worth your time to click the "controls" link in the upper right panel and learning the keyboard shortcuts.
-
-## Games
-![Strategy Game Screenshot](https://raw.githubusercontent.com/jaxankey/Virtual-Game-Table/master/common/images/screenshots/poker.png)
-
-The games I have coded thus far include some basics:
- * `checkers`: Checkers & board (double-click pieces to king them)
- * `chess`: Chess pieces & board
- * `go`: Go table & board
- * `cards`: A standard deck of cards with 8 private viewing zones
- * `poker`: Same as cards, but with poker chips on the table and a whole bunch of related functionality and hot keys.
- 
-and some more complicated systems:
- * `roll`: All the nerd-dice and a few more pieces (press / hold `r` to roll)
- * `strategy`: Pieces for my own strategy game
- * `puerto-rico`: Puerto Rico (can't publish images; check vassal and `image_list.txt`?)
- * `arkham-horror`: Arkham Horror base set (can't publish images; check vassal and `image_list.txt`)
-
-Each of these games illustrate the functionalities of the main workhorse code in `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented. In particular, I would monkey with `checkers/game.js` first, since it's by far the simplest!
-
-## Here to Help
-Feel free to pester me if something isn't clear. I will likely be slow to respond, but I believe in this project and will gladly update the comments in the code or help out within reason.
-
-My next goals (if I ever find time) include:
- * Pandemic
- * Power Grid
- * Chess clock
-
-Things I will _never_ do:
- * Hard-code any rules or anti-cheat measures. You will _always_ be able to look at your oponent's hidden pieces or move them around when they are taking a poo. 
- * Convince my friends and family that the games I invent are worth playing.
-
-More documentation to come...
+More to come...

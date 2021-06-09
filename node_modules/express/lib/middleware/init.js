@@ -1,3 +1,20 @@
+/*!
+ * express
+ * Copyright(c) 2009-2013 TJ Holowaychuk
+ * Copyright(c) 2013 Roman Shtylman
+ * Copyright(c) 2014-2015 Douglas Christopher Wilson
+ * MIT Licensed
+ */
+
+'use strict';
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var setPrototypeOf = require('setprototypeof')
+
 /**
  * Initialization middleware, exposing the
  * request and response to each other, as well
@@ -15,8 +32,8 @@ exports.init = function(app){
     res.req = req;
     req.next = next;
 
-    req.__proto__ = app.request;
-    res.__proto__ = app.response;
+    setPrototypeOf(req, app.request)
+    setPrototypeOf(res, app.response)
 
     res.locals = res.locals || Object.create(null);
 
