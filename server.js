@@ -358,28 +358,25 @@ io.on('connection', function(socket) {
     var nq       = data[0];
     var q_pieces = data[1];
     var q_hands  = data[2];
+    var k;
 
     // Loop over the pieces q.
     for(var id in q_pieces) {
 
-      // Store all the supplied properties
-      if(!state.pieces[id])      state.pieces[id]    = {};
-      for(var k in q_pieces[id]) {
+      // Make sure we have a state entry for this piece id
+      if(!state.pieces[id]) state.pieces[id] = {};
+
+      // Loop over attributes and transfer to state or defer to state, depending on who is holding the piece
+      for(k in q_pieces[id]) {
         
-        // Exception: if someone is updating who is the holder ('ih') 
-        // and someone ELSE is ALREADY holding (evidenced by a non-zero, not-undefined 'ih' value)
-        // Do not let the change happen and fix the q_pieces entry.
-        if(k == 'ih') { 
-          console.log('HAY', q_pieces[id][k], state.pieces[id][k])
-          if(state.pieces[id][k] && q_pieces[id][k]) q_pieces[id][k] = state.pieces[id][k];
-          console.log(' ->', q_pieces[id][k], state.pieces[id][k])
-        }
+        // If someone holding who is NOT the requester, defer to state values
+        if(state.pieces[id]['ih'] && state.pieces[id]['ih'] != socket.id) q_pieces[id][k] = state.pieces[id][k];
 
-        // Update the state for this piece
-        state.pieces[id][k] = q_pieces[id][k];
+        // Otherwise, defer to incoming data
+        else state.pieces[id][k] = q_pieces[id][k];
 
-      } // end of loop over pieces
-    }
+      } // end of corrective loop over attributes
+    } // end of loop over pieces
 
     // Loop over the hands q.
     for(var id in q_hands) {

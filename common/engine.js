@@ -193,7 +193,7 @@ class Net {
       // If the piece is valid and we're not holding it, update it.
       if(p && p.id_client_hold != net.id) {
 
-        // Only update each attribute if the sender is NOT us, or if it IS us AND we haven't sent a more recent update
+        // Only update each attribute if the sender is NOT us, or if it IS us AND we haven't sent a more recent update already
         if(c.id_client_sender != net.id || c.nq >= p.last_nqs['x']) p.set_xyrs_target(c.x, undefined, undefined, undefined, false, true);
         if(c.id_client_sender != net.id || c.nq >= p.last_nqs['y']) p.set_xyrs_target(undefined, c.y, undefined, undefined, false, true);
         if(c.id_client_sender != net.id || c.nq >= p.last_nqs['r']) p.set_xyrs_target(undefined, undefined, c.r, undefined, false, true);
