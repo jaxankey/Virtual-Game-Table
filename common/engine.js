@@ -200,7 +200,7 @@ class Net {
         if(c.id_client_sender != net.id || c.nq >= p.last_nqs['s']) p.set_xyrs_target(undefined, undefined, undefined, c.s, false, true);
         if(c.id_client_sender != net.id || c.nq >= p.last_nqs['n']) p.set_texture_index(c.n, true);
         if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ts']) p.select(c.ts, true);
-        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ih']) p.hold(c.ih, true);
+        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ih']) p.hold(c.ih, true, true); // client_id, force (server), do_not_send
       }
 
     }; this.q_pieces_in = {}; // End of loop over q_pieces_in
@@ -775,7 +775,7 @@ class Interaction {
       // Otherwise, select it and hold everything.
       else {
         thing.select(clients.me.team); 
-        things.hold_selected(net.id);
+        things.hold_selected(net.id, false);
       }
 
       // Holding, so close fist
@@ -858,7 +858,7 @@ class Interaction {
     this.button = -1;
 
     // Stop holding things
-    things.release_all(net.id);
+    things.release_all(net.id, false, false);
 
     // Releasing, so open fist
     if(clients && clients.me && clients.me.hand) clients.me.hand.open();
@@ -1275,14 +1275,17 @@ class Thing {
   /**
    * Sets the controller id. 0 means no one is in control (server).
    */
-  hold(id_client, do_not_send) {
-    log('thing.hold()', this.id_thing, id_client, this.id_client_hold);
+  hold(id_client, force, do_not_send) {
+    log('thing.hold()', this.id_thing, id_client, force, this.id_client_hold);
 
-    // If the id is undefined or there is no change, do nothing (used by process_queues).
-    if(id_client == undefined || id_client == this.id_client_hold) return;
+    // If the id is undefined (used by process_queues), there is no change, 
+    // or it is already being held by any valid client (and no force), do nothing.
+    if(id_client == undefined || id_client == this.id_client_hold
+    || Object.keys(clients.all).includes(String(this.id_client_hold))
+    && !force) return;
 
     // If it's the server requesting, release
-    else if(id_client == 0) this.release(do_not_send);
+    else if(id_client == 0) this.release(id_client, force, do_not_send);
 
     // Otherwise, if it's not being held already (or the client is invalid), hold it.
     else if(this.id_client_hold == 0 || clients.all[this.id_client_hold] == undefined) {
@@ -1310,11 +1313,16 @@ class Thing {
   /**
    * Uncontrols a thing.
    */
-  release(do_not_send) {
-    log('thing.release()', this.id_thing, this.id_client_hold);
+  release(id_client, force, do_not_send) {
+    log('thing.release()', this.id_thing, id_client, force, do_not_send, this.id_client_hold);
 
-    // If we're already not holding, do nothing.
-    if(this.id_client_hold == 0) return;
+    // If we're already not holding
+    // or there is a valid holder that is different from the requestor (and we aren't overriding this)
+    // do nothing.
+    if(this.id_client_hold == 0
+    || Object.keys(clients.all).includes(String(this.id_client_hold))
+    && this.id_client_hold != id_client
+    && !force) return;
 
     // Remove it from the list
     delete things.held[this.id_client_hold][this.id_thing];
@@ -1333,10 +1341,11 @@ class Thing {
   select(team, do_not_send) {
     log('thing.select()', this.id_thing, team);
 
-    // If team is not specified or it's not a change, do nothing. Used by process_queues.
-    if(team == undefined || team == this.team_select) return;
+    // If team is not specified (used by process_queues()), there is no change, or
+    // it is being held by someone, do nothing.
+    if(team == undefined || team == this.team_select || this.id_client_hold) return;
 
-    // If team is -1, unselect it
+    // If team is -1, unselect it and poop out
     if(team < 0) return this.unselect(do_not_send);
 
     // If there is any team selecting this already, make sure to unselect it to remove it
@@ -1368,8 +1377,8 @@ class Thing {
    */
   unselect(do_not_send) { log('thing.unselect()', this.id_thing, this.selected_id);
 
-    // If we're already unselected, do nothing
-    if(this.team_select < 0) return;
+    // If we're already unselected, or it is held by someone do nothing
+    if(this.team_select < 0 && this.id_client_hold) return;
 
     // Remove it from the list
     if(things.selected[this.team_select] &&
@@ -1604,13 +1613,13 @@ class Things {
   }
 
   /** Releases all things with the supplied client id. */
-  release_all(id_client) { log('Things.release_all()', id_client, this.held[id_client]);
+  release_all(id_client, force, do_not_send) { log('Things.release_all()', id_client, this.held[id_client]);
     
     // If we have a held list for this client id
     if(this.held[id_client]) {
       
       // Loop over the list and reset the id_client_hold
-      for(var id_thing in this.held[id_client]) this.held[id_client][id_thing].release()
+      for(var id_thing in this.held[id_client]) this.held[id_client][id_thing].release(id_client, force, do_not_send);
 
       // Delete the list
       delete this.held[id_client];
@@ -1629,11 +1638,11 @@ class Things {
    * Sets up the drag for all selected things for this team
    * @param {int} team 
    */
-  hold_selected(id_client) { log('things.hold_selected()', id_client);
+  hold_selected(id_client, force, do_not_send) { log('things.hold_selected()', id_client, force);
 
     // Loop over the selected things and hold whatever isn't already held by someone else.
     for(var k in this.selected[clients.all[id_client].team]) 
-      this.selected[clients.all[id_client].team][k].hold(id_client);
+      this.selected[clients.all[id_client].team][k].hold(id_client, force, do_not_send);
   }
 
   /**
