@@ -195,20 +195,32 @@ class Net {
         // UNLESS it's overriding our hold status. As such, we should update the hold status first!
         //
         // Only update if the sender is NOT us, or if it IS us AND we haven't already sent a more recent update
-        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ih']) p.hold(c.ih, true, true); // client_id, force (server), do_not_send)
+        //if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ih']) p.hold(c.ih, true, true); // client_id, force (server), do_not_send)
+        
+        // Only update the ATTRIBUTE if the updater is NOT us, or it IS us AND we haven't sent a more recent update
+        if(c['ih.i'] != net.id || c['ih.n'] >= p.last_nqs['ih']) p.hold(c.ih, true, true); // client_id, force (server), do_not_send)
 
         if(p.id_client_hold != net.id) {
 
           if(p.id_client_hold) log('HAY', p.id_client_hold, net.id, c.id_client_sender, c.nq, p.last_nqs['ts']);
 
           // Only update each attribute if the sender is NOT us, or if it IS us AND we haven't already sent a more recent update
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['x'])  p.set_xyrs_target(c.x, undefined, undefined, undefined, false, true);
+          /*if(c.id_client_sender != net.id || c.nq >= p.last_nqs['x'])  p.set_xyrs_target(c.x, undefined, undefined, undefined, false, true);
           if(c.id_client_sender != net.id || c.nq >= p.last_nqs['y'])  p.set_xyrs_target(undefined, c.y, undefined, undefined, false, true);
           if(c.id_client_sender != net.id || c.nq >= p.last_nqs['r'])  p.set_xyrs_target(undefined, undefined, c.r, undefined, false, true);
           if(c.id_client_sender != net.id || c.nq >= p.last_nqs['s'])  p.set_xyrs_target(undefined, undefined, undefined, c.s, false, true);
           if(c.id_client_sender != net.id || c.nq >= p.last_nqs['n'])  p.set_texture_index(c.n, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ts']) p.select(c.ts, true);
-        
+          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ts']) p.select(c.ts, true);*/
+
+          // Only update the ATTRIBUTE if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update
+          if(c['x.i']  != net.id || c['x.n']  >= p.last_nqs['x'])  p.set_xyrs_target(c.x, undefined, undefined, undefined, false, true);
+          if(c['y.i']  != net.id || c['y.n']  >= p.last_nqs['y'])  p.set_xyrs_target(undefined, c.y, undefined, undefined, false, true);
+          if(c['r.i']  != net.id || c['r.n']  >= p.last_nqs['r'])  p.set_xyrs_target(undefined, undefined, c.r, undefined, false, true);
+          if(c['s.i']  != net.id || c['s.n']  >= p.last_nqs['s'])  p.set_xyrs_target(undefined, undefined, undefined, c.s, false, true);
+          if(c['n.i']  != net.id || c['n.n']  >= p.last_nqs['n'])  p.set_texture_index(c.n, true);
+          if(c['ts.i'] != net.id || c['ts.n'] >= p.last_nqs['ts']) p.select(c.ts, true);
+
+
         } // End of we are not holding this.
       
       } // End of valid piece

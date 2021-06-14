@@ -369,11 +369,22 @@ io.on('connection', function(socket) {
       // Loop over attributes and transfer to state or defer to state, depending on who is holding the piece
       for(k in q_pieces[id]) {
         
-        // If no one is holding it OR the holder is this client, update the state
-        if(!state.pieces[id]['ih'] || state.pieces[id]['ih'] == socket.id) state.pieces[id][k] = q_pieces[id][k];
+        // If no one is holding it OR the holder is this client
+        if(!state.pieces[id]['ih'] || state.pieces[id]['ih'] == socket.id) {
+
+          // Update the state with the value, last setter, and last setter nq.
+          state.pieces[id][k]      = q_pieces[id][k];
+          state.pieces[id][k+'.i'] = q_pieces[id][k+'.i'] = socket.id;
+          state.pieces[id][k+'.n'] = q_pieces[id][k+'.n'] = nq;
+        }
         
-        // Otherwise someone is holding who is NOT this client, meaning this is not allowed, so defer to the state data
-        else q_pieces[id][k] = state.pieces[id][k];
+        // Otherwise someone is holding who is NOT this client, meaning this is not allowed
+        else {
+          // Defer to the state's value, last setter, and last setter's nq
+          q_pieces[id][k]      = state.pieces[id][k];
+          q_pieces[id][k+'.i'] = state.pieces[id][k+'.i'];
+          q_pieces[id][k+'.n'] = state.pieces[id][k+'.i'];
+        }
 
       } // end of corrective loop over attributes
     } // end of loop over pieces
@@ -386,10 +397,8 @@ io.on('connection', function(socket) {
       for(var k in q_hands[id]) state.hands[id][k] = q_hands[id][k];
     }
 
-    /* Broadcast will only work like this if the server sends corrections back to the 
-       sender */
     delay_send(io, 'q', [socket.id, nq, q_pieces, q_hands]);
-    //broadcast('q', [socket.id, q_pieces, q_hands]);
+    //broadcast('q', [socket.id, q_pieces, q_hands]); // Leads to unsync
   }
   socket.on('q', function(data) {delay_function(on_q, data)});
 
