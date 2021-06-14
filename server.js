@@ -416,7 +416,7 @@ io.on('connection', function(socket) {
 // Send a full update to everyone, excluding recently touched pieces
 function send_full_update() { 
   
-  // Loop over all the pieces we know about, and add the long untouched pieces to 
+  /*// Loop over all the pieces we know about, and add the long untouched pieces to 
   // the outbound queue
   var q_pieces = {};
   var t        = Date.now();
@@ -424,11 +424,11 @@ function send_full_update() {
     
     // If it's been awhile since anyone touched this piece, add it.
     if(t-p['tq'] > state.t_block_update) q_pieces[id] = p;
-  }
+  }*/
 
   // Send the queue
-  fun.log_date('send_full_update()', Object.keys(q_pieces).length, 'pieces');
-  delay_send(io, 'q', [0, q_pieces, {}]);
+  fun.log_date('send_full_update()', Object.keys(state.pieces).length, 'pieces');
+  delay_send(io, 'q', [0, 0, state.pieces, {}]);
 
   // Start the next full update
   setTimeout(send_full_update, state.t_full_update);

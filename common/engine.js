@@ -179,8 +179,8 @@ class Net {
   process_queues() {
     if(!this.ready) return;
     var c, p;
-    var t = Date.now();
     
+    /////////////////////////////////////////
     // INBOUND
 
     // Loop over the pieces in the q
@@ -188,24 +188,36 @@ class Net {
       c = this.q_pieces_in[id]; // incoming changes for this thing
       p = pieces.all[id];       // the actual piece object
 
-      // JACK: UPDATE THE HOLD STATUS FIRST, in case the server is overriding this.
+      // If it's a valid piece
+      if(p) {
+        
+        // We do not want to let the server change anything about the pieces we're holding, 
+        // UNLESS it's overriding our hold status. As such, we should update the hold status first!
+        //
+        // Only update if the sender is NOT us, or if it IS us AND we haven't already sent a more recent update
+        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ih']) p.hold(c.ih, true, true); // client_id, force (server), do_not_send)
 
-      // If the piece is valid and we're not holding it, update it.
-      if(p && p.id_client_hold != net.id) {
+        if(p.id_client_hold != net.id) {
 
-        // Only update each attribute if the sender is NOT us, or if it IS us AND we haven't sent a more recent update already
-        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['x']) p.set_xyrs_target(c.x, undefined, undefined, undefined, false, true);
-        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['y']) p.set_xyrs_target(undefined, c.y, undefined, undefined, false, true);
-        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['r']) p.set_xyrs_target(undefined, undefined, c.r, undefined, false, true);
-        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['s']) p.set_xyrs_target(undefined, undefined, undefined, c.s, false, true);
-        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['n']) p.set_texture_index(c.n, true);
-        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ts']) p.select(c.ts, true);
-        if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ih']) p.hold(c.ih, true, true); // client_id, force (server), do_not_send
-      }
+          if(p.id_client_hold) log('HAY', p.id_client_hold, net.id, c.id_client_sender, c.nq, p.last_nqs['ts']);
 
-    }; this.q_pieces_in = {}; // End of loop over q_pieces_in
+          // Only update each attribute if the sender is NOT us, or if it IS us AND we haven't already sent a more recent update
+          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['x'])  p.set_xyrs_target(c.x, undefined, undefined, undefined, false, true);
+          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['y'])  p.set_xyrs_target(undefined, c.y, undefined, undefined, false, true);
+          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['r'])  p.set_xyrs_target(undefined, undefined, c.r, undefined, false, true);
+          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['s'])  p.set_xyrs_target(undefined, undefined, undefined, c.s, false, true);
+          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['n'])  p.set_texture_index(c.n, true);
+          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ts']) p.select(c.ts, true);
+        
+        } // End of we are not holding this.
+      
+      } // End of valid piece
     
-
+    }; // End of loop over q_pieces_in
+    
+    // Clear out the piece queue
+    this.q_pieces_in = {}; 
+  
     // Loop over the hands in the input queue
     for(var id in this.q_hands_in) {
       c = this.q_hands_in[id]; // Incoming changes
@@ -221,9 +233,13 @@ class Net {
         }
       }
     
-    }; this.q_hands_in = {}; // End of loop over q_hands_in
+    } // End of loop over hands
+    
+    // Clear out the hands queue.
+    this.q_hands_in = {}; // End of loop over q_hands_in
 
 
+    /////////////////////////////////////////////////
     // OUTBOUND
 
     // Send the outbound information
@@ -232,7 +248,7 @@ class Net {
 
       // Send the outbound information and clear it.
       this.nq++;
-      log(    'NETS_q', [this.nq, this.q_pieces_out, this.q_hands_out]);
+      log(    'NETS_q_'+String(net.id), [this.nq, this.q_pieces_out, this.q_hands_out]);
       this.io.emit('q', [this.nq, this.q_pieces_out, this.q_hands_out]);
       this.q_pieces_out = {};
       this.q_hands_out  = {};
@@ -241,8 +257,8 @@ class Net {
   } // End of process_queues()
 
   // Transfers information from q_source to q_target, with id_client
-  transfer_to_q_in(q_source, q_target, id_client, nq) {
-    
+  transfer_to_q_in(q_source, q_target, id_client, nq) { //log('transfer_to_q_in', q_source, q_target, id_client, nq)
+
     // Loop over pieces in source queue
     for(var id in q_source) {
           
@@ -259,102 +275,104 @@ class Net {
     } // End of loop over things in q_pieces
   }
 
+  /** We receive a queue of piece information from the server. */
+  on_q(data) { if(!this.ready) return; log('NETR_q_'+String(data[0]), data);
+  
+    // Unpack
+    var id_client = data[0];
+    var nq        = data[1];
+    var q_pieces  = data[2];
+    var q_hands   = data[3];  
+
+    // Update the q's
+    this.transfer_to_q_in(q_pieces, this.q_pieces_in, id_client, nq);
+    this.transfer_to_q_in(q_hands,  this.q_hands_in,  id_client, nq);
+  
+  } // end of on_q
+
+  /** First thing to come back after 'hallo' is the full game state. */
+  on_state(data) { if(!this.ready) return; log('NETR_state', data);
+      
+    // Get our client id and the server state
+    var id           = data[0];
+    var server_state = data[1];
+    
+    // Store all the info we need to keep locally
+    this.clients = server_state.clients;
+
+    // The server assigned net.me a unique id
+    this.id = parseInt(id);
+
+    // Send client information to the gui (rebuilds the HTML), and the clients object
+    clients.rebuild();
+
+    // Transfer / initialize the input queue, then process it.
+    this.q_pieces_in = server_state['pieces'];
+    this.q_hands_in  = server_state['hands'];
+    this.process_queues();
+
+    // Now show controls
+    html.loader.style.visibility  = 'hidden';
+
+    // Say hello
+    html.chat('Server', 'Welcome, '+ net.clients[net.id].name + '!')
+  
+  } // End of on_state
+
+  /** Someone sends the client table data. */
+  on_clients(data) { if(!net.ready) return; log('NETR_clients', data);
+
+    // Update the state
+    this.clients = data;
+
+    // Rebuild gui and clients list
+    clients.rebuild();
+
+  } // End of on_clients
+
+  /** Server boots you. */
+  on_yabooted() {
+    log('NETR_yabooted');
+    document.body.innerHTML = 'Booted. Reload page to rejoin.'
+    document.body.style.color = 'white';
+  } // End of on_yabooted
+
+  /** Someone plays a sync'd sound */
+  on_say(data) { if(!net.ready) return;
+    log('NETR_say', data);
+
+    // Say it
+    //clients[data[0]].say(data[1], data[2], data[3]);
+  } // End of on_say
+
+  /** Someone sends a chat. */
+  on_chat(data) {if(!net.ready) return;
+      
+    var id = data[0];
+    var message = data[1];
+    log('NETR_chat', id, message);
+
+    // Safe-ify the name
+    message = html_encode(message);
+    
+    // Get the name
+    if(id == 0) var name = 'Server'
+    else        var name = this.clients[id].name
+    
+    // Update the interface
+    html.chat(name, message);
+  
+  } // End of on_chat
+
   /** Define what server messages to expect, and how to handle them. */
   setup_listeners() {
   
-    // Main listener for incoming data queue
-    this.io.on('q', function(data) { if(!this.ready) return; log('NETR_q_'+String(data[0]), data);
-      var id_client = data[0];
-      var nq        = data[1];
-      var q_pieces  = data[2];
-      var q_hands   = data[3];  
-
-      // Update the q's
-      this.transfer_to_q_in(q_pieces, this.q_pieces_in, id_client, nq);
-      this.transfer_to_q_in(q_hands,  this.q_hands_in,  id_client, nq);
-      
-    }.bind(this)); // End of on 'q'
-
-    // First thing to come back after 'hallo' is the full game state
-    this.io.on('state', function(data) { if(!this.ready) return; log('NETR_state', data);
-      
-      // Get our client id and the server state
-      var id           = data[0];
-      var server_state = data[1];
-      
-      // Store all the info we need to keep locally
-      this.clients = server_state.clients;
-
-      // The server assigned net.me a unique id
-      this.id = parseInt(id);
-
-      // Send client information to the gui (rebuilds the HTML), and the clients object
-      clients.rebuild();
-
-      // Transfer / initialize the input queue, then process it.
-      this.q_pieces_in = server_state['pieces'];
-      this.q_hands_in  = server_state['hands'];
-      this.process_queues();
-
-      // Now show controls
-      html.loader.style.visibility  = 'hidden';
-
-      // Say hello
-      html.chat('Server', 'Welcome, '+ net.clients[net.id].name + '!')
-
-    }.bind(this));
-
-    this.io.on('clients', function(data) { if(!net.ready) return;
-      log('NETR_clients', data);
-
-      // Update the state
-      this.clients = data;
-
-      // Rebuild gui and clients list
-      clients.rebuild();
-
-    }.bind(this));
-
-    this.io.on('yabooted', function() {
-      log('NETR_yabooted');
-      document.body.innerHTML = 'Booted. Reload page to rejoin.'
-      document.body.style.color = 'white';
-    }.bind(this))
-
-    // New game command from server
-    this.io.on('new_game', function(server_state) {
-      // Bonk out if we're not ready.
-      if(!net.ready) return;
-      log('NETR_new_game', server_state);
-
-    }.bind(this));
-
-    // Client says something (audio). data = [client_index, path, interrupt_same]
-    this.io.on('say', function(data) { if(!net.ready) return;
-      log('NETR_say', data);
-
-      // Say it
-      clients[data[0]].say(data[1], data[2], data[3]);
-    }.bind(this));
-
-    // server sent a "chat"
-    this.io.on('chat', function(data) { if(!net.ready) return;
-      
-      var id = data[0];
-      var message = data[1];
-      log('NETR_chat', id, message);
-
-      // Safe-ify the name
-      message = html_encode(message);
-      
-      // Get the name
-      if(id == 0) var name = 'Server'
-      else        var name = this.clients[id].name
-      
-      // Update the interface
-      html.chat(name, message);
-      
-    }.bind(this));
+    this.io.on('q',        this.on_q       .bind(this));
+    this.io.on('state',    this.on_state   .bind(this));
+    this.io.on('clients',  this.on_clients .bind(this));
+    this.io.on('yabooted', this.on_yabooted.bind(this));
+    this.io.on('say',      this.on_say     .bind(this)); 
+    this.io.on('chat',     this.on_chat    .bind(this));
   
   } // End of setup_listeners()
 
@@ -1206,7 +1224,14 @@ class Thing {
 
     // List of the q_out indices (nq's), indexed by key,
     // e.g., this.last_nqs['ts'] will be q_out index of the last update
-    this.last_nqs = {}
+    this.last_nqs = {
+      x:-1,
+      y:-1,
+      r:-1,
+      s:-1,
+      ts:-1,
+      ih:-1,
+    }
 
     // Everything is added to the things list
     things.add_thing(this);
@@ -1275,8 +1300,7 @@ class Thing {
   /**
    * Sets the controller id. 0 means no one is in control (server).
    */
-  hold(id_client, force, do_not_send) {
-    log('thing.hold()', this.id_thing, id_client, force, this.id_client_hold);
+  hold(id_client, force, do_not_send) { // log('thing.hold()', this.id_thing, id_client, force, this.id_client_hold);
 
     // If the id is undefined (used by process_queues), there is no change, 
     // or it is already being held by any valid client (and no force), do nothing.
@@ -1313,8 +1337,7 @@ class Thing {
   /**
    * Uncontrols a thing.
    */
-  release(id_client, force, do_not_send) {
-    log('thing.release()', this.id_thing, id_client, force, do_not_send, this.id_client_hold);
+  release(id_client, force, do_not_send) { //log('thing.release()', this.id_thing, id_client, force, do_not_send, this.id_client_hold);
 
     // If we're already not holding
     // or there is a valid holder that is different from the requestor (and we aren't overriding this)
@@ -1338,12 +1361,12 @@ class Thing {
   /**
    * Selects the thing visually and adds it to the approriate list of selected things.
    */
-  select(team, do_not_send) {
-    log('thing.select()', this.id_thing, team);
+  select(team, do_not_send) { //log('thing.select()', this.id_thing, team, do_not_send, this.team_select, this.id_client_hold);
 
     // If team is not specified (used by process_queues()), there is no change, or
-    // it is being held by someone, do nothing.
-    if(team == undefined || team == this.team_select || this.id_client_hold) return;
+    // it is being held by someone who is not on the same team, do nothing.
+    if(team == undefined || team == this.team_select 
+    || this.id_client_hold && clients.all[this.id_client_hold].team != team) return;
 
     // If team is -1, unselect it and poop out
     if(team < 0) return this.unselect(do_not_send);
@@ -1375,7 +1398,7 @@ class Thing {
   /**
    * Unselects thing. This will not unselect anything held by someone else.
    */
-  unselect(do_not_send) { log('thing.unselect()', this.id_thing, this.selected_id);
+  unselect(do_not_send) { //log('thing.unselect()', this.id_thing, this.selected_id);
 
     // If we're already unselected, or it is held by someone do nothing
     if(this.team_select < 0 && this.id_client_hold) return;
@@ -1492,7 +1515,7 @@ class Thing {
 
     // Remember the index we're on for cycling purposes
     this._n = n_valid;
-    log('Piece.set_texture_index()', this._n, do_not_send);
+    //log('Piece.set_texture_index()', this._n, do_not_send);
 
     // If we're supposed to send an update, make sure there is an entry in the queue
     this.update_q_out('_n', 'n', do_not_send);
