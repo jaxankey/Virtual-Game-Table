@@ -69,9 +69,9 @@ var game = new Game();
 
 // Create pieces
 var defaults = {texture_root:'cards', s:0.8}
-var p0 = new Piece({...defaults, texture_paths:[['back.png', 'sj.png']]});
-var p1 = new Piece({...defaults, texture_paths:[['back.png', '1h.png']]});
-var p2 = new Piece({...defaults, texture_paths:[['back.png', '2h.png']]});
+var p0 = new Piece({...defaults, texture_paths:[['sj.png', 'back.png']]});
+var p1 = new Piece({...defaults, texture_paths:[['1h.png', 'back.png']]});
+var p2 = new Piece({...defaults, texture_paths:[['2h.png', 'back.png']]});
 
 
 /** Function to start a new game */ 

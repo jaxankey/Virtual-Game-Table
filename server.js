@@ -363,13 +363,13 @@ io.on('connection', function(socket) {
     // Loop over the pieces q.
     for(var id in q_pieces) {
 
-      // Make sure we have a state entry for this piece id
+      // Make sure we have a place to hold the data in the global list
       if(!state.pieces[id]) state.pieces[id] = {};
 
       // Loop over attributes and transfer to state or defer to state, depending on who is holding the piece
       for(k in q_pieces[id]) {
         
-        // If no one is holding it OR the holder is this client
+        // If no one is holding it 0 or undefined OR the holder is this client
         if(!state.pieces[id]['ih'] || state.pieces[id]['ih'] == socket.id) {
 
           // Update the state with the value, last setter, and last setter nq.

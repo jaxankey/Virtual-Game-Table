@@ -192,34 +192,45 @@ class Net {
       if(p) {
         
         // We do not want to let the server change anything about the pieces we're holding, 
-        // UNLESS it's overriding our hold status. As such, we should update the hold status first!
+        // UNLESS it's overriding our hold status, for example, when someone else grabbed it first. 
+        // As such, we should update the hold status first!
         //
-        // Only update if the sender is NOT us, or if it IS us AND we haven't already sent a more recent update
-        //if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ih']) p.hold(c.ih, true, true); // client_id, force (server), do_not_send)
-        
-        // Only update the ATTRIBUTE if the updater is NOT us, or it IS us AND we haven't sent a more recent update
-        if(c['ih.i'] != net.id || c['ih.n'] >= p.last_nqs['ih']) p.hold(c.ih, true, true); // client_id, force (server), do_not_send)
+        // If two clients grab the same piece at nearly the same time, 
+        //   - Their packets (sender net ids ih.i = 1 and 2, say) will reach the server at nearly the same time. 
+        //   - The server will update the hold status of the piece based on the first-arriving packet (ih.i=ih=1, say).
+        //     The second-arriving packet (ih.i=ih=2) should be corrected (ih.i=2, ih.i=1 or ih.i=ih=undefined) 
+        //     to have the first person holding it (or no information) before re-broadcast
+        //       During this round-trip time, the second person will be able to move the piece around until the first packet arrives.
+        //         This packet will have ih=ih.i=1 the holder should be switched to the first player.
+        //   - The second packet, with the corrected (or absent) change of who is holding will arrive next.
+        //         This packet will have ih=1 or undefined and ih.i=2 or undefined
+        //
 
+        // JACK: Need to send the piece's z-index I think.
+        
+        // All attributes have 
+        //   - their value, e.g. 'ih' for the id of the holder
+        //   - the id of the sender, e.g. 'ih.i' for the holder sender
+        //   - the sender's incrementing packet index, e.g. 'ih.n'
+
+        // Before deciding what to do with the other attributes, we need to
+        // update the holder id if necessary. The server's job is to ensure that it relays the correct holder always.
+        // ALSO we should ensure that, if it's either someone else's packet, or it's ours and we 
+        // have not since queued a newer packet updating the hold status
+        if(c['ih'] != undefined && (c['ih.i'] != net.id || c['ih.n'] >= p.last_nqs['ih'])) p.hold(c.ih, true, true); // client_id, force (server), do_not_send)
+
+        // Now update the different attributes only if we're not holding it (our hold supercedes everything)
         if(p.id_client_hold != net.id) {
 
           if(p.id_client_hold) log('HAY', p.id_client_hold, net.id, c.id_client_sender, c.nq, p.last_nqs['ts']);
 
-          // Only update each attribute if the sender is NOT us, or if it IS us AND we haven't already sent a more recent update
-          /*if(c.id_client_sender != net.id || c.nq >= p.last_nqs['x'])  p.set_xyrs_target(c.x, undefined, undefined, undefined, false, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['y'])  p.set_xyrs_target(undefined, c.y, undefined, undefined, false, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['r'])  p.set_xyrs_target(undefined, undefined, c.r, undefined, false, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['s'])  p.set_xyrs_target(undefined, undefined, undefined, c.s, false, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['n'])  p.set_texture_index(c.n, true);
-          if(c.id_client_sender != net.id || c.nq >= p.last_nqs['ts']) p.select(c.ts, true);*/
-
-          // Only update the ATTRIBUTE if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update
+          // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update
           if(c['x.i']  != net.id || c['x.n']  >= p.last_nqs['x'])  p.set_xyrs_target(c.x, undefined, undefined, undefined, false, true);
           if(c['y.i']  != net.id || c['y.n']  >= p.last_nqs['y'])  p.set_xyrs_target(undefined, c.y, undefined, undefined, false, true);
           if(c['r.i']  != net.id || c['r.n']  >= p.last_nqs['r'])  p.set_xyrs_target(undefined, undefined, c.r, undefined, false, true);
           if(c['s.i']  != net.id || c['s.n']  >= p.last_nqs['s'])  p.set_xyrs_target(undefined, undefined, undefined, c.s, false, true);
           if(c['n.i']  != net.id || c['n.n']  >= p.last_nqs['n'])  p.set_texture_index(c.n, true);
           if(c['ts.i'] != net.id || c['ts.n'] >= p.last_nqs['ts']) p.select(c.ts, true);
-
 
         } // End of we are not holding this.
       
@@ -1464,29 +1475,50 @@ class Thing {
     this.last_nqs[qkey] = net.nq+1;
   }
 
-  send_to_top() {
+  // Returns the z-order index (pieces with lower index are behind this one)
+  get_z_index() {
+    // Get the parent of the container
+    var parent = this.container.parent;
+    
+    // If it exists, find the child.
+    if(parent) return parent.children.indexOf(this.container);
+    else       return -1;
+  }
+
+  // Set the z-order index
+  // JACK: Add this info (z) to queue and handle with rest.
+  set_z_index(n, do_not_send) {
+    // Get the parent of the container
+    var parent = this.container.parent;
+    
+    // Get the current index
+    var n_old = this.get_z_index();
+
+    // If it's in the list, pop it out and stick it where it belongs
+    if(n_old >= 0) {
+
+      // Remove it
+      var c = parent.removeChildAt(n_old);
+
+      // Make sure we have a valid index
+      if(n > parent.children.length) n = parent.children.length;
+      if(n < 0)                      n = 0;
+
+      // stuff it back in
+      parent.addChildAt(c, n);
+    }
+  }
+
+  send_to_top(do_not_send) {
 
     // Get the parent of the container
     var parent = this.container.parent;
     
     // If it exists, send it to the top of the parent's list.
-    if (parent) {		
-      parent.removeChild(this.container);		
-      parent.addChild(this.container);	
-    }
+    if(parent) this.set_z_index(parent.children.length-1, do_not_send);
   }
 
-  send_to_bottom() {
-
-    // Get the parent of this container
-    var parent = this.container.parent;
-    
-    // If the parent is valid, pop out the container and stuff it at the start.
-    if(parent) {
-      parent.removeChild(this.container);
-      parent.addChildAt(this.container, 0);	  
-    }
-  }
+  send_to_bottom(do_not_send) {this.set_z_index(0, do_not_send);}
 
   /**
    * Fills the container with all the sprites. This can be overloaded for more complex
