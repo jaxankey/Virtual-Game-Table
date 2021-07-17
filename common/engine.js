@@ -217,7 +217,12 @@ class Net {
         // update the holder id if necessary. The server's job is to ensure that it relays the correct holder always.
         // ALSO we should ensure that, if it's either someone else's packet, or it's ours and we 
         // have not since queued a newer packet updating the hold status
-        if(c['ih'] != undefined && (c['ih.i'] != net.id || c['ih.n'] >= p.last_nqs['ih'])) p.hold(c.ih, true, true); // client_id, force (server), do_not_send)
+        console.log('  c.id', id, 'c.ih', c.ih, 'c.ih.i', c['ih.i'], 'net.id', net.id);
+        if(c['ih'] != undefined && (c['ih.i'] != net.id || c['ih.n'] >= p.last_nqs['ih'])) {
+          console.log('  setting hold to', c.ih);
+          p.hold(c.ih, true, true); // client_id, force, do_not_send)
+          console.log('    set to', p.id_client_hold);
+        } 
 
         // Now update the different attributes only if we're not holding it (our hold supercedes everything)
         if(p.id_client_hold != net.id) {
@@ -1331,13 +1336,16 @@ class Thing {
     || Object.keys(clients.all).includes(String(this.id_client_hold))
     && !force) return;
 
-    // If it's the server requesting, release
+    // If it's the server holding, this is equivalent to a release
     else if(id_client == 0) this.release(id_client, force, do_not_send);
 
-    // Otherwise, if it's not being held already (or the client is invalid), hold it.
-    else if(this.id_client_hold == 0 || clients.all[this.id_client_hold] == undefined) {
-    
-      // Keep track of who is holding it
+    // Otherwise, if it's not being held already (or the client is invalid), or we're forcing hold it.
+    else if(this.id_client_hold == 0 || clients.all[this.id_client_hold] == undefined || force) {
+      
+      // If it is already in a held list, delete that
+      if(things.held[this.id_client_hold]) delete things.held[this.id_client_hold][this.id_thing];
+
+      // Update the holder
       this.id_client_hold = id_client;
 
       // Remember the initial coordinates
@@ -1389,7 +1397,8 @@ class Thing {
     // If team is not specified (used by process_queues()), there is no change, or
     // it is being held by someone who is not on the same team, do nothing.
     if(team == undefined || team == this.team_select 
-    || this.id_client_hold && clients.all[this.id_client_hold].team != team) return;
+    || this.id_client_hold && clients.all[this.id_client_hold] 
+       && clients.all[this.id_client_hold].team != team) return;
 
     // If team is -1, unselect it and poop out
     if(team < 0) return this.unselect(do_not_send);
