@@ -53,9 +53,11 @@ CURRENTLY
 
 */
 
+// Object that holds all the relevant namespace for a game designer.
+var VGT = {};
 
 // Object for interacting with the html page.
-class Html {
+class _Html {
   
   constructor() {
     
@@ -81,7 +83,7 @@ class Html {
    */
   chat(name, message) {
     // messages div object
-    var m = html.messages;
+    var m = VGT.html.messages;
 
     // append a <li> object to it
     var li = document.createElement("li");
@@ -94,42 +96,42 @@ class Html {
 
   // Updates the client information in the GUI
   rebuild_client_table() {
-    log('html.rebuild_client_table()');
+    log('VGT.html.rebuild_client_table()');
 
     // Clear out the clients table
     var clients_table = document.getElementById('clients');
     clients_table.innerHTML = '';
 
     // Loop over the supplied clients
-    for(var id in net.clients) {
-      var c = net.clients[id];
+    for(var id in VGT.net.clients) {
+      var c = VGT.net.clients[id];
       log('  ', c.id, c.name, c.team);
 
       // Get the "safe" name & team
       var name = html_encode(c.name);
       var team = html_encode(c.team);
-      if(id == net.id) {
+      if(id == VGT.net.id) {
         save_cookie('name', name);
         save_cookie('team', team);
       }
 
       // Create the row for this client, as long as it's not me.
-      if(id != net.id) var row = clients_table.insertRow(-1);
+      if(id != VGT.net.id) var row = clients_table.insertRow(-1);
       else             var row = clients_table.insertRow(0);
       var cell_name = row.insertCell(0);
       var cell_team = row.insertCell(1);
 
-      // If it's net.me, the name should be editable, otherwise, not
-      if(id == net.id) cell_name.innerHTML = '<input id="name" onchange="interaction.onchange_name(event)" value="'+name+'" />';
+      // If it's VGT.net.me, the name should be editable, otherwise, not
+      if(id == VGT.net.id) cell_name.innerHTML = '<input id="name" onchange="VGT.interaction.onchange_name(event)" value="'+name+'" />';
       else             cell_name.innerHTML = '<input class="othername" readonly value="'+name+'" />';
 
       // Now create the team selector if it's me
       var s = document.createElement("select");
       s.id  = String(id); 
-      s.onchange = interaction.onchange_team;
+      s.onchange = VGT.interaction.onchange_team;
 
       // Create and append the options
-      for (var k in game.settings.teams) {
+      for (var k in VGT.game.settings.teams) {
           var o = document.createElement("option");
           o.value = k;
           o.text  = k;
@@ -146,14 +148,14 @@ class Html {
 
   } // End of rebuild_client_table()
 
-} // End of Html
-html = new Html();
+} // End of _Html
+VGT.html = new _Html();
 
 
 
 
 // Netcode
-class Net {
+class _Net {
 
   constructor() {
 
@@ -186,7 +188,7 @@ class Net {
     // Loop over the pieces in the q
     for(var id in this.q_pieces_in) { 
       c = this.q_pieces_in[id]; // incoming changes for this thing
-      p = pieces.all[id];       // the actual piece object
+      p = VGT.pieces.all[id];       // the actual piece object
 
       // If it's a valid piece
       if(p) {
@@ -217,25 +219,25 @@ class Net {
         // update the holder id if necessary. The server's job is to ensure that it relays the correct holder always.
         // ALSO we should ensure that, if it's either someone else's packet, or it's ours and we 
         // have not since queued a newer packet updating the hold status
-        console.log('  c.id', id, 'c.ih', c.ih, 'c.ih.i', c['ih.i'], 'net.id', net.id);
-        if(c['ih'] != undefined && (c['ih.i'] != net.id || c['ih.n'] >= p.last_nqs['ih'])) {
+        console.log('  c.id', id, 'c.ih', c.ih, 'c.ih.i', c['ih.i'], 'VGT.net.id', VGT.net.id);
+        if(c['ih'] != undefined && (c['ih.i'] != VGT.net.id || c['ih.n'] >= p.last_nqs['ih'])) {
           console.log('  setting hold to', c.ih);
           p.hold(c.ih, true, true); // client_id, force, do_not_send)
           console.log('    set to', p.id_client_hold);
         } 
 
         // Now update the different attributes only if we're not holding it (our hold supercedes everything)
-        if(p.id_client_hold != net.id) {
+        if(p.id_client_hold != VGT.net.id) {
 
-          if(p.id_client_hold) log('HAY', p.id_client_hold, net.id, c.id_client_sender, c.nq, p.last_nqs['ts']);
+          if(p.id_client_hold) log('HAY', p.id_client_hold, VGT.net.id, c.id_client_sender, c.nq, p.last_nqs['ts']);
 
           // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update
-          if(c['x.i']  != net.id || c['x.n']  >= p.last_nqs['x'])  p.set_xyrs_target(c.x, undefined, undefined, undefined, false, true);
-          if(c['y.i']  != net.id || c['y.n']  >= p.last_nqs['y'])  p.set_xyrs_target(undefined, c.y, undefined, undefined, false, true);
-          if(c['r.i']  != net.id || c['r.n']  >= p.last_nqs['r'])  p.set_xyrs_target(undefined, undefined, c.r, undefined, false, true);
-          if(c['s.i']  != net.id || c['s.n']  >= p.last_nqs['s'])  p.set_xyrs_target(undefined, undefined, undefined, c.s, false, true);
-          if(c['n.i']  != net.id || c['n.n']  >= p.last_nqs['n'])  p.set_texture_index(c.n, true);
-          if(c['ts.i'] != net.id || c['ts.n'] >= p.last_nqs['ts']) p.select(c.ts, true);
+          if(c['x.i']  != VGT.net.id || c['x.n']  >= p.last_nqs['x'])  p.set_xyrs(c.x, undefined, undefined, undefined, false, true);
+          if(c['y.i']  != VGT.net.id || c['y.n']  >= p.last_nqs['y'])  p.set_xyrs(undefined, c.y, undefined, undefined, false, true);
+          if(c['r.i']  != VGT.net.id || c['r.n']  >= p.last_nqs['r'])  p.set_xyrs(undefined, undefined, c.r, undefined, false, true);
+          if(c['s.i']  != VGT.net.id || c['s.n']  >= p.last_nqs['s'])  p.set_xyrs(undefined, undefined, undefined, c.s, false, true);
+          if(c['n.i']  != VGT.net.id || c['n.n']  >= p.last_nqs['n'])  p.set_texture_index(c.n, true);
+          if(c['ts.i'] != VGT.net.id || c['ts.n'] >= p.last_nqs['ts']) p.select(c.ts, true);
 
         } // End of we are not holding this.
       
@@ -249,14 +251,14 @@ class Net {
     // Loop over the hands in the input queue
     for(var id in this.q_hands_in) {
       c = this.q_hands_in[id]; // Incoming changes
-      p = hands.all[id];       // Actual hand
+      p = VGT.hands.all[id];       // Actual hand
 
       // Visually update the object
       if(p){
 
         // Discard info if it's our hand
-        if(p.id_client != net.id) {
-          p.set_xyrs_target(c.x, c.y, c.r, c.s, false, true);
+        if(p.id_client != VGT.net.id) {
+          p.set_xyrs(c.x, c.y, c.r, c.s, false, true);
           p.set_texture_index(c.n, true);
         }
       }
@@ -276,7 +278,7 @@ class Net {
 
       // Send the outbound information and clear it.
       this.nq++;
-      log(    'NETS_q_'+String(net.id), [this.nq, this.q_pieces_out, this.q_hands_out]);
+      log(    'NETS_q_'+String(VGT.net.id), [this.nq, this.q_pieces_out, this.q_hands_out]);
       this.io.emit('q', [this.nq, this.q_pieces_out, this.q_hands_out]);
       this.q_pieces_out = {};
       this.q_hands_out  = {};
@@ -328,11 +330,11 @@ class Net {
     // Store all the info we need to keep locally
     this.clients = server_state.clients;
 
-    // The server assigned net.me a unique id
+    // The server assigned VGT.net.me a unique id
     this.id = parseInt(id);
 
     // Send client information to the gui (rebuilds the HTML), and the clients object
-    clients.rebuild();
+    VGT.clients.rebuild();
 
     // Transfer / initialize the input queue, then process it.
     this.q_pieces_in = server_state['pieces'];
@@ -340,21 +342,21 @@ class Net {
     this.process_queues();
 
     // Now show controls
-    html.loader.style.visibility  = 'hidden';
+    VGT.html.loader.style.visibility  = 'hidden';
 
     // Say hello
-    html.chat('Server', 'Welcome, '+ net.clients[net.id].name + '!')
+    VGT.html.chat('Server', 'Welcome, '+ VGT.net.clients[VGT.net.id].name + '!')
   
   } // End of on_state
 
   /** Someone sends the client table data. */
-  on_clients(data) { if(!net.ready) return; log('NETR_clients', data);
+  on_clients(data) { if(!VGT.net.ready) return; log('NETR_clients', data);
 
     // Update the state
     this.clients = data;
 
     // Rebuild gui and clients list
-    clients.rebuild();
+    VGT.clients.rebuild();
 
   } // End of on_clients
 
@@ -366,7 +368,7 @@ class Net {
   } // End of on_yabooted
 
   /** Someone plays a sync'd sound */
-  on_say(data) { if(!net.ready) return;
+  on_say(data) { if(!VGT.net.ready) return;
     log('NETR_say', data);
 
     // Say it
@@ -374,7 +376,7 @@ class Net {
   } // End of on_say
 
   /** Someone sends a chat. */
-  on_chat(data) {if(!net.ready) return;
+  on_chat(data) {if(!VGT.net.ready) return;
       
     var id = data[0];
     var message = data[1];
@@ -388,7 +390,7 @@ class Net {
     else        var name = this.clients[id].name
     
     // Update the interface
-    html.chat(name, message);
+    VGT.html.chat(name, message);
   
   } // End of on_chat
 
@@ -420,11 +422,11 @@ class Net {
     this.io.emit('hallo', [name, team]);
   
     // Ready to receive packets now!
-    net.ready = true; 
+    VGT.net.ready = true; 
   }
 
-} // End of Net
-net = new Net()
+} // End of _Net
+VGT.net = new _Net();
 
 
 ////////////////////////////////////
@@ -434,7 +436,7 @@ net = new Net()
 /**
  * Holds all the pixi stuff.
  */
-class Pixi {
+class _Pixi {
 
   constructor() {
 
@@ -451,7 +453,7 @@ class Pixi {
     });
 
     // Add the canvas that Pixi automatically created for you to the HTML document
-    html.gameboard.appendChild(this.app.view);
+    VGT.html.gameboard.appendChild(this.app.view);
 
     // Aliases
     this.loader      = PIXI.Loader.shared,
@@ -505,39 +507,39 @@ class Pixi {
     // Check special layers first
 
     // HANDS layer
-    if(thing.settings.layer == tabletop.LAYER_HANDS) {
+    if(thing.settings.layer == VGT.tabletop.LAYER_HANDS) {
 
       // Make sure the layer exists
-      if(!tabletop.layer_hands) {
+      if(!VGT.tabletop.layer_hands) {
         
         // Create the new layer and add it to the tabletop
         var l = new PIXI.Container();
-        tabletop.layer_hands = l;
-        tabletop.container.addChild(l);
+        VGT.tabletop.layer_hands = l;
+        VGT.tabletop.container.addChild(l);
 
         // Update the layer's coordinates / scale.
         l.x=0; l.y=0; l.rotation=0; l.scale.x=1; l.scale.y=1;
       }
 
       // Add the hand
-      tabletop.layer_hands.addChild(thing.container);
+      VGT.tabletop.layer_hands.addChild(thing.container);
     }
 
     // If the thing has a "normal" layer, the settings.layer is an integer >= 0
     else {
 
       // If the tabletop does not contain this layer yet, create this layer.
-      if(!tabletop.layers[thing.settings.layer]) {
+      if(!VGT.tabletop.layers[thing.settings.layer]) {
         
         // Create the new layer and add it to the tabletop
         var l = new PIXI.Container();
-        tabletop.layers[thing.settings.layer] = l;
-        tabletop.container.addChild(l);
+        VGT.tabletop.layers[thing.settings.layer] = l;
+        VGT.tabletop.container.addChild(l);
 
         // Find the layer_hands and pop it to the top.
-        if(tabletop.layer_hands) {
-          tabletop.container.removeChild(tabletop.layer_hands);
-          tabletop.container.addChild(tabletop.layer_hands);
+        if(VGT.tabletop.layer_hands) {
+          VGT.tabletop.container.removeChild(VGT.tabletop.layer_hands);
+          VGT.tabletop.container.addChild(VGT.tabletop.layer_hands);
         }
 
         // Update the layer's coordinates / scale.
@@ -545,7 +547,7 @@ class Pixi {
       }
 
       // Add the thing to the layer
-      tabletop.layers[thing.settings.layer].addChild(thing.container);
+      VGT.tabletop.layers[thing.settings.layer].addChild(thing.container);
 
     } // End of "normal" layer
 
@@ -562,14 +564,14 @@ class Pixi {
     this.ready = true;
 
     // Resize the window, which sets up the table
-    interaction.onresize_window();
+    VGT.interaction.onresize_window();
 
     // Start the game loop
     log('Starting game loop...');
-    pixi.app.ticker.add(delta => pixi.game_loop(delta)); 
+    VGT.pixi.app.ticker.add(delta => VGT.pixi.game_loop(delta)); 
     
     // Hide the loader so users can actually interact with the game
-    html.loader.hidden = true;
+    VGT.html.loader.hidden = true;
   }
 
   /**
@@ -581,7 +583,7 @@ class Pixi {
     log('progress: loaded', resource.url, loader.progress, '%');
 
       // Update the loader progress in the html
-      html.loader.innerHTML = '<h1>Loading: ' + loader.progress.toFixed(0) + '%</h1><br>' + resource.url;
+      VGT.html.loader.innerHTML = '<h1>Loading: ' + loader.progress.toFixed(0) + '%</h1><br>' + resource.url;
   }
 
   /** Called every 1/60 of a second (roughly).
@@ -596,15 +598,18 @@ class Pixi {
     if(!this.n_loop) {} // log ever so often
 
     // Animate thing & hand movement and other internal animations
-    for(var id_thing in things.all) {
-      things.all[id_thing].animate_xyrs(delta);
-      things.all[id_thing].animate_other(delta);
+    for(var id_thing in VGT.things.all) {
+      VGT.things.all[id_thing].animate_xyrs(delta);
+      VGT.things.all[id_thing].animate_other(delta);
     }
+
+    // Animate the table
+    VGT.tabletop.animate_xyrs(delta);
     
   } // End of game_loop
 
 } // End of MyPixi
-var pixi;
+
 
 
 
@@ -612,19 +617,28 @@ var pixi;
 
 
 // Tabletop for simplifying pan and zoom (basically a fancy container)
-class Tabletop {
+class _Tabletop {
 
   constructor() {
 
+    this.settings = {
+      pan_step: 0.2, // Fraction of width or height when panning 1 step
+      r_step:    45, // Degrees for table rotation steps
+      s_step:   1.2, // Fraction for each zoom step.
+      s_max:    2.5, // Largest zoom-in level
+      s_min:    0.25, // Max zoom-out
+    }
+
     // Create the container to hold all the layers.
     this.container = new PIXI.Container();
-    pixi.stage.addChild(this.container);
+    VGT.pixi.stage.addChild(this.container);
     
-    this.container.x = window.innerWidth*0.5;
-    this.container.y = window.innerHeight*0.5;
-    this.container.rotation = 0;
-    this.container.scale.x = 1;
-    this.container.scale.y = 1;
+    // Targets equal actual, with zero velocity
+    this.x = this.container.x = window.innerWidth*0.5;
+    this.y = this.container.y = window.innerHeight*0.5;
+    this.r = this.container.rotation = 0;
+    this.s = this.container.scale.y = this.container.scale.x = 1;
+    this.vx = this.vy = this.vr = this.vs = 0;
 
     this.LAYER_HANDS = -1; // Constant for denoting the hands layer. Normal layers are positive integers.
     this.layers      = []; // List of containers for each layer
@@ -649,8 +663,123 @@ class Tabletop {
          -this.container.rotation);
   }
 
-} // End of Tabletop
-var tabletop; // Set in pixi.setup()
+  /**
+   * Updates the actual tabletop location / geometry via the error decay animation, 
+   * and should be called once per frame.
+   */
+   animate_xyrs(delta) { if(!delta) delta = 1;
+    
+    // Don't do anything until it's been initialized / added to pixi.
+    // JACK: I think this is not necessary for the tabletop, because
+    // It's just a container. if(!this.ready) {return;}
+
+    // Use the current location and target location to determine
+    // the target velocity. Target velocity should be proportional to the distance.
+    // We want it to arrive in (game.t_transition) / (16.7 ms) frames
+    var a = (delta*16.7)/VGT.game.settings.t_transition; // inverse number of frames at max velocity 
+    var vx_target = a*(this.x - this.container.x);
+    var vy_target = a*(this.y - this.container.y);
+    var vr_target = a*(this.r - this.container.rotation);
+    var vs_target = a*(this.s - this.container.scale.x);
+
+    // Adjust the velocity as per the acceleration
+    var b = (delta*16.7)/VGT.game.settings.t_acceleration; // inverse number of frames to get to max velocity
+    var Ax = b*(vx_target - this.vx);
+    var Ay = b*(vy_target - this.vy);
+    var Ar = b*(vr_target - this.vr);
+    var As = b*(vs_target - this.vs);
+    
+    // If we're slowing down, do it MORE to avoid overshoot
+    if(Math.sign(Ax)!=Math.sign(this.vx)) Ax = Ax*2;
+    if(Math.sign(Ay)!=Math.sign(this.vy)) Ay = Ay*2;
+    if(Math.sign(Ar)!=Math.sign(this.vr)) Ar = Ar*2;
+    if(Math.sign(As)!=Math.sign(this.vs)) As = As*2;
+
+    // Accelerate
+    this.vx += Ax;
+    this.vy += Ay;
+    this.vr += Ar;
+    this.vs += As;
+
+    // Set the actual position, rotation, and scale
+    this.container.x        += this.vx;
+    this.container.y        += this.vy;
+    this.container.rotation += this.vr;
+    this.container.scale.x  += this.vs;
+    this.container.scale.y  += this.vs;
+  }
+
+  /**
+   * Returns an object with x, y, r, and s.
+   */
+  get_xyrs() {return {x:this.x, y:this.y, r:this.r, s:this.s}}
+
+  /** 
+  * Sets the target x,y,r,s for the sprite.
+  * 
+  */
+  set_xyrs(x,y,r,s,immediate) { 
+
+    // Now for each supplied coordinate, update and send
+    if(x!=undefined && x != this.x) {this.x = x; if(immediate) this.container.x = x; }
+    if(y!=undefined && y != this.y) {this.y = y; if(immediate) this.container.y = y; }
+    if(r!=undefined && r != this.r) {this.r = r; if(immediate) this.container.r = r; }
+    if(s!=undefined && s != this.s) {this.s = s; if(immediate) {this.container.scale.x = s; this.container.scale.y = s}; }
+    this.t_last_move = Date.now();
+  }
+  
+  // Panning the view
+  pan_up() { 
+    this.set_xyrs(
+      this.container.x, 
+      this.container.y
+        +this.settings.pan_step*window.innerHeight,
+      undefined, undefined);
+  }
+  pan_down() { 
+    this.set_xyrs(
+      this.container.x, 
+      this.container.y
+        -this.settings.pan_step*window.innerHeight,
+      undefined, undefined);
+  }
+  pan_left() { 
+    this.set_xyrs(
+      this.container.x+this.settings.pan_step*window.innerWidth, 
+      this.container.y,
+      undefined, undefined);
+  }
+  pan_right() { 
+    this.set_xyrs(
+      this.container.x-this.settings.pan_step*window.innerWidth, 
+      this.container.y,
+      undefined, undefined);
+  }
+  rotate_left() {
+    this.set_xyrs(
+      undefined, undefined,
+      this.r - this.settings.r_step*Math.PI/180.0,
+      undefined);
+  }
+  rotate_right() {
+    this.set_xyrs(
+      undefined, undefined,
+      this.r + this.settings.r_step*Math.PI/180.0,
+      undefined);
+  }
+  zoom_in() {
+    if(this.s*this.settings.s_step > this.settings.s_max) return;
+    this.set_xyrs(
+      undefined, undefined, undefined,
+      this.s * this.settings.s_step);
+  }
+  zoom_out() {
+    if(this.s*this.settings.s_step < this.settings.s_min) return;
+    this.set_xyrs(
+      undefined, undefined, undefined,
+      this.s / this.settings.s_step);
+  }
+} // End of _Tabletop
 
 
 
@@ -660,7 +789,7 @@ var tabletop; // Set in pixi.setup()
 // Interactions
 ////////////////////////
 // INTERACTION MANAGER
-class Interaction {
+class _Interaction {
   
   constructor() {
     
@@ -671,41 +800,41 @@ class Interaction {
     this.key_functions = {
 
       // Pan
-      KeyADown:      this.pan_left,
-      ArrowLeftDown: this.pan_left,
-      Numpad4Down:   this.pan_left,
+      KeyADown:      VGT.tabletop.pan_left.bind(VGT.tabletop),
+      ArrowLeftDown: VGT.tabletop.pan_left.bind(VGT.tabletop),
+      Numpad4Down:   VGT.tabletop.pan_left.bind(VGT.tabletop),
       
-      KeyDDown:      this.pan_right,
-      ArrowRightDown:this.pan_right,
-      Numpad6Down:   this.pan_right,
+      KeyDDown:      VGT.tabletop.pan_right.bind(VGT.tabletop),
+      ArrowRightDown:VGT.tabletop.pan_right.bind(VGT.tabletop),
+      Numpad6Down:   VGT.tabletop.pan_right.bind(VGT.tabletop),
       
-      KeyWDown:      this.pan_up,
-      ArrowUpDown:   this.pan_up,
-      Numpad8Down:   this.pan_up,
+      KeyWDown:      VGT.tabletop.pan_up.bind(VGT.tabletop),
+      ArrowUpDown:   VGT.tabletop.pan_up.bind(VGT.tabletop),
+      Numpad8Down:   VGT.tabletop.pan_up.bind(VGT.tabletop),
 
-      KeySDown:      this.pan_down,
-      ArrowDownDown: this.pan_down,
-      Numpad5Down:   this.pan_down,
-      Numpad2Down:   this.pan_down,
+      KeySDown:      VGT.tabletop.pan_down.bind(VGT.tabletop),
+      ArrowDownDown: VGT.tabletop.pan_down.bind(VGT.tabletop),
+      Numpad5Down:   VGT.tabletop.pan_down.bind(VGT.tabletop),
+      Numpad2Down:   VGT.tabletop.pan_down.bind(VGT.tabletop),
 
-      // Rotate
-      ShiftKeyADown:      this.rotate_left,
-      KeyQDown:           this.rotate_left,
-      ShiftArrowLeftDown: this.rotate_left,
-      ShiftNumpad4Down:   this.rotate_left,
-      Numpad7Down:        this.rotate_left,
+      // Rotate view
+      ShiftKeyADown:      VGT.tabletop.rotate_left.bind(VGT.tabletop),
+      KeyQDown:           VGT.tabletop.rotate_left.bind(VGT.tabletop),
+      ShiftArrowLeftDown: VGT.tabletop.rotate_left.bind(VGT.tabletop),
+      ShiftNumpad4Down:   VGT.tabletop.rotate_left.bind(VGT.tabletop),
+      Numpad7Down:        VGT.tabletop.rotate_left.bind(VGT.tabletop),
 
-      ShiftKeyDDown:      this.rotate_right,
-      KeyEDown:           this.rotate_right,
-      ShiftArrowRightDown:this.rotate_right,
-      ShiftNumpad6Down:   this.rotate_right,
-      Numpad9Down:        this.rotate_right,
+      ShiftKeyDDown:      VGT.tabletop.rotate_right.bind(VGT.tabletop),
+      KeyEDown:           VGT.tabletop.rotate_right.bind(VGT.tabletop),
+      ShiftArrowRightDown:VGT.tabletop.rotate_right.bind(VGT.tabletop),
+      ShiftNumpad6Down:   VGT.tabletop.rotate_right.bind(VGT.tabletop),
+      Numpad9Down:        VGT.tabletop.rotate_right.bind(VGT.tabletop),
 
       // Zoom
-      KeyEqualDown:       this.zoom_in,
-      NumpadAddDown:      this.zoom_in,
-      KeyMinusDown:       this.zoom_in,
-      NumpadSubtractDown: this.zoom_out,
+      EqualDown:          VGT.tabletop.zoom_in.bind(VGT.tabletop),
+      NumpadAddDown:      VGT.tabletop.zoom_in.bind(VGT.tabletop),
+      MinusDown:          VGT.tabletop.zoom_out.bind(VGT.tabletop),
+      NumpadSubtractDown: VGT.tabletop.zoom_out.bind(VGT.tabletop),
 
       // Cycle images
       SpaceDown: this.increment_selected_textures,
@@ -726,20 +855,21 @@ class Interaction {
     // Using the surface and objects with the built-in hit test is rough, because it
     // does it for every mouse move, etc. Also, I can't seem to get the button number
     // this way in PixiJS 6.
-    //pixi.surface.interactive = true;
-    //pixi.surface.on('pointerdown', this.surface_pointerdown);
-    pixi.app.view.onpointerdown = this.onpointerdown.bind(this);
-    pixi.app.view.onpointermove = this.onpointermove.bind(this);
-    pixi.app.view.onpointerup   = this.onpointerup  .bind(this);
-    pixi.app.view.onpointerout  = this.onpointerup  .bind(this);
+    //VGT.pixi.surface.interactive = true;
+    //VGT.pixi.surface.on('pointerdown', this.surface_pointerdown);
+    VGT.pixi.app.view.onpointerdown = this.onpointerdown.bind(this);
+    VGT.pixi.app.view.onpointermove = this.onpointermove.bind(this);
+    VGT.pixi.app.view.onpointerup   = this.onpointerup  .bind(this);
+    VGT.pixi.app.view.onpointerout  = this.onpointerup  .bind(this);
+    VGT.pixi.app.view.onwheel      = this.onwheel     .bind(this);
   }
 
   increment_selected_textures(e) {
-    log('interaction.increment_selected_textures()', e);
+    log('VGT.interaction.increment_selected_textures()', e);
 
     // Loop over the selected items
-    for(var id_thing in things.selected[clients.me.team]) 
-      things.selected[clients.me.team][id_thing].increment_texture();
+    for(var id_thing in VGT.things.selected[VGT.clients.me.team]) 
+      VGT.things.selected[VGT.clients.me.team][id_thing].increment_texture();
   }
 
   /**
@@ -753,8 +883,8 @@ class Interaction {
     var layer, container, x0, y0;
 
     // Loop over the layers from top to bottom
-    for(var n=tabletop.layers.length-1; n>=0; n--) {
-      layer = tabletop.layers[n];
+    for(var n=VGT.tabletop.layers.length-1; n>=0; n--) {
+      layer = VGT.tabletop.layers[n];
       
       // Loop over the things in this layer from top to bottom.
       for(var m=layer.children.length-1; m>=0; m--) {
@@ -783,7 +913,7 @@ class Interaction {
     this.last_pointerdown = e;
 
     // Get the tabletop coordinates
-    var v = tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
+    var v = VGT.tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
     
     // Save the information
     this.button = e.button;
@@ -795,8 +925,8 @@ class Interaction {
     this.yd_tabletop = v[1];
 
     // Location of the tabletop at down.
-    this.tabletop_xd = tabletop.container.x;
-    this.tabletop_yd = tabletop.container.y;
+    this.tabletop_xd = VGT.tabletop.container.x;
+    this.tabletop_yd = VGT.tabletop.container.y;
 
     // Find the top thing under the pointer
     log('onpointerdown()', v, e.button, this.tabletop_xd, this.tabletop_yd);
@@ -813,24 +943,24 @@ class Interaction {
       
       // If we're not holding shift and it's not already a thing we've selected, 
       // unselect everything.
-      if(!e.shiftKey && thing.team_select != clients.me.team) things.unselect_all(clients.me.team);
+      if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.things.unselect_all(VGT.clients.me.team);
       
       // If we're holding shift and it's already selected, deselect
-      if(e.shiftKey && thing.team_select == clients.me.team) thing.unselect()
+      if(e.shiftKey && thing.team_select == VGT.clients.me.team) thing.unselect()
 
       // Otherwise, select it and hold everything.
       else {
-        thing.select(clients.me.team); 
-        things.hold_selected(net.id, false);
+        thing.select(VGT.clients.me.team); 
+        VGT.things.hold_selected(VGT.net.id, false);
       }
 
       // Holding, so close fist
-      if(clients && clients.me && clients.me.hand) clients.me.hand.close();
+      if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.close();
 
     } // End of "found thing under pointer"
 
     // Otherwise, we have hit the table top. unselect everything
-    else things.unselect_all(clients.me.team);
+    else VGT.things.unselect_all(VGT.clients.me.team);
   }
 
   // Pointer has moved around.
@@ -838,7 +968,7 @@ class Interaction {
     this.last_pointermove = e;
     
     // Get the tabletop coordinates
-    var v = tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
+    var v = VGT.tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
     
     // Save the coordinates of the move
     this.xm_client = e.clientX;
@@ -850,15 +980,15 @@ class Interaction {
     if(this.button >= 0) {
       
       // If we have held stuff, move them around.
-      if(things.held[net.id]) {
+      if(VGT.things.held[VGT.net.id]) {
         
         // loop over our held things and move them.
         var thing;
-        for(var k in things.held[net.id]) {
-          thing = things.held[net.id][k];
+        for(var k in VGT.things.held[VGT.net.id]) {
+          thing = VGT.things.held[VGT.net.id][k];
           
           // Do the actual move, immediately
-          thing.set_xyrs_target(
+          thing.set_xyrs(
             thing.xh + this.xm_tabletop - this.xd_tabletop,
             thing.yh + this.ym_tabletop - this.yd_tabletop,
             undefined, undefined, true);
@@ -867,14 +997,16 @@ class Interaction {
       
       // Otherwise pan the board.
       else {
-        tabletop.container.x = this.tabletop_xd + this.xm_client - this.xd_client;
-        tabletop.container.y = this.tabletop_yd + this.ym_client - this.yd_client;
+        VGT.tabletop.set_xyrs(
+          this.tabletop_xd + this.xm_client - this.xd_client,
+          this.tabletop_yd + this.ym_client - this.yd_client, 
+          undefined, undefined, true); // immediate
       }
     }
 
     // Move the hand
-    if(clients && clients.me && clients.me.hand) {
-      clients.me.hand.set_xyrs_target(this.xm_tabletop, this.ym_tabletop)
+    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) {
+      VGT.clients.me.hand.set_xyrs(this.xm_tabletop, this.ym_tabletop)
     }
 
   } // End of onpointermove
@@ -888,7 +1020,7 @@ class Interaction {
     this.last_pointerup = e;
 
     // Get the tabletop coordinates of this event
-    var v = tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
+    var v = VGT.tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
     
     // Location of the up in two coordinate systems
     this.xu_client = e.clientX;
@@ -897,25 +1029,27 @@ class Interaction {
     this.yu_tabletop = v[1];
 
     // Location of tabletop center at up.
-    this.tabletop_xu = tabletop.container.x;
-    this.tabletop_yu = tabletop.container.y;
+    this.tabletop_xu = VGT.tabletop.container.x;
+    this.tabletop_yu = VGT.tabletop.container.y;
 
     // Save the information
     this.button = -1;
 
-    // Stop holding things
-    things.release_all(net.id, false, false);
+    // Stop holding VGT.things
+    VGT.things.release_all(VGT.net.id, false, false);
 
     // Releasing, so open fist
-    if(clients && clients.me && clients.me.hand) clients.me.hand.open();
+    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.open();
   }
   
+  onwheel(e) {log('_Interaction.onwheel()', e);}
+
   // Whenever a key is pressed or released.
   onkey(e) {
     this.last_onkey = e;
 
     // Special case for observers too: Escape toggles controls
-    if(e.code == 'Escape' && e.type == 'keydown') html.toggle_controls();
+    if(e.code == 'Escape' && e.type == 'keydown') VGT.html.toggle_controls();
 
     // If we're not ready, not supposed to interact with the game,
     // toggling full screen (F11), or using an input, don't 
@@ -945,12 +1079,12 @@ class Interaction {
     log('onchange_team()', e.target.id, e.target.selectedIndex, e.target.value);
 
     // Remember the team
-    if(String(net.id) == e.target.id) save_cookie('team', e.target.value);
+    if(String(VGT.net.id) == e.target.id) save_cookie('team', e.target.value);
 
     // Update the clients list and send to server
-    net.clients[e.target.id].team = e.target.selectedIndex;
-    log(   'NETS_clients', net.clients);
-    net.io.emit('clients', net.clients);
+    VGT.net.clients[e.target.id].team = e.target.selectedIndex;
+    log(   'NETS_clients', VGT.net.clients);
+    VGT.net.io.emit('clients', VGT.net.clients);
   } // End of onchange_team()
 
   // When we change our name
@@ -958,26 +1092,26 @@ class Interaction {
     log('onchange_name()', e.target.id, e.target.value);
 
     // Remember my own name, but not others
-    if(String(net.id) == e.target.id) save_cookie('name', e.target.value);
+    if(String(VGT.net.id) == e.target.id) save_cookie('name', e.target.value);
 
     // Update the clients list
-    net.clients[net.id].name = e.target.value;
-    log(   'NETS_clients', net.clients);
-    net.io.emit('clients', net.clients);
+    VGT.net.clients[VGT.net.id].name = e.target.value;
+    log(   'NETS_clients', VGT.net.clients);
+    VGT.net.io.emit('clients', VGT.net.clients);
   } // End of onchange_name()
 
   // When the volume changes.
   onchange_volume(e) {
 
-    var v = parseInt(html.volume.value)*0.01*1.0;
+    var v = parseInt(VGT.html.volume.value)*0.01*1.0;
     
-    log('onchange_volume()', html.volume.value, v);
+    log('onchange_volume()', VGT.html.volume.value, v);
     
     // Change the master volume
     Howler.volume(v);
     
     // Remember the value
-    save_cookie('volume',       html.volume.value);
+    save_cookie('volume',       VGT.html.volume.value);
   } // end of onchange_volume()
 
   /** Called when someone hits enter in the chat box.
@@ -993,32 +1127,35 @@ class Interaction {
 
     // Send a chat.
     log(   'NETS_chat', message);
-    net.io.emit('chat', message);
+    VGT.net.io.emit('chat', message);
   } // end of onchat()
 
   
-  // Auto-adjusting pixi.app size to available space
+  // Auto-adjusting VGT.pixi.app size to available space
   onresize_window(e) {
     
     // Resize the renderer
-    pixi.app.renderer.resize(window.innerWidth, window.innerHeight);
+    VGT.pixi.app.renderer.resize(window.innerWidth, window.innerHeight);
 
     // Resize the surface
-    pixi.surface.scale.x = window.innerWidth;
-    pixi.surface.scale.y = window.innerHeight;
+    VGT.pixi.surface.scale.x = window.innerWidth;
+    VGT.pixi.surface.scale.y = window.innerHeight;
     
     log('onresize_window()');
   }
   
-} // End of Interaction
-var interaction; 
+
+
+
+  // 
+} // End of _Interaction
 
 
 ////////////////////////////
 // SOUNDS                 //
 ////////////////////////////
 
-class Sound {
+class _Sound {
 
   // Constructor just registers the sound and records the time
   constructor(path, volume) {
@@ -1051,7 +1188,7 @@ class Sound {
 }
 
 // Library of all sounds with progress and after_loaded() function
-class Sounds {
+class _Sounds {
 
   // Constructor sets up internal data structures
   // Paths should be an object with sound options, e.g.
@@ -1101,7 +1238,7 @@ class Sounds {
         this.n++;
         
         // Make the new Howl to play this sound
-        this.sounds[key] = new Sound(object[key][0], object[key][1]);
+        this.sounds[key] = new _Sound(object[key][0], object[key][1]);
       
         // What to do when it loads
         this.sounds[key].howl.once('load', this._onprogress(key, object[key], Math.round(100*this.n/this.length)));
@@ -1120,10 +1257,10 @@ class Sounds {
     if(percent == 100) {
     
       // Load the sound settings.
-      html.volume.value = get_cookie_value('volume');
+      VGT.html.volume.value = get_cookie_value('volume');
       
       // Send em.
-      interaction.onchange_volume();
+      VGT.interaction.onchange_volume();
     }
   } // End of onprogress()
 
@@ -1160,15 +1297,14 @@ class Sounds {
     Howler.volume(0);
   }
   unmute() {
-    interaction.onchange_volume();
+    VGT.interaction.onchange_volume();
   }
   set_mute(mute) {
     if(mute) this.mute();
     else     this.unmute();
   }
 
-} // End of Sounds
-var sounds; // set in pixi.setup()
+} // End of _Sounds
       
 
 
@@ -1182,7 +1318,7 @@ var sounds; // set in pixi.setup()
 /////////////////////////////
 
 // Basic interactive object
-class Thing {
+class _Thing {
   
   // Default settings for a new object
   default_settings = {
@@ -1222,7 +1358,7 @@ class Thing {
     this.id_client_hold = 0;  // Server / no client is 0
 
     // Shape of hitbox
-    this.shape = eval('interaction.'+this.settings.shape);
+    this.shape = eval('VGT.interaction.'+this.settings.shape);
 
     // Targeted location and geometry. Current locations are in the container.x, container.y, container.rotation, and container.scale.x
     this.x = this.settings.x;
@@ -1261,12 +1397,12 @@ class Thing {
       ih:-1,
     }
 
-    // Everything is added to the things list
-    things.add_thing(this);
+    // Everything is added to the VGT.things list
+    VGT.things.add_thing(this);
 
     // Add this to the pixi instance (or queue)
     // The pixi-related stuff must be called after pixi loads.
-    pixi.add_thing(this);
+    VGT.pixi.add_thing(this);
 
   } // End of constructor.
 
@@ -1290,7 +1426,7 @@ class Thing {
         
         // Add the actual texture object
         path = image_paths.root + this.settings.texture_root + this.settings.texture_paths[n][m];
-        if(pixi.resources[path]) this.textures[n].push(pixi.resources[path].texture);
+        if(VGT.pixi.resources[path]) this.textures[n].push(VGT.pixi.resources[path].texture);
         else throw 'No resource for '+ path;
       }
     }
@@ -1333,17 +1469,17 @@ class Thing {
     // If the id is undefined (used by process_queues), there is no change, 
     // or it is already being held by any valid client (and no force), do nothing.
     if(id_client == undefined || id_client == this.id_client_hold
-    || Object.keys(clients.all).includes(String(this.id_client_hold))
+    || Object.keys(VGT.clients.all).includes(String(this.id_client_hold))
     && !force) return;
 
     // If it's the server holding, this is equivalent to a release
     else if(id_client == 0) this.release(id_client, force, do_not_send);
 
     // Otherwise, if it's not being held already (or the client is invalid), or we're forcing hold it.
-    else if(this.id_client_hold == 0 || clients.all[this.id_client_hold] == undefined || force) {
+    else if(this.id_client_hold == 0 || VGT.clients.all[this.id_client_hold] == undefined || force) {
       
       // If it is already in a held list, delete that
-      if(things.held[this.id_client_hold]) delete things.held[this.id_client_hold][this.id_thing];
+      if(VGT.things.held[this.id_client_hold]) delete VGT.things.held[this.id_client_hold][this.id_thing];
 
       // Update the holder
       this.id_client_hold = id_client;
@@ -1355,10 +1491,10 @@ class Thing {
       this.sh = this.s;    
 
       // Make sure there is an object to hold the held things for this id.
-      if(things.held[id_client] == undefined) things.held[id_client] = {};
+      if(VGT.things.held[id_client] == undefined) VGT.things.held[id_client] = {};
 
       // Control it
-      things.held[id_client][this.id_thing] = this;
+      VGT.things.held[id_client][this.id_thing] = this;
 
       // If we're supposed to send an update, make sure there is an entry in the queue
       this.update_q_out('id_client_hold', 'ih', do_not_send);
@@ -1374,15 +1510,15 @@ class Thing {
     // or there is a valid holder that is different from the requestor (and we aren't overriding this)
     // do nothing.
     if(this.id_client_hold == 0
-    || Object.keys(clients.all).includes(String(this.id_client_hold))
+    || Object.keys(VGT.clients.all).includes(String(this.id_client_hold))
     && this.id_client_hold != id_client
     && !force) return;
 
     // Remove it from the list
-    delete things.held[this.id_client_hold][this.id_thing];
+    delete VGT.things.held[this.id_client_hold][this.id_thing];
 
     // If it was me holding it, remember the time I let go.
-    if(this.id_client_hold == net.id) this.t_last_hold = Date.now();
+    if(this.id_client_hold == VGT.net.id) this.t_last_hold = Date.now();
     this.id_client_hold = 0;
 
     // If we're supposed to send an update, make sure there is an entry in the queue
@@ -1397,8 +1533,8 @@ class Thing {
     // If team is not specified (used by process_queues()), there is no change, or
     // it is being held by someone who is not on the same team, do nothing.
     if(team == undefined || team == this.team_select 
-    || this.id_client_hold && clients.all[this.id_client_hold] 
-       && clients.all[this.id_client_hold].team != team) return;
+    || this.id_client_hold && VGT.clients.all[this.id_client_hold] 
+       && VGT.clients.all[this.id_client_hold].team != team) return;
 
     // If team is -1, unselect it and poop out
     if(team < 0) return this.unselect(do_not_send);
@@ -1414,15 +1550,15 @@ class Thing {
     this.update_q_out('team_select', 'ts', do_not_send);
 
     // Make sure there is an object to hold selected things for this id
-    if(things.selected[team] == undefined) things.selected[team] = {};
+    if(VGT.things.selected[team] == undefined) VGT.things.selected[team] = {};
 
     // Select it
-    things.selected[team][this.id_thing] = this;
+    VGT.things.selected[team][this.id_thing] = this;
     this.container.filters = [new __filters.GlowFilter({
       distance:20,
       outerStrength:5,
       innerStrength:1,
-      color:game.get_team_color(team),
+      color:VGT.game.get_team_color(team),
       quality:0.1,
     })];
   } // End of select()
@@ -1436,9 +1572,9 @@ class Thing {
     if(this.team_select < 0 && this.id_client_hold) return;
 
     // Remove it from the list
-    if(things.selected[this.team_select] &&
-       things.selected[this.team_select][this.id_thing])
-        delete things.selected[this.team_select][this.id_thing];
+    if(VGT.things.selected[this.team_select] &&
+       VGT.things.selected[this.team_select][this.id_thing])
+        delete VGT.things.selected[this.team_select][this.id_thing];
     this.team_select = -1;
 
     // If we're supposed to send an update, make sure there is an entry in the queue
@@ -1449,7 +1585,7 @@ class Thing {
 
   } // End of unselect()
 
-  /* Sends data associated with key (this[key]) to the associated net.q_pieces_out[this.id_thing][qkey]. */
+  /* Sends data associated with key (this[key]) to the associated VGT.net.q_pieces_out[this.id_thing][qkey]. */
   update_q_out(key, qkey, only_if_exists) { 
     //log('Thing.update_q_out()', key, qkey, only_if_exists);
     
@@ -1458,11 +1594,11 @@ class Thing {
 
     // Get the appropriate id and q.
     if(this.type == 'Piece') {
-      var q_out = net.q_pieces_out;
+      var q_out = VGT.net.q_pieces_out;
       var id    = this.id_piece;
     }
     else if(this.type == 'Hand') {
-      var q_out = net.q_hands_out;
+      var q_out = VGT.net.q_hands_out;
       var id    = this.id_hand;
     }
 
@@ -1481,7 +1617,7 @@ class Thing {
     q_out[id][qkey] = this[key];
 
     // Remember the index that will be attached to this on the next process_qs
-    this.last_nqs[qkey] = net.nq+1;
+    this.last_nqs[qkey] = VGT.net.nq+1;
   }
 
   // Returns the z-order index (pieces with lower index are behind this one)
@@ -1568,7 +1704,7 @@ class Thing {
 
     // Remember the index we're on for cycling purposes
     this._n = n_valid;
-    //log('Piece.set_texture_index()', this._n, do_not_send);
+    //log('_Piece.set_texture_index()', this._n, do_not_send);
 
     // If we're supposed to send an update, make sure there is an entry in the queue
     this.update_q_out('_n', 'n', do_not_send);
@@ -1581,7 +1717,7 @@ class Thing {
   
   // Increment the texture
   increment_texture() {
-    log('Piece.increment_texture()', this.id, this._n+1);
+    log('_Piece.increment_texture()', this.id, this._n+1);
     this.set_texture_index(this._n+1);
   }
 
@@ -1608,13 +1744,13 @@ class Thing {
   /**
    * Returns an object with x, y, r, and s.
    */
-  get_xyrs_target() {return {x:this.x, y:this.y, r:this.r, s:this.s}}
+  get_xyrs() {return {x:this.x, y:this.y, r:this.r, s:this.s}}
 
   /** 
    * Sets the target x,y,r,s for the sprite.
    * 
    */
-  set_xyrs_target(x,y,r,s,immediate,do_not_send) { 
+  set_xyrs(x,y,r,s,immediate,do_not_send) { 
 
     // Now for each supplied coordinate, update and send
     if(x!=undefined && x != this.x) {this.x = x; if(immediate) this.container.x = x; this.update_q_out('x', 'x', do_not_send);}
@@ -1636,19 +1772,19 @@ class Thing {
     // Don't do anything until it's been initialized / added to pixi.
     if(!this.ready) {return;}
 
-    //if(pixi.N_loop == 1 && this.id_thing > 2) log('N_loop ==',pixi.N_loop,':', this.vr, this);
+    //if(VGT.pixi.N_loop == 1 && this.id_thing > 2) log('N_loop ==',VGT.pixi.N_loop,':', this.vr, this);
 
     // Use the current location and target location to determine
     // the target velocity. Target velocity should be proportional to the distance.
     // We want it to arrive in (game.t_transition) / (16.7 ms) frames
-    var a = (delta*16.7)/game.settings.t_transition; // inverse number of frames at max velocity 
+    var a = (delta*16.7)/VGT.game.settings.t_transition; // inverse number of frames at max velocity 
     var vx_target = a*(this.x - this.container.x);
     var vy_target = a*(this.y - this.container.y);
     var vr_target = a*(this.r - this.container.rotation);
     var vs_target = a*(this.s - this.container.scale.x);
 
     // Adjust the velocity as per the acceleration
-    var b = (delta*16.7)/game.settings.t_acceleration; // inverse number of frames to get to max velocity
+    var b = (delta*16.7)/VGT.game.settings.t_acceleration; // inverse number of frames to get to max velocity
     var Ax = b*(vx_target - this.vx);
     var Ay = b*(vy_target - this.vy);
     var Ar = b*(vr_target - this.vr);
@@ -1676,9 +1812,9 @@ class Thing {
   /** Other animations, like sprite image changes etc, to be overloaded. */
   animate_other(delta) { if(!delta) delta = 1;}
 
-} // End of Thing
+} // End of _Thing
 
-class Things {
+class _Things {
 
   constructor() {
 
@@ -1689,7 +1825,7 @@ class Things {
   }
 
   /** Releases all things with the supplied client id. */
-  release_all(id_client, force, do_not_send) { log('Things.release_all()', id_client, this.held[id_client]);
+  release_all(id_client, force, do_not_send) { log('_Things.release_all()', id_client, this.held[id_client]);
     
     // If we have a held list for this client id
     if(this.held[id_client]) {
@@ -1702,7 +1838,7 @@ class Things {
     }
   }
 
-  /** Adds a Thing to the list, and queues it for addition to the table. */
+  /** Adds a _Thing to the list, and queues it for addition to the table. */
   add_thing(thing) {
 
     // Assign the thing id, and add it to the global lookup table
@@ -1714,33 +1850,33 @@ class Things {
    * Sets up the drag for all selected things for this team
    * @param {int} team 
    */
-  hold_selected(id_client, force, do_not_send) { log('things.hold_selected()', id_client, force);
+  hold_selected(id_client, force, do_not_send) { log('VGT.things.hold_selected()', id_client, force);
 
     // Loop over the selected things and hold whatever isn't already held by someone else.
-    for(var k in this.selected[clients.all[id_client].team]) 
-      this.selected[clients.all[id_client].team][k].hold(id_client, force, do_not_send);
+    for(var k in this.selected[VGT.clients.all[id_client].team]) 
+      this.selected[VGT.clients.all[id_client].team][k].hold(id_client, force, do_not_send);
   }
 
   /**
    * unselect all things for this team.
    */
-  unselect_all(team) { log('things.unselect_all()', team);
+  unselect_all(team) { log('VGT.things.unselect_all()', team);
 
     // Loop over all the selected things and pop them.
     for(var k in this.selected[team]) this.selected[team][k].unselect(); 
   }
 
-} // End of Things
-things = new Things();
-
+} // End of _Things
+VGT.things = new _Things();
+VGT.Thing = _Thing;
 
 /** Selectable, manipulatable thing */
-class Piece extends Thing {
+class _Piece extends _Thing {
 
   constructor(settings) { if(!settings) settings = {};
 
     // Include the sets and run the usual initialization
-    settings.sets = [pieces];
+    settings.sets = [VGT.pieces];
     super(settings);
 
     // Remember what type of object this is.
@@ -1753,13 +1889,13 @@ class Piece extends Thing {
   in_q_out(key) {
     
     // If the piece exists in the out q
-    if(net.q_pieces_out[this.id_piece]) {
+    if(VGT.net.q_pieces_out[this.id_piece]) {
 
       // If key is undefined, return true
       if(key == undefined) return true;
 
       // Otherwise, if the value is undefined it's not in the q
-      else if(net.q_pieces_out[this.id_piece][key] == undefined) return false
+      else if(VGT.net.q_pieces_out[this.id_piece][key] == undefined) return false
 
       // Gues the key is in the q, huh. Huh.
       else return true;
@@ -1770,7 +1906,7 @@ class Piece extends Thing {
   }
 }
 // List of pieces for convenience
-class Pieces { constructor() {this.all = [];}
+class _Pieces { constructor() {this.all = [];}
 
   // Adds a thing to the list, and queues it for addition to the table. 
   add_thing(piece) {
@@ -1778,10 +1914,11 @@ class Pieces { constructor() {this.all = [];}
     this.all.push(piece);
   }
 }
-pieces = new Pieces();
+VGT.pieces = new _Pieces();
+VGT.Piece  = _Piece;
 
 /** Floating hand on top of everything. */
-class Hand extends Thing {
+class _Hand extends _Thing {
 
   constructor() {
 
@@ -1789,10 +1926,10 @@ class Hand extends Thing {
     var settings = {
       texture_paths : [['hand.png', 'fist.png']], // paths relative to the root
       texture_root     : 'hands',                   // Image root path.
-      layer         : tabletop.LAYER_HANDS,       // Hands layer.
+      layer         : VGT.tabletop.LAYER_HANDS,       // Hands layer.
       t_pause       : 1200,                       // How long to wait since last move before faiding out.
       t_fade        : 500,                        // Time to fade out.
-      sets          : [hands],                    // Other sets it belongs to
+      sets          : [VGT.hands],                    // Other sets it belongs to
     }
 
     // Run the usual thing initialization
@@ -1804,7 +1941,7 @@ class Hand extends Thing {
     // id of client this hand belongs to
     this.id_client = 0;
 
-    log('new Hand()', this.vx, this.x); pixi.N_loop = 0;
+    log('new _Hand()', this.vx, this.x); VGT.pixi.N_loop = 0;
   }
 
   /** Closes / opens the hand */
@@ -1825,10 +1962,10 @@ class Hand extends Thing {
     if(this.is_open()) this.container.alpha = fader_smooth(t0+this.settings.t_pause, this.settings.t_fade);
     else               this.container.alpha = 1;
   }
-} // End of Hand
+} // End of _Hand
 
 // List of hands for convenience
-class Hands { constructor() {this.all = [];}
+class _Hands { constructor() {this.all = [];}
 
   // Adds a thing to the list, and queues it for addition to the table. 
   add_thing(hand) {
@@ -1846,7 +1983,7 @@ class Hands { constructor() {this.all = [];}
     } // End of loop over hands
     
     // If we haven't returned yet, we need a new one
-    return new Hand();
+    return new _Hand();
   }
 
   /** Frees all hands from ownership */
@@ -1855,10 +1992,10 @@ class Hands { constructor() {this.all = [];}
   /** Just shows them all briefly */
   ping() {for(var l in this.all) this.all[l].ping();}
 }
-hands = new Hands();
+VGT.hands = new _Hands();
 
 /** Keeps track of the client objects and information not sent over the net. */
-class Clients {
+class _Clients {
 
   constructor() {
 
@@ -1866,33 +2003,33 @@ class Clients {
     this.all = {};
   }
 
-  /** Rebuilds the client list and GUI based on net.clients. */
+  /** Rebuilds the client list and GUI based on VGT.net.clients. */
   rebuild() {
-    log('clients.rebuild()');
+    log('VGT.clients.rebuild()');
 
     // Clear out the list
     this.all = {};
 
     // Unassign all hands (sets id_client to 0)
-    hands.free_all_hands();
+    VGT.hands.free_all_hands();
 
     // Loop over the client list
-    for (var k in net.clients) {var c = net.clients[k];
-      log('  client', c.id, c.name, c.team, game.settings.teams[c.team]);
+    for (var k in VGT.net.clients) {var c = VGT.net.clients[k];
+      log('  client', c.id, c.name, c.team, VGT.game.settings.teams[c.team]);
     
       // Store everything for this client.
       this.all[c.id] = {
         name  : c.name,
         team  : c.team, // index
-        color : game.get_team_color(c.team),
-        hand  : hands.get_unused_hand(),
+        color : VGT.game.get_team_color(c.team),
+        hand  : VGT.hands.get_unused_hand(),
       }
 
       // Set the hand id_client
       this.all[c.id].hand.id_client = c.id;
       
       // Show all hands but my own
-      if(c.id == net.id) this.all[c.id].hand.hide();
+      if(c.id == VGT.net.id) this.all[c.id].hand.hide();
       else               this.all[c.id].hand.show();
 
       // Update the hand color
@@ -1901,16 +2038,16 @@ class Clients {
     } // End of loop over client list
 
     // Keep track of me
-    this.me = this.all[net.id];
+    this.me = this.all[VGT.net.id];
 
-    // Finally, using the current net.clients, rebuild the html table.
-    html.rebuild_client_table();
+    // Finally, using the current VGT.net.clients, rebuild the html table.
+    VGT.html.rebuild_client_table();
   }
 }
-clients = new Clients();
+VGT.clients = new _Clients();
 
 /** Class that holds all the game info: things, teams, rules, etc. */
-class Game {
+class _Game {
 
   // Default minimal settings that can be overridden.
   default_settings = {
@@ -1936,7 +2073,7 @@ class Game {
     t_housekeeping : 250,
     t_hold_block   : 550,
     t_transition   : 300, // Time to transition coordinates at full speed
-    t_acceleration : 200, // Time to get to full speed
+    t_acceleration : 200, // Time to get to full speed    
   }
 
   constructor(settings) {
@@ -1945,17 +2082,18 @@ class Game {
     this.settings = {...this.default_settings, ...settings};
 
     // Create the big objects that depend on game stuff.
-    pixi        = new Pixi();
-    tabletop    = new Tabletop();
-    interaction = new Interaction();
-    sounds      = new Sounds(sound_list)
+    VGT.pixi        = new _Pixi();
+    VGT.tabletop    = new _Tabletop();
+    VGT.interaction = new _Interaction();
+    VGT.sounds      = new _Sounds(sound_list);
+    VGT.game        = this;
 
     // Add elements to the setups combo box
     for (var k in this.settings.setups) {
         var o = document.createElement("option");
         o.value = this.settings.setups[k];
         o.text  = this.settings.setups[k];
-        html.setups.appendChild(o);
+        VGT.html.setups.appendChild(o);
     }
 
     // Start the quarter-second housekeeping
@@ -1976,15 +2114,15 @@ class Game {
 
     // If Pixi has finally finished loading, we still haven't connected, 
     // and everything is loaded, connect to server
-    if(pixi.ready && !net.ready && pixi.queue.length==0) net.connect_to_server();
+    if(VGT.pixi.ready && !VGT.net.ready && VGT.pixi.queue.length==0) VGT.net.connect_to_server();
 
     // Process net queues.
-    net.process_queues();
+    VGT.net.process_queues();
 
   } // End of housekeeping.
 
 } // End of Game
-
+VGT.Game = _Game;
 
 
 
@@ -2020,4 +2158,4 @@ class Game {
 ////////////////////////////////
 
 // Local cookies not sync'd with server
-if(get_cookie_value('setup') != '') html.setup.value = get_cookie_value('setup');
+if(get_cookie_value('setup') != '') VGT.html.setup.value = get_cookie_value('setup');
