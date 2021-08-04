@@ -657,9 +657,9 @@ class _Tabletop {
   xy_stage_to_tabletop(x,y) {
     
     // Undo the shift of the table top center
-    var x1 = x + this.container.pivot.x;
-    var y1 = y + this.container.pivot.y;
-
+    var x1 = x - this.container.x + (this.container.pivot.x*Math.cos(this.container.rotation) - this.container.pivot.y*Math.sin(this.container.rotation))*this.container.scale.x;
+    var y1 = y - this.container.y + (this.container.pivot.x*Math.sin(this.container.rotation) + this.container.pivot.y*Math.cos(this.container.rotation))*this.container.scale.x;
+    
     // Undo the rotation and scale of the tabletop
     return rotate_vector(
       [x1/this.container.scale.x,
@@ -706,8 +706,8 @@ class _Tabletop {
     this.vs += As;
 
     // Set the actual position, rotation, and scale
-    this.container.pivot.x        -= this.vx;
-    this.container.pivot.y        -= this.vy;
+    this.container.pivot.x  -= this.vx;
+    this.container.pivot.y  -= this.vy;
     this.container.rotation += this.vr;
     this.container.scale.x  += this.vs;
     this.container.scale.y  += this.vs;
@@ -811,7 +811,7 @@ class _Interaction {
     this.button = -1;
 
     // Shortcuts
-    var actions = {
+    this.actions = {
       pan_left  : VGT.tabletop.pan_left.bind(VGT.tabletop),
       pan_right : VGT.tabletop.pan_right.bind(VGT.tabletop),
       pan_up    : VGT.tabletop.pan_up.bind(VGT.tabletop),
@@ -828,41 +828,41 @@ class _Interaction {
     this.key_functions = {
 
       // Pan view
-      KeyADown:       actions.pan_left,
-      ArrowLeftDown:  actions.pan_left,
-      Numpad4Down:    actions.pan_left,
+      KeyADown:       this.actions.pan_left,
+      ArrowLeftDown:  this.actions.pan_left,
+      Numpad4Down:    this.actions.pan_left,
       
-      KeyDDown:       actions.pan_right,
-      ArrowRightDown: actions.pan_right,
-      Numpad6Down:    actions.pan_right,
+      KeyDDown:       this.actions.pan_right,
+      ArrowRightDown: this.actions.pan_right,
+      Numpad6Down:    this.actions.pan_right,
       
-      KeyWDown:       actions.pan_up,
-      ArrowUpDown:    actions.pan_up,
-      Numpad8Down:    actions.pan_up,
+      KeyWDown:       this.actions.pan_up,
+      ArrowUpDown:    this.actions.pan_up,
+      Numpad8Down:    this.actions.pan_up,
 
-      KeySDown:       actions.pan_down,
-      ArrowDownDown:  actions.pan_down,
-      Numpad5Down:    actions.pan_down,
-      Numpad2Down:    actions.pan_down,
+      KeySDown:       this.actions.pan_down,
+      ArrowDownDown:  this.actions.pan_down,
+      Numpad5Down:    this.actions.pan_down,
+      Numpad2Down:    this.actions.pan_down,
 
       // Rotate view
-      ShiftKeyADown:      actions.rotate_left,
-      KeyQDown:           actions.rotate_left,
-      ShiftArrowLeftDown: actions.rotate_left,
-      ShiftNumpad4Down:   actions.rotate_left,
-      Numpad7Down:        actions.rotate_left,
+      ShiftKeyADown:      this.actions.rotate_left,
+      KeyQDown:           this.actions.rotate_left,
+      ShiftArrowLeftDown: this.actions.rotate_left,
+      ShiftNumpad4Down:   this.actions.rotate_left,
+      Numpad7Down:        this.actions.rotate_left,
 
-      ShiftKeyDDown:      actions.rotate_right,
-      KeyEDown:           actions.rotate_right,
-      ShiftArrowRightDown:actions.rotate_right,
-      ShiftNumpad6Down:   actions.rotate_right,
-      Numpad9Down:        actions.rotate_right,
+      ShiftKeyDDown:      this.actions.rotate_right,
+      KeyEDown:           this.actions.rotate_right,
+      ShiftArrowRightDown:this.actions.rotate_right,
+      ShiftNumpad6Down:   this.actions.rotate_right,
+      Numpad9Down:        this.actions.rotate_right,
 
       // Zoom
-      EqualDown:          actions.zoom_in,
-      NumpadAddDown:      actions.zoom_in,
-      MinusDown:          actions.zoom_out,
-      NumpadSubtractDown: actions.zoom_out,
+      EqualDown:          this.actions.zoom_in,
+      NumpadAddDown:      this.actions.zoom_in,
+      MinusDown:          this.actions.zoom_out,
+      NumpadSubtractDown: this.actions.zoom_out,
 
       // Cycle images
       SpaceDown: this.increment_selected_textures,
@@ -889,7 +889,7 @@ class _Interaction {
     VGT.pixi.app.view.onpointermove = this.onpointermove.bind(this);
     VGT.pixi.app.view.onpointerup   = this.onpointerup  .bind(this);
     VGT.pixi.app.view.onpointerout  = this.onpointerup  .bind(this);
-    VGT.pixi.app.view.onwheel      = this.onwheel     .bind(this);
+    VGT.pixi.app.view.onwheel       = this.onwheel      .bind(this);
   }
 
   increment_selected_textures(e) {
@@ -957,7 +957,7 @@ class _Interaction {
     this.tabletop_yd = -VGT.tabletop.container.pivot.y;
 
     // Find the top thing under the pointer
-    log('onpointerdown()', v, e.button, this.tabletop_xd, this.tabletop_yd);
+    log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd);
 
     // Find a thing under the pointer if there is one.
     var thing = this.find_thing_at(v[0],v[1]);
@@ -1015,19 +1015,29 @@ class _Interaction {
         for(var k in VGT.things.held[VGT.net.id]) {
           thing = VGT.things.held[VGT.net.id][k];
           
+          var dx0 = this.xm_tabletop - this.xd_tabletop;
+          var dy0 = this.ym_tabletop - this.yd_tabletop;
+          var dx = -dx0*Math.cos(VGT.tabletop.r) + dy0*Math.sin(VGT.tabletop.r);
+          var dy =  dx0*Math.cos(VGT.tabletop.r) + dy0*Math.sin(VGT.tabletop.r);
+
           // Do the actual move, immediately
           thing.set_xyrs(
-            thing.xh + this.xm_tabletop - this.xd_tabletop,
-            thing.yh + this.ym_tabletop - this.yd_tabletop,
+            thing.xh + dx0,
+            thing.yh + dy0,
             undefined, undefined, true);
         }
       } 
       
       // Otherwise pan the board.
       else {
+        var dx0 = (this.xm_client - this.xd_client)/VGT.tabletop.s;
+        var dy0 = (this.ym_client - this.yd_client)/VGT.tabletop.s;
+        var dx =  dx0*Math.cos(VGT.tabletop.r) + dy0*Math.sin(VGT.tabletop.r);
+        var dy = -dx0*Math.sin(VGT.tabletop.r) + dy0*Math.cos(VGT.tabletop.r);
+        
         VGT.tabletop.set_xyrs(
-          this.tabletop_xd + this.xm_client - this.xd_client,
-          this.tabletop_yd + this.ym_client - this.yd_client, 
+          this.tabletop_xd + dx,
+          this.tabletop_yd + dy, 
           undefined, undefined, true); // immediate
       }
     }
@@ -1070,7 +1080,21 @@ class _Interaction {
     if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.open();
   }
   
-  onwheel(e) {log('_Interaction.onwheel()', e);}
+  onwheel(e) {log('_Interaction.onwheel()', e);
+
+    // If shift is down, rotate
+    if(e.shiftKey) {
+      if(e.deltaY > 0) this.actions.rotate_left();
+      else             this.actions.rotate_right();
+    }
+     
+    // Otherwise, zoom
+    else {
+      if(e.deltaY > 0) this.actions.zoom_out();
+      else             this.actions.zoom_in();
+    }
+
+  }
 
   // Whenever a key is pressed or released.
   onkey(e) {
