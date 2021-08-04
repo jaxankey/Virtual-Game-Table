@@ -952,6 +952,10 @@ class _Interaction {
     this.xd_tabletop = v[0];
     this.yd_tabletop = v[1];
 
+    // TEST: Move the pivot to the pointer and compensate with the position.
+    //VGT.tabletop.container.x = v[0];
+    //VGT.tabletop.set_xyrs(VGT.tabletop.x-v[0],undefined,undefined,undefined,true);
+
     // Location of the tabletop at down.
     this.tabletop_xd = -VGT.tabletop.container.pivot.x;
     this.tabletop_yd = -VGT.tabletop.container.pivot.y;
@@ -1004,6 +1008,11 @@ class _Interaction {
     this.xm_tabletop = v[0];
     this.ym_tabletop = v[1];
 
+    // Move my hand
+    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) {
+      VGT.clients.me.hand.set_xyrs(this.xm_tabletop, this.ym_tabletop, undefined, undefined, true);
+    }
+
     // Only do stuff if the mouse is down
     if(this.button >= 0) {
       
@@ -1040,11 +1049,6 @@ class _Interaction {
           this.tabletop_yd + dy, 
           undefined, undefined, true); // immediate
       }
-    }
-
-    // Move the hand
-    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) {
-      VGT.clients.me.hand.set_xyrs(this.xm_tabletop, this.ym_tabletop)
     }
 
   } // End of onpointermove
@@ -2086,8 +2090,8 @@ class _Clients {
       this.all[c.id].hand.id_client = c.id;
       
       // Show all hands but my own
-      if(c.id == VGT.net.id) this.all[c.id].hand.hide();
-      else               this.all[c.id].hand.show();
+      if(c.id == VGT.net.id) this.all[c.id].hand.show();
+      else                   this.all[c.id].hand.show();
 
       // Update the hand color
       this.all[c.id].hand.set_tint(this.all[c.id].color);
