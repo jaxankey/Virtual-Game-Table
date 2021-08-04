@@ -634,12 +634,15 @@ class _Tabletop {
     VGT.pixi.stage.addChild(this.container);
     
     // Targets equal actual, with zero velocity
-    this.x = this.y = 0;
-    this.container.x = window.innerWidth*0.5;
-    this.container.y = window.innerHeight*0.5;
+    this.x = 0; // target x
+    this.y = 0; // target y
     this.r = this.container.rotation = 0;
     this.s = this.container.scale.y = this.container.scale.x = 1;
     this.vx = this.vy = this.vr = this.vs = 0;
+
+    // center the container within the window
+    this.container.x = 0.5*window.innerWidth;  
+    this.container.y = 0.5*window.innerHeight;
 
     this.LAYER_HANDS = -1; // Constant for denoting the hands layer. Normal layers are positive integers.
     this.layers      = []; // List of containers for each layer
