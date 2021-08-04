@@ -413,8 +413,8 @@ class _Net {
     log('connect_to_server()', this);
   
     // Get name to send to server with hallo.
-    var name = get_cookie_value('name');
-    var team = parseInt(get_cookie_value('team'));
+    var name = load_cookie('name'); 
+    var team = parseInt(load_cookie('team'));
     if(isNaN(team)) team = 0;
 
     // Ask for the game state.
@@ -634,8 +634,9 @@ class _Tabletop {
     VGT.pixi.stage.addChild(this.container);
     
     // Targets equal actual, with zero velocity
-    this.x = this.container.x = window.innerWidth*0.5;
-    this.y = this.container.y = window.innerHeight*0.5;
+    this.x = this.y = 0;
+    this.container.x = window.innerWidth*0.5;
+    this.container.y = window.innerHeight*0.5;
     this.r = this.container.rotation = 0;
     this.s = this.container.scale.y = this.container.scale.x = 1;
     this.vx = this.vy = this.vr = this.vs = 0;
@@ -653,8 +654,8 @@ class _Tabletop {
   xy_stage_to_tabletop(x,y) {
     
     // Undo the shift of the table top center
-    var x1 = x - this.container.x;
-    var y1 = y - this.container.y;
+    var x1 = x + this.container.pivot.x;
+    var y1 = y + this.container.pivot.y;
 
     // Undo the rotation and scale of the tabletop
     return rotate_vector(
@@ -677,8 +678,8 @@ class _Tabletop {
     // the target velocity. Target velocity should be proportional to the distance.
     // We want it to arrive in (game.t_transition) / (16.7 ms) frames
     var a = (delta*16.7)/VGT.game.settings.t_transition; // inverse number of frames at max velocity 
-    var vx_target = a*(this.x - this.container.x);
-    var vy_target = a*(this.y - this.container.y);
+    var vx_target = a*(this.x + this.container.pivot.x);
+    var vy_target = a*(this.y + this.container.pivot.y);
     var vr_target = a*(this.r - this.container.rotation);
     var vs_target = a*(this.s - this.container.scale.x);
 
@@ -702,8 +703,8 @@ class _Tabletop {
     this.vs += As;
 
     // Set the actual position, rotation, and scale
-    this.container.x        += this.vx;
-    this.container.y        += this.vy;
+    this.container.pivot.x        -= this.vx;
+    this.container.pivot.y        -= this.vy;
     this.container.rotation += this.vr;
     this.container.scale.x  += this.vs;
     this.container.scale.y  += this.vs;
@@ -721,9 +722,9 @@ class _Tabletop {
   set_xyrs(x,y,r,s,immediate) { 
 
     // Now for each supplied coordinate, update and send
-    if(x!=undefined && x != this.x) {this.x = x; if(immediate) this.container.x = x; }
-    if(y!=undefined && y != this.y) {this.y = y; if(immediate) this.container.y = y; }
-    if(r!=undefined && r != this.r) {this.r = r; if(immediate) this.container.r = r; }
+    if(x!=undefined && x != this.x) {this.x = x; if(immediate) {this.container.pivot.x = -x;} }
+    if(y!=undefined && y != this.y) {this.y = y; if(immediate) {this.container.pivot.y = -y;} }
+    if(r!=undefined && r != this.r) {this.r = r; if(immediate) {this.container.r = r;} }
     if(s!=undefined && s != this.s) {this.s = s; if(immediate) {this.container.scale.x = s; this.container.scale.y = s}; }
     this.t_last_move = Date.now();
   }
@@ -731,28 +732,28 @@ class _Tabletop {
   // Panning the view
   pan_up() { 
     this.set_xyrs(
-      this.container.x, 
-      this.container.y
+      -this.container.pivot.x, 
+      -this.container.pivot.y
         +this.settings.pan_step*window.innerHeight,
       undefined, undefined);
   }
   pan_down() { 
     this.set_xyrs(
-      this.container.x, 
-      this.container.y
+      -this.container.pivot.x, 
+      -this.container.pivot.y
         -this.settings.pan_step*window.innerHeight,
       undefined, undefined);
   }
   pan_left() { 
     this.set_xyrs(
-      this.container.x+this.settings.pan_step*window.innerWidth, 
-      this.container.y,
+      -this.container.pivot.x+this.settings.pan_step*window.innerWidth, 
+      -this.container.pivot.y,
       undefined, undefined);
   }
   pan_right() { 
     this.set_xyrs(
-      this.container.x-this.settings.pan_step*window.innerWidth, 
-      this.container.y,
+      -this.container.pivot.x-this.settings.pan_step*window.innerWidth, 
+      -this.container.pivot.y,
       undefined, undefined);
   }
   rotate_left() {
@@ -925,8 +926,8 @@ class _Interaction {
     this.yd_tabletop = v[1];
 
     // Location of the tabletop at down.
-    this.tabletop_xd = VGT.tabletop.container.x;
-    this.tabletop_yd = VGT.tabletop.container.y;
+    this.tabletop_xd = -VGT.tabletop.container.pivot.x;
+    this.tabletop_yd = -VGT.tabletop.container.pivot.y;
 
     // Find the top thing under the pointer
     log('onpointerdown()', v, e.button, this.tabletop_xd, this.tabletop_yd);
@@ -1029,8 +1030,8 @@ class _Interaction {
     this.yu_tabletop = v[1];
 
     // Location of tabletop center at up.
-    this.tabletop_xu = VGT.tabletop.container.x;
-    this.tabletop_yu = VGT.tabletop.container.y;
+    this.tabletop_xu = -VGT.tabletop.container.pivot.x;
+    this.tabletop_yu = -VGT.tabletop.container.pivot.y;
 
     // Save the information
     this.button = -1;
@@ -1140,6 +1141,11 @@ class _Interaction {
     // Resize the surface
     VGT.pixi.surface.scale.x = window.innerWidth;
     VGT.pixi.surface.scale.y = window.innerHeight;
+
+    // Shift the center to the center of the view
+    console.log('  ', VGT.tabletop.container.x, window.innerWidth*0.5);
+    VGT.tabletop.container.x += -VGT.tabletop.container.x+window.innerWidth*0.5;
+    VGT.tabletop.container.y += -VGT.tabletop.container.y+window.innerHeight*0.5;
     
     log('onresize_window()');
   }
@@ -1257,7 +1263,7 @@ class _Sounds {
     if(percent == 100) {
     
       // Load the sound settings.
-      VGT.html.volume.value = get_cookie_value('volume');
+      VGT.html.volume.value = load_cookie('volume');
       
       // Send em.
       VGT.interaction.onchange_volume();
@@ -2153,9 +2159,3 @@ VGT.Game = _Game;
 
 
 
-////////////////////////////////
-// LOCAL STUFF
-////////////////////////////////
-
-// Local cookies not sync'd with server
-if(get_cookie_value('setup') != '') VGT.html.setup.value = get_cookie_value('setup');
