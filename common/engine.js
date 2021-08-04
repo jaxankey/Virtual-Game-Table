@@ -711,6 +711,12 @@ class _Tabletop {
     this.container.rotation += this.vr;
     this.container.scale.x  += this.vs;
     this.container.scale.y  += this.vs;
+
+    // Update the mouse position
+    if(Math.abs(this.vx) > 1e-2
+    || Math.abs(this.vy) > 1e-2
+    || Math.abs(this.vr) > 1e-2
+    || Math.abs(this.vs) > 1e-2) VGT.interaction.onpointermove(VGT.interaction.last_pointermove_e);
   }
 
   /**
@@ -769,18 +775,17 @@ class _Tabletop {
       -this.container.pivot.y - dy,
       undefined, undefined);
   }
-  rotate_left() {
+
+  rotate(dr) {
     this.set_xyrs(
       undefined, undefined,
-      this.r - this.settings.r_step*Math.PI/180.0,
+      this.r + dr,
       undefined);
+    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.set_xyrs(undefined,undefined,-this.r);
   }
-  rotate_right() {
-    this.set_xyrs(
-      undefined, undefined,
-      this.r + this.settings.r_step*Math.PI/180.0,
-      undefined);
-  }
+  rotate_left()  {this.rotate(-this.settings.r_step*Math.PI/180.0);}
+  rotate_right() {this.rotate( this.settings.r_step*Math.PI/180.0);}
+
   zoom_in() {
     if(this.s*this.settings.s_step > this.settings.s_max) return;
     this.set_xyrs(
@@ -997,7 +1002,7 @@ class _Interaction {
 
   // Pointer has moved around.
   onpointermove(e) { //log('onpointermove()', e.button);
-    this.last_pointermove = e;
+    this.last_pointermove_e = e;
     
     // Get the tabletop coordinates
     var v = VGT.tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
