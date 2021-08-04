@@ -734,29 +734,39 @@ class _Tabletop {
   
   // Panning the view
   pan_up() { 
+    var dr = this.settings.pan_step*window.innerHeight/this.s;
+    var dx = dr*Math.sin(this.r);
+    var dy = dr*Math.cos(this.r);
     this.set_xyrs(
-      -this.container.pivot.x, 
-      -this.container.pivot.y
-        +this.settings.pan_step*window.innerHeight,
+      -this.container.pivot.x + dx, 
+      -this.container.pivot.y + dy,
       undefined, undefined);
   }
   pan_down() { 
+    var dr = this.settings.pan_step*window.innerHeight/this.s;
+    var dx = dr*Math.sin(this.r);
+    var dy = dr*Math.cos(this.r);
     this.set_xyrs(
-      -this.container.pivot.x, 
-      -this.container.pivot.y
-        -this.settings.pan_step*window.innerHeight,
+      -this.container.pivot.x - dx, 
+      -this.container.pivot.y - dy,
       undefined, undefined);
   }
   pan_left() { 
+    var dr = this.settings.pan_step*window.innerHeight/this.s;
+    var dx =  dr*Math.cos(this.r);
+    var dy = -dr*Math.sin(this.r);
     this.set_xyrs(
-      -this.container.pivot.x+this.settings.pan_step*window.innerWidth, 
-      -this.container.pivot.y,
+      -this.container.pivot.x + dx, 
+      -this.container.pivot.y + dy,
       undefined, undefined);
   }
   pan_right() { 
+    var dr = this.settings.pan_step*window.innerHeight/this.s;
+    var dx =  dr*Math.cos(this.r);
+    var dy = -dr*Math.sin(this.r);
     this.set_xyrs(
-      -this.container.pivot.x-this.settings.pan_step*window.innerWidth, 
-      -this.container.pivot.y,
+      -this.container.pivot.x - dx, 
+      -this.container.pivot.y - dy,
       undefined, undefined);
   }
   rotate_left() {
@@ -800,45 +810,59 @@ class _Interaction {
     // Which mouse button is down
     this.button = -1;
 
+    // Shortcuts
+    var actions = {
+      pan_left  : VGT.tabletop.pan_left.bind(VGT.tabletop),
+      pan_right : VGT.tabletop.pan_right.bind(VGT.tabletop),
+      pan_up    : VGT.tabletop.pan_up.bind(VGT.tabletop),
+      pan_down  : VGT.tabletop.pan_down.bind(VGT.tabletop),
+      
+      rotate_left  : VGT.tabletop.rotate_left.bind(VGT.tabletop),
+      rotate_right : VGT.tabletop.rotate_right.bind(VGT.tabletop),
+      
+      zoom_in  : VGT.tabletop.zoom_in.bind(VGT.tabletop),
+      zoom_out : VGT.tabletop.zoom_out.bind(VGT.tabletop),
+    }
+
     // Dictionary of functions for each key
     this.key_functions = {
 
-      // Pan
-      KeyADown:      VGT.tabletop.pan_left.bind(VGT.tabletop),
-      ArrowLeftDown: VGT.tabletop.pan_left.bind(VGT.tabletop),
-      Numpad4Down:   VGT.tabletop.pan_left.bind(VGT.tabletop),
+      // Pan view
+      KeyADown:       actions.pan_left,
+      ArrowLeftDown:  actions.pan_left,
+      Numpad4Down:    actions.pan_left,
       
-      KeyDDown:      VGT.tabletop.pan_right.bind(VGT.tabletop),
-      ArrowRightDown:VGT.tabletop.pan_right.bind(VGT.tabletop),
-      Numpad6Down:   VGT.tabletop.pan_right.bind(VGT.tabletop),
+      KeyDDown:       actions.pan_right,
+      ArrowRightDown: actions.pan_right,
+      Numpad6Down:    actions.pan_right,
       
-      KeyWDown:      VGT.tabletop.pan_up.bind(VGT.tabletop),
-      ArrowUpDown:   VGT.tabletop.pan_up.bind(VGT.tabletop),
-      Numpad8Down:   VGT.tabletop.pan_up.bind(VGT.tabletop),
+      KeyWDown:       actions.pan_up,
+      ArrowUpDown:    actions.pan_up,
+      Numpad8Down:    actions.pan_up,
 
-      KeySDown:      VGT.tabletop.pan_down.bind(VGT.tabletop),
-      ArrowDownDown: VGT.tabletop.pan_down.bind(VGT.tabletop),
-      Numpad5Down:   VGT.tabletop.pan_down.bind(VGT.tabletop),
-      Numpad2Down:   VGT.tabletop.pan_down.bind(VGT.tabletop),
+      KeySDown:       actions.pan_down,
+      ArrowDownDown:  actions.pan_down,
+      Numpad5Down:    actions.pan_down,
+      Numpad2Down:    actions.pan_down,
 
       // Rotate view
-      ShiftKeyADown:      VGT.tabletop.rotate_left.bind(VGT.tabletop),
-      KeyQDown:           VGT.tabletop.rotate_left.bind(VGT.tabletop),
-      ShiftArrowLeftDown: VGT.tabletop.rotate_left.bind(VGT.tabletop),
-      ShiftNumpad4Down:   VGT.tabletop.rotate_left.bind(VGT.tabletop),
-      Numpad7Down:        VGT.tabletop.rotate_left.bind(VGT.tabletop),
+      ShiftKeyADown:      actions.rotate_left,
+      KeyQDown:           actions.rotate_left,
+      ShiftArrowLeftDown: actions.rotate_left,
+      ShiftNumpad4Down:   actions.rotate_left,
+      Numpad7Down:        actions.rotate_left,
 
-      ShiftKeyDDown:      VGT.tabletop.rotate_right.bind(VGT.tabletop),
-      KeyEDown:           VGT.tabletop.rotate_right.bind(VGT.tabletop),
-      ShiftArrowRightDown:VGT.tabletop.rotate_right.bind(VGT.tabletop),
-      ShiftNumpad6Down:   VGT.tabletop.rotate_right.bind(VGT.tabletop),
-      Numpad9Down:        VGT.tabletop.rotate_right.bind(VGT.tabletop),
+      ShiftKeyDDown:      actions.rotate_right,
+      KeyEDown:           actions.rotate_right,
+      ShiftArrowRightDown:actions.rotate_right,
+      ShiftNumpad6Down:   actions.rotate_right,
+      Numpad9Down:        actions.rotate_right,
 
       // Zoom
-      EqualDown:          VGT.tabletop.zoom_in.bind(VGT.tabletop),
-      NumpadAddDown:      VGT.tabletop.zoom_in.bind(VGT.tabletop),
-      MinusDown:          VGT.tabletop.zoom_out.bind(VGT.tabletop),
-      NumpadSubtractDown: VGT.tabletop.zoom_out.bind(VGT.tabletop),
+      EqualDown:          actions.zoom_in,
+      NumpadAddDown:      actions.zoom_in,
+      MinusDown:          actions.zoom_out,
+      NumpadSubtractDown: actions.zoom_out,
 
       // Cycle images
       SpaceDown: this.increment_selected_textures,
