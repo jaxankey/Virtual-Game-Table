@@ -617,7 +617,8 @@ class _Animated {
 
   default_settings = {
     t_transition   : 300, // Time to transition coordinates at full speed
-    t_acceleration : 200, // Time to get to full speed   
+    t_acceleration : 100, // Time to get to full speed   
+    damping        : 0.01, // Velocity damping coefficient
   }
 
   constructor(value, settings) {
@@ -657,7 +658,7 @@ class _Animated {
     if(Math.sign(acceleration) != Math.sign(this.velocity)) acceleration = acceleration*2;
 
     // Increment the velocity
-    this.velocity += acceleration;
+    this.velocity += acceleration-this.velocity*this.settings.damping;
     this.value    += this.velocity;
   }
 }
@@ -812,18 +813,16 @@ class _Tabletop {
   rotate_left()  {this.rotate(-this.settings.r_step*Math.PI/180.0);}
   rotate_right() {this.rotate( this.settings.r_step*Math.PI/180.0);}
 
-  zoom_in() {
-    if(this.s.target*this.settings.s_step > this.settings.s_max) return;
+  zoom(factor) {
+    if(this.s.target*factor > this.settings.s_max
+    || this.s.target*factor < this.settings.s_min) return;
     this.set_xyrs(
       undefined, undefined, undefined,
-      this.s.target * this.settings.s_step);
+      this.s.target * factor);
   }
-  zoom_out() {
-    if(this.s.value*this.settings.s_step < this.settings.s_min) return;
-    this.set_xyrs(
-      undefined, undefined, undefined,
-      this.s.value / this.settings.s_step);
-  }
+
+  zoom_in()  {this.zoom(this.settings.s_step);}
+  zoom_out() {this.zoom(1.0/this.settings.s_step);}
 } // End of _Tabletop
 
 
