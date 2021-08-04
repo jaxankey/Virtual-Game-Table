@@ -612,6 +612,56 @@ class _Pixi {
 
 
 
+// A quantity that is animated
+class _Animated {
+
+  default_settings = {
+    t_transition   : 300, // Time to transition coordinates at full speed
+    t_acceleration : 200, // Time to get to full speed   
+  }
+
+  constructor(settings) {
+
+    // Store the settings
+    this.settings = {...this.default_settings, ...settings};
+
+    // Target value, current value, velocity, and acceleration
+    this.target   = 0;
+    this.value    = 0;
+    this.velocity = 0;
+  }
+
+  // Set the target value
+  set(target, immediate) {
+    this.target = target;
+    if(immediate) {
+      this.value = target;
+      this.velocity = 0;
+    }
+  }
+
+  // Run the transition dynamics for a single frame of duration delta/(60 Hz)
+  animate(delta) {
+    
+    // Use the current location and target location to determine
+    // the target velocity. Target velocity should be proportional to the distance.
+    // We want it to arrive in (game.t_transition) / (16.7 ms) frames
+    var a = (delta*16.7)/this.settings.t_transition; // inverse number of transition frames at max velocity 
+    var velocity_target = a*(this.target - this.value);
+    
+    // Adjust the velocity as per the acceleration
+    var b = (delta*16.7)/this.settings.t_acceleration; // inverse number of frames to get to max velocity
+    var acceleration = b*(velocity_target - this.velocity);
+    
+    // If we're slowing down, do it FASTER to avoid overshoot
+    if(Math.sign(acceleration) != Math.sign(this.velocity)) acceleration = acceleration*2;
+
+    // Increment the velocity
+    this.velocity += acceleration;
+    this.value    += this.velocity;
+  }
+}
+
 
 
 
