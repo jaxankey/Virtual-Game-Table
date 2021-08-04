@@ -620,14 +620,14 @@ class _Animated {
     t_acceleration : 200, // Time to get to full speed   
   }
 
-  constructor(settings) {
+  constructor(value, settings) {
 
     // Store the settings
     this.settings = {...this.default_settings, ...settings};
 
     // Target value, current value, velocity, and acceleration
-    this.target   = 0;
-    this.value    = 0;
+    this.target   = value;
+    this.value    = value;
     this.velocity = 0;
   }
 
@@ -684,10 +684,12 @@ class _Tabletop {
     VGT.pixi.stage.addChild(this.container);
     
     // Targets equal actual, with zero velocity
-    this.x = 0; // target x
-    this.y = 0; // target y
-    this.r = this.container.rotation = 0;
-    this.s = this.container.scale.y = this.container.scale.x = 1;
+    this.x = new _Animated(0);
+    this.y = new _Animated(0);
+    this.r = new _Animated(0);
+    this.s = new _Animated(1);
+    this.container.rotation = this.r.value;
+    this.container.scale.y  = this.container.scale.x = this.s.value;
     this.vx = this.vy = this.vr = this.vs = 0;
 
     // center the container within the window
@@ -723,56 +725,30 @@ class _Tabletop {
    */
    animate_xyrs(delta) { if(!delta) delta = 1;
     
-    // Don't do anything until it's been initialized / added to pixi.
-    // JACK: I think this is not necessary for the tabletop, because
-    // It's just a container. if(!this.ready) {return;}
-
-    // Use the current location and target location to determine
-    // the target velocity. Target velocity should be proportional to the distance.
-    // We want it to arrive in (game.t_transition) / (16.7 ms) frames
-    var a = (delta*16.7)/VGT.game.settings.t_transition; // inverse number of frames at max velocity 
-    var vx_target = a*(this.x + this.container.pivot.x);
-    var vy_target = a*(this.y + this.container.pivot.y);
-    var vr_target = a*(this.r - this.container.rotation);
-    var vs_target = a*(this.s - this.container.scale.x);
-
-    // Adjust the velocity as per the acceleration
-    var b = (delta*16.7)/VGT.game.settings.t_acceleration; // inverse number of frames to get to max velocity
-    var Ax = b*(vx_target - this.vx);
-    var Ay = b*(vy_target - this.vy);
-    var Ar = b*(vr_target - this.vr);
-    var As = b*(vs_target - this.vs);
-    
-    // If we're slowing down, do it MORE to avoid overshoot
-    if(Math.sign(Ax)!=Math.sign(this.vx)) Ax = Ax*2;
-    if(Math.sign(Ay)!=Math.sign(this.vy)) Ay = Ay*2;
-    if(Math.sign(Ar)!=Math.sign(this.vr)) Ar = Ar*2;
-    if(Math.sign(As)!=Math.sign(this.vs)) As = As*2;
-
-    // Accelerate
-    this.vx += Ax;
-    this.vy += Ay;
-    this.vr += Ar;
-    this.vs += As;
+    // Update the internal quantities
+    this.x.animate(delta);
+    this.y.animate(delta);
+    this.r.animate(delta);
+    this.s.animate(delta);
 
     // Set the actual position, rotation, and scale
-    this.container.pivot.x  -= this.vx;
-    this.container.pivot.y  -= this.vy;
-    this.container.rotation += this.vr;
-    this.container.scale.x  += this.vs;
-    this.container.scale.y  += this.vs;
+    this.container.pivot.x  = -this.x.value;
+    this.container.pivot.y  = -this.y.value;
+    this.container.rotation =  this.r.value;
+    this.container.scale.x  =  this.s.value;
+    this.container.scale.y  =  this.s.value;
 
     // Update the mouse position
-    if(Math.abs(this.vx) > 1e-2
-    || Math.abs(this.vy) > 1e-2
-    || Math.abs(this.vr) > 1e-2
-    || Math.abs(this.vs) > 1e-2) VGT.interaction.onpointermove(VGT.interaction.last_pointermove_e);
+    if(Math.abs(this.x.value-this.x.target) > 0.1/this.s.value
+    || Math.abs(this.y.value-this.y.target) > 0.1/this.s.value
+    || Math.abs(this.r.value-this.r.target) > 0.001/this.s.value
+    || Math.abs(this.s.value-this.s.target) > 0.001/this.s.value) VGT.interaction.onpointermove(VGT.interaction.last_pointermove_e);
   }
 
   /**
    * Returns an object with x, y, r, and s.
    */
-  get_xyrs() {return {x:this.x, y:this.y, r:this.r, s:this.s}}
+  get_xyrs() {return {x:this.x.value, y:this.y.value, r:this.r.value, s:this.s.value}}
 
   /** 
   * Sets the target x,y,r,s for the sprite.
@@ -781,45 +757,45 @@ class _Tabletop {
   set_xyrs(x,y,r,s,immediate) { 
 
     // Now for each supplied coordinate, update and send
-    if(x!=undefined && x != this.x) {this.x = x; if(immediate) {this.container.pivot.x = -x;} }
-    if(y!=undefined && y != this.y) {this.y = y; if(immediate) {this.container.pivot.y = -y;} }
-    if(r!=undefined && r != this.r) {this.r = r; if(immediate) {this.container.r = r;} }
-    if(s!=undefined && s != this.s) {this.s = s; if(immediate) {this.container.scale.x = s; this.container.scale.y = s}; }
+    if(x!=undefined && x != this.x.target) {this.x.set(x, immediate);}// if(immediate) {this.container.pivot.x = -x;} }
+    if(y!=undefined && y != this.y.target) {this.y.set(y, immediate);}// if(immediate) {this.container.pivot.y = -y;} }
+    if(r!=undefined && r != this.r.target) {this.r.set(r, immediate);}// if(immediate) {this.container.r       =  r;} }
+    if(s!=undefined && s != this.s.target) {this.s.set(s, immediate);}// if(immediate) {this.container.scale.x = s; this.container.scale.y = s}; }
     this.t_last_move = Date.now();
   }
   
   // Panning the view
   pan_up() { 
-    var dr = this.settings.pan_step*window.innerHeight/this.s;
-    var dx = dr*Math.sin(this.r);
-    var dy = dr*Math.cos(this.r);
+    var dr = this.settings.pan_step*window.innerHeight/this.s.value;
+    var dx = dr*Math.sin(this.r.value);
+    var dy = dr*Math.cos(this.r.value);
     this.set_xyrs(
       -this.container.pivot.x + dx, 
       -this.container.pivot.y + dy,
       undefined, undefined);
   }
   pan_down() { 
-    var dr = this.settings.pan_step*window.innerHeight/this.s;
-    var dx = dr*Math.sin(this.r);
-    var dy = dr*Math.cos(this.r);
+    var dr = this.settings.pan_step*window.innerHeight/this.s.value;
+    var dx = dr*Math.sin(this.r.value);
+    var dy = dr*Math.cos(this.r.value);
     this.set_xyrs(
       -this.container.pivot.x - dx, 
       -this.container.pivot.y - dy,
       undefined, undefined);
   }
   pan_left() { 
-    var dr = this.settings.pan_step*window.innerHeight/this.s;
-    var dx =  dr*Math.cos(this.r);
-    var dy = -dr*Math.sin(this.r);
+    var dr = this.settings.pan_step*window.innerHeight/this.s.value;
+    var dx =  dr*Math.cos(this.r.value);
+    var dy = -dr*Math.sin(this.r.value);
     this.set_xyrs(
       -this.container.pivot.x + dx, 
       -this.container.pivot.y + dy,
       undefined, undefined);
   }
   pan_right() { 
-    var dr = this.settings.pan_step*window.innerHeight/this.s;
-    var dx =  dr*Math.cos(this.r);
-    var dy = -dr*Math.sin(this.r);
+    var dr = this.settings.pan_step*window.innerHeight/this.s.value;
+    var dx =  dr*Math.cos(this.r.value);
+    var dy = -dr*Math.sin(this.r.value);
     this.set_xyrs(
       -this.container.pivot.x - dx, 
       -this.container.pivot.y - dy,
@@ -829,24 +805,24 @@ class _Tabletop {
   rotate(dr) {
     this.set_xyrs(
       undefined, undefined,
-      this.r + dr,
+      this.r.target + dr,
       undefined);
-    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.set_xyrs(undefined,undefined,-this.r);
+    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.set_xyrs(undefined,undefined,-this.r.target);
   }
   rotate_left()  {this.rotate(-this.settings.r_step*Math.PI/180.0);}
   rotate_right() {this.rotate( this.settings.r_step*Math.PI/180.0);}
 
   zoom_in() {
-    if(this.s*this.settings.s_step > this.settings.s_max) return;
+    if(this.s.target*this.settings.s_step > this.settings.s_max) return;
     this.set_xyrs(
       undefined, undefined, undefined,
-      this.s * this.settings.s_step);
+      this.s.target * this.settings.s_step);
   }
   zoom_out() {
-    if(this.s*this.settings.s_step < this.settings.s_min) return;
+    if(this.s.value*this.settings.s_step < this.settings.s_min) return;
     this.set_xyrs(
       undefined, undefined, undefined,
-      this.s / this.settings.s_step);
+      this.s.value / this.settings.s_step);
   }
 } // End of _Tabletop
 
@@ -1094,10 +1070,10 @@ class _Interaction {
       
       // Otherwise pan the board.
       else {
-        var dx0 = (this.xm_client - this.xd_client)/VGT.tabletop.s;
-        var dy0 = (this.ym_client - this.yd_client)/VGT.tabletop.s;
-        var dx =  dx0*Math.cos(VGT.tabletop.r) + dy0*Math.sin(VGT.tabletop.r);
-        var dy = -dx0*Math.sin(VGT.tabletop.r) + dy0*Math.cos(VGT.tabletop.r);
+        var dx0 = (this.xm_client - this.xd_client)/VGT.tabletop.s.value;
+        var dy0 = (this.ym_client - this.yd_client)/VGT.tabletop.s.value;
+        var dx =  dx0*Math.cos(VGT.tabletop.r.value) + dy0*Math.sin(VGT.tabletop.r.value);
+        var dy = -dx0*Math.sin(VGT.tabletop.r.value) + dy0*Math.cos(VGT.tabletop.r.value);
         
         VGT.tabletop.set_xyrs(
           this.tabletop_xd + dx,
