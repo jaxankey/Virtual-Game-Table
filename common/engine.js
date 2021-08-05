@@ -983,11 +983,12 @@ class _Interaction {
     // Save the information
     this.button = e.button;
 
-    // Location of the down in the two coordinate systems
+    // Location of the down in the two coordinate systems (and original rotation)
     this.xd_client = e.clientX;
     this.yd_client = e.clientY;
     this.xd_tabletop = v[0];
     this.yd_tabletop = v[1];
+    this.rd_tabletop = VGT.tabletop.r.value;
 
     // TEST: Move the pivot to the pointer and compensate with the position.
     //VGT.tabletop.container.x = v[0];
@@ -1039,11 +1040,12 @@ class _Interaction {
     // Get the tabletop coordinates
     var v = VGT.tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
     
-    // Save the coordinates of the move
+    // Save the coordinates of this move event
     this.xm_client = e.clientX;
     this.ym_client = e.clientY;
     this.xm_tabletop = v[0];
     this.ym_tabletop = v[1];
+    this.rm_tabletop = VGT.tabletop.r.value;
 
     // Move my hand
     if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) {
@@ -1061,16 +1063,38 @@ class _Interaction {
         for(var k in VGT.things.held[VGT.net.id]) {
           thing = VGT.things.held[VGT.net.id][k];
           
-          var dx0 = this.xm_tabletop - this.xd_tabletop;
-          var dy0 = this.ym_tabletop - this.yd_tabletop;
-          var dx = -dx0*Math.cos(VGT.tabletop.r) + dy0*Math.sin(VGT.tabletop.r);
-          var dy =  dx0*Math.cos(VGT.tabletop.r) + dy0*Math.sin(VGT.tabletop.r);
+          // The coordinates we know are 
+          //   * Where the mouse clicked: xd, yd, rd
+          //   * Where the mouse is now:  xm, ym, rm
+          //   * Where each piece was when the mouse clicked (hold): thing.xh, thing.yh, thing.rh
+          //
+          // So we must translate each piece by dx0, dy0 (shift with mouse) and then
+          // rotate their positions around the mouse
 
+          // Center shift since drag start
+          var x0 = this.xm_tabletop - this.xd_tabletop; 
+          var y0 = this.ym_tabletop - this.yd_tabletop;
+          
+          // Rotation since drag start
+          var r0 = -this.rm_tabletop + this.rd_tabletop;
+
+          // Vector relative to the center of rotation
+          var dx0 = thing.xh + x0 - this.xm_tabletop;
+          var dy0 = thing.yh + y0 - this.ym_tabletop;
+          
+          // Rotated vector
+          var dx1 = dx0*Math.cos(r0) - dy0*Math.sin(r0);
+          var dy1 = dx0*Math.sin(r0) + dy0*Math.cos(r0);
+
+          // Rotation vector
+          var dxr = dx1-dx0;
+          var dyr = dy1-dy0;
+          
           // Do the actual move, immediately
           thing.set_xyrs(
-            thing.xh + dx0,
-            thing.yh + dy0,
-            undefined, undefined, true);
+            thing.xh + x0 + dxr,
+            thing.yh + y0 + dyr,
+            thing.rh + r0, undefined, true);
         }
       } 
       
