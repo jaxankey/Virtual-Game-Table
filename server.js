@@ -279,7 +279,7 @@ io.on('connection', function(socket) {
 
   // Team or name change from clients
   function on_clients(clients) {
-    fun.log_date(socket.id, 'NETR_clients');
+    fun.log_date('NETR_clients_'+String(socket.id));
 
     // Update the clients list
     if(clients) state.clients = clients;
@@ -346,7 +346,7 @@ io.on('connection', function(socket) {
 
   // Player says something. data = [player_index, key, interrupt]
   function on_say(data) {
-    fun.log_date('NETR_say', data);
+    fun.log_date('NETR_say_'+String(socket.id), data);
     
     // Relay it to everyone else
     broadcast('say', data);
@@ -354,26 +354,36 @@ io.on('connection', function(socket) {
   socket.on('say', function(data) {delay_function(on_say, data)});
 
   /** Player sends us their queue */
-  function on_q(data) { fun.log_date('NETR_q', socket.id, 'nq =', data[0], 'with', Object.keys(data[1]).length, 'Pieces', Object.keys(data[2]).length, 'Hands');
+  function on_q(data) { fun.log_date('NETR_q_'+String(socket.id), 'nq =', data[0], 'with', Object.keys(data[1]).length, 'Pieces', Object.keys(data[2]).length, 'Hands');
     var nq       = data[0];
     var q_pieces = data[1];
     var q_hands  = data[2];
-    var k;
+    var k, update_server_piece;
 
-    // Loop over the pieces q.
-    for(var id in q_pieces) {
+    // Loop over the incoming pieces q by id.
+    for(var id in q_pieces) { 
 
       // Make sure we have a place to hold the data in the global list
       if(!state.pieces[id]) state.pieces[id] = {};
 
-      // For each piece, loop over attributes and either
-      //  1. transfer to state or 
-      //  2. defer to state, depending on who is holding the piece
+      // First make sure the holder exists in the current socket list
+      if( state.pieces[id]['ih'] 
+      && !(String(state.pieces[id]['ih']) in Object.keys(sockets)) ) {
+        //console.log('  holder socket.id', String(state.pieces[id]['ih']), 'not in', Object.keys(sockets), 'removing');
+        delete state.pieces[id]['ih'];
+        delete state.pieces[id]['ih.i'];
+        delete state.pieces[id]['ih.n'];
+      }
+
+      // If no one is hold it (0 or undefined) OR the holder is this client, set a flag to update the server state for this piece
+      // Otherwise, we update the incoming q_pieces state with that of the server
+      update_server_piece = !state.pieces[id]['ih'] || state.pieces[id]['ih'] == socket.id;
+      
+      // Loop over attributes and transfer or defer to state, depending on who is holding the piece
       for(k in q_pieces[id]) {
         
-        // If no one is holding it (0 or undefined) OR the current holder matches the requested holder
-        // JACK: Problem: every 'ih' = 'socket.id'
-        if(!state.pieces[id]['ih'] || state.pieces[id]['ih'] == socket.id) {
+        // If it is valid to update the server state for this piece
+        if(update_server_piece) {
 
           // Update the state with the value, last setter, and last setter nq.
           state.pieces[id][k]      = q_pieces[id][k];
@@ -381,7 +391,7 @@ io.on('connection', function(socket) {
           state.pieces[id][k+'.n'] = q_pieces[id][k+'.n'] = nq;
         }
         
-        // Otherwise someone is holding who is NOT this client, meaning this is not allowed
+        // Otherwise overwrite the q_pieces entry
         else {
           // Defer to the state's value, last setter, and last setter's nq
           q_pieces[id][k]      = state.pieces[id][k];
@@ -415,6 +425,9 @@ io.on('connection', function(socket) {
     
     // Delete the client data. Socket will delete itself
     if(state.clients) delete state.clients[id];  
+
+    // Delete the socket from the list
+    if(sockets[id]) delete sockets[id];
 
     // tell the world!
     delay_send(io, 'clients', state.clients);
