@@ -368,7 +368,7 @@ io.on('connection', function(socket) {
 
       // First make sure the holder exists in the current socket list
       if( state.pieces[id]['ih'] 
-      && !(String(state.pieces[id]['ih']) in Object.keys(sockets)) ) {
+      && !Object.keys(sockets).includes(String(state.pieces[id]['ih'])) ) {
         //console.log('  holder socket.id', String(state.pieces[id]['ih']), 'not in', Object.keys(sockets), 'removing');
         delete state.pieces[id]['ih'];
         delete state.pieces[id]['ih.i'];

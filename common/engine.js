@@ -655,7 +655,7 @@ class _Animated {
     var acceleration = b*(velocity_target - this.velocity);
     
     // If we're slowing down, do it FASTER to avoid overshoot
-    if(Math.sign(acceleration) != Math.sign(this.velocity)) acceleration = acceleration*2;
+    //if(Math.sign(acceleration) != Math.sign(this.velocity)) acceleration = acceleration*2;
 
     // Increment the velocity
     this.velocity += acceleration-this.velocity*this.settings.damping;
@@ -744,6 +744,9 @@ class _Tabletop {
     || Math.abs(this.y.value-this.y.target) > 0.1/this.s.value
     || Math.abs(this.r.value-this.r.target) > 0.001/this.s.value
     || Math.abs(this.s.value-this.s.target) > 0.001/this.s.value) VGT.interaction.onpointermove(VGT.interaction.last_pointermove_e);
+
+    // Set the hand scale
+    VGT.hands.set_scale(1.0/this.s.value);
   }
 
   /**
@@ -814,8 +817,12 @@ class _Tabletop {
   rotate_right() {this.rotate( this.settings.r_step*Math.PI/180.0);}
 
   zoom(factor) {
+
+    // Keep it within bounds
     if(this.s.target*factor > this.settings.s_max
     || this.s.target*factor < this.settings.s_min) return;
+    
+    // Set the target zoom
     this.set_xyrs(
       undefined, undefined, undefined,
       this.s.target * factor);
@@ -1452,16 +1459,10 @@ class _Thing {
     this.shape = eval('VGT.interaction.'+this.settings.shape);
 
     // Targeted location and geometry. Current locations are in the container.x, container.y, container.rotation, and container.scale.x
-    this.x = this.settings.x;
-    this.y = this.settings.y;
-    this.r = this.settings.r;
-    this.s = this.settings.s;
-
-    // Current velocities
-    this.vx = 0;
-    this.vy = 0;
-    this.vr = 0;
-    this.vs = 0;
+    this.x = new _Animated(this.settings.x);
+    this.y = new _Animated(this.settings.y);
+    this.r = new _Animated(this.settings.r);
+    this.s = new _Animated(this.settings.s);
 
     // Starting hold location
     this.xh = this.x;
@@ -1496,6 +1497,14 @@ class _Thing {
     VGT.pixi.add_thing(this);
 
   } // End of constructor.
+
+  // Resets to the settings
+  reset(immediate, do_not_send) {
+    this.x.set(this.settings.x, immediate); this.x.velocity=0; this.update_q_out('x', 'x', do_not_send);
+    this.y.set(this.settings.y, immediate); this.y.velocity=0; this.update_q_out('y', 'y', do_not_send);
+    this.r.set(this.settings.r, immediate); this.r.velocity=0; this.update_q_out('r', 'r', do_not_send);
+    this.s.set(this.settings.s, immediate); this.s.velocity=0; this.update_q_out('s', 's', do_not_send);
+  }
 
   /** Sets the tint of all the textures */
   set_tint(color) { for(var n in this.sprites) this.sprites[n].tint = color; }
@@ -1576,10 +1585,10 @@ class _Thing {
       this.id_client_hold = id_client;
 
       // Remember the initial coordinates
-      this.xh = this.x;
-      this.yh = this.y;
-      this.rh = this.r;
-      this.sh = this.s;    
+      this.xh = this.x.value;
+      this.yh = this.y.value;
+      this.rh = this.r.value;
+      this.sh = this.s.value;    
 
       // Make sure there is an object to hold the held things for this id.
       if(VGT.things.held[id_client] == undefined) VGT.things.held[id_client] = {};
@@ -1705,7 +1714,11 @@ class _Thing {
     else if(!q_out[id]) q_out[id] = {};
 
     // Update the attribute
-    q_out[id][qkey] = this[key];
+
+    // If it's an animated quantity, we need to send the target
+    //console.log('  HAY', qkey, qkey in ['x','y','r','s']);
+    if(['x','y','r','s'].includes(qkey)) q_out[id][qkey] = this[key].target;
+    else                                 q_out[id][qkey] = this[key];
 
     // Remember the index that will be attached to this on the next process_qs
     this.last_nqs[qkey] = VGT.net.nq+1;
@@ -1835,7 +1848,7 @@ class _Thing {
   /**
    * Returns an object with x, y, r, and s.
    */
-  get_xyrs() {return {x:this.x, y:this.y, r:this.r, s:this.s}}
+  get_xyrs() {return {x:this.x.value, y:this.y.value, r:this.r.value, s:this.s.value}}
 
   /** 
    * Sets the target x,y,r,s for the sprite.
@@ -1844,13 +1857,10 @@ class _Thing {
   set_xyrs(x,y,r,s,immediate,do_not_send) { 
 
     // Now for each supplied coordinate, update and send
-    if(x!=undefined && x != this.x) {this.x = x; if(immediate) this.container.x = x; this.update_q_out('x', 'x', do_not_send);}
-    if(y!=undefined && y != this.y) {this.y = y; if(immediate) this.container.y = y; this.update_q_out('y', 'y', do_not_send);}
-    if(r!=undefined && r != this.r) {this.r = r; if(immediate) this.container.r = r; this.update_q_out('r', 'r', do_not_send);}
-    if(s!=undefined && s != this.s) {
-      this.s = s; if(immediate) {this.container.scale.x = s; this.container.scale.y = s}; 
-      this.update_q_out('s', 's', do_not_send);
-    }
+    if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_send);}
+    if(y!=undefined && y != this.y.target) {this.y.set(y,immediate); this.update_q_out('y', 'y', do_not_send);}
+    if(r!=undefined && r != this.r.target) {this.r.set(r,immediate); this.update_q_out('r', 'r', do_not_send);}
+    if(s!=undefined && s != this.s.target) {this.s.set(s,immediate); this.update_q_out('s', 's', do_not_send);}
     this.t_last_move = Date.now();
   }
 
@@ -1862,42 +1872,19 @@ class _Thing {
     
     // Don't do anything until it's been initialized / added to pixi.
     if(!this.ready) {return;}
-
     //if(VGT.pixi.N_loop == 1 && this.id_thing > 2) log('N_loop ==',VGT.pixi.N_loop,':', this.vr, this);
 
-    // Use the current location and target location to determine
-    // the target velocity. Target velocity should be proportional to the distance.
-    // We want it to arrive in (game.t_transition) / (16.7 ms) frames
-    var a = (delta*16.7)/VGT.game.settings.t_transition; // inverse number of frames at max velocity 
-    var vx_target = a*(this.x - this.container.x);
-    var vy_target = a*(this.y - this.container.y);
-    var vr_target = a*(this.r - this.container.rotation);
-    var vs_target = a*(this.s - this.container.scale.x);
-
-    // Adjust the velocity as per the acceleration
-    var b = (delta*16.7)/VGT.game.settings.t_acceleration; // inverse number of frames to get to max velocity
-    var Ax = b*(vx_target - this.vx);
-    var Ay = b*(vy_target - this.vy);
-    var Ar = b*(vr_target - this.vr);
-    var As = b*(vs_target - this.vs);
-    
-    // If we're slowing down, do it MORE to avoid overshoot
-    if(Math.sign(Ax)!=Math.sign(this.vx)) Ax = Ax*2;
-    if(Math.sign(Ay)!=Math.sign(this.vy)) Ay = Ay*2;
-    if(Math.sign(Ar)!=Math.sign(this.vr)) Ar = Ar*2;
-    if(Math.sign(As)!=Math.sign(this.vs)) As = As*2;
-
-    this.vx += Ax;
-    this.vy += Ay;
-    this.vr += Ar;
-    this.vs += As;
+    this.x.animate(delta);
+    this.y.animate(delta);
+    this.r.animate(delta);
+    this.s.animate(delta);
 
     // Set the actual position, rotation, and scale
-    this.container.x        += this.vx;
-    this.container.y        += this.vy;
-    this.container.rotation += this.vr;
-    this.container.scale.x  += this.vs;
-    this.container.scale.y  += this.vs;
+    this.container.x        = this.x.value;
+    this.container.y        = this.y.value;
+    this.container.rotation = this.r.value;
+    this.container.scale.x  = this.s.value;
+    this.container.scale.y  = this.s.value;
   }
 
   /** Other animations, like sprite image changes etc, to be overloaded. */
@@ -1914,6 +1901,9 @@ class _Things {
     this.selected = {}; // lists of things selected, indexed by team
     this.held     = {}; // lists of things held, indexed by client id
   }
+
+  // Resets coordinates
+  reset() {for(var n in this.all) this.all[n].reset(); }
 
   /** Releases all things with the supplied client id. */
   release_all(id_client, force, do_not_send) { log('_Things.release_all()', id_client, this.held[id_client]);
@@ -1997,13 +1987,19 @@ class _Piece extends _Thing {
   }
 }
 // List of pieces for convenience
-class _Pieces { constructor() {this.all = [];}
+class _Pieces { 
+  constructor() {
+    this.all = [];
+  }
 
   // Adds a thing to the list, and queues it for addition to the table. 
   add_thing(piece) {
     piece.id_piece = this.all.length;
     this.all.push(piece);
   }
+
+  // Resets coordinates
+  reset() {for(var n in this.all) this.all[n].reset(); }
 }
 VGT.pieces = new _Pieces();
 VGT.Piece  = _Piece;
@@ -2079,6 +2075,16 @@ class _Hands { constructor() {this.all = [];}
 
   /** Frees all hands from ownership */
   free_all_hands() { for(var l in this.all) this.all[l].id_client = 0; }
+
+  // Sets the scale target for all hands immediately without telling the net or changing the fade out
+  set_scale(scale) { 
+    var h, t0;
+    for(var n in this.all) { h=this.all[n];
+      t0 = h.t_last_move;
+      this.all[n].set_xyrs(undefined,undefined,undefined,scale,true,true); 
+      h.t_last_move = t0;
+    }
+  }
 
   /** Just shows them all briefly */
   ping() {for(var l in this.all) this.all[l].ping();}
