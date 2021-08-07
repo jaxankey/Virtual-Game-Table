@@ -74,6 +74,8 @@ var p1 = new VGT.Piece({...defaults, texture_paths:[['1h.png', 'back.png']]});
 var p2 = new VGT.Piece({...defaults, texture_paths:[['2h.png', 'back.png']]});
 
 
+
+
 /** Function to start a new game */ 
 function new_game() { log('new_game()');
 

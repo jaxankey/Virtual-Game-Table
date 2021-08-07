@@ -990,10 +990,6 @@ class _Interaction {
     this.yd_tabletop = v[1];
     this.rd_tabletop = VGT.tabletop.r.value;
 
-    // TEST: Move the pivot to the pointer and compensate with the position.
-    //VGT.tabletop.container.x = v[0];
-    //VGT.tabletop.set_xyrs(VGT.tabletop.x-v[0],undefined,undefined,undefined,true);
-
     // Location of the tabletop at down.
     this.tabletop_xd = -VGT.tabletop.container.pivot.x;
     this.tabletop_yd = -VGT.tabletop.container.pivot.y;
@@ -1047,9 +1043,11 @@ class _Interaction {
     this.ym_tabletop = v[1];
     this.rm_tabletop = VGT.tabletop.r.value;
 
-    // Move my hand
-    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) {
-      VGT.clients.me.hand.set_xyrs(this.xm_tabletop, this.ym_tabletop, undefined, undefined, true);
+    // Move my hand and polygon
+    var hand = null;
+    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand
+      hand        .set_xyrs(this.xm_tabletop, this.ym_tabletop, undefined, undefined, true);
+      hand.polygon.set_xyrs(this.xm_tabletop, this.ym_tabletop, undefined, undefined, true);
     }
 
     // Only do stuff if the mouse is down
@@ -1098,8 +1096,8 @@ class _Interaction {
         }
       } 
       
-      // Otherwise pan the board.
-      else {
+      // Otherwise, if it's the left mouse, pan the board.
+      else if(this.button == 0) {
         var dx0 = (this.xm_client - this.xd_client)/VGT.tabletop.s.value;
         var dy0 = (this.ym_client - this.yd_client)/VGT.tabletop.s.value;
         var dx =  dx0*Math.cos(VGT.tabletop.r.value) + dy0*Math.sin(VGT.tabletop.r.value);
@@ -1110,6 +1108,25 @@ class _Interaction {
           this.tabletop_yd + dy, 
           undefined, undefined, true); // immediate
       }
+
+      // Otherwise, if it's the right button, select box
+      else if(this.button == 2) {
+
+        // Get the distance vector traveled since the pointer came down
+        var dx0 = (this.xm_client - this.xd_client)/VGT.tabletop.s.value;
+        var dy0 = (this.ym_client - this.yd_client)/VGT.tabletop.s.value;
+        var r   = -VGT.tabletop.r.value
+        
+        // If I have a hand, update the selection rectangle to extend back to where the click originated
+        if(hand) {
+          hand.polygon.set_vertices(
+            [ [0,0],
+              rotate_vector([-dx0, 0   ], r),
+              rotate_vector([-dx0, -dy0], r),
+              rotate_vector([0,    -dy0], r) ], true ); // immediate.
+          
+        } // End of "hand exists"
+      } // End of "dragging selection rectangle"
     }
 
   } // End of onpointermove
@@ -1143,6 +1160,9 @@ class _Interaction {
 
     // Releasing, so open fist
     if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.open();
+
+    // Clear any rectangles
+    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.polygon.clear();
   }
   
   onwheel(e) {log('_Interaction.onwheel()', e);
@@ -1479,6 +1499,9 @@ class _Thing {
     this.team_select    = -1; // Default is "unselected"
     this.id_client_hold = 0;  // Server / no client is 0
 
+    // Tint applied to everything
+    this.tint = 0xFFFFFF;
+
     // Shape of hitbox
     this.shape = eval('VGT.interaction.'+this.settings.shape);
 
@@ -1512,6 +1535,17 @@ class _Thing {
       ts:-1,
       ih:-1,
     }
+    
+    // Create a container for the stack of sprites
+    this.container = new PIXI.Container();
+    this.sprites   = [];
+    
+    // Shortcuts
+    this.container.thing = this;
+    
+    // Also create a graphics object
+    this.graphics = new PIXI.Graphics();
+    this.container.addChild(this.graphics);
 
     // Everything is added to the VGT.things list
     VGT.things.add_thing(this);
@@ -1531,8 +1565,12 @@ class _Thing {
   }
 
   /** Sets the tint of all the textures */
-  set_tint(color) { for(var n in this.sprites) this.sprites[n].tint = color; }
-  get_tint()      { return this.sprites[0].tint; }
+  set_tint(tint) {
+    this.tint = tint; 
+    for(var n in this.sprites) 
+      this.sprites[n].tint = tint; 
+  }
+  get_tint() { return this.tint; }
 
   _initialize_pixi() {
     
@@ -1541,27 +1579,25 @@ class _Thing {
     
     // Keep a list of texture lists for reference, one texture list for each layer. 
     this.textures = [];
-    var path; // reused in loop
-    for(var n=0; n<this.settings.texture_paths.length; n++) {
+    
+    // If texture_paths = null, no textures. sprites will stay empty too.
+    if(this.settings.texture_paths != null) {
       
-      // One list of frames per layer; these do not have to match length
-      this.textures.push([]); 
-      for(var m = 0; m<this.settings.texture_paths[n].length; m++) {
+      var path; // reused in loop
+      for(var n=0; n<this.settings.texture_paths.length; n++) {
         
-        // Add the actual texture object
-        path = image_paths.root + this.settings.texture_root + this.settings.texture_paths[n][m];
-        if(VGT.pixi.resources[path]) this.textures[n].push(VGT.pixi.resources[path].texture);
-        else throw 'No resource for '+ path;
-      }
+        // One list of frames per layer; these do not have to match length
+        this.textures.push([]); 
+        for(var m = 0; m<this.settings.texture_paths[n].length; m++) {
+          
+          // Add the actual texture object
+          path = image_paths.root + this.settings.texture_root + this.settings.texture_paths[n][m];
+          if(VGT.pixi.resources[path]) this.textures[n].push(VGT.pixi.resources[path].texture);
+          else throw 'No resource for '+ path;
+        }
+      } // Done with loop over texture_paths.
     }
       
-    // Create a container for the stack of sprites
-    this.container = new PIXI.Container();
-    this.sprites   = [];
-    
-    // Shortcuts
-    this.container.thing = this;
-    
     // Loop over the layers, creating one sprite per layer
     for(var n in this.textures) {
 
@@ -1581,8 +1617,8 @@ class _Thing {
     // This piece is ready for action.
     this.ready = true;
 
-    // Update the coordinates
-    this.animate_xyrs();
+    // Update the coordinates JACK
+    //this.animate_xyrs();
   }
 
   /**
@@ -1724,6 +1760,10 @@ class _Thing {
     else if(this.type == 'Hand') {
       var q_out = VGT.net.q_hands_out;
       var id    = this.id_hand;
+    }
+    else if(this.type == 'Polygon') {
+      //JACK
+      return;
     }
 
     // If we are only updating what exists, look for the key
@@ -2028,6 +2068,97 @@ class _Pieces {
 VGT.pieces = new _Pieces();
 VGT.Piece  = _Piece;
 
+/** Animated Polygon */
+class _Polygon extends _Thing { 
+
+  constructor(vs) {
+
+    // Settings for a polygon
+    var settings = {
+      texture_paths : null, // No textures, just GL drawing.
+    };
+
+    // Run the usual thing initialization
+    super(settings);
+
+    // Remember the type
+    this.type = 'Polygon';
+
+    // List of vertices, each coordinate of which is animated
+    this.vertices = [];
+
+    // If we supplied vertices, add them
+    if(vs) this.add_vertices(vs);
+
+    // If we're supposed to redraw
+    this.needs_redraw = false;
+  }
+
+  // Adds a vertex, e.g., [27,289]
+  add_vertex(v) { this.vertices.push([new _Animated(v[0]), new _Animated(v[1])]); }
+
+  // Adds a list of vertices, e.g. [[100,10],[50,50],[32,37],...]
+  add_vertices(vs) { for(var n in vs) this.add_vertex(vs[n]); }
+
+  // Sets the coordinates of vertex n to v, e.g. [32,27]
+  set_vertex(n, v, immediate) { 
+    this.vertices[n][0].set(v[0], immediate); 
+    this.vertices[n][1].set(v[1], immediate); 
+    if(immediate) this.needs_redraw = true;
+  }
+
+  // Sets the coordinates of many vertices, e.g. [[100,10],[50,50],[32,37],...]
+  set_vertices(vs, immediate) { for(var n in vs) this.set_vertex(n,vs[n],immediate); }
+
+  // Animate the vertices
+  animate_other(delta) {
+
+    // Loop over the vertices and animate them
+    var v, max_velocity = 0;
+    for(var n in this.vertices) { v = this.vertices[n];
+      v[0].animate(delta);
+      v[1].animate(delta);
+      max_velocity = Math.max(max_velocity, Math.abs(v[0].velocity), Math.abs(v[1].velocity));
+    }
+
+    // Now actually draw the thing, if anything moved substantially
+    if(max_velocity > 1e-5 || this.needs_redraw) this.redraw();
+  }
+
+  // Clear it out and make sure it doesn't draw again
+  clear() {
+
+    // Finish the animation so it doesn't trigger redraws
+    var v;
+    for(var n in this.vertices) { v = this.vertices[n];
+      v[0].set(v[0].target, true);
+      v[1].set(v[1].target, true);
+    }
+
+    // Clear the graphics
+    this.graphics.clear();
+
+    // No need to redraw; that's the whole point.
+    this.needs_redraw = false;
+  }
+
+  // Clear and redraw the whole thing
+  redraw() {
+
+    // Get the list of pixi points with the most recent value
+    var ps = [];
+    for(var n in this.vertices) ps.push(new PIXI.Point(this.vertices[n][0].value, this.vertices[n][1].value));
+    
+    this.graphics.clear();
+    this.graphics.beginFill(this.get_tint(), 1);
+    this.graphics.drawPolygon(ps);
+    this.graphics.endFill();
+
+    // Don't need to do this again!
+    this.needs_redraw = false;
+  }
+}
+
 /** Floating hand on top of everything. */
 class _Hand extends _Thing {
 
@@ -2036,11 +2167,11 @@ class _Hand extends _Thing {
     // Create the settings for a hand
     var settings = {
       texture_paths : [['hand.png', 'fist.png']], // paths relative to the root
-      texture_root     : 'hands',                   // Image root path.
-      layer         : VGT.tabletop.LAYER_HANDS,       // Hands layer.
+      texture_root  : 'hands',                    // Image root path.
+      layer         : VGT.tabletop.LAYER_HANDS,   // Hands layer.
       t_pause       : 1200,                       // How long to wait since last move before faiding out.
       t_fade        : 500,                        // Time to fade out.
-      sets          : [VGT.hands],                    // Other sets it belongs to
+      sets          : [VGT.hands],                // Other sets it belongs to
     }
 
     // Run the usual thing initialization
@@ -2052,8 +2183,20 @@ class _Hand extends _Thing {
     // id of client this hand belongs to
     this.id_client = 0;
 
-    log('new _Hand()', this.vx, this.x); VGT.pixi.N_loop = 0;
+    // Create the selection rectangle
+    this.polygon = new _Polygon([[0,0],[0,0],[0,0],[0,0]]);
+    this.polygon.container.alpha = 0.2
   }
+
+  /** Sets the tint of all the textures AND the selection box */
+  set_tint(tint) {
+
+    // Do the usual thing
+    super.set_tint(tint);
+
+    // Set the tint of the polygon, too
+    this.polygon.set_tint(tint);
+  }  
 
   /** Closes / opens the hand */
   close() {this.set_texture_index(1);}
@@ -2065,8 +2208,9 @@ class _Hand extends _Thing {
   ping() {this.t_last_move = Date.now();}
 
   /** Other animations, like sprite image changes etc, to be overloaded. */
-  animate_other(delta) { if(!delta) delta = 1;
+  animate_other(delta) { 
     
+    // Time of most recent last change
     var t0 = Math.max(this.t_last_texture, this.t_last_move);
 
     // All we do is fade it out after some time.
