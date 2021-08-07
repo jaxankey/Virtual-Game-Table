@@ -164,13 +164,18 @@ class _Net {
     this.ready = false;     // Whether we pay attention to the network traffic yet
     this.clients      = {}; // Client objects by client id
     
-    this.q_pieces_out = {}; // Queue of outbound information for the next housekeeping.
-    this.q_pieces_in  = {}; // Queue of inbound information for the next housekeeping.
+    // Queue of outbound information for the next housekeeping.
+    this.q_pieces_out   = {}; 
+    this.q_hands_out    = {}; 
+    //this.q_polygons_out = {};
 
-    this.q_hands_out  = {}; // Queue of outbound information for the next housekeeping.
-    this.q_hands_in   = {}; // Queue of inbound information for the next housekeeping.
+    // Queue of inbound information for the next housekeeping.
+    this.q_pieces_in    = {}; 
+    this.q_hands_in     = {};
+    //this.q_polygons_out = {}; 
 
-    this.nq           = 0;  // Last sent q packet number
+    // Last sent q packet number
+    this.nq = 0;  
 
     // Defines all the functions for what to do with incoming packets.
     this.setup_listeners();
@@ -229,7 +234,7 @@ class _Net {
         // Now update the different attributes only if we're not holding it (our hold supercedes everything)
         if(p.id_client_hold != VGT.net.id) {
 
-          if(p.id_client_hold) log('HAY', p.id_client_hold, VGT.net.id, c.id_client_sender, c.nq, p.last_nqs['ts']);
+          //if(p.id_client_hold) log('HAY', p.id_client_hold, VGT.net.id, c.id_client_sender, c.nq, p.last_nqs['ts']);
 
           // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update
           if(c['x.i']  != VGT.net.id || c['x.n']  >= p.last_nqs['x'])  p.set_xyrs(c.x, undefined, undefined, undefined, false, true);
@@ -253,20 +258,24 @@ class _Net {
       c = this.q_hands_in[id]; // Incoming changes
       p = VGT.hands.all[id];       // Actual hand
 
-      // Visually update the object
-      if(p){
-
-        // Discard info if it's our hand
-        if(p.id_client != VGT.net.id) {
-          p.set_xyrs(c.x, c.y, c.r, c.s, false, true);
-          p.set_texture_index(c.n, true);
-        }
+      // Visually update the hand's position (x,y,r,s), texture (n), and mousedown table coordinates (vd) if it's not our hand
+      if(p && p.id_client != VGT.net.id){
+      
+        // Undefined quantities do nothing to these functions
+        p        .set_xyrs(c.x, c.y, c.r, c.s, false, true);
+        p.polygon.set_xyrs(c.x, c.y, c.r, undefined, false, true); 
+        p.set_texture_index(c.n, true);
+        
+        // vd should be null or [x,y] for the down click coordinates
+        if(c.vd != undefined) p.vd = c.vd;
       }
-    
     } // End of loop over hands
     
     // Clear out the hands queue.
     this.q_hands_in = {}; // End of loop over q_hands_in
+
+    
+    
 
 
     /////////////////////////////////////////////////
@@ -468,7 +477,7 @@ class _Pixi {
     this.renderer.view.style.display  = "block";
 
     // Add the touchable 'surface' with the background color
-    this.surface = new PIXI.Graphics().beginFill(0xF4EFEE).drawRect(0, 0, 1, 1);
+    this.surface = new PIXI.Graphics().beginFill(VGT.game.settings.background_color).drawRect(0, 0, 1, 1);
     this.stage.addChild(this.surface);
 
     // Set up loading progress indicator, which happens pre PIXI start
@@ -994,6 +1003,10 @@ class _Interaction {
     this.tabletop_xd = -VGT.tabletop.container.pivot.x;
     this.tabletop_yd = -VGT.tabletop.container.pivot.y;
 
+    // Holding, so close fist
+    var hand=null;
+    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand; hand.close(); }
+
     // Find the top thing under the pointer
     log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd);
 
@@ -1020,14 +1033,18 @@ class _Interaction {
         VGT.things.hold_selected(VGT.net.id, false);
       }
 
-      // Holding, so close fist
-      if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.close();
-
     } // End of "found thing under pointer"
 
-    // Otherwise, we have hit the table top. unselect everything
-    else VGT.things.unselect_all(VGT.clients.me.team);
-  }
+    // Otherwise, we have hit the table top. 
+    else {
+     
+      // If we're clicking the tabletop without shift, unselect everything
+      if(!e.shiftKey) VGT.things.unselect_all(VGT.clients.me.team);
+
+      // If we're going to start dragging the rectangle, send the pointer down table coordinates
+      if(e.button == 2 && hand) { hand.vd = v; hand.update_q_out('vd'); }
+    }
+  } // End of onpointerdown
 
   // Pointer has moved around.
   onpointermove(e) { //log('onpointermove()', e.button);
@@ -1046,8 +1063,8 @@ class _Interaction {
     // Move my hand and polygon
     var hand = null;
     if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand
-      hand        .set_xyrs(this.xm_tabletop, this.ym_tabletop, undefined, undefined, true);
-      hand.polygon.set_xyrs(this.xm_tabletop, this.ym_tabletop, undefined, undefined, true);
+      hand        .set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, 1.0/VGT.tabletop.s.value, true);
+      hand.polygon.set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, undefined, true);
     }
 
     // Only do stuff if the mouse is down
@@ -1108,25 +1125,6 @@ class _Interaction {
           this.tabletop_yd + dy, 
           undefined, undefined, true); // immediate
       }
-
-      // Otherwise, if it's the right button, select box
-      else if(this.button == 2) {
-
-        // Get the distance vector traveled since the pointer came down
-        var dx0 = (this.xm_client - this.xd_client)/VGT.tabletop.s.value;
-        var dy0 = (this.ym_client - this.yd_client)/VGT.tabletop.s.value;
-        var r   = -VGT.tabletop.r.value
-        
-        // If I have a hand, update the selection rectangle to extend back to where the click originated
-        if(hand) {
-          hand.polygon.set_vertices(
-            [ [0,0],
-              rotate_vector([-dx0, 0   ], r),
-              rotate_vector([-dx0, -dy0], r),
-              rotate_vector([0,    -dy0], r) ], true ); // immediate.
-          
-        } // End of "hand exists"
-      } // End of "dragging selection rectangle"
     }
 
   } // End of onpointermove
@@ -1158,11 +1156,14 @@ class _Interaction {
     // Stop holding VGT.things
     VGT.things.release_all(VGT.net.id, false, false);
 
-    // Releasing, so open fist
-    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.open();
+    // If we have a hand, store the down click and update the outbound q
+    var hand = null; if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) hand = VGT.clients.me.hand;
 
-    // Clear any rectangles
-    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.polygon.clear();
+    // Releasing, so open fist, clear the polygon, and update vd so others know to do the same.
+    if(hand) {
+      hand.open();
+      hand.vd = false; hand.update_q_out('vd');
+    }
   }
   
   onwheel(e) {log('_Interaction.onwheel()', e);
@@ -1761,10 +1762,7 @@ class _Thing {
       var q_out = VGT.net.q_hands_out;
       var id    = this.id_hand;
     }
-    else if(this.type == 'Polygon') {
-      //JACK
-      return;
-    }
+    else return;
 
     // If we are only updating what exists, look for the key
     if(only_if_exists) {
@@ -1780,7 +1778,6 @@ class _Thing {
     // Update the attribute
 
     // If it's an animated quantity, we need to send the target
-    //console.log('  HAY', qkey, qkey in ['x','y','r','s']);
     if(['x','y','r','s'].includes(qkey)) q_out[id][qkey] = this[key].target;
     else                                 q_out[id][qkey] = this[key];
 
@@ -2105,6 +2102,8 @@ class _Polygon extends _Thing {
     this.vertices[n][0].set(v[0], immediate); 
     this.vertices[n][1].set(v[1], immediate); 
     if(immediate) this.needs_redraw = true;
+
+    this.update_q_out(n);
   }
 
   // Sets the coordinates of many vertices, e.g. [[100,10],[50,50],[32,37],...]
@@ -2159,6 +2158,25 @@ class _Polygon extends _Thing {
   }
 }
 
+// List of polygons
+class _Polygons {
+  constructor() {
+    this.all = [];
+  }
+
+  // Adds a thing to the list, and queues it for addition to the table. 
+  add_thing(polygon) {
+    polygon.id_polygon = this.all.length;
+    this.all.push(polygon);
+  }
+
+  // Resets coordinates
+  reset() {for(var n in this.all) this.all[n].reset(); }
+}
+VGT.polygons = new _Polygons();
+VGT.Polygons = _Polygons;
+
+
 /** Floating hand on top of everything. */
 class _Hand extends _Thing {
 
@@ -2184,8 +2202,8 @@ class _Hand extends _Thing {
     this.id_client = 0;
 
     // Create the selection rectangle
-    this.polygon = new _Polygon([[0,0],[0,0],[0,0],[0,0]]);
-    this.polygon.container.alpha = 0.2
+    this.polygon = new _Polygon([[0,0],[0,0],[0,0],[0,0]]); // Does not add the polygon to the "playable" lists, q's etc.
+    this.polygon.container.alpha = 0.4;
   }
 
   /** Sets the tint of all the textures AND the selection box */
@@ -2210,6 +2228,24 @@ class _Hand extends _Thing {
   /** Other animations, like sprite image changes etc, to be overloaded. */
   animate_other(delta) { 
     
+    // If it has vd set to a vector (not false or undefined), update the selection rectangle
+    if(this.vd) {
+
+      // Get the distance vector traveled since the pointer came down
+      var v = rotate_vector([this.x.value - this.vd[0], this.y.value - this.vd[1]], -this.r.value);
+      
+      // If I have a hand, update the selection rectangle to extend back to where the click originated
+      this.polygon.set_vertices(
+        [ [0,0],
+          [-v[0], 0 ],
+          [-v[0], -v[1]],
+          [0,   -v[1]] ] , 
+          true, true ); // immediate, do_not_send (if I end up coding this...)
+    } 
+
+    // Otherwise, clear it
+    else this.polygon.clear();
+
     // Time of most recent last change
     var t0 = Math.max(this.t_last_texture, this.t_last_move);
 
@@ -2317,6 +2353,8 @@ class _Game {
   // Default minimal settings that can be overridden.
   default_settings = {
 
+    background_color : 0xfcf2f0,
+
     // Available teams for clients and their colors.
     teams : {
       Observer : 0xFFFFFF,
@@ -2347,12 +2385,12 @@ class _Game {
     this.settings = {...this.default_settings, ...settings};
 
     // Create the big objects that depend on game stuff.
+    VGT.game        = this;
     VGT.pixi        = new _Pixi();
     VGT.tabletop    = new _Tabletop();
     VGT.interaction = new _Interaction();
     VGT.sounds      = new _Sounds(sound_list);
-    VGT.game        = this;
-
+    
     // Add elements to the setups combo box
     for (var k in this.settings.setups) {
         var o = document.createElement("option");
