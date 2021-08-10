@@ -974,7 +974,7 @@ class _Interaction {
         [x0,y0] = rotate_vector([x0,y0],-container.rotation);
 
         // Get the scaled bounds and test
-        if(container.getLocalBounds().contains(x0,y0)) return container.thing;
+        if(container.thing.contains(x0,y0)) return container.thing;
       
       } // End of things in layer loop
 
@@ -1557,6 +1557,11 @@ class _Thing {
 
   } // End of constructor.
 
+  // Whether the supplied table coordinates are contained within the object
+  contains(x0,y0) {
+    return this.container.getLocalBounds().contains(x0,y0)
+  }
+
   // Resets to the settings
   reset(immediate, do_not_send) {
     this.x.set(this.settings.x, immediate); this.x.velocity=0; this.update_q_out('x', 'x', do_not_send);
@@ -2109,6 +2114,22 @@ class _Polygon extends _Thing {
   // Sets the coordinates of many vertices, e.g. [[100,10],[50,50],[32,37],...]
   set_vertices(vs, immediate) { for(var n in vs) this.set_vertex(n,vs[n],immediate); }
 
+  // Returns a Polygon of the same vertices in the *tabletop* coordinates
+  get_tabletop_polygon() {
+    var vs = [];
+
+    // Loop over the vertices and transform them into the tabletop frame
+    for(var n in this.vertices) 
+      vs.push( 
+        this.container.localTransform.apply( 
+          new PIXI.Point( 
+            this.vertices[n][0].value, 
+            this.vertices[n][1].value ) ) );
+
+    // Make the pixi polygon
+    return new PIXI.Polygon(...vs);
+  }
+
   // Animate the vertices
   animate_other(delta) {
 
@@ -2157,6 +2178,7 @@ class _Polygon extends _Thing {
     this.needs_redraw = false;
   }
 }
+VGT.Polygon = _Polygon;
 
 // List of polygons
 class _Polygons {
@@ -2233,15 +2255,32 @@ class _Hand extends _Thing {
 
       // Get the distance vector traveled since the pointer came down
       var v = rotate_vector([this.x.value - this.vd[0], this.y.value - this.vd[1]], -this.r.value);
+      var vs = [ [0,0], [-v[0],0], [-v[0],-v[1]], [0,-v[1]] ];
       
       // If I have a hand, update the selection rectangle to extend back to where the click originated
-      this.polygon.set_vertices(
-        [ [0,0],
-          [-v[0], 0 ],
-          [-v[0], -v[1]],
-          [0,   -v[1]] ] , 
-          true, true ); // immediate, do_not_send (if I end up coding this...)
-    } 
+      this.polygon.set_vertices(vs, true, true ); // immediate, do_not_send (if I end up coding this...)
+    
+      // At a reduced frame rate, check for pieces within the polygon
+      if(VGT.pixi.n_loop % 1 == 0) {
+
+        // Get the polygon in tabletop coordinates
+        var poly = this.polygon.get_tabletop_polygon();
+
+        //VGT.pieces.all[0].set_xyrs(poly.points[0], poly.points[1]);
+        //VGT.pieces.all[1].set_xyrs(poly.points[2], poly.points[3]);
+        //VGT.pieces.all[2].set_xyrs(poly.points[4], poly.points[5]);
+
+        // Loop over the pieces and select those that are in it.
+        var p;
+        for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
+          if(poly.contains(p.x.value, p.y.value)) 
+            p.select(VGT.clients.me.team);
+          else
+            p.unselect();
+        }
+        
+      } // End of reduced frame rate
+    } // End of if(vd)
 
     // Otherwise, clear it
     else this.polygon.clear();
