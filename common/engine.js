@@ -655,7 +655,7 @@ class _Animated {
     
     // Use the current location and target location to determine
     // the target velocity. Target velocity should be proportional to the distance.
-    // We want it to arrive in (game.t_transition) / (16.7 ms) frames
+    // We want it to arrive in t_transition / (16.7 ms) frames
     var a = (delta*16.7)/this.settings.t_transition; // inverse number of transition frames at max velocity 
     var velocity_target = a*(this.target - this.value);
     
@@ -2422,8 +2422,6 @@ class _Game {
     // How long to wait in between housekeepings.
     t_housekeeping : 100,
     t_hold_block   : 550,
-    t_transition   : 300, // Time to transition coordinates at full speed
-    t_acceleration : 200, // Time to get to full speed    
   }
 
   constructor(settings) {
