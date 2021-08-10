@@ -625,7 +625,7 @@ class _Pixi {
 class _Animated {
 
   default_settings = {
-    t_transition   : 300, // Time to transition coordinates at full speed
+    t_transition   : 200, // Time to transition coordinates at full speed
     t_acceleration : 100, // Time to get to full speed   
     damping        : 0.01, // Velocity damping coefficient
   }
@@ -2238,6 +2238,13 @@ class _Hand extends _Thing {
     this.polygon.set_tint(tint);
   }  
 
+  // Whether this is my hand or not.
+  is_me() {
+    if(VGT.clients && VGT.clients.me) 
+      return this.id_client == VGT.clients.me.id_client;
+    else return false;
+  }
+
   /** Closes / opens the hand */
   close() {this.set_texture_index(1);}
   open()  {this.set_texture_index(0);}
@@ -2261,7 +2268,7 @@ class _Hand extends _Thing {
       this.polygon.set_vertices(vs, true, true ); // immediate, do_not_send (if I end up coding this...)
     
       // At a reduced frame rate, check for pieces within the polygon
-      if(VGT.pixi.n_loop % 1 == 0) {
+      if(VGT.pixi.n_loop % 1 == 0 && this.is_me()) {
 
         // Get the polygon in tabletop coordinates
         var poly = this.polygon.get_tabletop_polygon();
@@ -2363,6 +2370,7 @@ class _Clients {
         team  : c.team, // index
         color : VGT.game.get_team_color(c.team),
         hand  : VGT.hands.get_unused_hand(),
+        id_client : c.id,
       }
 
       // Set the hand id_client
@@ -2412,7 +2420,7 @@ class _Game {
     setups : ['Standard'],
 
     // How long to wait in between housekeepings.
-    t_housekeeping : 250,
+    t_housekeeping : 100,
     t_hold_block   : 550,
     t_transition   : 300, // Time to transition coordinates at full speed
     t_acceleration : 200, // Time to get to full speed    
