@@ -123,24 +123,46 @@ class _Html {
 
       // If it's VGT.net.me, the name should be editable, otherwise, not
       if(id == VGT.net.id) cell_name.innerHTML = '<input id="name" onchange="VGT.interaction.onchange_name(event)" value="'+name+'" />';
-      else             cell_name.innerHTML = '<input class="othername" readonly value="'+name+'" />';
+      else                 cell_name.innerHTML = '<input class="othername" readonly value="'+name+'" />';
 
-      // Now create the team selector if it's me
+      // Now create the team selector
       var s = document.createElement("select");
       s.id  = String(id); 
       s.onchange = VGT.interaction.onchange_team;
 
       // Create and append the options
+      var color, rgb;
       for (var k in VGT.game.settings.teams) {
           var o = document.createElement("option");
           o.value = k;
           o.text  = k;
+
+          // Match the color
+          color = VGT.game.settings.teams[k];
+          o.style = 'background-color: #'+color.toString(16)+'FF;';
+
+          // If the color is too bright (per ITU-R BT.709 definition of luma), go black with the text
+          rgb = ox_to_rgb(color);
+          if(0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2] > 0.7) o.style.color='black';
+          else                                                    o.style.color='white';
+
+          // Add it to the list
           s.appendChild(o);
       }
 
       // Set the team
       s.selectedIndex = team;
+      var team_name = Object.keys(VGT.game.settings.teams)[team];
 
+      // Set the background color of the visible element
+      color = VGT.game.settings.teams[team_name]
+      s.style.backgroundColor = '#'+color.toString(16);
+
+      // Set the text to white or black, depending on how light it is
+      rgb = ox_to_rgb(color);
+      if(0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2] > 0.7) s.style.color='black';
+      else                                                    s.style.color='white'; // = 'color: white;';
+      
       // Finally, append it to the team cell
       cell_team.appendChild(s);
       
@@ -752,7 +774,8 @@ class _Tabletop {
     if(Math.abs(this.x.value-this.x.target) > 0.1/this.s.value
     || Math.abs(this.y.value-this.y.target) > 0.1/this.s.value
     || Math.abs(this.r.value-this.r.target) > 0.001/this.s.value
-    || Math.abs(this.s.value-this.s.target) > 0.001/this.s.value) VGT.interaction.onpointermove(VGT.interaction.last_pointermove_e);
+    || Math.abs(this.s.value-this.s.target) > 0.001/this.s.value) 
+      VGT.interaction.onpointermove(VGT.interaction.last_pointermove_e);
 
     // Set the hand scale
     VGT.hands.set_scale(1.0/this.s.value);
@@ -816,14 +839,27 @@ class _Tabletop {
   }
 
   rotate(dr) {
-    this.set_xyrs(
-      undefined, undefined,
-      this.r.target + dr,
-      undefined);
-    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) VGT.clients.me.hand.set_xyrs(undefined,undefined,-this.r.target);
+
+    // Set the table rotation target
+    this.set_xyrs(undefined, undefined, this.r.target + dr);
   }
   rotate_left()  {this.rotate(-this.settings.r_step*Math.PI/180.0);}
   rotate_right() {this.rotate( this.settings.r_step*Math.PI/180.0);}
+
+  // Rotates the selected things by their angle settings
+  rotate_selected_things(scale) {
+    var dr, thing;
+    for(var id_thing in VGT.things.selected[VGT.clients.me.team]) {
+      thing = VGT.things.selected[VGT.clients.me.team][id_thing];
+      dr    = scale*thing.settings.r_step*Math.PI/180.0;
+      thing.set_xyrs(undefined, undefined, thing.r.target - dr);
+      
+      // Update the "starting" coordinate, too. JACK: Could snap the rotation on mouse move, and have this animated? ---
+      thing.rh -= dr;
+    }
+  }
+  rotate_selected_things_left() {this.rotate_selected_things(1);}
+  rotate_selected_things_right(){this.rotate_selected_things(-1);}
 
   zoom(factor) {
 
@@ -868,6 +904,9 @@ class _Interaction {
       
       zoom_in  : VGT.tabletop.zoom_in.bind(VGT.tabletop),
       zoom_out : VGT.tabletop.zoom_out.bind(VGT.tabletop),
+
+      rotate_selected_things_left  : VGT.tabletop.rotate_selected_things_left.bind(VGT.tabletop),
+      rotate_selected_things_right : VGT.tabletop.rotate_selected_things_right.bind(VGT.tabletop),
     }
 
     // Dictionary of functions for each key
@@ -892,16 +931,20 @@ class _Interaction {
       Numpad2Down:    this.actions.pan_down,
 
       // Rotate view
-      ShiftKeyADown:      this.actions.rotate_left,
+      ShiftKeyADown:      this.actions.rotate_selected_things_left,
+      ShiftArrowLeftDown: this.actions.rotate_selected_things_left,
+      ShiftNumpad4Down:   this.actions.rotate_selected_things_left,
+      ShiftKeyQDown:      this.actions.rotate_left,
       KeyQDown:           this.actions.rotate_left,
-      ShiftArrowLeftDown: this.actions.rotate_left,
-      ShiftNumpad4Down:   this.actions.rotate_left,
+      ShiftNumpad7Down:   this.actions.rotate_left,
       Numpad7Down:        this.actions.rotate_left,
 
-      ShiftKeyDDown:      this.actions.rotate_right,
+      ShiftKeyDDown:      this.actions.rotate_selected_things_right,
+      ShiftArrowRightDown:this.actions.rotate_selected_things_right,
+      ShiftNumpad6Down:   this.actions.rotate_selected_things_right,
+      ShiftKeyEDown:      this.actions.rotate_right,
       KeyEDown:           this.actions.rotate_right,
-      ShiftArrowRightDown:this.actions.rotate_right,
-      ShiftNumpad6Down:   this.actions.rotate_right,
+      ShiftNumpad9Down:   this.actions.rotate_right,
       Numpad9Down:        this.actions.rotate_right,
 
       // Zoom
@@ -966,12 +1009,14 @@ class _Interaction {
         // container of thing
         container = layer.children[m]; 
        
+        // JACK: A good place for piece.container.localTransform.applyInverse to get from table coordinates to the piece's coordinates.
+        
         // Undo the container shift and scale
         x0 = (x-container.x)/container.scale.x; 
         y0 = (y-container.y)/container.scale.y;
 
-        // Undo the container rotation
-        [x0,y0] = rotate_vector([x0,y0],-container.rotation);
+        // Undo the instantaneous container rotation of the piece
+        [x0,y0] = rotate_vector([x0,y0],-container.rotation); // JACK: Might need to worry about thing.dr here as well? I think not.
 
         // Get the scaled bounds and test
         if(container.thing.contains(x0,y0)) return container.thing;
@@ -1079,8 +1124,8 @@ class _Interaction {
           thing = VGT.things.held[VGT.net.id][k];
           
           // The coordinates we know are 
-          //   * Where the mouse clicked: xd, yd, rd
-          //   * Where the mouse is now:  xm, ym, rm
+          //   * Where the mouse clicked: xd_, yd_, rd_
+          //   * Where the mouse is now:  xm_, ym_, rm_
           //   * Where each piece was when the mouse clicked (hold): thing.xh, thing.yh, thing.rh
           //
           // So we must translate each piece by dx0, dy0 (shift with mouse) and then
@@ -1105,11 +1150,15 @@ class _Interaction {
           var dxr = dx1-dx0;
           var dyr = dy1-dy0;
           
-          // Do the actual move, immediately
+          // Do the actual move
           thing.set_xyrs(
             thing.xh + x0 + dxr,
             thing.yh + y0 + dyr,
-            thing.rh + r0, undefined, true);
+            thing.rh + r0,    // updates the rotation with how much the hand has rotated
+            undefined, true); // immediately, no animation, so that they stay rigid with the mouse
+            // JACK: it's here that the rotation animation from piece rotation ends; r.target = r.value; r.velocity = 0
+            //       Could separately animate piece rotations with an animated quantity; a separate rotator that determines the angle and is only 
+            //       changed when rotating the pieces. So, set_xyrs could always include an offset.
         }
       } 
       
@@ -1223,6 +1272,7 @@ class _Interaction {
     VGT.net.clients[e.target.id].team = e.target.selectedIndex;
     log(   'NETS_clients', VGT.net.clients);
     VGT.net.io.emit('clients', VGT.net.clients);
+
   } // End of onchange_team()
 
   // When we change our name
@@ -1471,6 +1521,8 @@ class _Thing {
     'type'          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
     'sets'          : [],               // List of other sets to which this thing can belong (pieces, hands, ...)
 
+    'r_step'        : 45,               // How many degrees to rotate when taking a rotation step.
+
     // Targeted x, y, r, and s
     'x' : 0,
     'y' : 0, 
@@ -1509,7 +1561,7 @@ class _Thing {
     // Targeted location and geometry. Current locations are in the container.x, container.y, container.rotation, and container.scale.x
     this.x = new _Animated(this.settings.x);
     this.y = new _Animated(this.settings.y);
-    this.r = new _Animated(this.settings.r);
+    this.r = new _Animated(this.settings.r); // JACK: Need an animated dr for the offset from someone actually rotating the piece. 
     this.s = new _Animated(this.settings.s);
 
     // Starting hold location
@@ -1622,9 +1674,6 @@ class _Thing {
 
     // This piece is ready for action.
     this.ready = true;
-
-    // Update the coordinates JACK
-    //this.animate_xyrs();
   }
 
   /**
@@ -1942,13 +1991,13 @@ class _Thing {
 
     this.x.animate(delta);
     this.y.animate(delta);
-    this.r.animate(delta);
+    this.r.animate(delta); // JACK: Here we could also animate the offset dr.
     this.s.animate(delta);
 
     // Set the actual position, rotation, and scale
     this.container.x        = this.x.value;
     this.container.y        = this.y.value;
-    this.container.rotation = this.r.value;
+    this.container.rotation = this.r.value; // JACK: Here we could add an additional offset like this.dr; Probably we need r1, r2, and a special r
     this.container.scale.x  = this.s.value;
     this.container.scale.y  = this.s.value;
   }
