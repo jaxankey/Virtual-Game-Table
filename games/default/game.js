@@ -59,6 +59,14 @@ var image_paths = {
         'cards/bj.png',
         'cards/1h.png',
         'cards/2h.png',
+        'cards/3h.png',
+        'cards/4h.png',
+        'cards/5h.png',
+        'cards/6h.png',
+        'cards/7h.png',
+        'cards/8h.png',
+        'cards/9h.png',
+        'cards/10h.png',
         'cards/back.png',
     ],
     full: null,
@@ -68,10 +76,13 @@ var image_paths = {
 new VGT.Game();
 
 // Create pieces
-var defaults = {texture_root:'cards', s:0.8}
-var p0 = new VGT.Piece({...defaults, texture_paths:[['sj.png', 'back.png']]});
-var p1 = new VGT.Piece({...defaults, texture_paths:[['1h.png', 'back.png']]});
-var p2 = new VGT.Piece({...defaults, texture_paths:[['2h.png', 'back.png']]});
+var defaults = {texture_root:'cards', s:0.8};
+var p = [];
+p[0] = new VGT.Piece({...defaults, texture_paths:[['sj.png', 'back.png']]});
+for(var n=1; n<=4; n++) p[n] = new VGT.Piece({...defaults, texture_paths:[[String(n)+'h.png', 'back.png']]});
+
+defaults = {texture_root:'cards', s:1.2, layer:'2'};
+for(var n=5; n<=9; n++) p[n] = new VGT.Piece({...defaults, texture_paths:[[String(n)+'h.png', 'back.png']]});
 
 
 

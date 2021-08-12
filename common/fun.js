@@ -335,7 +335,7 @@ exports.limit_vector_length = limit_vector_length;
 
 
 
-// Sorts the supplied list of objects by the specified key.
+// In-place sorts the supplied list of objects by the specified key.
 function sort_objects_by_key(objects, key, decreasing) {
 
     // If increasing
@@ -348,6 +348,7 @@ function sort_objects_by_key(objects, key, decreasing) {
     return objects
 }
 exports.sort_objects_by_key = sort_objects_by_key;
+
 
 // For converting rgb (values 0-1) to 0x format
 function rgb_to_ox(r, g, b) {

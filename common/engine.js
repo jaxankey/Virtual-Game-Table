@@ -212,7 +212,11 @@ class _Net {
     /////////////////////////////////////////
     // INBOUND
 
-    // Loop over the pieces in the q
+    // Will be a list of [{p:piece, z:z}, ...] for all the pieces in q_pieces_in having z.
+    // We assemble this for easy sorting and restacking below.
+    //var qz = [];
+
+    // Loop over the pieces in the q to handle 'simple' quantities
     for(var id_piece in this.q_pieces_in) { 
       c = this.q_pieces_in[id_piece]; // incoming changes for this thing
       p = VGT.pieces.all[id_piece];   // the actual piece object
@@ -269,8 +273,17 @@ class _Net {
       
       } // End of valid piece
     
+      // If it doesn't have a z, we're done with it, so delete it. 
+      //if(c['z'] != undefined) qz.push({p:p, z:c['z']})
+
     }; // End of loop over q_pieces_in
     
+    // At this point, this.q_pieces_in contains only those entries with z in them.
+
+    // First, sort the list by z values in decreasing order
+    //qz = sort_objects_by_key(qz, 'z', true);
+
+
     // Clear out the piece queue
     this.q_pieces_in = {}; 
   
@@ -1031,6 +1044,7 @@ class _Interaction {
     // Loop over the layers from top to bottom
     for(var n=VGT.tabletop.layers.length-1; n>=0; n--) {
       layer = VGT.tabletop.layers[n];
+      if(!layer) continue;
       
       // Loop over the things in this layer from top to bottom.
       for(var m=layer.children.length-1; m>=0; m--) {
@@ -1861,8 +1875,9 @@ class _Thing {
 
     // Update the attribute
 
-    // If it's an animated quantity, we need to send the target
+    // Update the q depending on the kind of data it is.
     if(['x','y','r','R','s'].includes(qkey)) q_out[id][qkey] = this[key].target;
+    else if(qkey == 'z')                     q_out[id][qkey] = this.get_z_index();
     else                                     q_out[id][qkey] = this[key];
 
     // Remember the index that will be attached to this on the next process_qs
@@ -1871,6 +1886,7 @@ class _Thing {
 
   // Returns the z-order index (pieces with lower index are behind this one)
   get_z_index() {
+
     // Get the parent of the container
     var parent = this.container.parent;
     
@@ -1880,8 +1896,7 @@ class _Thing {
   }
 
   // Set the z-order index
-  // JACK: Add this info (z) to queue and handle with rest.
-  set_z_index(n, do_not_send) {
+  set_z_index(z, do_not_send) {
     // Get the parent of the container
     var parent = this.container.parent;
     
@@ -1895,11 +1910,14 @@ class _Thing {
       var c = parent.removeChildAt(n_old);
 
       // Make sure we have a valid index
-      if(n > parent.children.length) n = parent.children.length;
-      if(n < 0)                      n = 0;
+      if(z > parent.children.length) z = parent.children.length;
+      if(z < 0)                      z = 0;
 
       // stuff it back in
-      parent.addChildAt(c, n);
+      parent.addChildAt(c, z);
+
+      // Send the info
+      if(!do_not_send) this.update_q_out('z');
     }
   }
 
@@ -2053,6 +2071,47 @@ class _Things {
       
       // Loop over the list and reset the id_client_hold
       for(var id_thing in this.held[id_client]) this.held[id_client][id_thing].release(id_client, force, do_not_send);
+
+      // Delete the list
+      delete this.held[id_client];
+    }
+  }
+
+  // Given a list of things, returns an object, indexed by layer, full of lists of things, sorted by z-index.
+  sort_by_z(things, descending) { console.log('sort_by_z()', things, descending);
+
+    // First sort by layers
+    var sorted = {}, layer;
+    for(var n in things) { 
+
+      // Attach its z-value for easy sorting
+      things[n]._z = things[n].get_z_index();
+
+      // If we don't have a list for this layer yet, make an empty one
+      layer = things[n].settings.layer;
+      if(!sorted[layer]) sorted[layer] = []; 
+
+      // Stick it in the sorted list.
+      sorted[layer].push(things[n]);
+    }
+
+    // Now loop over the sorted layers, and sort each array
+    for(var k in sorted) sort_objects_by_key(sorted[k], '_z', descending);
+
+    return sorted;
+  }
+
+  send_all_to_top(id_client, force, do_not_send) { log('_Things.send_all_to_bottom()', id_client, this.held[id_client]);
+   
+    // If we have a held list for this client id
+    if(this.held[id_client]) {
+      
+      // First sort these by ---
+
+
+      // Loop over the list and send
+      for(var id_thing in this.held[id_client]) 
+        this.held[id_client][id_thing].release(id_client, force, do_not_send);
 
       // Delete the list
       delete this.held[id_client];
