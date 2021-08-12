@@ -213,9 +213,9 @@ class _Net {
     // INBOUND
 
     // Loop over the pieces in the q
-    for(var id in this.q_pieces_in) { 
-      c = this.q_pieces_in[id]; // incoming changes for this thing
-      p = VGT.pieces.all[id];       // the actual piece object
+    for(var id_piece in this.q_pieces_in) { 
+      c = this.q_pieces_in[id_piece]; // incoming changes for this thing
+      p = VGT.pieces.all[id_piece];   // the actual piece object
 
       // If it's a valid piece
       if(p) {
@@ -235,7 +235,7 @@ class _Net {
         //         This packet will have ih=1 or undefined and ih.i=2 or undefined
         //
 
-        // JACK: Need to send the piece's z-index I think.
+        // JACK: Need to send the piece's z-index.
         
         // All attributes have 
         //   - their value, e.g. 'ih' for the id of the holder
@@ -246,7 +246,7 @@ class _Net {
         // update the holder id if necessary. The server's job is to ensure that it relays the correct holder always.
         // ALSO we should ensure that, if it's either someone else's packet, or it's ours and we 
         // have not since queued a newer packet updating the hold status
-        console.log('  c.id', id, 'c.ih', c.ih, 'c.ih.i', c['ih.i'], 'VGT.net.id', VGT.net.id);
+        console.log('  c.id', id_piece, 'c.ih', c.ih, 'c.ih.i', c['ih.i'], 'VGT.net.id', VGT.net.id);
         if(c['ih'] != undefined && (c['ih.i'] != VGT.net.id || c['ih.n'] >= p.last_nqs['ih'])) {
           console.log('  setting hold to', c.ih);
           p.hold(c.ih, true, true); // client_id, force, do_not_send)
@@ -256,15 +256,14 @@ class _Net {
         // Now update the different attributes only if we're not holding it (our hold supercedes everything)
         if(p.id_client_hold != VGT.net.id) {
 
-          //if(p.id_client_hold) log('HAY', p.id_client_hold, VGT.net.id, c.id_client_sender, c.nq, p.last_nqs['ts']);
-
           // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update
-          if(c['x.i']  != VGT.net.id || c['x.n']  >= p.last_nqs['x'])  p.set_xyrs(c.x, undefined, undefined, undefined, false, true);
-          if(c['y.i']  != VGT.net.id || c['y.n']  >= p.last_nqs['y'])  p.set_xyrs(undefined, c.y, undefined, undefined, false, true);
-          if(c['r.i']  != VGT.net.id || c['r.n']  >= p.last_nqs['r'])  p.set_xyrs(undefined, undefined, c.r, undefined, false, true);
-          if(c['s.i']  != VGT.net.id || c['s.n']  >= p.last_nqs['s'])  p.set_xyrs(undefined, undefined, undefined, c.s, false, true);
-          if(c['n.i']  != VGT.net.id || c['n.n']  >= p.last_nqs['n'])  p.set_texture_index(c.n, true);
-          if(c['ts.i'] != VGT.net.id || c['ts.n'] >= p.last_nqs['ts']) p.select(c.ts, true);
+          if(c['x']  != undefined && (c['x.i']  != VGT.net.id || c['x.n']  >= p.last_nqs['x'] )) p.set_xyrs(c.x, undefined, undefined, undefined, false, true);
+          if(c['y']  != undefined && (c['y.i']  != VGT.net.id || c['y.n']  >= p.last_nqs['y'] )) p.set_xyrs(undefined, c.y, undefined, undefined, false, true);
+          if(c['r']  != undefined && (c['r.i']  != VGT.net.id || c['r.n']  >= p.last_nqs['r'] )) p.set_xyrs(undefined, undefined, c.r, undefined, false, true);
+          if(c['R']  != undefined && (c['R.i']  != VGT.net.id || c['R.n']  >= p.last_nqs['R'] )) p.R.set(c.R);
+          if(c['s']  != undefined && (c['s.i']  != VGT.net.id || c['s.n']  >= p.last_nqs['s'] )) p.set_xyrs(undefined, undefined, undefined, c.s, false, true);
+          if(c['n']  != undefined && (c['n.i']  != VGT.net.id || c['n.n']  >= p.last_nqs['n'] )) p.set_texture_index(c.n, true);
+          if(c['ts'] != undefined && (c['ts.i'] != VGT.net.id || c['ts.n'] >= p.last_nqs['ts'])) p.select(c.ts, true);
 
         } // End of we are not holding this.
       
@@ -276,9 +275,9 @@ class _Net {
     this.q_pieces_in = {}; 
   
     // Loop over the hands in the input queue
-    for(var id in this.q_hands_in) {
-      c = this.q_hands_in[id]; // Incoming changes
-      p = VGT.hands.all[id];       // Actual hand
+    for(var id_hand in this.q_hands_in) {
+      c = this.q_hands_in[id_hand]; // Incoming changes
+      p = VGT.hands.all[id_hand];       // Actual hand
 
       // Visually update the hand's position (x,y,r,s), texture (n), and mousedown table coordinates (vd) if it's not our hand
       if(p && p.id_client != VGT.net.id){
@@ -309,7 +308,7 @@ class _Net {
 
       // Send the outbound information and clear it.
       this.nq++;
-      log(    'NETS_q_'+String(VGT.net.id), [this.nq, this.q_pieces_out, this.q_hands_out]);
+      log(    'NETS_q_'+String(VGT.net.id), this.nq, this.q_pieces_out, this.q_hands_out);
       this.io.emit('q', [this.nq, this.q_pieces_out, this.q_hands_out]);
       this.q_pieces_out = {};
       this.q_hands_out  = {};
@@ -337,7 +336,7 @@ class _Net {
   }
 
   /** We receive a queue of piece information from the server. */
-  on_q(data) { if(!this.ready) return; log('NETR_q_'+String(data[0]), data);
+  on_q(data) { if(!this.ready) return; log('NETR_q_'+String(data[0]), data[1], data);
   
     // Unpack
     var id_client = data[0];
@@ -649,7 +648,7 @@ class _Animated {
   default_settings = {
     t_transition   : 200, // Time to transition coordinates at full speed
     t_acceleration : 100, // Time to get to full speed   
-    damping        : 0.01, // Velocity damping coefficient
+    damping        : 0.03, // Velocity damping coefficient
   }
 
   constructor(value, settings) {
@@ -847,19 +846,36 @@ class _Tabletop {
   rotate_right() {this.rotate( this.settings.r_step*Math.PI/180.0);}
 
   // Rotates the selected things by their angle settings
-  rotate_selected_things(scale) {
+  rotate_selected(scale) {
     var dr, thing;
     for(var id_thing in VGT.things.selected[VGT.clients.me.team]) {
       thing = VGT.things.selected[VGT.clients.me.team][id_thing];
-      dr    = scale*thing.settings.r_step*Math.PI/180.0;
-      thing.set_xyrs(undefined, undefined, thing.r.target - dr);
+      dr    = -scale*thing.settings.r_step*Math.PI/180.0;
       
-      // Update the "starting" coordinate, too. JACK: Could snap the rotation on mouse move, and have this animated? ---
-      thing.rh -= dr;
+      // We update the target of the auxiliary rotation
+      thing.R.target += dr;
+      thing.update_q_out('R','R');
     }
   }
-  rotate_selected_things_left() {this.rotate_selected_things(1);}
-  rotate_selected_things_right(){this.rotate_selected_things(-1);}
+  rotate_selected_left()    {this.rotate_selected(1);}
+  rotate_selected_right()   {this.rotate_selected(-1);}
+  rotate_selected_to_hand() {
+    var thing;
+    for(var id_thing in VGT.things.selected[VGT.clients.me.team]) {
+      thing = VGT.things.selected[VGT.clients.me.team][id_thing];
+      thing.R.target = -thing.r.target - VGT.tabletop.r.target; 
+      thing.update_q_out('R','R');
+    }
+  }
+  rotate_selected_to_table() {
+    var thing;
+    for(var id_thing in VGT.things.selected[VGT.clients.me.team]) {
+      thing = VGT.things.selected[VGT.clients.me.team][id_thing];
+      thing.R.target = -thing.r.target;
+      thing.update_q_out('R','R');
+    }
+  }
+
 
   zoom(factor) {
 
@@ -905,8 +921,10 @@ class _Interaction {
       zoom_in  : VGT.tabletop.zoom_in.bind(VGT.tabletop),
       zoom_out : VGT.tabletop.zoom_out.bind(VGT.tabletop),
 
-      rotate_selected_things_left  : VGT.tabletop.rotate_selected_things_left.bind(VGT.tabletop),
-      rotate_selected_things_right : VGT.tabletop.rotate_selected_things_right.bind(VGT.tabletop),
+      rotate_selected_left      : VGT.tabletop.rotate_selected_left.bind(VGT.tabletop),
+      rotate_selected_right     : VGT.tabletop.rotate_selected_right.bind(VGT.tabletop),
+      rotate_selected_to_hand   : VGT.tabletop.rotate_selected_to_hand.bind(VGT.tabletop),
+      rotate_selected_to_table  : VGT.tabletop.rotate_selected_to_table.bind(VGT.tabletop),
     }
 
     // Dictionary of functions for each key
@@ -931,21 +949,32 @@ class _Interaction {
       Numpad2Down:    this.actions.pan_down,
 
       // Rotate view
-      ShiftKeyADown:      this.actions.rotate_selected_things_left,
-      ShiftArrowLeftDown: this.actions.rotate_selected_things_left,
-      ShiftNumpad4Down:   this.actions.rotate_selected_things_left,
       ShiftKeyQDown:      this.actions.rotate_left,
       KeyQDown:           this.actions.rotate_left,
       ShiftNumpad7Down:   this.actions.rotate_left,
       Numpad7Down:        this.actions.rotate_left,
 
-      ShiftKeyDDown:      this.actions.rotate_selected_things_right,
-      ShiftArrowRightDown:this.actions.rotate_selected_things_right,
-      ShiftNumpad6Down:   this.actions.rotate_selected_things_right,
       ShiftKeyEDown:      this.actions.rotate_right,
       KeyEDown:           this.actions.rotate_right,
       ShiftNumpad9Down:   this.actions.rotate_right,
       Numpad9Down:        this.actions.rotate_right,
+
+      // Rotate selected pieces
+      ShiftKeyADown:      this.actions.rotate_selected_left,
+      ShiftArrowLeftDown: this.actions.rotate_selected_left,
+      ShiftNumpad4Down:   this.actions.rotate_selected_left,
+
+      ShiftKeyWDown:      this.actions.rotate_selected_to_table,
+      ShiftArrowUpDown:   this.actions.rotate_selected_to_table,
+      ShiftNumpad8Down:   this.actions.rotate_selected_to_table,
+      
+      ShiftKeyDDown:      this.actions.rotate_selected_right,
+      ShiftArrowRightDown:this.actions.rotate_selected_right,
+      ShiftNumpad6Down:   this.actions.rotate_selected_right,
+      
+      ShiftKeySDown:      this.actions.rotate_selected_to_hand,
+      ShiftArrowDownDown: this.actions.rotate_selected_to_hand,
+      ShiftNumpad5Down:   this.actions.rotate_selected_to_hand,
 
       // Zoom
       EqualDown:          this.actions.zoom_in,
@@ -1561,7 +1590,8 @@ class _Thing {
     // Targeted location and geometry. Current locations are in the container.x, container.y, container.rotation, and container.scale.x
     this.x = new _Animated(this.settings.x);
     this.y = new _Animated(this.settings.y);
-    this.r = new _Animated(this.settings.r); // JACK: Need an animated dr for the offset from someone actually rotating the piece. 
+    this.r = new _Animated(this.settings.r); 
+    this.R = new _Animated(0);         
     this.s = new _Animated(this.settings.s);
 
     // Starting hold location
@@ -1832,8 +1862,8 @@ class _Thing {
     // Update the attribute
 
     // If it's an animated quantity, we need to send the target
-    if(['x','y','r','s'].includes(qkey)) q_out[id][qkey] = this[key].target;
-    else                                 q_out[id][qkey] = this[key];
+    if(['x','y','r','R','s'].includes(qkey)) q_out[id][qkey] = this[key].target;
+    else                                     q_out[id][qkey] = this[key];
 
     // Remember the index that will be attached to this on the next process_qs
     this.last_nqs[qkey] = VGT.net.nq+1;
@@ -1960,14 +1990,8 @@ class _Thing {
   is_enabled()  {return  this.container.visible;}
   is_disabled() {return !this.container.visible;}
 
-  /**
-   * Returns an object with x, y, r, and s.
-   */
-  get_xyrs() {return {x:this.x.value, y:this.y.value, r:this.r.value, s:this.s.value}}
-
   /** 
    * Sets the target x,y,r,s for the sprite.
-   * 
    */
   set_xyrs(x,y,r,s,immediate,do_not_send) { 
 
@@ -1991,13 +2015,14 @@ class _Thing {
 
     this.x.animate(delta);
     this.y.animate(delta);
-    this.r.animate(delta); // JACK: Here we could also animate the offset dr.
+    this.r.animate(delta); 
+    this.R.animate(delta);
     this.s.animate(delta);
 
     // Set the actual position, rotation, and scale
     this.container.x        = this.x.value;
     this.container.y        = this.y.value;
-    this.container.rotation = this.r.value; // JACK: Here we could add an additional offset like this.dr; Probably we need r1, r2, and a special r
+    this.container.rotation = this.r.value + this.R.value;
     this.container.scale.x  = this.s.value;
     this.container.scale.y  = this.s.value;
   }
