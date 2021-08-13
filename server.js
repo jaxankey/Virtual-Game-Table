@@ -353,7 +353,53 @@ io.on('connection', function(socket) {
   }
   socket.on('say', function(data) {delay_function(on_say, data)});
 
-  /** Player sends us their queue */
+
+
+  // Client has sent a z move.
+  function on_z(data) { fun.log_date('NETR_z_'+String(socket.id), 'id_piece =', data[0], 'z =', data[1]); 
+
+    // Unpack
+    var c        = state.pieces[data[0]]  // incoming piece data
+    var l        = c['l'];                // Layer
+    var zi       = c['z'];                // Initial z-position
+    var zf       = data[1];               // Final z-position
+    
+    // If zf > zi 
+    //   p.z < zi         no change
+    //   p.z == zi        set to zf
+    //   zi < p.z <= zf   subtract one
+    //   p.z > zf         no change
+    
+    // If zi > zf
+    //   p.z < zf         no change
+    //   zf <= p.z < zi   add one
+    //   p.z == zi        set to zf
+    //   p.x > zi         no change
+
+    // Loop over the pieces, updating the z's of those in the layer.
+    var p;
+    for(var i in state.pieces) if(l == state.pieces[i]['l']) { p = state.pieces;
+
+      // Do different numbering depending on where the z is relative to the initial and final values.
+      
+      // No matter what, if the z matches the initial z, this is the one to set
+      if(p.z == zi) p.z = zf;
+      
+      // If zf > zi, we're moving it up in z order, so the middle numbers shift down.
+      else if(zi < p.z && p.z <= zf) p.z--;
+
+      // If zi > zf, we're moving it lower, so the middle numbers shift up
+      else if(zf <= p.z && p.z < zi) p.z++;
+    }
+
+    // Relay this move to everyone, including the sender.
+    delay_send(io, 'z', data);
+  }
+  socket.on('z', function(data) {delay_function(on_z, data)});
+
+
+
+  // Client has sent a q of changes
   function on_q(data) { fun.log_date('NETR_q_'+String(socket.id), 'nq =', data[0], 'with', Object.keys(data[1]).length, 'Pieces', Object.keys(data[2]).length, 'Hands');
     var nq       = data[0];
     var q_pieces = data[1];
@@ -400,45 +446,6 @@ io.on('connection', function(socket) {
         }
       } // end of corrective loop over attributes
     } // end of loop over pieces
-
-    //if(z_pieces.length) console.log(z_pieces);
-    /*// Now do the z shuffle
-    for(var n in z_pieces) { zp = z_pieces[n];
-      // Layer, initial and final z values
-      l  = state.pieces[id].l;
-      zi = state.pieces[id].z;
-      zf =     q_pieces[id].z;
-      console.log('  ',id,':', q_pieces[id], l, zi, '->', zf);
-
-      // If we have a zi, this isn't the "initial structure" sent by the user the first time,
-      // meaning we have to shuffle the layer around and update everyone
-      if(zi != undefined) {
-
-        // Remember which layer is getting the update so we can relay the final result to everyone
-        if(zi != zf) z_change_layers.push(l);
-
-        
-        // Loop over the pieces in the layer.
-        
-        // If zf > zi 
-        //   p.z < zi         no change
-        //   p.z == zi        set to zf
-        //   zi < p.z <= zf   subtract one
-        //   p.z > zf         no change
-        
-        // If zi < zf
-        //   p.z < zf         no change
-        //   zf <= p.z < zi   add one
-        //   p.z == zi        set to zf
-        //   p.x > zi         no change
-
-        if()
-
-      }
-    }*/
-
-
-
 
 
     // Loop over the hands q.

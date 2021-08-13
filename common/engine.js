@@ -334,6 +334,13 @@ class _Net {
     } // End of loop over things in q_pieces
   }
 
+  // Server relayed a z command
+  on_z(data) { if(!this.ready) return; log('NETR_z', data);
+
+    // Set the z locally
+    VGT.pieces.all[data[0]]._set_z(data[1]);
+  }
+
   /** We receive a queue of piece information from the server. */
   on_q(data) { if(!this.ready) return; log('NETR_q_'+String(data[0]), data[1], data);
   
@@ -433,6 +440,7 @@ class _Net {
   /** Define what server messages to expect, and how to handle them. */
   setup_listeners() {
   
+    this.io.on('z',        this.on_z       .bind(this));
     this.io.on('q',        this.on_q       .bind(this));
     this.io.on('state',    this.on_state   .bind(this));
     this.io.on('clients',  this.on_clients .bind(this));
@@ -1097,10 +1105,6 @@ class _Interaction {
     // If it's not null, handle this
     if(thing != null) {
       
-      // Send to top or bottom, depending on button etc
-      if     (e.button == 0) VGT.things.send_selected_to_top(VGT.clients.me.team);
-      else if(e.button == 2) VGT.things.send_selected_to_bottom(VGT.clients.me.team);
-      
       // If we're not holding shift and it's not already a thing we've selected, 
       // unselect everything.
       if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.things.unselect_all(VGT.clients.me.team);
@@ -1113,6 +1117,10 @@ class _Interaction {
         thing.select(VGT.clients.me.team); 
         VGT.things.hold_selected(VGT.net.id, false);
       }
+
+      // Send the selection to the top or bottom, depending on button etc
+      if     (e.button == 0) VGT.things.send_selected_to_top(VGT.clients.me.team);
+      else if(e.button == 2) VGT.things.send_selected_to_bottom(VGT.clients.me.team);
 
     } // End of "found thing under pointer"
 
@@ -1888,8 +1896,11 @@ class _Thing {
   }
 
   // User function for setting the z-index of this piece.
-  set_z(z) {
-
+  // This will do NOTHING locally, waiting instead for the server
+  // to tell us what to do with it. Here we just send a z request to the server immediately.
+  set_z(z) { 
+    log('NETS_z_'+String(VGT.net.id), [this.id_piece, z]);
+    VGT.net.io.emit('z', [this.id_piece, z]);
   }
 
   // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
@@ -2072,7 +2083,7 @@ class _Things {
   }
 
   // Given a list of things, returns an object, indexed by layer, full of lists of things, sorted by z-index.
-  sort_by_z(things, descending) { console.log('sort_by_z()', things, descending);
+  sort_by_z(things, descending) { //console.log('sort_by_z()', things, descending);
 
     // First sort by layers
     var sorted = {}, layer;
