@@ -204,14 +204,13 @@ class _Net {
   /** Deals with the incoming AND outbound packets. */
   process_queues() {
     if(!this.ready) return;
-    var c, p;
+    var c, p, n, l;
     
     /////////////////////////////////////////
     // INBOUND
 
-    // Will be a list of [{p:piece, z:z}, ...] for all the pieces in q_pieces_in having z.
-    // We assemble this for easy sorting and restacking below.
-    //var qz = [];
+    // object, indexed by layer, of lists of piece datas having z-order to set
+    var zs = {}; 
 
     // Loop over the pieces in the q to handle 'simple' quantities
     for(var id_piece in this.q_pieces_in) { 
@@ -221,6 +220,20 @@ class _Net {
       // If it's a valid piece
       if(p) {
         
+        // Put it in the z-order
+        if(c.z != undefined && c.l != undefined) { 
+
+          // Give easy access to the piece object
+          c.piece = p; 
+          c.id = id_piece;
+          
+          // Make sure we have a list for this layer
+          if(!zs[c.l]) zs[c.l] = [];
+
+          // Add to the list for this layer
+          zs[c.l].push(c); 
+        } 
+
         // We do not want to let the server change anything about the pieces we're holding, 
         // UNLESS it's overriding our hold status, for example, when someone else grabbed it first. 
         // As such, we should update the hold status first!
@@ -273,6 +286,19 @@ class _Net {
     // Clear out the piece queue
     this.q_pieces_in = {}; 
   
+    // Get an object, indexed by layer, with lists of pieces, sorted by z.
+    if(zs['0']) console.log(zs);
+
+    // Loop over the layers, sorting by the desired z, and then sending to that z
+    for(l in zs) { if(zs[l].length == 0) continue;
+
+      // Sort by z
+      sort_objects_by_key(zs[l], 'z');
+      
+      // Now insert them from bottom to top.
+      for(n in zs[l]) zs[l][n].piece._set_z(zs[l][n].z);
+    }
+
     // Loop over the hands in the input queue
     for(var id_hand in this.q_hands_in) {
       c = this.q_hands_in[id_hand]; // Incoming changes
@@ -2082,7 +2108,7 @@ class _Things {
     }
   }
 
-  // Given a list of things, returns an object, indexed by layer, full of lists of things, sorted by z-index.
+  // Given a list of things, returns an object, indexed by layer, full of lists of things sorted by z-index.
   sort_by_z(things, descending) { //console.log('sort_by_z()', things, descending);
 
     // First sort by layers

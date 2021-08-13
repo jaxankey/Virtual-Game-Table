@@ -360,6 +360,7 @@ io.on('connection', function(socket) {
 
     // Unpack
     var c        = state.pieces[data[0]]  // incoming piece data
+    if(!c) return;                        // Only happens if someone has the wrong number of pieces compared to the server.
     var l        = c['l'];                // Layer
     var zi       = c['z'];                // Initial z-position
     var zf       = data[1];               // Final z-position
@@ -378,18 +379,18 @@ io.on('connection', function(socket) {
 
     // Loop over the pieces, updating the z's of those in the layer.
     var p;
-    for(var i in state.pieces) if(l == state.pieces[i]['l']) { p = state.pieces;
+    for(var i in state.pieces) if(l == state.pieces[i]['l']) { p = state.pieces[i];
 
       // Do different numbering depending on where the z is relative to the initial and final values.
       
       // No matter what, if the z matches the initial z, this is the one to set
-      if(p.z == zi) p.z = zf;
+      if(p.z == zi) { p.z = zf; }
       
       // If zf > zi, we're moving it up in z order, so the middle numbers shift down.
-      else if(zi < p.z && p.z <= zf) p.z--;
+      else if(zi < p.z && p.z <= zf) { p.z--; }
 
       // If zi > zf, we're moving it lower, so the middle numbers shift up
-      else if(zf <= p.z && p.z < zi) p.z++;
+      else if(zf <= p.z && p.z < zi) { p.z++; }
     }
 
     // Relay this move to everyone, including the sender.
@@ -487,14 +488,11 @@ io.on('connection', function(socket) {
 // Send a full update to everyone, excluding recently touched pieces
 function send_full_update() { 
   
-  // Create a similar object to state.pieces, but without the z or l information
-  // which is handled separately and totally differently.
+  // Create a similar object to state.pieces, but without the unneeded information
   data = { ...state.pieces };
   for(id in data) { 
-    delete data[id]['z']; 
     delete data[id]['z.i']; 
     delete data[id]['z.n']; 
-    delete data[id]['l'];
     delete data[id]['l.i'];
     delete data[id]['l.n'];
   }
@@ -508,13 +506,6 @@ function send_full_update() {
   setTimeout(send_full_update, state.t_full_update);
 
 }; send_full_update(); // end / launch of send_full_update()
-
-
-// Start a timer for maintenance / updates
-setInterval(function() {
-
-}, 250);
-
 
 
 // actually start listening for requests
