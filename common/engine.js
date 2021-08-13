@@ -49,7 +49,6 @@ OTHER PARADIGMS & APPROACHES
 NET OPTIMIZATIONS
 
 CURRENTLY
- * Find a JACK comment and fix that too.
 
 */
 
@@ -189,13 +188,11 @@ class _Net {
     // Queue of outbound information for the next housekeeping.
     this.q_pieces_out   = {}; 
     this.q_hands_out    = {}; 
-    //this.q_polygons_out = {};
-
+    
     // Queue of inbound information for the next housekeeping.
     this.q_pieces_in    = {}; 
     this.q_hands_in     = {};
-    //this.q_polygons_out = {}; 
-
+    
     // Last sent q packet number
     this.nq = 0;  
 
@@ -238,8 +235,6 @@ class _Net {
         //   - The second packet, with the corrected (or absent) change of who is holding will arrive next.
         //         This packet will have ih=1 or undefined and ih.i=2 or undefined
         //
-
-        // JACK: Need to send the piece's z-index.
         
         // All attributes have 
         //   - their value, e.g. 'ih' for the id of the holder
@@ -250,11 +245,11 @@ class _Net {
         // update the holder id if necessary. The server's job is to ensure that it relays the correct holder always.
         // ALSO we should ensure that, if it's either someone else's packet, or it's ours and we 
         // have not since queued a newer packet updating the hold status
-        console.log('  c.id', id_piece, 'c.ih', c.ih, 'c.ih.i', c['ih.i'], 'VGT.net.id', VGT.net.id);
+        //console.log('  c.id', id_piece, 'c.ih', c.ih, 'c.ih.i', c['ih.i'], 'VGT.net.id', VGT.net.id);
         if(c['ih'] != undefined && (c['ih.i'] != VGT.net.id || c['ih.n'] >= p.last_nqs['ih'])) {
-          console.log('  setting hold to', c.ih);
-          p.hold(c.ih, true, true); // client_id, force, do_not_send)
-          console.log('    set to', p.id_client_hold);
+          //console.log('  setting hold to', c.ih);
+          p.hold(c.ih, true, true); // client_id, force, do_not_update_q_out)
+          //console.log('    set to', p.id_client_hold);
         } 
 
         // Now update the different attributes only if we're not holding it (our hold supercedes everything)
@@ -273,17 +268,8 @@ class _Net {
       
       } // End of valid piece
     
-      // If it doesn't have a z, we're done with it, so delete it. 
-      //if(c['z'] != undefined) qz.push({p:p, z:c['z']})
-
     }; // End of loop over q_pieces_in
     
-    // At this point, this.q_pieces_in contains only those entries with z in them.
-
-    // First, sort the list by z values in decreasing order
-    //qz = sort_objects_by_key(qz, 'z', true);
-
-
     // Clear out the piece queue
     this.q_pieces_in = {}; 
   
@@ -370,6 +356,13 @@ class _Net {
     var id           = data[0];
     var server_state = data[1];
     
+    // If there are no pieces on the server, send all of the layer and z data
+    if(Object.keys(data[1].pieces).length != VGT.pieces.all.length) {
+      console.log('  NETR_state: Mismatched number of pieces; sending layer and z info...');
+      for(var n in VGT.pieces.all) 
+        VGT.pieces.all[n].update_q_out('z').update_q_out('l');
+    }
+
     // Store all the info we need to keep locally
     this.clients = server_state.clients;
 
@@ -1059,7 +1052,7 @@ class _Interaction {
         y0 = (y-container.y)/container.scale.y;
 
         // Undo the instantaneous container rotation of the piece
-        [x0,y0] = rotate_vector([x0,y0],-container.rotation); // JACK: Might need to worry about thing.dr here as well? I think not.
+        [x0,y0] = rotate_vector([x0,y0],-container.rotation); 
 
         // Get the scaled bounds and test
         if(container.thing.contains(x0,y0)) return container.thing;
@@ -1105,8 +1098,8 @@ class _Interaction {
     if(thing != null) {
       
       // Send to top or bottom, depending on button etc
-      if     (e.button == 0) thing.send_to_top();
-      else if(e.button == 2) thing.send_to_bottom();
+      if     (e.button == 0) VGT.things.send_selected_to_top(VGT.clients.me.team);
+      else if(e.button == 2) VGT.things.send_selected_to_bottom(VGT.clients.me.team);
       
       // If we're not holding shift and it's not already a thing we've selected, 
       // unselect everything.
@@ -1199,9 +1192,6 @@ class _Interaction {
             thing.yh + y0 + dyr,
             thing.rh + r0,    // updates the rotation with how much the hand has rotated
             undefined, true); // immediately, no animation, so that they stay rigid with the mouse
-            // JACK: it's here that the rotation animation from piece rotation ends; r.target = r.value; r.velocity = 0
-            //       Could separately animate piece rotations with an animated quantity; a separate rotator that determines the angle and is only 
-            //       changed when rotating the pieces. So, set_xyrs could always include an offset.
         }
       } 
       
@@ -1659,11 +1649,11 @@ class _Thing {
   }
 
   // Resets to the settings
-  reset(immediate, do_not_send) {
-    this.x.set(this.settings.x, immediate); this.x.velocity=0; this.update_q_out('x', 'x', do_not_send);
-    this.y.set(this.settings.y, immediate); this.y.velocity=0; this.update_q_out('y', 'y', do_not_send);
-    this.r.set(this.settings.r, immediate); this.r.velocity=0; this.update_q_out('r', 'r', do_not_send);
-    this.s.set(this.settings.s, immediate); this.s.velocity=0; this.update_q_out('s', 's', do_not_send);
+  reset(immediate, do_not_update_q_out) {
+    this.x.set(this.settings.x, immediate); this.x.velocity=0; this.update_q_out('x', 'x', do_not_update_q_out);
+    this.y.set(this.settings.y, immediate); this.y.velocity=0; this.update_q_out('y', 'y', do_not_update_q_out);
+    this.r.set(this.settings.r, immediate); this.r.velocity=0; this.update_q_out('r', 'r', do_not_update_q_out);
+    this.s.set(this.settings.s, immediate); this.s.velocity=0; this.update_q_out('s', 's', do_not_update_q_out);
   }
 
   /** Sets the tint of all the textures */
@@ -1723,7 +1713,7 @@ class _Thing {
   /**
    * Sets the controller id. 0 means no one is in control (server).
    */
-  hold(id_client, force, do_not_send) { // log('thing.hold()', this.id_thing, id_client, force, this.id_client_hold);
+  hold(id_client, force, do_not_update_q_out) { // log('thing.hold()', this.id_thing, id_client, force, this.id_client_hold);
 
     // If the id is undefined (used by process_queues), there is no change, 
     // or it is already being held by any valid client (and no force), do nothing.
@@ -1732,7 +1722,7 @@ class _Thing {
     && !force) return;
 
     // If it's the server holding, this is equivalent to a release
-    else if(id_client == 0) this.release(id_client, force, do_not_send);
+    else if(id_client == 0) this.release(id_client, force, do_not_update_q_out);
 
     // Otherwise, if it's not being held already (or the client is invalid), or we're forcing hold it.
     else if(this.id_client_hold == 0 || VGT.clients.all[this.id_client_hold] == undefined || force) {
@@ -1756,14 +1746,14 @@ class _Thing {
       VGT.things.held[id_client][this.id_thing] = this;
 
       // If we're supposed to send an update, make sure there is an entry in the queue
-      this.update_q_out('id_client_hold', 'ih', do_not_send);
+      this.update_q_out('id_client_hold', 'ih', do_not_update_q_out);
     } 
   } // End of hold
 
   /**
    * Uncontrols a thing.
    */
-  release(id_client, force, do_not_send) { //log('thing.release()', this.id_thing, id_client, force, do_not_send, this.id_client_hold);
+  release(id_client, force, do_not_update_q_out) { //log('thing.release()', this.id_thing, id_client, force, do_not_update_q_out, this.id_client_hold);
 
     // If we're already not holding
     // or there is a valid holder that is different from the requestor (and we aren't overriding this)
@@ -1781,13 +1771,13 @@ class _Thing {
     this.id_client_hold = 0;
 
     // If we're supposed to send an update, make sure there is an entry in the queue
-    this.update_q_out('id_client_hold', 'ih', do_not_send);
+    this.update_q_out('id_client_hold', 'ih', do_not_update_q_out);
   }
 
   /**
    * Selects the thing visually and adds it to the approriate list of selected things.
    */
-  select(team, do_not_send) { //log('thing.select()', this.id_thing, team, do_not_send, this.team_select, this.id_client_hold);
+  select(team, do_not_update_q_out) { //log('thing.select()', this.id_thing, team, do_not_update_q_out, this.team_select, this.id_client_hold);
 
     // If team is not specified (used by process_queues()), there is no change, or
     // it is being held by someone who is not on the same team, do nothing.
@@ -1796,7 +1786,7 @@ class _Thing {
        && VGT.clients.all[this.id_client_hold].team != team) return;
 
     // If team is -1, unselect it and poop out
-    if(team < 0) return this.unselect(do_not_send);
+    if(team < 0) return this.unselect(do_not_update_q_out);
 
     // If there is any team selecting this already, make sure to unselect it to remove it
     // from other lists! (Do not send a network packet for this).
@@ -1806,7 +1796,7 @@ class _Thing {
     this.team_select = team;
 
     // If we're supposed to send an update, make sure there is an entry in the queue
-    this.update_q_out('team_select', 'ts', do_not_send);
+    this.update_q_out('team_select', 'ts', do_not_update_q_out);
 
     // Make sure there is an object to hold selected things for this id
     if(VGT.things.selected[team] == undefined) VGT.things.selected[team] = {};
@@ -1825,7 +1815,7 @@ class _Thing {
   /**
    * Unselects thing. This will not unselect anything held by someone else.
    */
-  unselect(do_not_send) { //log('thing.unselect()', this.id_thing, this.selected_id);
+  unselect(do_not_update_q_out) { //log('thing.unselect()', this.id_thing, this.selected_id);
 
     // If we're already unselected, or it is held by someone do nothing
     if(this.team_select < 0 && this.id_client_hold) return;
@@ -1837,7 +1827,7 @@ class _Thing {
     this.team_select = -1;
 
     // If we're supposed to send an update, make sure there is an entry in the queue
-    this.update_q_out('team_select', 'ts', do_not_send);
+    this.update_q_out('team_select', 'ts', do_not_update_q_out);
 
     // Unglow it
     this.container.filters = [];
@@ -1860,14 +1850,14 @@ class _Thing {
       var q_out = VGT.net.q_hands_out;
       var id    = this.id_hand;
     }
-    else return;
+    else return this;
 
     // If we are only updating what exists, look for the key
     if(only_if_exists) {
 
       // If the piece or qkey doesn't exist already, we're done!
-      if(!q_out[id])       return;
-      if(!q_out[id][qkey]) return;
+      if(!q_out[id])       return this;
+      if(!q_out[id][qkey]) return this;
     }
 
     // Otherwise, make sure the queue has an object to hold this data
@@ -1877,15 +1867,17 @@ class _Thing {
 
     // Update the q depending on the kind of data it is.
     if(['x','y','r','R','s'].includes(qkey)) q_out[id][qkey] = this[key].target;
-    else if(qkey == 'z')                     q_out[id][qkey] = this.get_z_index();
+    else if(qkey == 'z')                     q_out[id][qkey] = this.get_z();
+    else if(qkey == 'l')                     q_out[id][qkey] = Math.floor(this.settings.layer);
     else                                     q_out[id][qkey] = this[key];
 
     // Remember the index that will be attached to this on the next process_qs
     this.last_nqs[qkey] = VGT.net.nq+1;
+    return this;
   }
 
   // Returns the z-order index (pieces with lower index are behind this one)
-  get_z_index() {
+  get_z() {
 
     // Get the parent of the container
     var parent = this.container.parent;
@@ -1895,13 +1887,18 @@ class _Thing {
     else       return -1;
   }
 
-  // Set the z-order index
-  set_z_index(z, do_not_send) {
+  // User function for setting the z-index of this piece.
+  set_z(z) {
+
+  }
+
+  // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
+  _set_z(z) {
     // Get the parent of the container
     var parent = this.container.parent;
     
     // Get the current index
-    var n_old = this.get_z_index();
+    var n_old = this.get_z();
 
     // If it's in the list, pop it out and stick it where it belongs
     if(n_old >= 0) {
@@ -1915,22 +1912,19 @@ class _Thing {
 
       // stuff it back in
       parent.addChildAt(c, z);
-
-      // Send the info
-      if(!do_not_send) this.update_q_out('z');
     }
   }
 
-  send_to_top(do_not_send) {
+  send_to_top() {
 
     // Get the parent of the container
     var parent = this.container.parent;
     
     // If it exists, send it to the top of the parent's list.
-    if(parent) this.set_z_index(parent.children.length-1, do_not_send);
+    if(parent) this.set_z(parent.children.length-1);
   }
 
-  send_to_bottom(do_not_send) {this.set_z_index(0, do_not_send);}
+  send_to_bottom() {this.set_z(0);}
 
   /**
    * Fills the container with all the sprites. This can be overloaded for more complex
@@ -1956,7 +1950,7 @@ class _Thing {
   /**
    * Sets the texture index and resets the clock.
    */
-  set_texture_index(n, do_not_send) {
+  set_texture_index(n, do_not_update_q_out) {
     if(n == undefined) return;
 
     // Loop over the layers, setting the texture of each
@@ -1971,10 +1965,10 @@ class _Thing {
 
     // Remember the index we're on for cycling purposes
     this._n = n_valid;
-    //log('_Piece.set_texture_index()', this._n, do_not_send);
+    //log('_Piece.set_texture_index()', this._n, do_not_update_q_out);
 
     // If we're supposed to send an update, make sure there is an entry in the queue
-    this.update_q_out('_n', 'n', do_not_send);
+    this.update_q_out('_n', 'n', do_not_update_q_out);
 
     // Record the time of this switch for animation purposes
     this.t_last_texture = Date.now();
@@ -2011,13 +2005,13 @@ class _Thing {
   /** 
    * Sets the target x,y,r,s for the sprite.
    */
-  set_xyrs(x,y,r,s,immediate,do_not_send) { 
+  set_xyrs(x,y,r,s,immediate,do_not_update_q_out) { 
 
     // Now for each supplied coordinate, update and send
-    if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_send);}
-    if(y!=undefined && y != this.y.target) {this.y.set(y,immediate); this.update_q_out('y', 'y', do_not_send);}
-    if(r!=undefined && r != this.r.target) {this.r.set(r,immediate); this.update_q_out('r', 'r', do_not_send);}
-    if(s!=undefined && s != this.s.target) {this.s.set(s,immediate); this.update_q_out('s', 's', do_not_send);}
+    if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}
+    if(y!=undefined && y != this.y.target) {this.y.set(y,immediate); this.update_q_out('y', 'y', do_not_update_q_out);}
+    if(r!=undefined && r != this.r.target) {this.r.set(r,immediate); this.update_q_out('r', 'r', do_not_update_q_out);}
+    if(s!=undefined && s != this.s.target) {this.s.set(s,immediate); this.update_q_out('s', 's', do_not_update_q_out);}
     this.t_last_move = Date.now();
   }
 
@@ -2064,13 +2058,13 @@ class _Things {
   reset() {for(var n in this.all) this.all[n].reset(); }
 
   /** Releases all things with the supplied client id. */
-  release_all(id_client, force, do_not_send) { log('_Things.release_all()', id_client, this.held[id_client]);
+  release_all(id_client, force, do_not_update_q_out) { log('_Things.release_all()', id_client, this.held[id_client]);
     
     // If we have a held list for this client id
     if(this.held[id_client]) {
       
       // Loop over the list and reset the id_client_hold
-      for(var id_thing in this.held[id_client]) this.held[id_client][id_thing].release(id_client, force, do_not_send);
+      for(var id_thing in this.held[id_client]) this.held[id_client][id_thing].release(id_client, force, do_not_update_q_out);
 
       // Delete the list
       delete this.held[id_client];
@@ -2085,7 +2079,7 @@ class _Things {
     for(var n in things) { 
 
       // Attach its z-value for easy sorting
-      things[n]._z = things[n].get_z_index();
+      things[n]._z = things[n].get_z();
 
       // If we don't have a list for this layer yet, make an empty one
       layer = things[n].settings.layer;
@@ -2101,20 +2095,31 @@ class _Things {
     return sorted;
   }
 
-  send_all_to_top(id_client, force, do_not_send) { log('_Things.send_all_to_bottom()', id_client, this.held[id_client]);
-   
+  // Sends all selected things to the top.
+  send_selected_to_top(team) { 
+
     // If we have a held list for this client id
-    if(this.held[id_client]) {
+    if(this.selected[team]) {
       
-      // First sort these by ---
+      // Get the sorted held objects, indexed by layer
+      var sorted = this.sort_by_z(Object.values(this.selected[team]));
+      
+      // Send them to the top, bottom first
+      for(var l in sorted) for(var n in sorted[l]) sorted[l][n].send_to_top();
+    }
+  }
 
+  // Sends all selected things to the bottom.
+  send_selected_to_bottom(team) { 
 
-      // Loop over the list and send
-      for(var id_thing in this.held[id_client]) 
-        this.held[id_client][id_thing].release(id_client, force, do_not_send);
-
-      // Delete the list
-      delete this.held[id_client];
+    // If we have a held list for this client id
+    if(this.selected[team]) {
+      
+      // Get the sorted held objects, indexed by layer
+      var sorted = this.sort_by_z(Object.values(this.selected[team]), true);
+      
+      // Send them to the top, bottom first
+      for(var l in sorted) for(var n in sorted[l]) sorted[l][n].send_to_bottom();
     }
   }
 
@@ -2130,11 +2135,11 @@ class _Things {
    * Sets up the drag for all selected things for this team
    * @param {int} team 
    */
-  hold_selected(id_client, force, do_not_send) { log('VGT.things.hold_selected()', id_client, force);
+  hold_selected(id_client, force, do_not_update_q_out) { log('VGT.things.hold_selected()', id_client, force);
 
     // Loop over the selected things and hold whatever isn't already held by someone else.
     for(var k in this.selected[VGT.clients.all[id_client].team]) 
-      this.selected[VGT.clients.all[id_client].team][k].hold(id_client, force, do_not_send);
+      this.selected[VGT.clients.all[id_client].team][k].hold(id_client, force, do_not_update_q_out);
   }
 
   /**
@@ -2398,7 +2403,7 @@ class _Hand extends _Thing {
       var vs = [ [0,0], [-v[0],0], [-v[0],-v[1]], [0,-v[1]] ];
       
       // If I have a hand, update the selection rectangle to extend back to where the click originated
-      this.polygon.set_vertices(vs, true, true ); // immediate, do_not_send (if I end up coding this...)
+      this.polygon.set_vertices(vs, true, true ); // immediate, do_not_update_q_out (if I end up coding this...)
     
       // At a reduced frame rate, check for pieces within the polygon
       if(VGT.pixi.n_loop % 1 == 0 && this.is_me()) {

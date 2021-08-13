@@ -367,7 +367,7 @@ io.on('connection', function(socket) {
       if(!state.pieces[id]) state.pieces[id] = {};
 
       // First make sure the holder exists in the current socket list
-      if( state.pieces[id]['ih'] 
+      if( state.pieces[id]['ih'] // If there is a holder id provided
       && !Object.keys(sockets).includes(String(state.pieces[id]['ih'])) ) {
         //console.log('  holder socket.id', String(state.pieces[id]['ih']), 'not in', Object.keys(sockets), 'removing');
         delete state.pieces[id]['ih'];
@@ -377,8 +377,8 @@ io.on('connection', function(socket) {
 
       // If no one is hold it (0 or undefined) OR the holder is this client, set a flag to update the server state for this piece
       // Otherwise, we update the incoming q_pieces state with that of the server
-      update_server_piece = !state.pieces[id]['ih'] || state.pieces[id]['ih'] == socket.id;
-      
+      update_server_piece = !state.pieces[id]['ih'] || state.pieces[id]['ih'] == socket.id;    
+
       // Loop over attributes and transfer or defer to state, depending on who is holding the piece
       for(k in q_pieces[id]) {
         
@@ -398,9 +398,48 @@ io.on('connection', function(socket) {
           q_pieces[id][k+'.i'] = state.pieces[id][k+'.i'];
           q_pieces[id][k+'.n'] = state.pieces[id][k+'.i'];
         }
-
       } // end of corrective loop over attributes
     } // end of loop over pieces
+
+    //if(z_pieces.length) console.log(z_pieces);
+    /*// Now do the z shuffle
+    for(var n in z_pieces) { zp = z_pieces[n];
+      // Layer, initial and final z values
+      l  = state.pieces[id].l;
+      zi = state.pieces[id].z;
+      zf =     q_pieces[id].z;
+      console.log('  ',id,':', q_pieces[id], l, zi, '->', zf);
+
+      // If we have a zi, this isn't the "initial structure" sent by the user the first time,
+      // meaning we have to shuffle the layer around and update everyone
+      if(zi != undefined) {
+
+        // Remember which layer is getting the update so we can relay the final result to everyone
+        if(zi != zf) z_change_layers.push(l);
+
+        
+        // Loop over the pieces in the layer.
+        
+        // If zf > zi 
+        //   p.z < zi         no change
+        //   p.z == zi        set to zf
+        //   zi < p.z <= zf   subtract one
+        //   p.z > zf         no change
+        
+        // If zi < zf
+        //   p.z < zf         no change
+        //   zf <= p.z < zi   add one
+        //   p.z == zi        set to zf
+        //   p.x > zi         no change
+
+        if()
+
+      }
+    }*/
+
+
+
+
 
     // Loop over the hands q.
     for(var id in q_hands) {
@@ -441,19 +480,22 @@ io.on('connection', function(socket) {
 // Send a full update to everyone, excluding recently touched pieces
 function send_full_update() { 
   
-  /*// Loop over all the pieces we know about, and add the long untouched pieces to 
-  // the outbound queue
-  var q_pieces = {};
-  var t        = Date.now();
-  for(var id in state.pieces) { var p = state.pieces[id];
-    
-    // If it's been awhile since anyone touched this piece, add it.
-    if(t-p['tq'] > state.t_block_update) q_pieces[id] = p;
-  }*/
+  // Create a similar object to state.pieces, but without the z or l information
+  // which is handled separately and totally differently.
+  data = { ...state.pieces };
+  for(id in data) { 
+    delete data[id]['z']; 
+    delete data[id]['z.i']; 
+    delete data[id]['z.n']; 
+    delete data[id]['l'];
+    delete data[id]['l.i'];
+    delete data[id]['l.n'];
+  }
 
   // Send the queue
-  fun.log_date('send_full_update()', Object.keys(state.pieces).length, 'pieces');
-  delay_send(io, 'q', [0, 0, state.pieces, {}]);
+  fun.log_date('send_full_update()', Object.keys(data).length, 'pieces');
+
+  delay_send(io, 'q', [0, 0, data, {}]);
 
   // Start the next full update
   setTimeout(send_full_update, state.t_full_update);
