@@ -1135,18 +1135,18 @@ class _Interaction {
       // unselect everything.
       if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.things.unselect_all(VGT.clients.me.team);
       
-      // If we're holding shift and it's already selected, deselect
+      // If we're holding shift and it's already selected, and we're not deselect
       if(e.shiftKey && thing.team_select == VGT.clients.me.team) thing.unselect()
 
-      // Otherwise, select it and hold everything.
+      // Otherwise, select it and hold everything, sending it to the top or bottom.
       else {
         thing.select(VGT.clients.me.team); 
         VGT.things.hold_selected(VGT.net.id, false);
-      }
 
-      // Send the selection to the top or bottom, depending on button etc
-      if     (e.button == 0) VGT.things.send_selected_to_top(VGT.clients.me.team);
-      else if(e.button == 2) VGT.things.send_selected_to_bottom(VGT.clients.me.team);
+        // Send the selection to the top or bottom, depending on button etc
+        if     (e.button == 0) VGT.things.send_selected_to_top(VGT.clients.me.team);
+        else if(e.button == 2) VGT.things.send_selected_to_bottom(VGT.clients.me.team);
+      }
 
     } // End of "found thing under pointer"
 
@@ -1156,8 +1156,16 @@ class _Interaction {
       // If we're clicking the tabletop without shift, unselect everything
       if(!e.shiftKey) VGT.things.unselect_all(VGT.clients.me.team);
 
-      // If we're going to start dragging the rectangle, send the pointer down table coordinates
-      if(e.button == 2 && hand) { hand.vd = v; hand.update_q_out('vd'); }
+      // If we're going to start dragging the rectangle, send the table coordinates of the click
+      if(e.button == 2 && hand) { 
+
+        // Keep the coordinates of the click (starting coordinates of the box), and tell everyone
+        hand.vd = v; 
+        hand.update_q_out('vd'); 
+
+        // Remember the originally selected items if we're holding shift
+        if(e.shiftKey) hand.originally_selected = Object.values(VGT.things.selected[VGT.clients.me.team]);
+      }
     }
   } // End of onpointerdown
 
@@ -2448,16 +2456,12 @@ class _Hand extends _Thing {
         // Get the polygon in tabletop coordinates
         var poly = this.polygon.get_tabletop_polygon();
 
-        //VGT.pieces.all[0].set_xyrs(poly.points[0], poly.points[1]);
-        //VGT.pieces.all[1].set_xyrs(poly.points[2], poly.points[3]);
-        //VGT.pieces.all[2].set_xyrs(poly.points[4], poly.points[5]);
-
         // Loop over the pieces and select those that are in it.
         var p;
         for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
           if(poly.contains(p.x.value, p.y.value)) 
             p.select(VGT.clients.me.team);
-          else
+          else if(this.originally_selected && !this.originally_selected.includes(p))
             p.unselect();
         }
         
