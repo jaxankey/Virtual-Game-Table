@@ -81,10 +81,13 @@ var p = [];
 p[0] = new VGT.Piece({...defaults, texture_paths:[['sj.png', 'back.png']]});
 for(var n=1; n<=4; n++) p[n] = new VGT.Piece({...defaults, texture_paths:[[String(n)+'h.png', 'back.png']]});
 
-defaults = {texture_root:'cards', s:1.2, layer:'2', local_snaps:[{}]};
+defaults = {texture_root:'cards', s:1.2, layer:2, local_snaps:[{}]};
 for(var n=5; n<=9; n++) p[n] = new VGT.Piece({...defaults, texture_paths:[[String(n)+'h.png', 'back.png']]});
 
+defaults = {texture_root:'cards', s:5, layer:1, local_snaps:[{type:VGT.SnapGrid, boundary: [-75,-75, 75,-75, 75,75, -75,75]}]}
+var P = new VGT.Piece({...defaults, texture_paths:[['bj.png', 'back.png']]});
 
+var g = new VGT.SnapGrid({boundary: [-225,-225, 225,-225, 225,225, -225,225]})
 
 
 /** Function to start a new game */ 

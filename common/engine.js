@@ -598,7 +598,13 @@ class _Pixi {
         // Create the new layer and add it to the tabletop
         var l = new PIXI.Container();
         VGT.tabletop.layers[thing.settings.layer] = l;
-        VGT.tabletop.container.addChild(l);
+        //VGT.tabletop.container.addChild(l);
+        // Remove all layers and add them in order
+        VGT.tabletop.container.removeChildren();
+
+        // Now add them again
+        for(var n in VGT.tabletop.layers) if(VGT.tabletop.layers[n]) 
+          VGT.tabletop.container.addChild(VGT.tabletop.layers[n]);
 
         // Find the layer_hands and pop it to the top.
         if(VGT.tabletop.layer_hands) {
@@ -1600,8 +1606,9 @@ class _SnapCircle {
     var v, x, y, r, parent = this.settings.parent;
 
     // If the parent is the piece or the parent is held, do nothing
-    // Note checking if the piece is held here wouldn't prevent release collapse always, since
-    // the pieces are released one at a time.
+    // Note checking if the piece is held here would randomly prevent snapping
+    // to released pieces, because they're released one at a time. 
+    // Could add 'things to avoid' list or somethign.
     if(parent == thing) return false;
 
     // If the parent is the tabletop, use the tabletop coordinates
@@ -1648,6 +1655,107 @@ class _SnapCircle {
   }
 }
 VGT.SnapCircle = _SnapCircle;
+
+// A single snap point; if a thing is dropped near it and this point is in its list, the xyrs coordinates will adjust
+class _SnapGrid {
+
+  default_settings = {
+    parent: undefined,   // Parent Thing or Tabletop defining the coordinate system; undefined = tabletop
+    x0: 0,               // Origin x value
+    y0: 0,               // Origin y value
+    ax: 50,              // Basis vector a, x-component
+    ay: 0,               // Basis vector a, y-component
+    bx: 0,               // Basis vector b, x-component
+    by: 50,              // Basis vector b, y-component
+    r: undefined,        // Snap r value target; undefined = no snap
+    s: undefined,        // Snap s value target; undefined = no snap
+    boundary: undefined, // List of [x1,y1,x2,y2,...] sent to create a PIXI.Polygon (this.polygon), which defines the boundary in which the nearest grid point is returned
+    lists: [],           // Other list names (strings) other than 'all' to which this snap should be added in VGT.snaps upon creation
+  }
+
+  constructor(settings) {
+   
+    // Store the settings, starting with defaults then overrides.
+    this.settings = {...this.default_settings, ...settings};
+
+    // Create the boundary polygon
+    if(this.settings.boundary) this.boundary = new PIXI.Polygon(this.settings.boundary);
+    else                       this.boundary = false;
+    console.log('HAY', this.settings.boundary, this.boundary);
+    
+    // Add it to the master list
+    VGT.snaps.add_snap(this);
+  }
+
+  // Returns a distance score (usually distance squared for speed reasons) between the thing target and the snap
+  get_relationship(thing) {
+
+    var parent = this.settings.parent;
+
+    // If the parent is the piece or the parent is held, do nothing
+    // Note checking if the piece is held here would randomly prevent snapping
+    // to released pieces, because they're released one at a time. 
+    // Could add 'things to avoid' list or somethign.
+    if(parent == thing) return false;
+
+    // If the parent is the tabletop, use the tabletop coordinates
+    else if(parent == undefined || parent == VGT.tabletop) {
+      var x = thing.x.target;
+      var y = thing.y.target;
+    }
+
+    // Otherwise, the parent is a Thing, so use the parent's coordinates
+    else {
+      var v = parent.container.localTransform.applyInverse( new PIXI.Point( thing.x.target, thing.y.target ) )
+      var x = v.x;
+      var y = v.y;
+    };
+
+    // If we're withing the polygon of influence, find the nearest vertex and return the info
+    if(!this.boundary || this.boundary.contains(x,y)) {
+      
+      // Translated coordinates for the vector counting
+      var xt = x - this.settings.x0;
+      var yt = y - this.settings.y0;
+
+      // Shortcuts
+      var ax = this.settings.ax;
+      var ay = this.settings.ay;
+      var bx = this.settings.bx;
+      var by = this.settings.by;
+
+      // Find the number of basis vectors required to get to x,y
+      var Na = Math.round( (xt*by-yt*bx) / (ax*by-ay*bx) );
+      var Nb = Math.round( (xt*ay-yt*ax) / (bx*ay-by*ax) );
+
+      // Get the snapped coordinates
+      var xs = this.settings.x0 + Na*ax + Nb*bx;
+      var ys = this.settings.y0 + Na*ay + Nb*by;
+
+      // Get the difference vector for calculating the "score" below.
+      var dx = x-xs;
+      var dy = y-ys;
+
+      // Get the rotation
+      var r = this.settings.r;
+
+      // If the parent is a piece, do the transform from local to tabletop coordinates
+      if(parent != undefined && parent != VGT.tabletop) {
+        var vs = parent.container.localTransform.apply( new PIXI.Point( xs, ys ) )
+        xs = vs.x;
+        ys = vs.y;
+        if(r == undefined) r = 0;
+        r += parent.r.target + parent.R.target;
+      }
+      console.log(x,y,xs,ys,r);
+      return {score:dx*dx+dy*dy, x:xs, y:ys, r:r, s:this.settings.s};
+    }
+    
+    // Otherwise, we're not in the polygon, so return nothing.
+    else return false;
+  }
+}
+VGT.SnapGrid = _SnapGrid;
 
 // Holds the SnapPoints and SnapGrids
 class _Snaps {
@@ -1914,7 +2022,8 @@ class _Thing {
 
     // Check snap_lists for this piece; do this first so we don't snap to pieces being held still.
     var a = this.get_best_snap_relationship();
-    if(a) this.set_xyrs(a.x, a.y, a.r, a.s);
+    console.log('HAY', a)
+    if(a) this.set_xyrs(a.x, a.y, a.r, a.s); // Animate, tell the world, and do reset R.
 
     // Remove it from the list
     delete VGT.things.held[this.id_client_hold][this.id_thing];
@@ -2021,7 +2130,7 @@ class _Thing {
     // Update the q depending on the kind of data it is.
     if(['x','y','r','R','s'].includes(qkey)) q_out[id][qkey] = this[key].target;
     else if(qkey == 'z')                     q_out[id][qkey] = this.get_z();
-    else if(qkey == 'l')                     q_out[id][qkey] = Math.floor(this.settings.layer);
+    else if(qkey == 'l')                     q_out[id][qkey] = Math.round(this.settings.layer);
     else                                     q_out[id][qkey] = this[key];
 
     // Remember the index that will be attached to this on the next process_qs
@@ -2166,9 +2275,12 @@ class _Thing {
     // Now for each supplied coordinate, update and send
     if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}
     if(y!=undefined && y != this.y.target) {this.y.set(y,immediate); this.update_q_out('y', 'y', do_not_update_q_out);}
-    if(r!=undefined && r != this.r.target) {this.r.set(r,immediate); this.update_q_out('r', 'r', do_not_update_q_out);}
+    if(r!=undefined && r != this.r.target) {
+      this.r.set(r,immediate); 
+      this.update_q_out('r', 'r', do_not_update_q_out);
+      if(!do_not_reset_R) {this.set_R(0, immediate, do_not_update_q_out);}
+    }
     if(s!=undefined && s != this.s.target) {this.s.set(s,immediate); this.update_q_out('s', 's', do_not_update_q_out);}
-    if(!do_not_reset_R) {this.set_R(0, immediate, do_not_update_q_out);}
     this.t_last_move = Date.now();
   }
 
