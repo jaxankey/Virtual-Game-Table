@@ -258,11 +258,8 @@ class _Net {
         // update the holder id if necessary. The server's job is to ensure that it relays the correct holder always.
         // ALSO we should ensure that, if it's either someone else's packet, or it's ours and we 
         // have not since queued a newer packet updating the hold status
-        //console.log('  c.id', id_piece, 'c.ih', c.ih, 'c.ih.i', c['ih.i'], 'VGT.net.id', VGT.net.id);
         if(c['ih'] != undefined && (c['ih.i'] != VGT.net.id || c['ih.n'] >= p.last_nqs['ih'])) {
-          //console.log('  setting hold to', c.ih);
           p.hold(c.ih, true, true); // client_id, force, do_not_update_q_out)
-          //console.log('    set to', p.id_client_hold);
         } 
 
         // Now update the different attributes only if we're not holding it (our hold supercedes everything)
@@ -286,9 +283,6 @@ class _Net {
     // Clear out the piece queue
     this.q_pieces_in = {}; 
   
-    // Get an object, indexed by layer, with lists of pieces, sorted by z.
-    if(zs['0']) console.log(zs);
-
     // Loop over the layers, sorting by the desired z, and then sending to that z
     for(l in zs) { if(zs[l].length == 0) continue;
 
@@ -391,7 +385,7 @@ class _Net {
     
     // If there are no pieces on the server, send all of the layer and z data
     if(Object.keys(data[1].pieces).length != VGT.pieces.all.length) {
-      console.log('  NETR_state: Mismatched number of pieces; sending layer and z info...');
+      log('  NETR_state: Mismatched number of pieces; sending layer and z info...');
       for(var n in VGT.pieces.all) 
         VGT.pieces.all[n].update_q_out('z').update_q_out('l');
     }
@@ -625,7 +619,7 @@ class _Pixi {
   }
 
   loader_oncomplete(e) {
-    console.log('loader_oncomplete()', e);
+    log('loader_oncomplete()', e);
 
     // Now that we have all the resources, dump the thing queue into pixi.
     while(this.queue.length) this._add_thing(this.queue.shift())
@@ -1405,7 +1399,7 @@ class _Interaction {
     VGT.pixi.surface.scale.y = window.innerHeight;
 
     // Shift the center to the center of the view
-    console.log('  ', VGT.tabletop.container.x, window.innerWidth*0.5);
+    log('  ', VGT.tabletop.container.x, window.innerWidth*0.5);
     VGT.tabletop.container.x += -VGT.tabletop.container.x+window.innerWidth*0.5;
     VGT.tabletop.container.y += -VGT.tabletop.container.y+window.innerHeight*0.5;
     
@@ -1575,15 +1569,84 @@ class _Sounds {
 } // End of _Sounds
       
 
+// A single snap point; if a thing is dropped near it and this point is in its list, the xyrs coordinates will adjust
+class _SnapCircle {
 
+  default_settings = {
+    parent: undefined, // Parent Thing or Tabletop defining the coordinate system; undefined = tabletop
+    x: 0,              // Snap x value target; undefined = no snap
+    y: 0,              // Snap y value target; undefined = no snap
+    r: undefined,      // Snap r value target; undefined = no snap
+    s: undefined,      // Snap s value target; undefined = no snap
+    radius: 50,        // Radius within which snapping occurs
+    lists: [],         // Other list names (strings) other than 'all' to which this snap should be added in VGT.snaps upon creation
+  }
 
+  constructor(settings) {
+   
+    // Store the settings, starting with defaults then overrides.
+    this.settings = {...this.default_settings, ...settings};
 
+    // Add it to the master list
+    VGT.snaps.add_snap(this);
+  }
 
+  // Returns a distance score (usually distance squared for speed reasons) between the thing target and the snap
+  get_result(thing) {
 
+    var v, x, y;
 
-/////////////////////////////
-// THINGS                  //
-/////////////////////////////
+    // If it's the tabletop, use the tabletop coordinates
+    if(this.settings.parent == undefined || this.settings.parent == VGT.tabletop) {
+      x = thing.x.target;
+      y = thing.y.target;
+    }
+
+    // Otherwise, it's a Thing, so use the thing's coordinates
+    else {
+      v = thing.container.localTransform.apply( new PIXI.Point( thing.x.target, thing.y.target ) )
+      x = v.x;
+      y = v.y;
+    };
+
+    // Get the distances
+    var dx = x - this.settings.x;
+    var dy = y - this.settings.y;
+    var r2 = dx*dx + dy*dy;
+
+    // If we're withing the radius of influence, return the info
+    if(r2 <= this.settings.radius*this.settings.radius) 
+      return {score:r2, x:this.settings.x, y:this.settings.y, r:this.settings.r, s:this.settings.s};
+    
+    // Otherwise return nothing.
+    else return false;
+  }
+}
+VGT.SnapCircle = _SnapCircle;
+
+// Holds the SnapPoints and SnapGrids
+class _Snaps {
+
+  constructor() {
+    this.all = [];
+  }
+
+  // Sets the snap id and adds the object to the list
+  add_snap(snap) {
+
+    // Set the snap id
+    snap.id_snap = this.all.length;
+    this.all.push(snap);
+   
+    // Add it to the (valid) lists
+    for(var l in snap.lists) {
+      if(!this[l]) this[l] = [];
+      this[l].push(snap);
+    }
+  }
+}
+VGT.snaps = new _Snaps();
+
 
 // Basic interactive object
 class _Thing {
@@ -1595,7 +1658,7 @@ class _Thing {
     'shape'         : 'rectangle',      // Hitbox shape.
     'type'          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
     'sets'          : [],               // List of other sets to which this thing can belong (pieces, hands, ...)
-
+    'snaps'         : ['all'],          // List of snap lists to check when dropping the piece.
     'r_step'        : 45,               // How many degrees to rotate when taking a rotation step.
 
     // Targeted x, y, r, and s
@@ -1814,6 +1877,10 @@ class _Thing {
 
     // If we're supposed to send an update, make sure there is an entry in the queue
     this.update_q_out('id_client_hold', 'ih', do_not_update_q_out);
+
+    // Check snaps for this piece
+    var a = this.get_best_snap_result();
+    if(a) this.set_xyrs(a.x, a.y, a.r, a.s);
   }
 
   /**
@@ -2060,6 +2127,25 @@ class _Thing {
     this.t_last_move = Date.now();
   }
 
+  // Returns an object with the lowest snap score from this.settings.snaps with the score and targets {score, x, y, r, s}
+  get_best_snap_result() {
+    var result, best = false; 
+
+    // Loop over all the snaps associated with this piece
+    for(var i in this.settings.snaps) {
+      for(var n in VGT.snaps[this.settings.snaps[i]]) { 
+        
+        // Get the score object
+        result = VGT.snaps[this.settings.snaps[i]][n].get_result(this);
+        
+        // If it's valid (within influence) and beats our current lowest score, remember this one
+        if(result && (!best || result.score < best.score)) best = result;
+      }
+    }
+
+    return best;
+  }
+
   /**
    * Updates the actual sprite location / geometry via the error decay animation, 
    * and should be called once per frame.
@@ -2117,7 +2203,7 @@ class _Things {
   }
 
   // Given a list of things, returns an object, indexed by layer, full of lists of things sorted by z-index.
-  sort_by_z(things, descending) { //console.log('sort_by_z()', things, descending);
+  sort_by_z(things, descending) { 
 
     // First sort by layers
     var sorted = {}, layer;
