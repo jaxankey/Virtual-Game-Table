@@ -17,14 +17,14 @@
 
 
 // Everything about the current game state that can be sent in a data packet
+// see also reset_game();
 var state = {
   clients: {},              // List of client data
   pieces : {},              // List of piece properties
   hands  : {},              // list of hand properties
   t_simulated_lag : 0,      // Simulated lag when routing packets.
   t_full_update   : 4000,   // How often to send a full update
-  t_block_update  : 3000,   // How long to wait after the last update before including a piece in a full update
-}; // see also reset_game();
+}; 
 
 // State keys that should not be set by clients with server commands (/set)
 var state_keys_no_set = [
@@ -46,7 +46,6 @@ var app  = require('express')();              // routing handler
 var http = require('http').createServer(app); // listening
 var io   = require('socket.io')(http);        // fast input/output
 var fun  = require('./common/fun');           // My common functions
-
 
 // Set the initial state without messing up the clients
 function reset_game() {

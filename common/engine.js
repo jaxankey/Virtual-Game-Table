@@ -71,9 +71,9 @@ class _Html {
   } // End of constructor
 
   // Quick functions
-  hide_controls() {this.controls.hidden = true;}
-  show_controls() {this.controls.hidden = false;}
-  toggle_controls() {this.controls.hidden = !this.controls.hidden;}
+  hide_controls()    {this.controls.hidden = true;}
+  show_controls()    {this.controls.hidden = false;}
+  toggle_controls()  {this.controls.hidden = !this.controls.hidden;}
   controls_visible() {return !this.controls.hidden}
   controls_hidden()  {return  this.controls.hidden}
 
@@ -1567,7 +1567,7 @@ class _Sounds {
   }
 
 } // End of _Sounds
-      
+
 
 // A single snap point; if a thing is dropped near it and this point is in its list, the xyrs coordinates will adjust
 class _SnapCircle {
@@ -1592,19 +1592,22 @@ class _SnapCircle {
   }
 
   // Returns a distance score (usually distance squared for speed reasons) between the thing target and the snap
-  get_result(thing) {
+  get_relationship(thing) {
 
-    var v, x, y;
+    var v, x, y, r, parent = this.settings.parent;
 
-    // If it's the tabletop, use the tabletop coordinates
-    if(this.settings.parent == undefined || this.settings.parent == VGT.tabletop) {
+    // If the parent is the piece, do nothing
+    if(parent == thing) return false;
+
+    // If the parent is the tabletop, use the tabletop coordinates
+    else if(parent == undefined || parent == VGT.tabletop) {
       x = thing.x.target;
       y = thing.y.target;
     }
 
-    // Otherwise, it's a Thing, so use the thing's coordinates
+    // Otherwise, the parent is a Thing, so use the parent's coordinates
     else {
-      v = thing.container.localTransform.apply( new PIXI.Point( thing.x.target, thing.y.target ) )
+      v = parent.container.localTransform.applyInverse( new PIXI.Point( thing.x.target, thing.y.target ) )
       x = v.x;
       y = v.y;
     };
@@ -1615,8 +1618,25 @@ class _SnapCircle {
     var r2 = dx*dx + dy*dy;
 
     // If we're withing the radius of influence, return the info
-    if(r2 <= this.settings.radius*this.settings.radius) 
-      return {score:r2, x:this.settings.x, y:this.settings.y, r:this.settings.r, s:this.settings.s};
+    if(r2 <= this.settings.radius*this.settings.radius) {
+      
+      // Nominally tabletop coordinates
+      x = this.settings.x;
+      y = this.settings.y;
+      r = this.settings.r;
+      
+      // If the parent is a piece, do the transform from local to tabletop coordinates
+      if(parent != undefined && parent != VGT.tabletop) {
+        v = parent.container.localTransform.apply( new PIXI.Point( x, y ) )
+        x = v.x;
+        y = v.y;
+        if(r == undefined) r = 0;
+        r += parent.r.target + parent.R.target;
+      }
+
+      return {score:r2, x:x, y:y, r:r, s:this.settings.s};
+    }
+      
     
     // Otherwise return nothing.
     else return false;
@@ -1629,6 +1649,15 @@ class _Snaps {
 
   constructor() {
     this.all = [];
+  }
+
+  // Creates a new snap with the specified settings
+  // The settings object should also contain a type, e.g. 'type: VGT.SnapCircle'
+  // So it knows which constructor to use. If no settings or type is specified, uses VGT.SnapCircle
+  new_snap(settings) { 
+    if(!settings) settings = {};
+    if(!settings.type) settings.type = VGT.SnapCircle;
+    return new settings.type(settings); 
   }
 
   // Sets the snap id and adds the object to the list
@@ -1658,7 +1687,6 @@ class _Thing {
     'shape'         : 'rectangle',      // Hitbox shape.
     'type'          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
     'sets'          : [],               // List of other sets to which this thing can belong (pieces, hands, ...)
-    'snaps'         : ['all'],          // List of snap lists to check when dropping the piece.
     'r_step'        : 45,               // How many degrees to rotate when taking a rotation step.
 
     // Targeted x, y, r, and s
@@ -1669,6 +1697,10 @@ class _Thing {
 
     // Layer
     'layer' : 0,
+
+    // Snap stuff
+    'snap_lists'    : ['all'],   // List of snap lists to check when releasing the thing.
+    'local_snaps'   : [],        // List of snap settings to send to VGT.snaps.new_snap() upon creation.
   };
 
   constructor(settings) {
@@ -1745,6 +1777,13 @@ class _Thing {
     // Add this to the pixi instance (or queue)
     // The pixi-related stuff must be called after pixi loads.
     VGT.pixi.add_thing(this);
+
+    // Now add the local snaps as per the specifications
+    this.snaps = [];
+    for(var k in this.settings.local_snaps) {
+      this.settings.local_snaps[k]['parent'] = this;
+      this.snaps.push(VGT.snaps.new_snap(this.settings.local_snaps[k]))
+    }
 
   } // End of constructor.
 
@@ -1878,9 +1917,15 @@ class _Thing {
     // If we're supposed to send an update, make sure there is an entry in the queue
     this.update_q_out('id_client_hold', 'ih', do_not_update_q_out);
 
-    // Check snaps for this piece
-    var a = this.get_best_snap_result();
-    if(a) this.set_xyrs(a.x, a.y, a.r, a.s);
+    // Check snap_lists for this piece
+    var a = this.get_best_snap_relationship();
+    if(a) { 
+      this.set_xyrs(a.x, a.y, a.r, a.s);
+      if(a.r != undefined) {
+        this.R.target = 0;
+        this.update_q_out('R','R');
+      }
+    } 
   }
 
   /**
@@ -2127,19 +2172,19 @@ class _Thing {
     this.t_last_move = Date.now();
   }
 
-  // Returns an object with the lowest snap score from this.settings.snaps with the score and targets {score, x, y, r, s}
-  get_best_snap_result() {
-    var result, best = false; 
+  // Returns an object with the lowest snap score from this.settings.snap_lists with the score and targets {score, x, y, r, s}
+  get_best_snap_relationship() {
+    var relationship, best = false; 
 
-    // Loop over all the snaps associated with this piece
-    for(var i in this.settings.snaps) {
-      for(var n in VGT.snaps[this.settings.snaps[i]]) { 
+    // Loop over all the snap_lists associated with this piece
+    for(var i in this.settings.snap_lists) {
+      for(var n in VGT.snaps[this.settings.snap_lists[i]]) { 
         
         // Get the score object
-        result = VGT.snaps[this.settings.snaps[i]][n].get_result(this);
+        relationship = VGT.snaps[this.settings.snap_lists[i]][n].get_relationship(this);
         
         // If it's valid (within influence) and beats our current lowest score, remember this one
-        if(result && (!best || result.score < best.score)) best = result;
+        if(relationship && (!best || relationship.score < best.score)) best = relationship;
       }
     }
 
