@@ -265,12 +265,12 @@ class _Net {
         // Now update the different attributes only if we're not holding it (our hold supercedes everything)
         if(p.id_client_hold != VGT.net.id) {
 
-          // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update
-          if(c['x']  != undefined && (c['x.i']  != VGT.net.id || c['x.n']  >= p.last_nqs['x'] )) p.set_xyrs(c.x, undefined, undefined, undefined, false, true);
-          if(c['y']  != undefined && (c['y.i']  != VGT.net.id || c['y.n']  >= p.last_nqs['y'] )) p.set_xyrs(undefined, c.y, undefined, undefined, false, true);
-          if(c['r']  != undefined && (c['r.i']  != VGT.net.id || c['r.n']  >= p.last_nqs['r'] )) p.set_xyrs(undefined, undefined, c.r, undefined, false, true);
-          if(c['R']  != undefined && (c['R.i']  != VGT.net.id || c['R.n']  >= p.last_nqs['R'] )) p.R.set(c.R);
-          if(c['s']  != undefined && (c['s.i']  != VGT.net.id || c['s.n']  >= p.last_nqs['s'] )) p.set_xyrs(undefined, undefined, undefined, c.s, false, true);
+          // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update          immediate, do_not_update_q_out, do_not_reset_R
+          if(c['x']  != undefined && (c['x.i']  != VGT.net.id || c['x.n']  >= p.last_nqs['x'] )) p.set_xyrs(c.x, undefined, undefined, undefined, false, true, true);
+          if(c['y']  != undefined && (c['y.i']  != VGT.net.id || c['y.n']  >= p.last_nqs['y'] )) p.set_xyrs(undefined, c.y, undefined, undefined, false, true, true);
+          if(c['r']  != undefined && (c['r.i']  != VGT.net.id || c['r.n']  >= p.last_nqs['r'] )) p.set_xyrs(undefined, undefined, c.r, undefined, false, true, true);
+          if(c['s']  != undefined && (c['s.i']  != VGT.net.id || c['s.n']  >= p.last_nqs['s'] )) p.set_xyrs(undefined, undefined, undefined, c.s, false, true, true);
+          if(c['R']  != undefined && (c['R.i']  != VGT.net.id || c['R.n']  >= p.last_nqs['R'] )) p.set_R   (c.R,                                  false, true);
           if(c['n']  != undefined && (c['n.i']  != VGT.net.id || c['n.n']  >= p.last_nqs['n'] )) p.set_texture_index(c.n, true);
           if(c['ts'] != undefined && (c['ts.i'] != VGT.net.id || c['ts.n'] >= p.last_nqs['ts'])) p.select(c.ts, true);
 
@@ -302,7 +302,7 @@ class _Net {
       if(p && p.id_client != VGT.net.id){
       
         // Undefined quantities do nothing to these functions
-        p        .set_xyrs(c.x, c.y, c.r, c.s, false, true);
+        p        .set_xyrs(c.x, c.y, c.r, c.s,       false, true);
         p.polygon.set_xyrs(c.x, c.y, c.r, undefined, false, true); 
         p.set_texture_index(c.n, true);
         
@@ -820,7 +820,7 @@ class _Tabletop {
   get_xyrs() {return {x:this.x.value, y:this.y.value, r:this.r.value, s:this.s.value}}
 
   /** 
-  * Sets the target x,y,r,s for the sprite.
+  * TABLETOP Sets the target x,y,r,s for the tabletop.
   * 
   */
   set_xyrs(x,y,r,s,immediate) { 
@@ -1181,7 +1181,7 @@ class _Interaction {
     var hand = null;
     if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand
       hand        .set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, 1.0/VGT.tabletop.s.value, true);
-      hand.polygon.set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, undefined, true);
+      hand.polygon.set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, undefined,                true);
     }
 
     // Only do stuff if the mouse is down
@@ -1227,7 +1227,10 @@ class _Interaction {
             thing.xh + x0 + dxr,
             thing.yh + y0 + dyr,
             thing.rh + r0,    // updates the rotation with how much the hand has rotated
-            undefined, true); // immediately, no animation, so that they stay rigid with the mouse
+            undefined, 
+            true,             // immediately, so that they stay rigid with the mouse
+            false,            // do_not_update_q_out (we want to send this info)
+            true);            // do_not_reset_R (we don't want to mess with aux rotation for this; it may be animating)
         }
       } 
       
@@ -1596,7 +1599,9 @@ class _SnapCircle {
 
     var v, x, y, r, parent = this.settings.parent;
 
-    // If the parent is the piece, do nothing
+    // If the parent is the piece or the parent is held, do nothing
+    // Note checking if the piece is held here wouldn't prevent release collapse always, since
+    // the pieces are released one at a time.
     if(parent == thing) return false;
 
     // If the parent is the tabletop, use the tabletop coordinates
@@ -1907,6 +1912,10 @@ class _Thing {
     && this.id_client_hold != id_client
     && !force) return;
 
+    // Check snap_lists for this piece; do this first so we don't snap to pieces being held still.
+    var a = this.get_best_snap_relationship();
+    if(a) this.set_xyrs(a.x, a.y, a.r, a.s);
+
     // Remove it from the list
     delete VGT.things.held[this.id_client_hold][this.id_thing];
 
@@ -1916,16 +1925,6 @@ class _Thing {
 
     // If we're supposed to send an update, make sure there is an entry in the queue
     this.update_q_out('id_client_hold', 'ih', do_not_update_q_out);
-
-    // Check snap_lists for this piece
-    var a = this.get_best_snap_relationship();
-    if(a) { 
-      this.set_xyrs(a.x, a.y, a.r, a.s);
-      if(a.r != undefined) {
-        this.R.target = 0;
-        this.update_q_out('R','R');
-      }
-    } 
   }
 
   /**
@@ -2162,14 +2161,21 @@ class _Thing {
   /** 
    * Sets the target x,y,r,s for the sprite.
    */
-  set_xyrs(x,y,r,s,immediate,do_not_update_q_out) { 
+  set_xyrs(x,y,r,s,immediate,do_not_update_q_out,do_not_reset_R) { 
 
     // Now for each supplied coordinate, update and send
     if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}
     if(y!=undefined && y != this.y.target) {this.y.set(y,immediate); this.update_q_out('y', 'y', do_not_update_q_out);}
     if(r!=undefined && r != this.r.target) {this.r.set(r,immediate); this.update_q_out('r', 'r', do_not_update_q_out);}
     if(s!=undefined && s != this.s.target) {this.s.set(s,immediate); this.update_q_out('s', 's', do_not_update_q_out);}
+    if(!do_not_reset_R) {this.set_R(0, immediate, do_not_update_q_out);}
     this.t_last_move = Date.now();
+  }
+
+  // Sets the auxiliary rotation
+  set_R(R, immediate, do_not_update_q_out) {
+    this.R.set(R,immediate);
+    this.update_q_out('R','R', do_not_update_q_out);
   }
 
   // Returns an object with the lowest snap score from this.settings.snap_lists with the score and targets {score, x, y, r, s}
@@ -2641,7 +2647,7 @@ class _Hands { constructor() {this.all = [];}
     var h, t0;
     for(var n in this.all) { h=this.all[n];
       t0 = h.t_last_move;
-      this.all[n].set_xyrs(undefined,undefined,undefined,scale,true,true); 
+      this.all[n].set_xyrs(undefined,undefined,undefined,scale,true,true,true); 
       h.t_last_move = t0;
     }
   }
