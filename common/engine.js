@@ -1106,7 +1106,7 @@ class _Interaction {
     if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand; hand.close(); }
 
     // Find the top thing under the pointer
-    log('onpointerdown() HAY', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd);
+    log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd);
 
     // Find a thing under the pointer if there is one.
     var thing = this.find_thing_at(v[0],v[1]);
@@ -1730,7 +1730,6 @@ class _SnapGrid {
         if(r == undefined) r = 0;
         r += parent.r.target + parent.R.target;
       }
-      console.log(x,y,xs,ys,r);
       return {score:dx*dx+dy*dy, x:xs, y:ys, r:r, s:this.settings.s};
     }
     
