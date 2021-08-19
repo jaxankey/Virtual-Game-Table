@@ -75,16 +75,21 @@ var image_paths = {
 // Create an instance of the Game object (stores itself in VGT)
 new VGT.Game();
 
-// Create pieces
+// "Normal" pieces
 var defaults = {texture_root:'cards', s:0.8};
 var p = [];
 p[0] = new VGT.Piece({...defaults, texture_paths:[['sj.png', 'back.png']]});
 for(var n=1; n<=4; n++) p[n] = new VGT.Piece({...defaults, texture_paths:[[String(n)+'h.png', 'back.png']]});
 
+// Bigger pieces in another layer
 defaults = {texture_root:'cards', s:1.2, layer:2, local_snaps:[{}]};
 for(var n=5; n<=9; n++) p[n] = new VGT.Piece({...defaults, texture_paths:[[String(n)+'h.png', 'back.png']]});
 
-defaults = {texture_root:'cards', s:5, layer:1, shovel:true,
+// Piece that rotates with the view, layer in between
+defaults['rotate_with_view'] = true;
+var r = new VGT.Piece({...defaults, texture_paths:[['back.png']]});
+
+defaults = {texture_root:'cards', s:4, layer:1, shovel:true,
   local_snaps:[{
     ax:10,
     ay:0,

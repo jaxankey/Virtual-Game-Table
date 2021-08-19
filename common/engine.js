@@ -1784,6 +1784,7 @@ class _Thing {
     'type'          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
     'sets'          : [],               // List of other sets to which this thing can belong (pieces, hands, ...)
     'r_step'        : 45,               // How many degrees to rotate when taking a rotation step.
+    'rotate_with_view' : false,         // Whether the piece should retain its orientation with respect to the screen when rotating the view / table
 
     // Targeted x, y, r, and s
     'x' : 0,
@@ -1895,22 +1896,25 @@ class _Thing {
     // Transform table coordinates to local coordinates
     var v = this.container.localTransform.applyInverse(new PIXI.Point(x,y));
     
-    // Different hitboxes
+    // Inner circle: minimum of width and height
     if(this.settings.shape == 'circle' || this.settings.shape == 'circle_inner') {    
       var r = 0.5*Math.min(this.width, this.height);
       return v.x*v.x+v.y*v.y <= r*r;
     }
+
+    // Outer circle: maximum of width and height
     else if(this.settings.shape == 'circle_outer') {
       var r = 0.5*Math.max(this.width, this.height);
       return v.x*v.x+v.y*v.y <= r*r;
     }
+
     else { // Rectangle by default
       var hw = this.width*0.5;
       var hh = this.height*0.5;
       return v.x >= -hw && v.x <= hw && v.y >= -hh && v.y <= hh;
     }
-
-  }
+  
+  } // End of contains()
 
   // Resets to the settings
   reset(immediate, do_not_update_q_out) {
@@ -2385,6 +2389,7 @@ class _Thing {
     this.container.x        = this.x.value;
     this.container.y        = this.y.value;
     this.container.rotation = this.r.value + this.R.value;
+    if(this.settings.rotate_with_view) this.container.rotation -= VGT.tabletop.r.value; // ---
     this.container.scale.x  = this.s.value;
     this.container.scale.y  = this.s.value;
   }
