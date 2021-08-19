@@ -598,19 +598,16 @@ class _Pixi {
         // Create the new layer and add it to the tabletop
         var l = new PIXI.Container();
         VGT.tabletop.layers[thing.settings.layer] = l;
-        //VGT.tabletop.container.addChild(l);
+        
         // Remove all layers and add them in order
         VGT.tabletop.container.removeChildren();
 
-        // Now add them again
+        // Now add them again in order
         for(var n in VGT.tabletop.layers) if(VGT.tabletop.layers[n]) 
           VGT.tabletop.container.addChild(VGT.tabletop.layers[n]);
 
         // Find the layer_hands and pop it to the top.
-        if(VGT.tabletop.layer_hands) {
-          VGT.tabletop.container.removeChild(VGT.tabletop.layer_hands);
-          VGT.tabletop.container.addChild(VGT.tabletop.layer_hands);
-        }
+        if(VGT.tabletop.layer_hands) VGT.tabletop.container.addChild(VGT.tabletop.layer_hands);
 
         // Update the layer's coordinates / scale.
         l.x=0; l.y=0; l.rotation=0; l.scale.x=1; l.scale.y=1;
@@ -1066,7 +1063,7 @@ class _Interaction {
    * @returns 
    */
   find_thing_at(x,y) {
-    var layer, container, x0, y0;
+    var layer, container;
 
     // Loop over the layers from top to bottom
     for(var n=VGT.tabletop.layers.length-1; n>=0; n--) {
@@ -1079,17 +1076,8 @@ class _Interaction {
         // container of thing
         container = layer.children[m]; 
        
-        // JACK: A good place for piece.container.localTransform.applyInverse to get from table coordinates to the piece's coordinates.
-        
-        // Undo the container shift and scale
-        x0 = (x-container.x)/container.scale.x; 
-        y0 = (y-container.y)/container.scale.y;
-
-        // Undo the instantaneous container rotation of the piece
-        [x0,y0] = rotate_vector([x0,y0],-container.rotation); 
-
         // Get the scaled bounds and test
-        if(container.thing.contains(x0,y0)) return container.thing;
+        if(container.thing.contains(x,y)) return container.thing;
       
       } // End of things in layer loop
 
@@ -1123,7 +1111,7 @@ class _Interaction {
     if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand; hand.close(); }
 
     // Find the top thing under the pointer
-    log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd);
+    log('onpointerdown() HAY', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd);
 
     // Find a thing under the pointer if there is one.
     var thing = this.find_thing_at(v[0],v[1]);
@@ -1140,7 +1128,8 @@ class _Interaction {
 
       // Otherwise, select it and hold everything, sending it to the top or bottom.
       else {
-        thing.select(VGT.clients.me.team); 
+        thing.select(VGT.clients.me.team); // send q, shovel
+        thing.shovel_select(VGT.clients.me.team);
         VGT.things.hold_selected(VGT.net.id, false);
 
         // Send the selection to the top or bottom, depending on button etc
@@ -1681,7 +1670,6 @@ class _SnapGrid {
     // Create the boundary polygon
     if(this.settings.boundary) this.boundary = new PIXI.Polygon(this.settings.boundary);
     else                       this.boundary = false;
-    console.log('HAY', this.settings.boundary, this.boundary);
     
     // Add it to the master list
     VGT.snaps.add_snap(this);
@@ -1814,6 +1802,9 @@ class _Thing {
     // Snap stuff
     'snap_lists'    : ['all'],   // List of snap lists to check when releasing the thing.
     'local_snaps'   : [],        // List of snap settings to send to VGT.snaps.new_snap() upon creation.
+
+    // List of piece groups this piece will shovel (also select / hold) when picked up
+    'shovel' : false, // e.g., true or ['all'] to shovel all pieces.
   };
 
   constructor(settings) {
@@ -1898,11 +1889,17 @@ class _Thing {
       this.snaps.push(VGT.snaps.new_snap(this.settings.local_snaps[k]))
     }
 
+    // If "shovel" is set to true as a shorthand
+    if(this.settings.shovel == true) this.settings.shovel = ['all'];
+
   } // End of constructor.
 
   // Whether the supplied table coordinates are contained within the object
-  contains(x0,y0) {
-    return this.container.getLocalBounds().contains(x0,y0)
+  contains(x,y) { 
+
+    // Transform table coordinates to local coordinates
+    var v = this.container.localTransform.applyInverse(new PIXI.Point(x,y));
+    return this.container.getLocalBounds().contains(v.x,v.y); 
   }
 
   // Resets to the settings
@@ -1999,7 +1996,7 @@ class _Thing {
       // Make sure there is an object to hold the held things for this id.
       if(VGT.things.held[id_client] == undefined) VGT.things.held[id_client] = {};
 
-      // Control it
+      // Add it to the client's hold list
       VGT.things.held[id_client][this.id_thing] = this;
 
       // If we're supposed to send an update, make sure there is an entry in the queue
@@ -2022,7 +2019,6 @@ class _Thing {
 
     // Check snap_lists for this piece; do this first so we don't snap to pieces being held still.
     var a = this.get_best_snap_relationship();
-    console.log('HAY', a)
     if(a) this.set_xyrs(a.x, a.y, a.r, a.s); // Animate, tell the world, and do reset R.
 
     // Remove it from the list
@@ -2072,7 +2068,34 @@ class _Thing {
       color:VGT.game.get_team_color(team),
       quality:0.1,
     })];
+    
   } // End of select()
+
+
+  // Selects all the pieces on this piece
+  shovel_select(team) {
+
+    // If it's a "shovel" piece and we're selecting, select all the pieces in its hitbox also
+    if(this.settings.shovel) {
+      var list, thing;
+      
+      // Loop over the shovel list names of the shovel lists
+      for(var n in this.settings.shovel) { list  = this.settings.shovel[n];
+    
+        // Loop over the pieces in this shovel list
+        for(var m in VGT.pieces[list])   { thing = VGT.pieces[list][m];
+          
+          // If this piece contains the current values of this thing (and it's higher), select it
+          if( this.contains(thing.x.value, thing.y.value)
+          && thing.is_higher_than(this) ) thing.select(team);
+        
+        } // End of loop over things in list
+      
+      } // End of loop over shovel lists
+    
+    } // End of "is shovel"
+  
+  } // End of shovel_select()
 
   /**
    * Unselects thing. This will not unselect anything held by someone else.
@@ -2266,6 +2289,18 @@ class _Thing {
 
   is_enabled()  {return  this.container.visible;}
   is_disabled() {return !this.container.visible;}
+
+  // Returns true if this thing is in a higher layer or higher index than the supplied thing
+  is_higher_than(thing) {
+
+    // Higher or lower layer
+    if(this.settings.layer > thing.settings.layer) return true;
+    if(this.settings.layer < thing.settings.layer) return false;
+
+    // Equal layer
+    if(this.get_z() > thing.get_z()) return true;
+    else                             return false;
+  }
 
   /** 
    * Sets the target x,y,r,s for the sprite.
