@@ -354,43 +354,51 @@ io.on('connection', function(socket) {
 
 
 
-  // Client has sent a z move.
-  function on_z(data) { fun.log_date('NETR_z_'+String(socket.id), 'id_piece =', data[0], 'z =', data[1]); 
+  // Client has sent a list of z moves of the form [id,z,id,z,id,z,...]
+  function on_z(data) { fun.log_date('NETR_z_'+String(socket.id), data.length/2); 
 
-    // Unpack
-    var c        = state.pieces[data[0]]  // incoming piece data
-    if(!c) return;                        // Only happens if someone has the wrong number of pieces compared to the server.
-    var l        = c['l'];                // Layer
-    var zi       = c['z'];                // Initial z-position
-    var zf       = data[1];               // Final z-position
-    
-    // If zf > zi 
-    //   p.z < zi         no change
-    //   p.z == zi        set to zf
-    //   zi < p.z <= zf   subtract one
-    //   p.z > zf         no change
-    
-    // If zi > zf
-    //   p.z < zf         no change
-    //   zf <= p.z < zi   add one
-    //   p.z == zi        set to zf
-    //   p.x > zi         no change
+    var id_piece, c, l, zi, zf;
 
-    // Loop over the pieces, updating the z's of those in the layer.
-    var p;
-    for(var i in state.pieces) if(l == state.pieces[i]['l']) { p = state.pieces[i];
+    // Loop over the entries
+    for(var n=0; n<data.length; n+=2) {
 
-      // Do different numbering depending on where the z is relative to the initial and final values.
+      // Unpack
+      id_piece = data[n];
+      c        = state.pieces[id_piece] // incoming piece data
+      if(!c) continue;                  // Only happens if someone has the wrong number of pieces compared to the server.
+      l        = c['l'];                // Layer
+      zi       = c['z'];                // Initial z-position
+      zf       = data[n+1];             // Final z-position
       
-      // No matter what, if the z matches the initial z, this is the one to set
-      if(p.z == zi) { p.z = zf; }
+      // If zf > zi 
+      //   p.z < zi         no change
+      //   p.z == zi        set to zf
+      //   zi < p.z <= zf   subtract one
+      //   p.z > zf         no change
       
-      // If zf > zi, we're moving it up in z order, so the middle numbers shift down.
-      else if(zi < p.z && p.z <= zf) { p.z--; }
+      // If zi > zf
+      //   p.z < zf         no change
+      //   zf <= p.z < zi   add one
+      //   p.z == zi        set to zf
+      //   p.x > zi         no change
 
-      // If zi > zf, we're moving it lower, so the middle numbers shift up
-      else if(zf <= p.z && p.z < zi) { p.z++; }
-    }
+      // Now that we have the zi and zf, loop over the state pieces, updating the z's of those in the layer.
+      var p;
+      for(var i in state.pieces) if(l == state.pieces[i]['l']) { p = state.pieces[i];
+
+        // Do different numbering depending on where the z is relative to the initial and final values.
+        
+        // No matter what, if the z matches the initial z, this is the one to set
+        if(p.z == zi) { p.z = zf; }
+        
+        // If zf > zi, we're moving it up in z order, so the middle numbers shift down.
+        else if(zi < p.z && p.z <= zf) { p.z--; }
+
+        // If zi > zf, we're moving it lower, so the middle numbers shift up
+        else if(zf <= p.z && p.z < zi) { p.z++; }
+      }
+
+    } // End of loop over entries
 
     // Relay this move to everyone, including the sender.
     delay_send(io, 'z', data);

@@ -141,9 +141,8 @@ class _Html {
           o.style = 'background-color: #'+color.toString(16)+'FF;';
 
           // If the color is too bright (per ITU-R BT.709 definition of luma), go black with the text
-          rgb = ox_to_rgb(color);
-          if(0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2] > 0.7) o.style.color='black';
-          else                                                    o.style.color='white';
+          if(get_luma_ox(color) > 0.7) o.style.color='black';
+          else                         o.style.color='white';
 
           // Add it to the list
           s.appendChild(o);
@@ -188,10 +187,12 @@ class _Net {
     // Queue of outbound information for the next housekeeping.
     this.q_pieces_out   = {}; 
     this.q_hands_out    = {}; 
-    
+    this.q_z_out        = []; // Ordered list of requested z-operations
+
     // Queue of inbound information for the next housekeeping.
     this.q_pieces_in    = {}; 
     this.q_hands_in     = {};
+    this.q_z_in         = []; // Ordered list of z-operations to implement
     
     // Last sent q packet number
     this.nq = 0;  
@@ -335,6 +336,14 @@ class _Net {
 
   } // End of process_queues()
 
+  // Processes the inbound and outbound z queues
+  process_q_z_out() {
+    if(this.q_z_out.length) {
+      this.io.emit('z', this.q_z_out);
+      this.q_z_out.length = 0;
+    }
+  }
+
   // Transfers information from q_source to q_target, with id_client
   transfer_to_q_in(q_source, q_target, id_client, nq) { //log('transfer_to_q_in', q_source, q_target, id_client, nq)
 
@@ -354,11 +363,11 @@ class _Net {
     } // End of loop over things in q_pieces
   }
 
-  // Server relayed a z command
+  // Server relayed a z command [id,z,id,z,id,z,...]
   on_z(data) { if(!this.ready) return; log('NETR_z', data);
 
     // Set the z locally
-    VGT.pieces.all[data[0]]._set_z(data[1]);
+    for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z(data[n+1]);
   }
 
   /** We receive a queue of piece information from the server. */
@@ -727,6 +736,8 @@ class _Animated {
     // Increment the velocity
     this.velocity += acceleration-this.velocity*this.settings.damping;
     this.value    += this.velocity;
+
+    return this.velocity;
   }
 }
 
@@ -797,7 +808,7 @@ class _Tabletop {
     this.x.animate(delta);
     this.y.animate(delta);
     this.r.animate(delta);
-    this.s.animate(delta);
+    var vs = this.s.animate(delta);
 
     // Set the actual position, rotation, and scale
     this.container.pivot.x  = -this.x.value;
@@ -815,6 +826,13 @@ class _Tabletop {
 
     // Set the hand scale
     VGT.hands.set_scale(1.0/this.s.value);
+
+    // Redraw selection graphics if the scale is still changing (gets heavy with lots of selection; why scale?)
+    //if(VGT.pixi.n_loop % 5 == 0) console.log('HAY',vs);
+    /*if(Math.abs(vs) > 1e-6)
+      for(var t in VGT.things.selected) 
+        for(var i in VGT.things.selected[t])
+          VGT.things.selected[t][i].draw_select_graphics(t); */
   }
 
   /**
@@ -2056,6 +2074,51 @@ class _Thing {
     this.update_q_out('id_client_hold', 'ih', do_not_update_q_out);
   }
 
+  draw_select_graphics(team) {
+    
+    // Clear whatever is there
+    this.graphics.clear();
+
+    // Add the selection box
+    var w = this.width;
+    var h = this.height;
+    if(this.settings.shape == 'circle' || this.settings.shape == 'circle_inner') var r = Math.min(w,h)*0.5;
+    else if(this.settings.shape == 'circle_outer')                               var r = Math.max(w,h)*0.5; 
+
+    var t1 = 12/this.s.value;
+    var t2 =  4/this.s.value;
+
+    // Drawing a circle
+    if(['circle', 'circle_outer', 'circle_inner'].includes(this.settings.shape)) {
+      this.graphics.lineStyle(t1, 0xFFFFFF);
+      this.graphics.drawCircle(0, 0, r);
+      var c = VGT.game.get_team_color(team);
+      if(get_luma_ox(c) > 0.9) c = 0xDDDDDD;
+      this.graphics.lineStyle(t2, c);
+      this.graphics.drawCircle(0, 0, r);
+    }
+
+    // Drawing an ellipse
+    if(this.settings.shape == 'ellipse') {
+      this.graphics.lineStyle(t1, 0xFFFFFF);
+      this.graphics.drawEllipse(0, 0, this.width*0.5, this.height*0.5);
+      var c = VGT.game.get_team_color(team);
+      if(get_luma_ox(c) > 0.9) c = 0xDDDDDD;
+      this.graphics.lineStyle(t2, c);
+      this.graphics.drawEllipse(0, 0, this.width*0.5, this.height*0.5);
+    }
+
+    // Drawing a rectangle
+    else { 
+      this.graphics.lineStyle(t1, 0xFFFFFF);
+      this.graphics.drawRect(-w*0.5, -h*0.5, w, h);
+      var c = VGT.game.get_team_color(team);
+      if(get_luma_ox(c) > 0.9) c = 0xDDDDDD;
+      this.graphics.lineStyle(t2, c);
+      this.graphics.drawRect(-w*0.5, -h*0.5, w, h);
+    }
+  }
+
   /**
    * Selects the thing visually and adds it to the approriate list of selected things.
    */
@@ -2085,16 +2148,33 @@ class _Thing {
 
     // Select it
     VGT.things.selected[team][this.id_thing] = this;
-    this.container.filters = [new __filters.GlowFilter({
-      distance:20,
-      outerStrength:5,
-      innerStrength:1,
-      color:VGT.game.get_team_color(team),
-      quality:0.1,
-    })];
+
+    // Draw selection graphics
+    this.draw_select_graphics(team);
     
   } // End of select()
 
+
+  /**
+   * Unselects thing. This will not unselect anything held by someone else.
+   */
+  unselect(do_not_update_q_out) { //log('thing.unselect()', this.id_thing, this.selected_id);
+
+    // If we're already unselected, or it is held by someone do nothing
+    if(this.team_select < 0 && this.id_client_hold) return;
+
+    // Remove it from the list
+    if(VGT.things.selected[this.team_select] &&
+       VGT.things.selected[this.team_select][this.id_thing])
+        delete VGT.things.selected[this.team_select][this.id_thing];
+    this.team_select = -1;
+
+    // If we're supposed to send an update, make sure there is an entry in the queue
+    this.update_q_out('team_select', 'ts', do_not_update_q_out);
+
+    // Remove rectangle
+    this.graphics.clear();
+  } // End of unselect()
 
   // Selects all the pieces on this piece
   shovel_select(team) {
@@ -2121,27 +2201,7 @@ class _Thing {
   
   } // End of shovel_select()
 
-  /**
-   * Unselects thing. This will not unselect anything held by someone else.
-   */
-  unselect(do_not_update_q_out) { //log('thing.unselect()', this.id_thing, this.selected_id);
-
-    // If we're already unselected, or it is held by someone do nothing
-    if(this.team_select < 0 && this.id_client_hold) return;
-
-    // Remove it from the list
-    if(VGT.things.selected[this.team_select] &&
-       VGT.things.selected[this.team_select][this.id_thing])
-        delete VGT.things.selected[this.team_select][this.id_thing];
-    this.team_select = -1;
-
-    // If we're supposed to send an update, make sure there is an entry in the queue
-    this.update_q_out('team_select', 'ts', do_not_update_q_out);
-
-    // Unglow it
-    this.container.filters = [];
-
-  } // End of unselect()
+ 
 
   /* Sends data associated with key (this[key]) to the associated VGT.net.q_pieces_out[this.id_thing][qkey]. */
   update_q_out(key, qkey, only_if_exists) { 
@@ -2200,8 +2260,11 @@ class _Thing {
   // This will do NOTHING locally, waiting instead for the server
   // to tell us what to do with it. Here we just send a z request to the server immediately.
   set_z(z) { 
-    log('NETS_z_'+String(VGT.net.id), [this.id_piece, z]);
-    VGT.net.io.emit('z', [this.id_piece, z]);
+    VGT.net.q_z_out.push(this.id_piece);
+    VGT.net.q_z_out.push(z);
+
+    //log('NETS_z_'+String(VGT.net.id), [this.id_piece, z]);
+    //VGT.net.io.emit('z', [this.id_piece, z]);
   }
 
   // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
@@ -2888,7 +2951,7 @@ class _Game {
   // Default minimal settings that can be overridden.
   default_settings = {
 
-    background_color : 0xfcf2f0,
+    background_color : 0xf9ecec,
 
     // Available teams for clients and their colors.
     teams : {
@@ -2908,8 +2971,8 @@ class _Game {
     setups : ['Standard'],
 
     // How long to wait in between housekeepings.
-    t_housekeeping : 100,
-    t_hold_block   : 550,
+    t_housekeeping   : 100,
+    t_housekeeping_z : 10,
   }
 
   constructor(settings) {
@@ -2932,8 +2995,11 @@ class _Game {
         VGT.html.setups.appendChild(o);
     }
 
-    // Start the quarter-second housekeeping
+    // Start the slow housekeeping
     setInterval(this.housekeeping.bind(this), this.settings.t_housekeeping);
+
+    // Start the fast housekeeping for z-stuff
+    setInterval(this.housekeeping_z.bind(this), this.settings.t_housekeeping_z);
   }
 
   /** Gets the team name from the list index. */
@@ -2956,6 +3022,12 @@ class _Game {
     VGT.net.process_queues();
 
   } // End of housekeeping.
+
+  // Function called very often to send the z-queues
+  housekeeping_z(e) {
+    // Process z queues
+    VGT.net.process_q_z_out();
+  }
 
 } // End of Game
 VGT.Game = _Game;

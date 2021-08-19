@@ -350,6 +350,12 @@ function sort_objects_by_key(objects, key, decreasing) {
 exports.sort_objects_by_key = sort_objects_by_key;
 
 
+function get_luma_ox(ox) {
+  rgb = ox_to_rgb(ox);
+  return 0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2];
+}
+exports.get_luma_ox = get_luma_ox;
+
 // For converting rgb (values 0-1) to 0x format
 function rgb_to_ox(r, g, b) {
     return Math.round(r*0xFF)*0x010000 + Math.round(g*0xFF)*0x000100 + Math.round(b*0xFF);
