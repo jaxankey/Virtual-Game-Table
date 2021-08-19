@@ -377,7 +377,7 @@ exports.ox_to_rgb = ox_to_rgb;
  * @returns rotated vector [x,y]
  */
 function rotate_vector(v, r) {
-    if(r == 0) return v;
+    if(!r) return v;
     var cos = Math.cos(r);
     var sin = Math.sin(r);
     return [v[0]*cos-v[1]*sin, v[0]*sin+v[1]*cos]

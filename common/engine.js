@@ -980,6 +980,9 @@ class _Interaction {
       rotate_selected_right     : VGT.tabletop.rotate_selected_right.bind(VGT.tabletop),
       rotate_selected_to_hand   : VGT.tabletop.rotate_selected_to_hand.bind(VGT.tabletop),
       rotate_selected_to_table  : VGT.tabletop.rotate_selected_to_table.bind(VGT.tabletop),
+
+      collect_selected_to_mouse : this.collect_selected_to_mouse.bind(this),
+      expand_selected_to_mouse  : this.expand_selected_to_mouse.bind(this),
     }
 
     // Dictionary of functions for each key
@@ -1036,6 +1039,12 @@ class _Interaction {
       NumpadAddDown:      this.actions.zoom_in,
       MinusDown:          this.actions.zoom_out,
       NumpadSubtractDown: this.actions.zoom_out,
+
+      // Collect and expand
+      KeyCDown:      this.actions.collect_selected_to_mouse,
+      ShiftKeyCDown: this.actions.collect_selected_to_mouse,
+      KeyXDown:      this.actions.expand_selected_to_mouse,
+      ShiftKeyXDown: this.actions.expand_selected_to_mouse,
 
       // Cycle images
       SpaceDown: this.increment_selected_textures,
@@ -1096,6 +1105,41 @@ class _Interaction {
 
     } // End of all layers loop
     return null;
+  }
+
+  collect_selected_to_mouse(e) {
+    
+    // team index
+    var team = VGT.clients.me.team; 
+    
+    // Last mouse move tabletop coordinates
+    var x = this.xm_tabletop;       
+    var y = this.ym_tabletop;
+    var r = VGT.clients.me.hand.r.value;       
+
+    // Get the unsorted pieces list
+    var pieces = Object.values(VGT.things.selected[team]);
+
+    // Do the collection
+    if(e.shiftKey) VGT.things.collect(pieces, x, y, r, r, 0,         0,         true);
+    else           VGT.things.collect(pieces, x, y, r, r, undefined, undefined, true);
+  }
+
+  expand_selected_to_mouse(e) {
+
+    // team index
+    var team = VGT.clients.me.team; 
+    
+    // Last mouse move tabletop coordinates
+    var x = this.xm_tabletop;       
+    var y = this.ym_tabletop;       
+    var r = VGT.clients.me.hand.r.value;
+
+    // Get the unsorted pieces list
+    var pieces = Object.values(VGT.things.selected[team]);
+
+    // Do the collection
+    VGT.things.expand(pieces, x, y, r, r, e.shiftKey);
   }
 
   // Pointer touches the underlying surface.
@@ -1799,29 +1843,36 @@ class _Thing {
   
   // Default settings for a new object
   default_settings = {
-    'texture_paths' : [['nofile.png']], // paths relative to the root, with each sub-list being a layer (can animate), e.g. [['a.png','b.png'],['c.png']]
-    'texture_root'  : '',               // Sub-folder in the search directories (path = image_paths.root + texture_root + path), e.g. images/
-    'shape'         : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
-    'type'          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
-    'sets'          : [],               // List of other sets to which this thing can belong (pieces, hands, ...)
-    'r_step'        : 45,               // How many degrees to rotate when taking a rotation step.
-    'rotate_with_view' : false,         // Whether the piece should retain its orientation with respect to the screen when rotating the view / table
+    texture_paths : [['nofile.png']], // paths relative to the root, with each sub-list being a layer (can animate), e.g. [['a.png','b.png'],['c.png']]
+    texture_root  : '',               // Sub-folder in the search directories (path = image_paths.root + texture_root + path), e.g. images/
+    shape         : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
+    type          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
+    sets          : [],               // List of other sets to which this thing can belong (pieces, hands, ...)
+    r_step        : 45,               // How many degrees to rotate when taking a rotation step.
+    rotate_with_view : false,         // Whether the piece should retain its orientation with respect to the screen when rotating the view / table
 
     // Targeted x, y, r, and s
-    'x' : 0,
-    'y' : 0, 
-    'r' : 0,
-    's' : 1,
+    x : 0,
+    y : 0, 
+    r : 0,
+    s : 1,
 
     // Layer
-    'layer' : 0,
+    layer : 0,
 
     // Snap stuff
-    'snap_lists'    : ['all'],   // List of snap lists to check when releasing the thing.
-    'local_snaps'   : [],        // List of snap settings to send to VGT.snaps.new_snap() upon creation.
+    snap_lists    : ['all'],   // List of snap lists to check when releasing the thing.
+    local_snaps   : [],        // List of snap settings to send to VGT.snaps.new_snap() upon creation.
 
     // List of piece groups this piece will shovel (also select / hold) when picked up
-    'shovel' : false, // e.g., true or ['all'] to shovel all pieces.
+    shovel : false, // e.g., true or ['all'] to shovel all pieces.
+
+    // Collecting and expanding
+    collect_dx: 2,         // px shift in x-direction for collecting
+    collect_dy: -2,        // px shift in y-direction for collecting
+    expand_Nx : 10,        // number of columns when expanding
+    expand_dx : undefined, // px shift for expanding in the x-direction; undefined is 'automatic'
+    expand_dy : undefined, // px shift for expanding in the y-direction; undefined is 'automatic'
   };
 
   constructor(settings) {
@@ -2089,36 +2140,37 @@ class _Thing {
     if(this.settings.shape == 'circle' || this.settings.shape == 'circle_inner') var r = Math.min(w,h)*0.5;
     else if(this.settings.shape == 'circle_outer')                               var r = Math.max(w,h)*0.5; 
 
-    var t1 = 12/this.s.value;
-    var t2 =  4/this.s.value;
+    var t1 = 8/this.s.value;
+    var t2 = 3/this.s.value;
+    var c1 = VGT.game.get_team_color(team);
+    var c2 = 0xFFFFFF;
+    var a  = 0.7;
+    if(get_luma_ox(c1) > 0.9) {
+      c2 = 0x000000;
+      a  = 0.4;
+    }
 
     // Drawing a circle
     if(['circle', 'circle_outer', 'circle_inner'].includes(this.settings.shape)) {
-      this.graphics.lineStyle(t1, 0xFFFFFF);
+      this.graphics.lineStyle(t1, c1);
       this.graphics.drawCircle(0, 0, r);
-      var c = VGT.game.get_team_color(team);
-      if(get_luma_ox(c) > 0.9) c = 0xDDDDDD;
-      this.graphics.lineStyle(t2, c);
+      this.graphics.lineStyle(t2, c2, a);
       this.graphics.drawCircle(0, 0, r);
     }
 
     // Drawing an ellipse
     if(this.settings.shape == 'ellipse') {
-      this.graphics.lineStyle(t1, 0xFFFFFF);
+      this.graphics.lineStyle(t1, c1);
       this.graphics.drawEllipse(0, 0, this.width*0.5, this.height*0.5);
-      var c = VGT.game.get_team_color(team);
-      if(get_luma_ox(c) > 0.9) c = 0xDDDDDD;
-      this.graphics.lineStyle(t2, c);
+      this.graphics.lineStyle(t2, c2, a);
       this.graphics.drawEllipse(0, 0, this.width*0.5, this.height*0.5);
     }
 
     // Drawing a rectangle
     else { 
-      this.graphics.lineStyle(t1, 0xFFFFFF);
+      this.graphics.lineStyle(t1, c1);
       this.graphics.drawRect(-w*0.5, -h*0.5, w, h);
-      var c = VGT.game.get_team_color(team);
-      if(get_luma_ox(c) > 0.9) c = 0xDDDDDD;
-      this.graphics.lineStyle(t2, c);
+      this.graphics.lineStyle(t2, c2, a);
       this.graphics.drawRect(-w*0.5, -h*0.5, w, h);
     }
   }
@@ -2475,6 +2527,73 @@ class _Things {
     this.held     = {}; // lists of things held, indexed by client id
   }
 
+  // Collect things into a pile
+  collect(things, x, y, r, r_stack, dx, dy, center_top) {
+
+    // Get an object, indexed by layer with lists of things, sorted by z
+    var sorted = VGT.things.sort_by_z(things);  
+
+    // Loop over layers and stack at the mouse coordinates
+    var p, n=0, dx0, dy0, v;
+    for(var k in sorted) { p = sorted[k];
+      if(dx == undefined) dx0 = p.settings.collect_dx;
+      else                dx0 = dx;
+      
+      if(dy == undefined) dy0 = p.settings.collect_dy;
+      else                dy0 = dy;
+
+      if(center_top) v = rotate_vector([(n-sorted.length+1)*dx0, (n-sorted.length+1)*dy0], r_stack);
+      else           v = rotate_vector([ n                 *dx0,  n                 *dy0], r_stack);
+
+      // Set the location and then increment the offset integer.
+      p.set_xyrs(x+v[0], y+v[1], r);
+      n++;
+    }
+  }
+
+  // Expand these into a grid
+  expand(things, x, y, r, r_stack, sort) { log('expand()', things.length, x, y, r, sort);
+    
+    // Get an object, indexed by layer with lists of things, sorted by z
+    var sorted = VGT.things.sort_by_z(things);
+
+    // Get the row count from the first element
+    var Nx = sorted[0].settings.expand_Nx;
+    var dx = sorted[0].settings.expand_dx;
+    var dy = sorted[0].settings.expand_dy;
+    if(!Nx) Nx = 10;
+    if(!dx) dx = sorted[0].width;
+    if(!dy) dy = sorted[0].height;
+
+    // Assemble a 2d array, one element per row
+    var row=0;
+    var expanded = [];
+    for(var n in sorted) {
+      // Make sure we have a sub-array
+      if(!expanded[row]) expanded.push([]);
+      
+      // Add the element
+      expanded[row].push(sorted[n]);
+
+      // Make sure we don't need to start a new row
+      if(expanded[row].length >= Nx) row++; 
+    }
+    
+    // Calculate the upper left corner of the grid
+    var x0 = -(Nx-1)             *0.5*dx;
+    var y0 = -(expanded.length-1)*0.5*dy;
+    
+    // Start positioning things
+    var v;
+    for(var i in expanded) for(var j in expanded[i]) {
+
+
+      v = rotate_vector([-(expanded[i].length-1)*0.5*dx + j*dx, y0+i*dy], r_stack);
+      expanded[i][j].set_xyrs(x+v[0], y+v[1], r);
+    }
+      
+  }
+
   // Resets coordinates
   reset() {for(var n in this.all) this.all[n].reset(); }
 
@@ -2492,7 +2611,7 @@ class _Things {
     }
   }
 
-  // Given a list of things, returns an object, indexed by layer, full of lists of things sorted by z-index.
+  // Given a list of things returns a list sorted by layer then z-index.
   sort_by_z(things, descending) { 
 
     // First sort by layers
@@ -2513,7 +2632,16 @@ class _Things {
     // Now loop over the sorted layers, and sort each array
     for(var k in sorted) sort_objects_by_key(sorted[k], '_z', descending);
 
-    return sorted;
+    // Now loop over the sorted layers and assemble the master list
+    var layers = Object.keys(sorted);
+    if(descending) layers.sort(function(a, b) { return b - a; })
+    else           layers.sort(function(a, b) { return a - b; });
+
+    // Get the final result
+    var result = [];
+    for(var n in layers) for(var i in sorted[layers[n]]) result.push(sorted[layers[n]][i]);
+
+    return result;
   }
 
   // Sends all selected things to the top.
@@ -2526,9 +2654,10 @@ class _Things {
       var sorted = this.sort_by_z(Object.values(this.selected[team]));
       
       // Send them to the top, bottom first
-      for(var l in sorted) for(var n in sorted[l]) sorted[l][n].send_to_top();
+      for(var k in sorted) sorted[k].send_to_top();
     }
   }
+
 
   // Sends all selected things to the bottom.
   send_selected_to_bottom(team) { 
@@ -2536,11 +2665,11 @@ class _Things {
     // If we have a held list for this client id
     if(this.selected[team]) {
       
-      // Get the sorted held objects, indexed by layer
+      // Get the sorted held objects
       var sorted = this.sort_by_z(Object.values(this.selected[team]), true);
       
       // Send them to the top, bottom first
-      for(var l in sorted) for(var n in sorted[l]) sorted[l][n].send_to_bottom();
+      for(var k in sorted) sorted[k].send_to_bottom();
     }
   }
 
