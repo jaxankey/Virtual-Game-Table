@@ -1023,11 +1023,6 @@ class _Interaction {
       SpaceDown: this.increment_selected_textures,
     }
 
-    // Basic shapes for general-purpose use
-    this.ellipse   = new PIXI.Ellipse(0,0,1,1);   // center x, y, x-radius, y-radius
-    this.circle    = new PIXI.Circle(0,0,1);      // center x, y, radius
-    this.rectangle = new PIXI.Rectangle(0,0,1,1); // top left x, y, width, height
-
     // Event listeners
     document.addEventListener('contextmenu', e => {e.preventDefault();}); 
     window  .addEventListener('resize',  this.onresize_window);
@@ -1785,7 +1780,7 @@ class _Thing {
   default_settings = {
     'texture_paths' : [['nofile.png']], // paths relative to the root, with each sub-list being a layer (can animate), e.g. [['a.png','b.png'],['c.png']]
     'texture_root'  : '',               // Sub-folder in the search directories (path = image_paths.root + texture_root + path), e.g. images/
-    'shape'         : 'rectangle',      // Hitbox shape.
+    'shape'         : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
     'type'          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
     'sets'          : [],               // List of other sets to which this thing can belong (pieces, hands, ...)
     'r_step'        : 45,               // How many degrees to rotate when taking a rotation step.
@@ -1828,9 +1823,6 @@ class _Thing {
 
     // Tint applied to everything
     this.tint = 0xFFFFFF;
-
-    // Shape of hitbox
-    this.shape = eval('VGT.interaction.'+this.settings.shape);
 
     // Targeted location and geometry. Current locations are in the container.x, container.y, container.rotation, and container.scale.x
     this.x = new _Animated(this.settings.x);
@@ -1892,6 +1884,9 @@ class _Thing {
     // If "shovel" is set to true as a shorthand
     if(this.settings.shovel == true) this.settings.shovel = ['all'];
 
+    // Until PIXI is ready and it's been initialized, have this placeholder here
+    this.hitbox = false;
+
   } // End of constructor.
 
   // Whether the supplied table coordinates are contained within the object
@@ -1899,7 +1894,22 @@ class _Thing {
 
     // Transform table coordinates to local coordinates
     var v = this.container.localTransform.applyInverse(new PIXI.Point(x,y));
-    return this.container.getLocalBounds().contains(v.x,v.y); 
+    
+    // Different hitboxes
+    if(this.settings.shape == 'circle' || this.settings.shape == 'circle_inner') {    
+      var r = 0.5*Math.min(this.width, this.height);
+      return v.x*v.x+v.y*v.y <= r*r;
+    }
+    else if(this.settings.shape == 'circle_outer') {
+      var r = 0.5*Math.max(this.width, this.height);
+      return v.x*v.x+v.y*v.y <= r*r;
+    }
+    else { // Rectangle by default
+      var hw = this.width*0.5;
+      var hh = this.height*0.5;
+      return v.x >= -hw && v.x <= hw && v.y >= -hh && v.y <= hh;
+    }
+
   }
 
   // Resets to the settings
@@ -1928,8 +1938,10 @@ class _Thing {
     
     // If texture_paths = null, no textures. sprites will stay empty too.
     if(this.settings.texture_paths != null) {
-      
-      var path; // reused in loop
+
+      this.width  = 0;   // Maximum width of the biggest sprites
+      this.height = 0;   // Maximum height of the biggest sprites
+      var path, texture; // reused in loop
       for(var n=0; n<this.settings.texture_paths.length; n++) {
         
         // One list of frames per layer; these do not have to match length
@@ -1938,7 +1950,16 @@ class _Thing {
           
           // Add the actual texture object
           path = image_paths.root + this.settings.texture_root + this.settings.texture_paths[n][m];
-          if(VGT.pixi.resources[path]) this.textures[n].push(VGT.pixi.resources[path].texture);
+          if(VGT.pixi.resources[path]) {
+            texture = VGT.pixi.resources[path].texture;
+
+            // Get the width and height
+            this.width  = Math.max(this.width,  texture.width);
+            this.height = Math.max(this.height, texture.height);
+            
+            // Add it to the list
+            this.textures[n].push(texture);
+          }
           else throw 'No resource for '+ path;
         }
       } // Done with loop over texture_paths.
