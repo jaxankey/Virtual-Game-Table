@@ -1230,12 +1230,16 @@ class _Interaction {
           var dxr = dx1-dx0;
           var dyr = dy1-dy0;
           
+          // If we're holding a rotate-with-view piece
+          if(thing.settings.rotate_with_view) var r = thing.r.target;
+          else                                var r = thing.rh + r0;
+
           // Do the actual move
           thing.set_xyrs(
             thing.xh + x0 + dxr,
             thing.yh + y0 + dyr,
-            thing.rh + r0,    // updates the rotation with how much the hand has rotated
-            undefined, 
+            r,                // updates the rotation with how much the hand has rotated
+            undefined,        // Not scaling
             true,             // immediately, so that they stay rigid with the mouse
             false,            // do_not_update_q_out (we want to send this info)
             true);            // do_not_reset_R (we don't want to mess with aux rotation for this; it may be animating)
