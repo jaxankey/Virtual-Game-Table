@@ -336,12 +336,12 @@ exports.limit_vector_length = limit_vector_length;
 
 
 // In-place sorts the supplied list of objects by the specified key.
-function sort_objects_by_key(objects, key, decreasing) {
+function sort_objects_by_key(objects, key, descending) {
 
     // If increasing
-    if(!decreasing) objects.sort(function(p1,p2) {return p1[key]-p2[key];});
+    if(!descending) objects.sort(function(p1,p2) {return p1[key]-p2[key];});
 
-    // If decreasing
+    // If descending
     else            objects.sort(function(p1,p2) {return p2[key]-p1[key];});
     
     // All done.

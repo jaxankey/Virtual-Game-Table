@@ -2554,8 +2554,12 @@ class _Things {
   // Expand these into a grid
   expand(things, x, y, r, r_stack, sort) { log('expand()', things.length, x, y, r, sort);
     
+    // If we're supposed to sort by z; this sends the request for z sorting,
+    // but relies on the server's response to actually do it.
+    if(sort) var sorted = this.sort_z_by_id(things);
+
     // Get an object, indexed by layer with lists of things, sorted by z
-    var sorted = VGT.things.sort_by_z(things);
+    else var sorted = VGT.things.sort_by_z(things);
 
     // Get the row count from the first element
     var Nx = sorted[0].settings.expand_Nx;
@@ -2609,6 +2613,17 @@ class _Things {
       // Delete the list
       delete this.held[id_client];
     }
+  }
+
+  // Sets the z of the supplied list of things in order of their id (and sends them to the top)
+  sort_z_by_id(things, descending) {
+    
+    // Make a copy for in-place sorting
+    var sorted = [...things];
+    sort_objects_by_key(sorted, 'id_thing', descending);
+    for(var n in sorted) sorted[n].send_to_top();
+
+    return sorted;
   }
 
   // Given a list of things returns a list sorted by layer then z-index.
