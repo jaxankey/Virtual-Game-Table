@@ -333,7 +333,26 @@ function limit_vector_length(x,y,l) {
 }
 exports.limit_vector_length = limit_vector_length;
 
+// IN PLACE randomizes the order of the supplied array
+function shuffle_array(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex ;
 
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    var randomIndex = random_integer(0, currentIndex-1);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    var temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+exports.shuffle_array = shuffle_array;
 
 // In-place sorts the supplied list of objects by the specified key.
 function sort_objects_by_key(objects, key, descending) {

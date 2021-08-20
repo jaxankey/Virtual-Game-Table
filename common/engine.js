@@ -983,6 +983,7 @@ class _Interaction {
 
       collect_selected_to_mouse : this.collect_selected_to_mouse.bind(this),
       expand_selected_to_mouse  : this.expand_selected_to_mouse.bind(this),
+      shuffle                   : this.shuffle.bind(this),
     }
 
     // Dictionary of functions for each key
@@ -1040,11 +1041,13 @@ class _Interaction {
       MinusDown:          this.actions.zoom_out,
       NumpadSubtractDown: this.actions.zoom_out,
 
-      // Collect and expand
+      // Collect, expand, shuffle
       KeyCDown:      this.actions.collect_selected_to_mouse,
       ShiftKeyCDown: this.actions.collect_selected_to_mouse,
       KeyXDown:      this.actions.expand_selected_to_mouse,
       ShiftKeyXDown: this.actions.expand_selected_to_mouse,
+      KeyZDown:      this.actions.shuffle,
+      ShiftKeyZDown: this.actions.shuffle,
 
       // Cycle images
       SpaceDown: this.increment_selected_textures,
@@ -1107,6 +1110,28 @@ class _Interaction {
     return null;
   }
 
+  // Shuffles the selected pieces
+  shuffle(e) {
+    // team index
+    var team = VGT.clients.me.team; 
+
+    // Last mouse move tabletop coordinates
+    var x = this.xm_tabletop;       
+    var y = this.ym_tabletop;
+    var r = VGT.clients.me.hand.r.value;       
+
+    // Get the unsorted pieces list
+    var pieces = Object.values(VGT.things.selected[team]);
+
+    // Shuffle z
+    var shuffled = VGT.things.shuffle_z(pieces);
+    for(var n in shuffled) console.log('HAY', shuffled[n].id_piece);
+
+    // If we're not holding shift, collect them too
+    if(!e.shiftKey) VGT.things.collect(shuffled, x, y, r, r, undefined, undefined, true, true)
+  }
+
+  // Sends selected pieces to a neat stack below the mouse
   collect_selected_to_mouse(e) {
     
     // team index
@@ -1125,6 +1150,7 @@ class _Interaction {
     else           VGT.things.collect(pieces, x, y, r, r, undefined, undefined, true);
   }
 
+  // Expands the selected pieces in a grid below the mouse
   expand_selected_to_mouse(e) {
 
     // team index
@@ -2528,10 +2554,11 @@ class _Things {
   }
 
   // Collect things into a pile
-  collect(things, x, y, r, r_stack, dx, dy, center_top) {
+  collect(things, x, y, r, r_stack, dx, dy, center_top, supplied_order) {
 
     // Get an object, indexed by layer with lists of things, sorted by z
-    var sorted = VGT.things.sort_by_z(things);  
+    if(!supplied_order) var sorted = VGT.things.sort_by_z(things); 
+    else                var sorted = things; 
 
     // Loop over layers and stack at the mouse coordinates
     var p, n=0, dx0, dy0, v;
@@ -2613,6 +2640,17 @@ class _Things {
       // Delete the list
       delete this.held[id_client];
     }
+  }
+
+  // Shuffles the z-order of the supplied list of things
+  shuffle_z(things) {
+
+    // Make a copy for in-place shuffling
+    var shuffled = [...things];
+    shuffle_array(shuffled);
+    for(var n in shuffled) shuffled[n].send_to_top();
+
+    return shuffled;
   }
 
   // Sets the z of the supplied list of things in order of their id (and sends them to the top)
@@ -2711,6 +2749,9 @@ class _Things {
    * unselect all things for this team.
    */
   unselect_all(team) { log('VGT.things.unselect_all()', team);
+
+    // If no team, use our team
+    if(team == undefined) team = VGT.clients.me.team;
 
     // Loop over all the selected things and pop them.
     for(var k in this.selected[team]) this.selected[team][k].unselect(); 
