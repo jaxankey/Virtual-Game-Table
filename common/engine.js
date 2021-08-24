@@ -984,6 +984,9 @@ class _Interaction {
       collect_selected_to_mouse : this.collect_selected_to_mouse.bind(this),
       expand_selected_to_mouse  : this.expand_selected_to_mouse.bind(this),
       shuffle                   : this.shuffle.bind(this),
+
+      start_roll                : this.start_roll.bind(this),
+      roll                      : this.roll.bind(this),
     }
 
     // Dictionary of functions for each key
@@ -1048,6 +1051,8 @@ class _Interaction {
       ShiftKeyXDown: this.actions.expand_selected_to_mouse,
       KeyZDown:      this.actions.shuffle,
       ShiftKeyZDown: this.actions.shuffle,
+      KeyRDown:      this.actions.start_roll,
+      KeyRUp:        this.actions.roll,
 
       // Cycle images
       SpaceDown: this.increment_selected_textures,
@@ -1129,6 +1134,35 @@ class _Interaction {
 
     // If we're not holding shift, collect them too
     if(!e.shiftKey) VGT.things.collect(shuffled, x, y, r, r, undefined, undefined, true, true)
+  }
+
+  // Draws the pieces to the hand and starts the animation
+  start_roll(e) { log('start_roll()');
+
+    // Ignore subsequent keys
+    if(this.rolling) return;
+
+    // Collect to the starting mouse position
+    this.collect_selected_to_mouse(e);
+
+    // Let us know that we're rolling
+    this.rolling = {...VGT.things.selected[VGT.clients.me.team]};
+
+  }
+
+  // Throws the held pieces out
+  roll(e) {
+
+    // If rolling
+    if(this.rolling) {
+
+      // Distribute them around the mouse
+      VGT.things.scramble_pieces(Object.values(this.rolling), this.xm_tabletop, this.ym_tabletop);
+
+      // Not rolling
+      this.rolling.length = 0;
+      this.rolling = false;
+    }
   }
 
   // Sends selected pieces to a neat stack below the mouse
@@ -1328,8 +1362,9 @@ class _Interaction {
           this.tabletop_yd + dy, 
           undefined, undefined, true); // immediate
       }
-    }
-
+    
+    } // End of 'button down'
+    
   } // End of onpointermove
 
   onpointerup(e) { log('onpointerup()', e.button);
@@ -2445,6 +2480,9 @@ class _Thing {
       this.increment_texture();
   }
 
+  // Randomizes the shown texture
+  randomize_texture_index(do_not_update_q_out) { this.set_texture_index(random_integer(0,this.textures[0].length-1), do_not_update_q_out); }
+
   // show / hide the sprite
   show(invert)  {
     if(invert) this.container.visible = false;
@@ -2651,6 +2689,50 @@ class _Things {
     for(var n in shuffled) shuffled[n].send_to_top();
 
     return shuffled;
+  }
+
+  /**
+   * Scramble the supplied pieces, like rolling dice: randomizes locations in a pattern determined by the 
+   * last piece's diameter, minimizing overlap. 
+   * 
+   * @param {array} pieces list of pieces to randomize
+   * @param {float} x      x-coordinate to center the scramble on
+   * @param {float} y      y-coordinate to center the scramble on
+   * @param {int}   space  average lattice sites per piece (on hex grid) (default 1.5)
+   * @param {float} scale  scale for spacing of hex grid (default 1)
+   */
+  scramble_pieces(pieces, x, y, space, scale) {
+    if(!pieces || pieces.length==0) return;
+    if(space == undefined) space = 1.5;
+    if(scale == undefined) scale = 1;
+
+    // Now find the basis vectors based on the biggest radius of the last piece
+    var D  = scale*Math.max(pieces[pieces.length-1].width, pieces[pieces.length-1].height);
+    var ax = D;
+    var ay = 0;
+    var bx = ax*0.5;
+    var by = ax*0.5*Math.sqrt(3.0);
+
+    // Rotate the basis vectors by a random angle
+    var r = 2*Math.PI*Math.random();
+    var a = rotate_vector([ax, ay], r);
+    var b = rotate_vector([bx, by], r);
+
+    // Generate all the available hex grid indices, skipping (0) at x,y.
+    var spots =[]; for(var n=1; n<pieces.length*space+1; n++) spots.push(n);
+    
+    // Set the piece coordinates on the hex grid, plus a little randomness
+    for(var n in pieces) {
+      var p = pieces[n];
+      var d = hex_spiral(spots.splice(random_integer(0, spots.length-1),1)); // Lattice integers
+      var v = get_random_location_disc(0.25*D); // Small deviation from lattice
+      
+      // Set the random location, orientation, and image
+      p.set_xyrs(x + d.n*a[0] + d.m*b[0] + v.x, 
+                 y + d.n*a[1] + d.m*b[1] + v.y, 
+                 v.r * 7);
+      p.randomize_texture_index();
+    }
   }
 
   // Sets the z of the supplied list of things in order of their id (and sends them to the top)
@@ -3207,6 +3289,18 @@ class _Game {
     // and everything is loaded, connect to server
     if(VGT.pixi.ready && !VGT.net.ready && VGT.pixi.queue.length==0) VGT.net.connect_to_server();
 
+    // If we're rolling dice, do the animation, just before telling everyone
+    if(VGT.interaction.rolling) 
+      var d;
+      for(var n in VGT.interaction.rolling) {
+
+        // Randomize the shown image
+        VGT.interaction.rolling[n].randomize_texture_index();
+
+        // Randomize the location around the hand
+        //d = get_random_location_disc(VGT.interaction.rolling[n].width)
+        //VGT.interaction.rolling[n].set_xyrs(VGT.interaction.xm_tabletop+d.x, VGT.interaction.ym_tabletop+d.y, d.r*4);
+      }
     // Process net queues.
     VGT.net.process_queues();
 

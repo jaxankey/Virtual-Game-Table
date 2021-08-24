@@ -1,6 +1,8 @@
 /////////////////////////////
 // MATH
 /////////////////////////////
+SQRT3 = Math.sqrt(3.0);
+
 
 // Sum of array elements
 function array_sum(a) {
@@ -110,6 +112,47 @@ function identical(a1, a2, ignore) {
     return true;
 }
 exports.identical = identical;
+
+/**
+ * Converts an integer into an integer basis vector {m,n} following a hexagonal spiral from 
+ * {m:0,n:0}
+ * @param {int} n step.
+ */
+function hex_spiral(n) {
+
+  // return the origin to avoid explosions if n=0
+  if(n==0) return {n:0, m:0}
+
+  // get the index of the shell
+  var s = Math.ceil(Math.sqrt(0.25+n/3.0)-0.5);
+
+  // zero index of this shell
+  var n0 = 6*s*(s-1)/2+1;
+
+  // Declarations
+  var x0 = null;
+  var y0 = null;
+  var dx0 = null;
+  var dy0 = null;
+  
+  // depending which of the 6 legs we're on get the vectors
+  var leg = Math.floor((n-n0)/s);
+  switch(leg) {
+    case 0: x0 =  s; y0 =  0; dx0 = -1;  dy0 =  1; break;
+    case 1: x0 =  0; y0 =  s; dx0 = -1;  dy0 =  0; break;
+    case 2: x0 = -s; y0 =  s; dx0 =  0;  dy0 = -1; break;
+    case 3: x0 = -s; y0 =  0; dx0 =  1;  dy0 = -1; break;
+    case 4: x0 =  0; y0 = -s; dx0 =  1;  dy0 =  0; break;
+    case 5: x0 =  s; y0 = -s; dx0 =  0;  dy0 =  1; break;
+  }
+
+  // which element of the 6 legs we're on
+  var i = n-n0-leg*s;
+
+  // assemble the grid snap
+  return {n:x0+i*dx0, m:y0+i*dy0};
+}
+exports.hex_spiral = hex_spiral;
 
 // Returns a random integer from m to n
 function random_integer(m,n) { 
@@ -367,6 +410,21 @@ function sort_objects_by_key(objects, key, descending) {
     return objects
 }
 exports.sort_objects_by_key = sort_objects_by_key;
+
+// Gets a vector {x: , y:, r:,} randomly positioned within a disc of specified radius, and rotated randomly on +/-pi
+function get_random_location_disc(radius) {
+  // Get distance from origin
+  var d = Math.random()*radius;
+
+  // Rotate it randomly
+  var v = rotate_vector([d,0], Math.random()*Math.PI*2);
+
+  return {x:v[0], y:v[1], r:Math.PI*(2*Math.random()-1)};
+}
+exports.get_random_location_disc = get_random_location_disc;
+
+
+
 
 
 function get_luma_ox(ox) {
