@@ -1142,8 +1142,10 @@ class _Interaction {
     // Ignore subsequent keys
     if(this.rolling) return;
 
-    // Collect to the starting mouse position
-    this.collect_selected_to_mouse(e);
+    // Collect to the starting mouse position, with offset (set to true to remove offset)
+    this.collect_selected_to_mouse(e,false);
+    this.xroll = this.xm_tabletop;
+    this.yroll = this.ym_tabletop;
 
     // Let us know that we're rolling
     this.rolling = {...VGT.things.selected[VGT.clients.me.team]};
@@ -1166,7 +1168,7 @@ class _Interaction {
   }
 
   // Sends selected pieces to a neat stack below the mouse
-  collect_selected_to_mouse(e) {
+  collect_selected_to_mouse(e, no_offsets) {
     
     // team index
     var team = VGT.clients.me.team; 
@@ -1180,8 +1182,8 @@ class _Interaction {
     var pieces = Object.values(VGT.things.selected[team]);
 
     // Do the collection
-    if(e.shiftKey) VGT.things.collect(pieces, x, y, r, r, 0,         0,         true);
-    else           VGT.things.collect(pieces, x, y, r, r, undefined, undefined, true);
+    if(e.shiftKey || no_offsets) VGT.things.collect(pieces, x, y, r, r, 0,         0,         true);
+    else                         VGT.things.collect(pieces, x, y, r, r, undefined, undefined, true);
   }
 
   // Expands the selected pieces in a grid below the mouse
@@ -3298,8 +3300,8 @@ class _Game {
         VGT.interaction.rolling[n].randomize_texture_index();
 
         // Randomize the location around the hand
-        //d = get_random_location_disc(VGT.interaction.rolling[n].width)
-        //VGT.interaction.rolling[n].set_xyrs(VGT.interaction.xm_tabletop+d.x, VGT.interaction.ym_tabletop+d.y, d.r*4);
+        d = get_random_location_disc(VGT.interaction.rolling[n].width)
+        VGT.interaction.rolling[n].set_xyrs(VGT.interaction.xroll+d.x, VGT.interaction.yroll+d.y, d.r*4);
       }
     // Process net queues.
     VGT.net.process_queues();
