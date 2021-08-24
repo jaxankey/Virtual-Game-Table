@@ -3300,7 +3300,7 @@ class _Game {
         VGT.interaction.rolling[n].randomize_texture_index();
 
         // Randomize the location around the hand
-        d = get_random_location_disc(VGT.interaction.rolling[n].width)
+        d = get_random_location_disc(Math.min(VGT.interaction.rolling[n].width, VGT.interaction.rolling[n].height));
         VGT.interaction.rolling[n].set_xyrs(VGT.interaction.xroll+d.x, VGT.interaction.yroll+d.y, d.r*4);
       }
     // Process net queues.
