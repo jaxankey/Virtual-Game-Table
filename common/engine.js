@@ -1159,7 +1159,7 @@ class _Interaction {
     if(this.rolling) {
 
       // Distribute them around the mouse
-      VGT.things.scramble_pieces(Object.values(this.rolling), this.xm_tabletop, this.ym_tabletop);
+      VGT.things.scramble_things(Object.values(this.rolling), this.xm_tabletop, this.ym_tabletop);
 
       // Not rolling
       this.rolling.length = 0;
@@ -2694,22 +2694,27 @@ class _Things {
   }
 
   /**
-   * Scramble the supplied pieces, like rolling dice: randomizes locations in a pattern determined by the 
+   * Scramble the supplied things, like rolling dice: randomizes locations in a pattern determined by the 
    * last piece's diameter, minimizing overlap. 
    * 
-   * @param {array} pieces list of pieces to randomize
+   * @param {array} things list of things to randomize
    * @param {float} x      x-coordinate to center the scramble on
    * @param {float} y      y-coordinate to center the scramble on
    * @param {int}   space  average lattice sites per piece (on hex grid) (default 1.5)
    * @param {float} scale  scale for spacing of hex grid (default 1)
    */
-  scramble_pieces(pieces, x, y, space, scale) {
-    if(!pieces || pieces.length==0) return;
+  scramble_things(things, x, y, space, scale) {
+    
+    // Bonk out and handle defaults
+    if(!things || things.length==0 || x==undefined || y==undefined) return;
     if(space == undefined) space = 1.5;
     if(scale == undefined) scale = 1;
 
+    // Shuffle z
+    this.shuffle_z(things);
+
     // Now find the basis vectors based on the biggest radius of the last piece
-    var D  = scale*Math.max(pieces[pieces.length-1].width, pieces[pieces.length-1].height);
+    var D  = scale*Math.max(things[things.length-1].width, things[things.length-1].height);
     var ax = D;
     var ay = 0;
     var bx = ax*0.5;
@@ -2721,11 +2726,11 @@ class _Things {
     var b = rotate_vector([bx, by], r);
 
     // Generate all the available hex grid indices, skipping (0) at x,y.
-    var spots =[]; for(var n=1; n<pieces.length*space+1; n++) spots.push(n);
+    var spots =[]; for(var n=1; n<things.length*space+1; n++) spots.push(n);
     
     // Set the piece coordinates on the hex grid, plus a little randomness
-    for(var n in pieces) {
-      var p = pieces[n];
+    for(var n in things) {
+      var p = things[n];
       var d = hex_spiral(spots.splice(random_integer(0, spots.length-1),1)); // Lattice integers
       var v = get_random_location_disc(0.25*D); // Small deviation from lattice
       
