@@ -828,7 +828,6 @@ class _Tabletop {
     VGT.hands.set_scale(1.0/this.s.value);
 
     // Redraw selection graphics if the scale is still changing (gets heavy with lots of selection; why scale?)
-    //if(VGT.pixi.n_loop % 5 == 0) console.log('HAY',vs);
     /*if(Math.abs(vs) > 1e-6)
       for(var t in VGT.things.selected) 
         for(var i in VGT.things.selected[t])
@@ -1121,8 +1120,16 @@ class _Interaction {
     // Get the list of things we're shuffling
     this.shuffling = Object.values(VGT.things.selected[VGT.clients.me.team]);
 
-    // Scramble the cards that are selected by my team
-    VGT.things.scramble_things(this.shuffling, this.xm_tabletop, this.ym_tabletop, undefined, undefined, true);
+    // Send out the cards
+    VGT.things.sneeze_things(this.shuffling, this.xm_tabletop, this.ym_tabletop, 1, 0.7); 
+
+    // Has ugly "pop" when shuffled at the end (too much overlap)
+    /*var v, p;
+    for(var n in this.shuffling) {
+      p = this.shuffling[n];
+      v = get_random_location_disc(Math.max(p.width, p.height));
+      p.set_xyrs(this.xm_tabletop+v.x, this.ym_tabletop+v.y, v.r);
+    }*/
 
     // Start the finish shuffle (cancel any existing one)
     clearTimeout(this.timer_shuffling);
@@ -1143,7 +1150,6 @@ class _Interaction {
 
     // Shuffle z
     var shuffled = VGT.things.shuffle_z(pieces);
-    for(var n in shuffled) console.log('HAY', shuffled[n].id_piece);
 
     // If we're not holding shift, collect them too
     if(!e.shiftKey) VGT.things.collect(shuffled, x, y, r, r, undefined, undefined, center_on_top, true)
@@ -2707,25 +2713,22 @@ class _Things {
   }
 
   /**
-   * Scramble the supplied things, like rolling dice: randomizes locations in a pattern determined by the 
-   * last piece's diameter, minimizing overlap. 
+   * "Sneezes" the supplied list of things at random locations and rotations 
+   * around the specified coordinates in a randomly populated
+   * hex grid. Does not randomize z or the image indices. See also "scramble_things()"
    * 
-   * @param {array} things list of things to randomize
+   * @param {array} things list of things to sneeze out on the table
    * @param {float} x      x-coordinate to center the scramble on
    * @param {float} y      y-coordinate to center the scramble on
    * @param {int}   space  average lattice sites per piece (on hex grid) (default 1.5)
    * @param {float} scale  scale for spacing of hex grid (default 1)
-   * @param {boolean} do_not_randomize_texture  if true, will only redistribute and shuffle z
    */
-  scramble_things(things, x, y, space, scale, do_not_randomize_texture) {
-    
+  sneeze_things(things, x, y, space, scale) {
+
     // Bonk out and handle defaults
     if(!things || things.length==0 || x==undefined || y==undefined) return;
     if(space == undefined) space = 1.5;
     if(scale == undefined) scale = 1;
-
-    // Shuffle z
-    this.shuffle_z(things);
 
     // Now find the basis vectors based on the biggest radius of the last piece
     var D  = scale*Math.max(things[things.length-1].width, things[things.length-1].height);
@@ -2752,8 +2755,30 @@ class _Things {
       p.set_xyrs(x + d.n*a[0] + d.m*b[0] + v.x, 
                  y + d.n*a[1] + d.m*b[1] + v.y, 
                  v.r * 7);
-      if(!do_not_randomize_texture) p.randomize_texture_index();
     }
+  }
+
+  /**
+   * Scramble the supplied things, like rolling dice: randomizes locations in a pattern determined by the 
+   * last piece's diameter, minimizing overlap. 
+   * 
+   * @param {array} things list of things to randomize
+   * @param {float} x      x-coordinate to center the scramble on
+   * @param {float} y      y-coordinate to center the scramble on
+   * @param {int}   space  average lattice sites per piece (on hex grid) (default 1.5)
+   * @param {float} scale  scale for spacing of hex grid (default 1)
+   */
+  scramble_things(things, x, y, space, scale, do_not_randomize_texture) {
+    
+    // Bonk out and handle defaults
+    if(!things || things.length==0 || x==undefined || y==undefined) return;
+    if(space == undefined) space = 1.5;
+    if(scale == undefined) scale = 1;
+
+    // Shuffle z, sneeze them out around the x, y coordinates, and randomize each texture
+    this.shuffle_z(things);
+    this.sneeze_things(things, x, y, space, scale);
+    for(var n in things) things[n].randomize_texture_index();
   }
 
   // Sets the z of the supplied list of things in order of their id (and sends them to the top)
