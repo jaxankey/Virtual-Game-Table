@@ -1297,6 +1297,9 @@ class _Interaction {
       // Get the coordinates on the thing
       var a = thing.xy_tabletop_to_local(v.x, v.y); console.log('     on piece:', a);
 
+      // The piece we click is the snap leader
+      thing.is_snap_leader = true;
+
       // If we're not holding shift and it's not already a thing we've selected, 
       // unselect everything.
       if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.things.unselect_all(VGT.clients.me.team);
@@ -2240,9 +2243,27 @@ class _Thing {
     && this.id_client_hold != id_client
     && !force) return;
 
-    // Check groups for this piece; do this first so we don't snap to pieces being held still.
-    var a = this.get_best_snap_relationship();
-    if(a) this.set_xyrs(a.x, a.y, a.r, a.s); // Animate, tell the world, and do reset R.
+    // Snap leader should be a piece that is grabbed by me
+    if(this.is_snap_leader) {
+
+      // Find the closest snap point, if any, and set it
+      var a = this.get_best_snap_relationship();
+      if(a) {
+        // Get the difference so we can similarly shift the other formerly held pieces
+        var dx = a.x - this.x.target;
+        var dy = a.y - this.y.target;
+
+        // Now loop over the releasing piece list and update the coordinates
+        var p;
+        for(var id in VGT.things._releasing) { 
+          p = VGT.things._releasing[id];
+          p.set_xyrs(p.x.target+dx, p.y.target+dy, a.r, a.s); // Animate, tell the world, and do reset R.
+        }
+      } // End of "found snap point"
+    } // End of "is snap leader"
+
+    // Reset the snap leader flag
+    this.is_snap_leader = undefined;
 
     // Remove it from the list
     delete VGT.things.held[this.id_client_hold][this.id_thing];
@@ -2814,8 +2835,14 @@ class _Things {
     // If we have a held list for this client id
     if(this.held[id_client]) {
       
+      // Remember the previously held pieces so they know what to do
+      this._releasing = {...this.held[id_client]};
+      
       // Loop over the list and reset the id_client_hold
       for(var id_thing in this.held[id_client]) this.held[id_client][id_thing].release(id_client, force, do_not_update_q_out);
+     
+      // Forget the previously held pieces
+      delete this._releasing;
 
       // Delete the list
       delete this.held[id_client];
