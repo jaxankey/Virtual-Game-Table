@@ -97,6 +97,22 @@ new VGT.Game({
   setups: ['3 Players', '4 Players', '5 Players'],
 });
 
+///////////////////////////// GAME BOARD
+var settings = {
+  layer:  1,                 // Layer of these pieces
+  groups: ['boards'],        // List of groups to which this piece belongs
+  shovel: ['all'],        // Which groups this piece will shovel when selecting
+
+  // Coordinates and scale
+  x: 0,
+  y: 0,
+  r: 0,
+  s: 0.5,
+}
+var board = new VGT.Piece({...settings, image_paths:[['board-supply.jpg']]});
+
+
+
 ///////////////////////////// PLAYER BOARDS
 var settings = {
   layer:  1,                 // Layer of these pieces
@@ -221,6 +237,17 @@ var settings = {
   y: 0,
   r: 0,
   s: 0.5,
+
+  // List of snap specification objects
+  snaps:[ 
+    { // Worker dot
+      type: VGT.SnapCirle, // class used to create this snap
+      groups: ['workers'], // list of snap groups
+      x0: -72,     // Center, x-coordinate
+      y0: 19,      // Center, y-coordinate                   
+      radius: 50,  // Radius of snap region
+    },
+  ]
 }; // end of settings
 
 // Create pieces
@@ -238,6 +265,18 @@ var settings = {
   y: 0,
   r: 0,
   s: 0.5,
+
+  // List of snap specification objects
+  snaps:[ 
+    { // Worker dot
+      type: VGT.SnapCirle, // class used to create this snap
+      groups: ['workers'], // list of snap groups
+      x0: -72,     // Center, x-coordinate
+      y0: 93,      // Center, y-coordinate                   
+      radius: 50,  // Radius of snap region
+    },
+  ]
+  
 }; // end of settings
 
 // Create pieces
@@ -264,7 +303,7 @@ var settings = {
       groups: ['workers'], // list of snap groups
       x0: -27,     // Center, x-coordinate
       y0: 22,      // Center, y-coordinate                   
-      radius: 27,  // Radius of snap region
+      radius: 50,  // Radius of snap region
     },
   ]
 }; // end of settings
