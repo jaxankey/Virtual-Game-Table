@@ -766,8 +766,8 @@ class _Tabletop {
     this.x = new _Animated(0);
     this.y = new _Animated(0);
     this.r = new _Animated(0);
-    this.s = new _Animated(1);
-    this.container.rotation = this.r.value;
+    this.s = new _Animated(1); 
+    this.container.rotation = this.r.value*0.01745329251; // to radians
     this.container.scale.y  = this.container.scale.x = this.s.value;
     this.vx = this.vy = this.vr = this.vs = 0;
 
@@ -787,15 +787,19 @@ class _Tabletop {
    */
   xy_stage_to_tabletop(x,y) {
     
+    var r_rad = this.container.rotation;
+    var r_deg = r_rad / 0.01745329251;
+
     // Undo the shift of the table top center
-    var x1 = x - this.container.x + (this.container.pivot.x*Math.cos(this.container.rotation) - this.container.pivot.y*Math.sin(this.container.rotation))*this.container.scale.x;
-    var y1 = y - this.container.y + (this.container.pivot.x*Math.sin(this.container.rotation) + this.container.pivot.y*Math.cos(this.container.rotation))*this.container.scale.x;
+    var x1 = x - this.container.x + (this.container.pivot.x*Math.cos(r_rad) - this.container.pivot.y*Math.sin(r_rad))*this.container.scale.x;
+    var y1 = y - this.container.y + (this.container.pivot.x*Math.sin(r_rad) + this.container.pivot.y*Math.cos(r_rad))*this.container.scale.x;
     
     // Undo the rotation and scale of the tabletop
-    return rotate_vector(
+    var v = rotate_vector(
       [x1/this.container.scale.x,
        y1/this.container.scale.y],
-         -this.container.rotation);
+         -r_deg);
+    return {x:v[0], y:v[1]}
   }
 
   /**
@@ -808,12 +812,12 @@ class _Tabletop {
     this.x.animate(delta);
     this.y.animate(delta);
     this.r.animate(delta);
-    var vs = this.s.animate(delta);
+    var vs = this.s.animate(delta); // vs used for scaling below
 
     // Set the actual position, rotation, and scale
     this.container.pivot.x  = -this.x.value;
     this.container.pivot.y  = -this.y.value;
-    this.container.rotation =  this.r.value;
+    this.container.rotation =  this.r.value*0.01745329251; // to radians
     this.container.scale.x  =  this.s.value;
     this.container.scale.y  =  this.s.value;
 
@@ -846,10 +850,10 @@ class _Tabletop {
   set_xyrs(x,y,r,s,immediate) { 
 
     // Now for each supplied coordinate, update and send
-    if(x!=undefined && x != this.x.target) {this.x.set(x, immediate);}// if(immediate) {this.container.pivot.x = -x;} }
-    if(y!=undefined && y != this.y.target) {this.y.set(y, immediate);}// if(immediate) {this.container.pivot.y = -y;} }
-    if(r!=undefined && r != this.r.target) {this.r.set(r, immediate);}// if(immediate) {this.container.r       =  r;} }
-    if(s!=undefined && s != this.s.target) {this.s.set(s, immediate);}// if(immediate) {this.container.scale.x = s; this.container.scale.y = s}; }
+    if(x!=undefined && x != this.x.target) {this.x.set(x, immediate);}
+    if(y!=undefined && y != this.y.target) {this.y.set(y, immediate);}
+    if(r!=undefined && r != this.r.target) {this.r.set(r, immediate);}
+    if(s!=undefined && s != this.s.target) {this.s.set(s, immediate);}
     this.t_last_move = Date.now();
   }
   
@@ -896,15 +900,15 @@ class _Tabletop {
     // Set the table rotation target
     this.set_xyrs(undefined, undefined, this.r.target + dr);
   }
-  rotate_left()  {this.rotate(-this.settings.r_step*Math.PI/180.0);}
-  rotate_right() {this.rotate( this.settings.r_step*Math.PI/180.0);}
+  rotate_left()  {this.rotate(-this.settings.r_step);}
+  rotate_right() {this.rotate( this.settings.r_step);}
 
   // Rotates the selected things by their angle settings
   rotate_selected(scale) {
     var dr, thing;
     for(var id_thing in VGT.things.selected[VGT.clients.me.team]) {
       thing = VGT.things.selected[VGT.clients.me.team][id_thing];
-      dr    = -scale*thing.settings.r_step*Math.PI/180.0;
+      dr    = -scale*thing.settings.r_step;
       
       // We update the target of the auxiliary rotation
       thing.R.target += dr;
@@ -1236,8 +1240,8 @@ class _Interaction {
     // Location of the down in the two coordinate systems (and original rotation)
     this.xd_client = e.clientX;
     this.yd_client = e.clientY;
-    this.xd_tabletop = v[0];
-    this.yd_tabletop = v[1];
+    this.xd_tabletop = v.x;
+    this.yd_tabletop = v.y;
     this.rd_tabletop = VGT.tabletop.r.value;
 
     // Location of the tabletop at down.
@@ -1252,7 +1256,7 @@ class _Interaction {
     log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd);
 
     // Find a thing under the pointer if there is one.
-    var thing = this.find_thing_at(v[0],v[1]);
+    var thing = this.find_thing_at(v.x,v.y);
 
     // If it's not null, handle this
     if(thing != null) {
@@ -1306,8 +1310,8 @@ class _Interaction {
     // Save the coordinates of this move event
     this.xm_client = e.clientX;
     this.ym_client = e.clientY;
-    this.xm_tabletop = v[0];
-    this.ym_tabletop = v[1];
+    this.xm_tabletop = v.x;
+    this.ym_tabletop = v.y;
     this.rm_tabletop = VGT.tabletop.r.value;
 
     // Move my hand and polygon
@@ -1348,8 +1352,10 @@ class _Interaction {
           var dy0 = thing.yh + y0 - this.ym_tabletop;
           
           // Rotated vector
-          var dx1 = dx0*Math.cos(r0) - dy0*Math.sin(r0);
-          var dy1 = dx0*Math.sin(r0) + dy0*Math.cos(r0);
+          var dx1, dy1;
+          [dx1,dy1] = rotate_vector([dx0,dy0], r0);
+          //var dx1 = dx0*Math.cos(r0) - dy0*Math.sin(r0);
+          //var dy1 = dx0*Math.sin(r0) + dy0*Math.cos(r0);
 
           // Rotation vector
           var dxr = dx1-dx0;
@@ -1375,8 +1381,11 @@ class _Interaction {
       else if(this.button == 0) {
         var dx0 = (this.xm_client - this.xd_client)/VGT.tabletop.s.value;
         var dy0 = (this.ym_client - this.yd_client)/VGT.tabletop.s.value;
-        var dx =  dx0*Math.cos(VGT.tabletop.r.value) + dy0*Math.sin(VGT.tabletop.r.value);
-        var dy = -dx0*Math.sin(VGT.tabletop.r.value) + dy0*Math.cos(VGT.tabletop.r.value);
+        
+        var dx,dy;
+        [dx,dy] = rotate_vector([dx0,dy0], -VGT.tabletop.r.value);
+        //var dx =  dx0*Math.cos(VGT.tabletop.r.value) + dy0*Math.sin(VGT.tabletop.r.value);
+        //var dy = -dx0*Math.sin(VGT.tabletop.r.value) + dy0*Math.cos(VGT.tabletop.r.value);
         
         VGT.tabletop.set_xyrs(
           this.tabletop_xd + dx,
@@ -1402,8 +1411,8 @@ class _Interaction {
     // Location of the up in two coordinate systems
     this.xu_client = e.clientX;
     this.yu_client = e.clientY;
-    this.xu_tabletop = v[0];
-    this.yu_tabletop = v[1];
+    this.xu_tabletop = v.x;
+    this.yu_tabletop = v.y;
 
     // Location of tabletop center at up.
     this.tabletop_xu = -VGT.tabletop.container.pivot.x;
@@ -1751,7 +1760,7 @@ class _SnapCircle {
 
     // Otherwise, the parent is a Thing, so use the parent's coordinates
     else {
-      v = parent.container.localTransform.applyInverse( new PIXI.Point( thing.x.target, thing.y.target ) )
+      v = parent.xy_tabletop_to_local(thing.x.target, thing.y.target); //container.localTransform.applyInverse( new PIXI.Point( thing.x.target, thing.y.target ) )
       x = v.x;
       y = v.y;
     };
@@ -1771,7 +1780,7 @@ class _SnapCircle {
       
       // If the parent is a piece, do the transform from local to tabletop coordinates
       if(parent != undefined && parent != VGT.tabletop) {
-        v = parent.container.localTransform.apply( new PIXI.Point( x, y ) )
+        v = parent.xy_local_to_tabletop(x,y); //.container.localTransform.apply( new PIXI.Point( x, y ) )
         x = v.x;
         y = v.y;
         if(r == undefined) r = 0;
@@ -1837,7 +1846,7 @@ class _SnapGrid {
 
     // Otherwise, the parent is a Thing, so use the parent's coordinates
     else {
-      var v = parent.container.localTransform.applyInverse( new PIXI.Point( thing.x.target, thing.y.target ) )
+      var v = parent.xy_tabletop_to_local(thing.x.target, thing.y.target); //container.localTransform.applyInverse( new PIXI.Point( thing.x.target, thing.y.target ) )
       var x = v.x;
       var y = v.y;
     };
@@ -1870,9 +1879,9 @@ class _SnapGrid {
       // Get the rotation
       var r = this.settings.r;
 
-      // If the parent is a piece, do the transform from local to tabletop coordinates
+      // If the parent is a thing, do the transform from local to tabletop coordinates
       if(parent != undefined && parent != VGT.tabletop) {
-        var vs = parent.container.localTransform.apply( new PIXI.Point( xs, ys ) )
+        var vs = parent.xy_local_to_tabletop(xs,ys); //container.localTransform.apply( new PIXI.Point( xs, ys ) )
         xs = vs.x;
         ys = vs.y;
         if(r == undefined) r = 0;
@@ -2048,7 +2057,7 @@ class _Thing {
   contains(x,y) { 
 
     // Transform table coordinates to local coordinates
-    var v = this.container.localTransform.applyInverse(new PIXI.Point(x,y));
+    var v = this.xy_tabletop_to_local(x,y); //container.localTransform.applyInverse(new PIXI.Point(x,y));
     
     // Inner circle: minimum of width and height
     if(this.settings.shape == 'circle' || this.settings.shape == 'circle_inner') {    
@@ -2530,10 +2539,37 @@ class _Thing {
     else                             return false;
   }
 
-  /** 
-   * Sets the target x,y,r,s for the sprite.
+  /**
+   * Converts the tabletop coordinates (x,y) to "local" coordinates.
+   * @param {float} x x-coordinate in the tabletop's coordinate system
+   * @param {float} y y-coordinate in the tabletop's coordinate system
    */
-  set_xyrs(x,y,r,s,immediate,do_not_update_q_out,do_not_reset_R) { 
+  xy_tabletop_to_local(x,y) {
+      var v = this.container.localTransform.applyInverse(new PIXI.Point(x,y));
+      return v;
+    }
+
+  /**
+   * Converts the "local" coordinates (x,y) to tabletop coordinates.
+   * @param {float} x x-coordinate in this thing's coordinate system
+   * @param {float} y y-coordinate in this thing's coordinate system
+   */
+  xy_local_to_tabletop(x,y) {
+    var v = this.container.localTransform.apply(new PIXI.Point(x,y));
+    return v;
+  }
+
+  /** 
+   * Sets the target x,y,r,s for this thing. See also set_xyrs_relative_to();
+   * @param {float} x                     x-coordinate
+   * @param {float} y                     y-coordinate
+   * @param {float} r                     rotation (degrees)
+   * @param {float} s                     scale of the sprite
+   * @param {boolean} immediate             if true, immediately set these parameters (not let them animate)
+   * @param {boolean} do_not_update_q_out   if true, do not send this information to the server (useful on server updates)
+   * @param {boolean} do_not_reset_R        if true, do not reset the auxiliary rotation thing.R when setting r.
+   */
+  set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) { 
 
     // Now for each supplied coordinate, update and send
     if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}
@@ -2545,6 +2581,29 @@ class _Thing {
     }
     if(s!=undefined && s != this.s.target) {this.s.set(s,immediate); this.update_q_out('s', 's', do_not_update_q_out);}
     this.t_last_move = Date.now();
+  }
+
+  /**
+   * Sets the x,y,r,s of this thing relative to the supplied thing's target coordinates.
+   * @param {Thing} thing                 Thing whose position, orientation and scale define the coordinates below
+   * @param {float} x                     x-coordinate relative to supplied thing
+   * @param {float} y                     y-coordinate relative to supplied thing
+   * @param {float} r                     rotation (degrees) relative to supplied thing
+   * @param {float} s                     scale of the sprite NOT relative to the supplied thing
+   * @param {boolean} immediate             if true, immediately set these parameters (not let them animate)
+   * @param {boolean} do_not_update_q_out   if true, do not send this information to the server (useful on server updates)
+   * @param {boolean} do_not_reset_R        if true, do not reset the auxiliary rotation thing.R when setting r.
+   */
+  set_xyrs_relative_to(thing, x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) {
+    
+    // First convert to tabletop {x:, y:}
+    var v = thing.xy_local_to_tabletop(x,y); //container.localTransform.apply(new PIXI.Point(x,y));
+    
+    // Get the relative rotation
+    if(r != undefined) r += thing.r.target + thing.R.target;
+
+    // Now update the thing
+    this.set_xyrs(v.x,v.y,r,s,immediate,do_not_update_q_out,do_not_reset_R);
   }
 
   // Sets the auxiliary rotation
@@ -2591,8 +2650,8 @@ class _Thing {
     // Set the actual position, rotation, and scale
     this.container.x        = this.x.value;
     this.container.y        = this.y.value;
-    this.container.rotation = this.r.value + this.R.value;
-    if(this.settings.rotate_with_view) this.container.rotation -= VGT.tabletop.r.value; // ---
+    this.container.rotation = (this.r.value + this.R.value)*0.01745329251;
+    if(this.settings.rotate_with_view) this.container.rotation -= VGT.tabletop.r.value*0.01745329251; 
     this.container.scale.x  = this.s.value;
     this.container.scale.y  = this.s.value;
   }
@@ -2738,7 +2797,7 @@ class _Things {
     var by = ax*0.5*Math.sqrt(3.0);
 
     // Rotate the basis vectors by a random angle
-    var r = 2*Math.PI*Math.random();
+    var r = 360*Math.random();
     var a = rotate_vector([ax, ay], r);
     var b = rotate_vector([bx, by], r);
 
@@ -2991,12 +3050,10 @@ class _Polygon extends _Thing {
     var vs = [];
 
     // Loop over the vertices and transform them into the tabletop frame
-    for(var n in this.vertices) 
-      vs.push( 
-        this.container.localTransform.apply( 
-          new PIXI.Point( 
-            this.vertices[n][0].value, 
-            this.vertices[n][1].value ) ) );
+    for(var n in this.vertices)
+      vs.push(this.xy_local_to_tabletop(
+        this.vertices[n][0].value, 
+        this.vertices[n][1].value));
 
     // Make the pixi polygon
     return new PIXI.Polygon(...vs);
@@ -3120,20 +3177,22 @@ class _Hand extends _Thing {
   /** Closes / opens the hand */
   close() {this.set_texture_index(1);}
   open()  {this.set_texture_index(0);}
+  
+  /** Whether the hand is open or closed. */
   is_closed() {return this._n == 1;}
   is_open()   {return this._n == 0;}
 
   /** Sets t_last_move to the current time to show the hand. */
   ping() {this.t_last_move = Date.now();}
 
-  /** Other animations, like sprite image changes etc, to be overloaded. */
+  /** Other animations associate with the hand. */
   animate_other(delta) { 
     
-    // If it has vd set to a vector (not false or undefined), update the selection rectangle
+    // If it has vd set to a vector (not false or undefined), update the multi-piece selection rectangle
     if(this.vd) {
 
       // Get the distance vector traveled since the pointer came down
-      var v = rotate_vector([this.x.value - this.vd[0], this.y.value - this.vd[1]], -this.r.value);
+      var v = rotate_vector([this.x.value - this.vd.x, this.y.value - this.vd.y], -this.r.value);
       var vs = [ [0,0], [-v[0],0], [-v[0],-v[1]], [0,-v[1]] ];
       
       // If I have a hand, update the selection rectangle to extend back to where the click originated
@@ -3180,13 +3239,10 @@ class _Hands { constructor() {this.all = [];}
 
   /** Finds a free hand or creates and returns one */ 
   get_unused_hand() {
-    for(var l in this.all) { 
-
-      // If we found a free one, use it
-      if(this.all[l].id_client == 0) return this.all[l];
-
-    } // End of loop over hands
     
+    // Loop over hands trying to find a free one
+    for(var l in this.all) if(this.all[l].id_client == 0) return this.all[l];
+
     // If we haven't returned yet, we need a new one
     return new _Hand();
   }

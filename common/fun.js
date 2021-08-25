@@ -411,15 +411,15 @@ function sort_objects_by_key(objects, key, descending) {
 }
 exports.sort_objects_by_key = sort_objects_by_key;
 
-// Gets a vector {x: , y:, r:,} randomly positioned within a disc of specified radius, and rotated randomly on +/-pi
+// Gets a vector {x: , y:, r:,} randomly positioned within a disc of specified radius, and rotated randomly on +/-180 degrees
 function get_random_location_disc(radius) {
   // Get distance from origin
   var d = Math.random()*radius;
 
   // Rotate it randomly
-  var v = rotate_vector([d,0], Math.random()*Math.PI*2);
+  var v = rotate_vector([d,0], Math.random()*360);
 
-  return {x:v[0], y:v[1], r:Math.PI*(2*Math.random()-1)};
+  return {x:v[0], y:v[1], r:180*(2*Math.random()-1)};
 }
 exports.get_random_location_disc = get_random_location_disc;
 
@@ -449,12 +449,13 @@ exports.ox_to_rgb = ox_to_rgb;
 
 /**
  * Rotates the supplied vector v clockwise by radians r.
- * @param {[x,y]} v 
- * @param {float} r 
+ * @param {array} v [x,y] vector
+ * @param {float} r rotation (degrees)
  * @returns rotated vector [x,y]
  */
 function rotate_vector(v, r) {
     if(!r) return v;
+    r = 0.01745329251*r; // to radians
     var cos = Math.cos(r);
     var sin = Math.sin(r);
     return [v[0]*cos-v[1]*sin, v[0]*sin+v[1]*cos]
