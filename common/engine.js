@@ -621,6 +621,27 @@ class _Pixi {
       VGT.tabletop.layer_select.addChild(thing.container);
     }
 
+    // NAMEPLATES layer
+    else if(thing.settings.layer == VGT.tabletop.LAYER_NAMEPLATES) {
+      
+      // Make sure the layer exists
+      if(!VGT.tabletop.layer_nameplates) {
+        
+        // Create the new layer and add it to the tabletop
+        var l = new PIXI.Container();
+        VGT.tabletop.layer_nameplates = l;
+        
+        // Update the layer's coordinates / scale.
+        l.x=0; l.y=0; l.rotation=0; l.scale.x=1; l.scale.y=1;
+
+        // Rebuild the layer order
+        VGT.pixi.rebuild_layers();
+      }
+
+      // Add the nameplate
+      VGT.tabletop.layer_nameplates.addChild(thing.container);
+    }
+
     // If the thing has a "normal" layer, the settings.layer is an integer >= 0
     else {
 
@@ -658,8 +679,9 @@ class _Pixi {
       VGT.tabletop.container.addChild(VGT.tabletop.layers[n]);
 
     // Find the selection rectangle and hands layers and put them on last.
-    if(VGT.tabletop.layer_select) VGT.tabletop.container.addChild(VGT.tabletop.layer_select);
-    if(VGT.tabletop.layer_hands)  VGT.tabletop.container.addChild(VGT.tabletop.layer_hands);
+    if(VGT.tabletop.layer_nameplates) VGT.tabletop.container.addChild(VGT.tabletop.layer_nameplates);
+    if(VGT.tabletop.layer_select)     VGT.tabletop.container.addChild(VGT.tabletop.layer_select);
+    if(VGT.tabletop.layer_hands)      VGT.tabletop.container.addChild(VGT.tabletop.layer_hands);
   }
 
   loader_oncomplete(e) {
@@ -807,9 +829,10 @@ class _Tabletop {
     this.container.x = 0.5*window.innerWidth;  
     this.container.y = 0.5*window.innerHeight;
 
-    this.LAYER_HANDS  = -1; // Constant for denoting the hands layer. Normal layers are positive integers.
-    this.LAYER_SELECT = -2; // Layer just below the hands for selection rectangles
-    this.layers       = []; // List of containers for each layer
+    this.LAYER_HANDS      = -1; // Constant for denoting the hands layer. Normal layers are positive integers.
+    this.LAYER_SELECT     = -2; // Layer just below the hands for selection rectangles
+    this.LAYER_NAMEPLATES = -3; // Layer just below selection rectangles for nameplates.
+    this.layers           = []; // List of containers for each layer
   }
 
   /**
@@ -1129,11 +1152,15 @@ class _Interaction {
    * @returns 
    */
   find_thing_at(x,y) {
-    var layer, container;
+
+    // Get the full list of appropriate layers
+    var layers = [...VGT.tabletop.layers];
+    layers.push(VGT.tabletop.layer_nameplates);
 
     // Loop over the layers from top to bottom
-    for(var n=VGT.tabletop.layers.length-1; n>=0; n--) {
-      layer = VGT.tabletop.layers[n];
+    var layer, container;
+    for(var n=layers.length-1; n>=0; n--) {
+      layer = layers[n];
       if(!layer) continue;
       
       // Loop over the things in this layer from top to bottom.
@@ -1975,7 +2002,7 @@ class _Thing {
   
   // Default settings for a new object
   default_settings = {
-    image_paths   : [['nofile.png']], // paths relative to the root, with each sub-list being a layer (can animate), e.g. [['a.png','b.png'],['c.png']]
+    image_paths   : null,             // paths relative to the root, with each sub-list being a layer (can animate), e.g. [['a.png','b.png'],['c.png']]
     image_root    : '',               // Sub-folder in the search directories (path = image_paths.root + image_root + path), e.g. images/
     shape         : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
     type          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
@@ -2003,6 +2030,9 @@ class _Thing {
     expand_Nx : 10,        // number of columns when expanding
     expand_dx : undefined, // px shift for expanding in the x-direction; undefined is 'automatic'
     expand_dy : undefined, // px shift for expanding in the y-direction; undefined is 'automatic'
+
+    // Text layer?
+    text: false 
   };
 
   constructor(settings) {
@@ -2068,6 +2098,15 @@ class _Thing {
     
     // Also create a graphics object; by default, this is on the bottom
     this.graphics = new PIXI.Graphics();
+
+    // If there is the option of text, add that
+    if(this.settings.text) {
+      this.text_graphics = new PIXI.Graphics();
+      this.text          = new PIXI.Text();
+      this.text.anchor.set(0.5,0.5);
+      this.text.scale.x = 0.5;
+      this.text.scale.y = 0.5;
+    }
     
     // Everything is added to the VGT.things list
     VGT.things.add_thing(this);
@@ -2085,9 +2124,6 @@ class _Thing {
 
     // If "shovel" is set to true as a shorthand
     if(this.settings.shovel == true) this.settings.shovel = ['all'];
-
-    // Until PIXI is ready and it's been initialized, have this placeholder here
-    this.hitbox = false;
 
   } // End of constructor.
 
@@ -2144,8 +2180,6 @@ class _Thing {
     // If image_paths = null, no textures. sprites will stay empty too.
     if(this.settings.image_paths != null) {
 
-      this.width  = 0;   // Maximum width of the biggest sprites
-      this.height = 0;   // Maximum height of the biggest sprites
       var path, texture; // reused in loop
       for(var n=0; n<this.settings.image_paths.length; n++) {
         
@@ -2158,10 +2192,6 @@ class _Thing {
           if(VGT.pixi.resources[path]) {
             texture = VGT.pixi.resources[path].texture;
 
-            // Get the width and height
-            this.width  = Math.max(this.width,  texture.width);
-            this.height = Math.max(this.height, texture.height);
-            
             // Add it to the list
             this.textures[n].push(texture);
           }
@@ -2183,8 +2213,11 @@ class _Thing {
       this.sprites.push(sprite);
     }
 
-    // Add the sprites to the container (can be overloaded)
-    this.fill_container();
+    // Update the text for the first time
+    if(this.settings.text) this.set_text(this.settings.text);
+
+    // Add the sprites to the container (can be overloaded); also gets width and height
+    this.refill_container();
 
     // This piece is ready for action.
     this.ready = true;
@@ -2508,25 +2541,68 @@ class _Thing {
    * Fills the container with all the sprites. This can be overloaded for more complex
    * Things.
    */
-  fill_container() {
+  refill_container() {
+    // Remove everything
+    this.container.removeChildren();
 
     // Add the sprites
     for(var i=0; i<this.sprites.length; i++) this.container.addChild(this.sprites[i]);
 
     // Add the graphics layer
     this.container.addChild(this.graphics);
+
+    // Add the text layers
+    if(this.text) {
+      this.container.addChild(this.text_graphics);
+      this.container.addChild(this.text);
+    }
+
+    // Update the dimensions
+    [this.width, this.height] = this.get_dimensions();
   }
 
+  /** Returns teh largest width and height [w,h] */
   get_dimensions() {
     var w = 0, h = 0;
 
     // Loop over the layers, keeping the largest dimensions
     for(var l=0; l<this.sprites.length; l++) {
       var s = this.sprites[l];
-      if(s.width  > w) w = s.width;
-      if(s.height > h) h = s.height;
+      w = Math.max(w, s.width);
+      h = Math.max(h, s.height);
     }
+
+    // If we have a text layer check that too
+    if(this.text) {
+      w = Math.max(w, this.text.width,  this.text_graphics.width);
+      h = Math.max(h, this.text.height, this.text_graphics.height);
+    }
+
     return [w,h];
+  }
+
+  /** Sets the text and redraws */
+  set_text(text, style, background_color) {
+    // Default style
+    var style_default = {fontFamily : 'Arial', fontSize: 48, fill : 0x000000, align : 'center'}
+    style = {...style_default, ...style}
+
+    // Set the text
+    if(text)  this.text.text = text;
+    if(style) for(var k in style) this.text.style[k] = style[k];
+    if(background_color) {
+      var w = this.text.width;
+      var h = this.text.height;
+      var d = h*0.25
+
+      this.text_graphics.clear();
+      this.text_graphics.beginFill(background_color, 1);
+      this.text_graphics.drawRoundedRect(-0.5*w-2*d, -0.5*h-d, w+4*d, h+2*d, d);
+      this.text_graphics.endFill(); 
+    }
+
+    // Update the width / height of the total object
+    [this.width, this.height] = this.get_dimensions();
   }
 
   /**
@@ -3220,7 +3296,6 @@ class _Polygons {
 VGT.polygons = new _Polygons();
 VGT.Polygons = _Polygons;
 
-
 /** Floating hand on top of everything. */
 class _Hand extends _Thing {
 
@@ -3248,6 +3323,9 @@ class _Hand extends _Thing {
     // Create the selection rectangle, without adding it to the "playable" lists and q's
     this.polygon = new _Polygon([[0,0],[0,0],[0,0],[0,0]], {layer: VGT.tabletop.LAYER_SELECT}); 
     this.polygon.container.alpha = 0.4;
+
+    // Create a nameplate with the hand
+    this.nameplate = new _Piece({text:'player', layer: VGT.tabletop.LAYER_NAMEPLATES});
   }
 
   /** Sets the tint of all the textures AND the selection box */
@@ -3389,6 +3467,7 @@ class _Clients {
         hand  : VGT.hands.get_unused_hand(),
         id_client : c.id,
       }
+      this.all[c.id].nameplate = this.all[c.id].hand.nameplate;
 
       // Set the hand id_client
       this.all[c.id].hand.id_client = c.id;
@@ -3404,6 +3483,17 @@ class _Clients {
 
     // Keep track of me
     this.me = this.all[VGT.net.id];
+
+    // Update the nameplate and colors
+    var color = this.all[c.id].color;
+    // If the color is too bright (per ITU-R BT.709 definition of luma), go black with the text
+    if(get_luma_ox(color) > 0.7) var text_color = 'black';
+    else                         var text_color = 'white';
+    this.all[c.id].nameplate.set_text(c.name, {fill:text_color}, color);
+
+    // For nameplates, add a drop shadow
+    //this.all[c.id].nameplate.text_graphics.filters = [new PIXI.filters.DropShadowFilter({quality:3, distance:0})];
+    // new PIXI.filters.BlurFilter({strength:1}), 
 
     // Finally, using the current VGT.net.clients, rebuild the html table.
     VGT.html.rebuild_client_table();

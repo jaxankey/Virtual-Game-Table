@@ -19,6 +19,8 @@
 // Everything about the current game state that can be sent in a data packet
 // see also reset_game();
 var state = {
+  slots  : 32,              // Maximum number of clients
+  max_name_length: 20,      // Maximum number of characters in each player's name
   clients: {},              // List of client data
   pieces : {},              // List of piece properties
   hands  : {},              // list of hand properties
@@ -31,6 +33,7 @@ var state_keys_no_set = [
   'clients', 
   'pieces', 
   'hands',
+  'slots',
 ];
 
 
@@ -208,9 +211,10 @@ var last_id     = 1;  // Last assigned id; incremented with each client
 
 // Names for new players
 var first_names = ['pants', 'n00b', '1337', 'dirt', 
-                   'trash', 'no', 'terrible', 'nono'];
+                   'trash', 'no', 'terrible', 'nono', 'hill'];
 var last_names  = ['tastic', 'cakes', 'pants', 'face', 'n00b', 'juice', 
-                   'bag', 'hole', 'friend', 'skillet', 'person'];
+                   'bag', 'hole', 'friend', 'skillet', 'person', 'billy',
+                  'chunks'];
 
 // Sends the game state to the specified client id
 function send_state(id) {
@@ -227,31 +231,38 @@ function send_state(id) {
 // When a client connects
 io.on('connection', function(socket) {
 
+  // Make sure we have a clients list
+  if(!state.clients) state.clients = {};
+
+  // Make sure the clients list is not too large
+  if(Object.keys(state.clients).length > state.slots) {
+    socket.disconnect();
+    return;
+  }
+  
+
+  /** 
+   * My own function that sends the supplied data to everyone else; 
+   * socket.broadcast.emit is not working. 
+   */
+   function broadcast(key, data) {
+    for (id in state.clients) 
+      if(id != socket.id) delay_send(sockets[id], key, data);
+  }
+
   // Put the id somewhere safe.
   socket.id = last_id++;
 
   // Save this socket, sorted by id
   sockets[socket.id] = socket;
 
-  /** 
-   * My own function that sends the supplied data to everyone else; 
-   * socket.broadcast.emit is not working right. 
-   */
-  function broadcast(key, data) {
-    for (id in state.clients) 
-      if(id != socket.id) delay_send(sockets[id], key, data);
-  }
-
   // Add a new client to the list
-  if(state.clients) {
-    state.clients[socket.id] = {
-      'id'     : socket.id, 
-      'name'   : fun.random_array_element(first_names)+fun.random_array_element(last_names),
-      'team'   : 0,
-    };
-    fun.log_date('CLIENT', socket.id, 'CONNECTED');
-  } 
-  else fun.log_date('ERROR: state.clients does not exist!');
+  state.clients[socket.id] = {
+    'id'     : socket.id, 
+    'name'   : fun.random_array_element(first_names)+fun.random_array_element(last_names),
+    'team'   : 0,
+  };
+  fun.log_date('CLIENT', socket.id, 'CONNECTED');
   
   // Summarize existing state.clients
   for(n in state.clients) fun.log_date(' ', n, state.clients[n]);
@@ -282,6 +293,9 @@ io.on('connection', function(socket) {
   // Team or name change from clients
   function on_clients(clients) {
     fun.log_date('NETR_clients_'+String(socket.id));
+
+    // Limit the name length
+    for(var k in clients) clients[k].name = clients[k].name.substr(0,state.max_name_length);
 
     // Update the clients list
     if(clients) state.clients = clients;
@@ -473,10 +487,9 @@ io.on('connection', function(socket) {
 
   // handle the disconnect
   function on_disconnect(data) {
+    
     // Get the id asap before it disappears (annoying)
     var id = socket.id;
-
-    // find the client index
     fun.log_date(id, "disconnecting.", data);
     
     // Delete the client data. Socket will delete itself
