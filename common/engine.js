@@ -983,7 +983,7 @@ class _Interaction {
 
       collect_selected_to_mouse : this.collect_selected_to_mouse.bind(this),
       expand_selected_to_mouse  : this.expand_selected_to_mouse.bind(this),
-      shuffle                   : this.shuffle.bind(this),
+      start_shuffle                   : this.start_shuffle.bind(this),
 
       start_roll                : this.start_roll.bind(this),
       roll                      : this.roll.bind(this),
@@ -1049,8 +1049,8 @@ class _Interaction {
       ShiftKeyCDown: this.actions.collect_selected_to_mouse,
       KeyXDown:      this.actions.expand_selected_to_mouse,
       ShiftKeyXDown: this.actions.expand_selected_to_mouse,
-      KeyZDown:      this.actions.shuffle,
-      ShiftKeyZDown: this.actions.shuffle,
+      KeyZDown:      this.actions.start_shuffle,
+      ShiftKeyZDown: this.actions.start_shuffle,
       KeyRDown:      this.actions.start_roll,
       KeyRUp:        this.actions.roll,
 
@@ -1115,14 +1115,27 @@ class _Interaction {
     return null;
   }
 
-  // Shuffles the selected pieces
-  shuffle(e) {
+  // Starts the shuffle animation
+  start_shuffle(e) {
+
+    // Get the list of things we're shuffling
+    this.shuffling = Object.values(VGT.things.selected[VGT.clients.me.team]);
+
+    // Scramble the cards that are selected by my team
+    VGT.things.scramble_things(this.shuffling, this.xm_tabletop, this.ym_tabletop, undefined, undefined, true);
+
+    // Start the finish shuffle (cancel any existing one)
+    clearTimeout(this.timer_shuffling);
+    this.timer_shuffling = setTimeout(this.finish_shuffle, 500, e, this.xm_tabletop, this.ym_tabletop, true);
+  }
+
+  // Called a bit after the shuffle animation; actually shuffles and collects cards at the specified coordinates
+  finish_shuffle(e, x, y, center_on_top) {
+
     // team index
     var team = VGT.clients.me.team; 
 
     // Last mouse move tabletop coordinates
-    var x = this.xm_tabletop;       
-    var y = this.ym_tabletop;
     var r = VGT.clients.me.hand.r.value;       
 
     // Get the unsorted pieces list
@@ -1133,7 +1146,7 @@ class _Interaction {
     for(var n in shuffled) console.log('HAY', shuffled[n].id_piece);
 
     // If we're not holding shift, collect them too
-    if(!e.shiftKey) VGT.things.collect(shuffled, x, y, r, r, undefined, undefined, true, true)
+    if(!e.shiftKey) VGT.things.collect(shuffled, x, y, r, r, undefined, undefined, center_on_top, true)
   }
 
   // Draws the pieces to the hand and starts the animation
@@ -2594,7 +2607,7 @@ class _Things {
   }
 
   // Collect things into a pile
-  collect(things, x, y, r, r_stack, dx, dy, center_top, supplied_order) {
+  collect(things, x, y, r, r_stack, dx, dy, center_on_top, supplied_order) {
 
     // Get an object, indexed by layer with lists of things, sorted by z
     if(!supplied_order) var sorted = VGT.things.sort_by_z(things); 
@@ -2609,8 +2622,8 @@ class _Things {
       if(dy == undefined) dy0 = p.settings.collect_dy;
       else                dy0 = dy;
 
-      if(center_top) v = rotate_vector([(n-sorted.length+1)*dx0, (n-sorted.length+1)*dy0], r_stack);
-      else           v = rotate_vector([ n                 *dx0,  n                 *dy0], r_stack);
+      if(center_on_top) v = rotate_vector([(n-sorted.length+1)*dx0, (n-sorted.length+1)*dy0], r_stack);
+      else              v = rotate_vector([ n                 *dx0,  n                 *dy0], r_stack);
 
       // Set the location and then increment the offset integer.
       p.set_xyrs(x+v[0], y+v[1], r);
@@ -2702,8 +2715,9 @@ class _Things {
    * @param {float} y      y-coordinate to center the scramble on
    * @param {int}   space  average lattice sites per piece (on hex grid) (default 1.5)
    * @param {float} scale  scale for spacing of hex grid (default 1)
+   * @param {boolean} do_not_randomize_texture  if true, will only redistribute and shuffle z
    */
-  scramble_things(things, x, y, space, scale) {
+  scramble_things(things, x, y, space, scale, do_not_randomize_texture) {
     
     // Bonk out and handle defaults
     if(!things || things.length==0 || x==undefined || y==undefined) return;
@@ -2738,7 +2752,7 @@ class _Things {
       p.set_xyrs(x + d.n*a[0] + d.m*b[0] + v.x, 
                  y + d.n*a[1] + d.m*b[1] + v.y, 
                  v.r * 7);
-      p.randomize_texture_index();
+      if(!do_not_randomize_texture) p.randomize_texture_index();
     }
   }
 
