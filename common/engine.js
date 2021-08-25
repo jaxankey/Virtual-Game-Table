@@ -588,14 +588,37 @@ class _Pixi {
         // Create the new layer and add it to the tabletop
         var l = new PIXI.Container();
         VGT.tabletop.layer_hands = l;
-        VGT.tabletop.container.addChild(l);
-
+        
         // Update the layer's coordinates / scale.
         l.x=0; l.y=0; l.rotation=0; l.scale.x=1; l.scale.y=1;
+
+        // Rebuild the layer order
+        VGT.pixi.rebuild_layers();
       }
 
-      // Add the hand
+      // Add the hand 
       VGT.tabletop.layer_hands.addChild(thing.container);
+    }
+
+    // HAND SELECTION RECTANGLE layer
+    else if(thing.settings.layer == VGT.tabletop.LAYER_SELECT) {
+      
+      // Make sure the layer exists
+      if(!VGT.tabletop.layer_select) {
+        
+        // Create the new layer and add it to the tabletop
+        var l = new PIXI.Container();
+        VGT.tabletop.layer_select = l;
+        
+        // Update the layer's coordinates / scale.
+        l.x=0; l.y=0; l.rotation=0; l.scale.x=1; l.scale.y=1;
+
+        // Rebuild the layer order
+        VGT.pixi.rebuild_layers();
+      }
+
+      // Add the polygon
+      VGT.tabletop.layer_select.addChild(thing.container);
     }
 
     // If the thing has a "normal" layer, the settings.layer is an integer >= 0
@@ -607,19 +630,12 @@ class _Pixi {
         // Create the new layer and add it to the tabletop
         var l = new PIXI.Container();
         VGT.tabletop.layers[thing.settings.layer] = l;
-        
-        // Remove all layers and add them in order
-        VGT.tabletop.container.removeChildren();
-
-        // Now add them again in order
-        for(var n in VGT.tabletop.layers) if(VGT.tabletop.layers[n]) 
-          VGT.tabletop.container.addChild(VGT.tabletop.layers[n]);
-
-        // Find the layer_hands and pop it to the top.
-        if(VGT.tabletop.layer_hands) VGT.tabletop.container.addChild(VGT.tabletop.layer_hands);
 
         // Update the layer's coordinates / scale.
         l.x=0; l.y=0; l.rotation=0; l.scale.x=1; l.scale.y=1;
+
+        // Remove all the layers and add them in order
+        this.rebuild_layers();
       }
 
       // Add the thing to the layer
@@ -627,7 +643,23 @@ class _Pixi {
 
     } // End of "normal" layer
 
-    
+  } // End of _add_thing
+
+  /**
+   * Removes and re-adds all the layers in order.
+   */
+  rebuild_layers() {
+
+    // Remove all layers and add them in order
+    VGT.tabletop.container.removeChildren();
+
+    // Now add them again in order
+    for(var n in VGT.tabletop.layers) if(VGT.tabletop.layers[n]) 
+      VGT.tabletop.container.addChild(VGT.tabletop.layers[n]);
+
+    // Find the selection rectangle and hands layers and put them on last.
+    if(VGT.tabletop.layer_select) VGT.tabletop.container.addChild(VGT.tabletop.layer_select);
+    if(VGT.tabletop.layer_hands)  VGT.tabletop.container.addChild(VGT.tabletop.layer_hands);
   }
 
   loader_oncomplete(e) {
@@ -775,8 +807,9 @@ class _Tabletop {
     this.container.x = 0.5*window.innerWidth;  
     this.container.y = 0.5*window.innerHeight;
 
-    this.LAYER_HANDS = -1; // Constant for denoting the hands layer. Normal layers are positive integers.
-    this.layers      = []; // List of containers for each layer
+    this.LAYER_HANDS  = -1; // Constant for denoting the hands layer. Normal layers are positive integers.
+    this.LAYER_SELECT = -2; // Layer just below the hands for selection rectangles
+    this.layers       = []; // List of containers for each layer
   }
 
   /**
@@ -1243,7 +1276,7 @@ class _Interaction {
     this.xd_tabletop = v.x;
     this.yd_tabletop = v.y;
     this.rd_tabletop = VGT.tabletop.r.value;
-
+    
     // Location of the tabletop at down.
     this.tabletop_xd = -VGT.tabletop.container.pivot.x;
     this.tabletop_yd = -VGT.tabletop.container.pivot.y;
@@ -1261,6 +1294,9 @@ class _Interaction {
     // If it's not null, handle this
     if(thing != null) {
       
+      // Get the coordinates on the thing
+      var a = thing.xy_tabletop_to_local(v.x, v.y); console.log('     on piece:', a);
+
       // If we're not holding shift and it's not already a thing we've selected, 
       // unselect everything.
       if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.things.unselect_all(VGT.clients.me.team);
@@ -1719,17 +1755,17 @@ class _Sounds {
 } // End of _Sounds
 
 
-// A single snap point; if a thing is dropped near it and this point is in its list, the xyrs coordinates will adjust
+// A single snap point; if a thing is dropped near it and this point is in its group, the xyrs coordinates will adjust
 class _SnapCircle {
 
   default_settings = {
     parent: undefined, // Parent Thing or Tabletop defining the coordinate system; undefined = tabletop
-    x: 0,              // Snap x value target; undefined = no snap
-    y: 0,              // Snap y value target; undefined = no snap
+    x0: 0,              // Snap x value target; undefined = no snap
+    y0: 0,              // Snap y value target; undefined = no snap
     r: undefined,      // Snap r value target; undefined = no snap
     s: undefined,      // Snap s value target; undefined = no snap
     radius: 50,        // Radius within which snapping occurs
-    lists: [],         // Other list names (strings) other than 'all' to which this snap should be added in VGT.snaps upon creation
+    groups: [],        // List of group names (strings) other than 'all' to which this snap should be added in VGT.snaps upon creation
   }
 
   constructor(settings) {
@@ -1737,7 +1773,7 @@ class _SnapCircle {
     // Store the settings, starting with defaults then overrides.
     this.settings = {...this.default_settings, ...settings};
 
-    // Add it to the master list
+    // Add it to the master group
     VGT.snaps.add_snap(this);
   }
 
@@ -1749,7 +1785,7 @@ class _SnapCircle {
     // If the parent is the piece or the parent is held, do nothing
     // Note checking if the piece is held here would randomly prevent snapping
     // to released pieces, because they're released one at a time. 
-    // Could add 'things to avoid' list or somethign.
+    // Could add 'things to avoid' list or something.
     if(parent == thing) return false;
 
     // If the parent is the tabletop, use the tabletop coordinates
@@ -1766,16 +1802,16 @@ class _SnapCircle {
     };
 
     // Get the distances
-    var dx = x - this.settings.x;
-    var dy = y - this.settings.y;
+    var dx = x - this.settings.x0;
+    var dy = y - this.settings.y0;
     var r2 = dx*dx + dy*dy;
 
     // If we're withing the radius of influence, return the info
     if(r2 <= this.settings.radius*this.settings.radius) {
       
       // Nominally tabletop coordinates
-      x = this.settings.x;
-      y = this.settings.y;
+      x = this.settings.x0;
+      y = this.settings.y0;
       r = this.settings.r;
       
       // If the parent is a piece, do the transform from local to tabletop coordinates
@@ -1797,7 +1833,7 @@ class _SnapCircle {
 }
 VGT.SnapCircle = _SnapCircle;
 
-// A single snap point; if a thing is dropped near it and this point is in its list, the xyrs coordinates will adjust
+// A more efficient grid of snap points; if a thing is dropped within its boundary, the xyrs coordinates will adjust to the nearest grid point
 class _SnapGrid {
 
   default_settings = {
@@ -1811,7 +1847,7 @@ class _SnapGrid {
     r: undefined,        // Snap r value target; undefined = no snap
     s: undefined,        // Snap s value target; undefined = no snap
     boundary: undefined, // List of [x1,y1,x2,y2,...] sent to create a PIXI.Polygon (this.polygon), which defines the boundary in which the nearest grid point is returned
-    lists: [],           // Other list names (strings) other than 'all' to which this snap should be added in VGT.snaps upon creation
+    groups: [],          // List of group names (strings) other than 'all' to which this snap should be added in VGT.snaps upon creation
   }
 
   constructor(settings) {
@@ -1835,7 +1871,7 @@ class _SnapGrid {
     // If the parent is the piece or the parent is held, do nothing
     // Note checking if the piece is held here would randomly prevent snapping
     // to released pieces, because they're released one at a time. 
-    // Could add 'things to avoid' list or somethign.
+    // Could add 'things to avoid' list or something.
     if(parent == thing) return false;
 
     // If the parent is the tabletop, use the tabletop coordinates
@@ -1907,22 +1943,24 @@ class _Snaps {
   // The settings object should also contain a type, e.g. 'type: VGT.SnapCircle'
   // So it knows which constructor to use. If no settings or type is specified, uses VGT.SnapCircle
   new_snap(settings) { 
-    if(!settings) settings = {};
+    if(!settings)      settings = {};
     if(!settings.type) settings.type = VGT.SnapCircle;
     return new settings.type(settings); 
   }
 
-  // Sets the snap id and adds the object to the list
+  // Sets the snap id and adds the object to the groups
   add_snap(snap) {
 
-    // Set the snap id
+    // Set the snap id and add it to the 'all' group
     snap.id_snap = this.all.length;
     this.all.push(snap);
-   
-    // Add it to the (valid) lists
-    for(var l in snap.lists) {
-      if(!this[l]) this[l] = [];
-      this[l].push(snap);
+
+    // Add it to the (valid / created) groups
+    var group;
+    for(var l in snap.settings.groups) { 
+      group = snap.settings.groups[l];
+      if(!this[group]) this[group] = [];
+      this[group].push(snap);
     }
   }
 }
@@ -1938,7 +1976,7 @@ class _Thing {
     image_root    : '',               // Sub-folder in the search directories (path = image_paths.root + image_root + path), e.g. images/
     shape         : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
     type          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
-    sets          : [],               // List of other sets to which this thing can belong (pieces, hands, ...)
+    sets          : [],               // List of other sets (e.g. VGT.Pieces, VGT.Hands) to which this thing can belong
     r_step        : 45,               // How many degrees to rotate when taking a rotation step.
     rotate_with_view : false,         // Whether the piece should retain its orientation with respect to the screen when rotating the view / table
 
@@ -1951,12 +1989,10 @@ class _Thing {
     // Layer
     layer : 0,
 
-    // Snap stuff
-    snap_lists    : ['all'],   // List of snap lists to check when releasing the thing.
-    local_snaps   : [],        // List of snap settings to send to VGT.snaps.new_snap() upon creation.
-
-    // List of piece groups this piece will shovel (also select / hold) when picked up
-    shovel : false, // e.g., true or ['all'] to shovel all pieces.
+    // Groups, snapping, shoveling
+    groups : [],   // List of groups (other than 'all') to which this thing belongs; used for snapping and shoveling
+    snaps  : [],   // List of snap settings to send to VGT.snaps.new_snap() upon creation.
+    shovel : [],   // List of groups this piece will shovel; e.g., true or ['all'] to shovel all pieces.
 
     // Collecting and expanding
     collect_dx: 2,         // px shift in x-direction for collecting
@@ -2027,10 +2063,9 @@ class _Thing {
     // Shortcuts
     this.container.thing = this;
     
-    // Also create a graphics object
+    // Also create a graphics object; by default, this is on the bottom
     this.graphics = new PIXI.Graphics();
-    this.container.addChild(this.graphics);
-
+    
     // Everything is added to the VGT.things list
     VGT.things.add_thing(this);
 
@@ -2040,9 +2075,9 @@ class _Thing {
 
     // Now add the local snaps as per the specifications
     this.snaps = [];
-    for(var k in this.settings.local_snaps) {
-      this.settings.local_snaps[k]['parent'] = this;
-      this.snaps.push(VGT.snaps.new_snap(this.settings.local_snaps[k]))
+    for(var k in this.settings.snaps) {
+      this.settings.snaps[k]['parent'] = this;
+      this.snaps.push(VGT.snaps.new_snap(this.settings.snaps[k]))
     }
 
     // If "shovel" is set to true as a shorthand
@@ -2060,13 +2095,13 @@ class _Thing {
     var v = this.xy_tabletop_to_local(x,y); //container.localTransform.applyInverse(new PIXI.Point(x,y));
     
     // Inner circle: minimum of width and height
-    if(this.settings.shape == 'circle' || this.settings.shape == 'circle_inner') {    
+    if(this.settings.shape == 'circle_inner') {    
       var r = 0.5*Math.min(this.width, this.height);
       return v.x*v.x+v.y*v.y <= r*r;
     }
 
     // Outer circle: maximum of width and height
-    else if(this.settings.shape == 'circle_outer') {
+    else if(this.settings.shape == 'circle' || this.settings.shape == 'circle_outer') {
       var r = 0.5*Math.max(this.width, this.height);
       return v.x*v.x+v.y*v.y <= r*r;
     }
@@ -2205,7 +2240,7 @@ class _Thing {
     && this.id_client_hold != id_client
     && !force) return;
 
-    // Check snap_lists for this piece; do this first so we don't snap to pieces being held still.
+    // Check groups for this piece; do this first so we don't snap to pieces being held still.
     var a = this.get_best_snap_relationship();
     if(a) this.set_xyrs(a.x, a.y, a.r, a.s); // Animate, tell the world, and do reset R.
 
@@ -2250,7 +2285,7 @@ class _Thing {
     }
 
     // Drawing an ellipse
-    if(this.settings.shape == 'ellipse') {
+    else if(this.settings.shape == 'ellipse') {
       this.graphics.lineStyle(t1, c1);
       this.graphics.drawEllipse(0, 0, this.width*0.5, this.height*0.5);
       this.graphics.lineStyle(t2, c2, a);
@@ -2327,22 +2362,22 @@ class _Thing {
   shovel_select(team) {
 
     // If it's a "shovel" piece and we're selecting, select all the pieces in its hitbox also
-    if(this.settings.shovel) {
-      var list, thing;
+    if(this.settings.shovel && this.settings.shovel.length) {
       
-      // Loop over the shovel list names of the shovel lists
-      for(var n in this.settings.shovel) { list  = this.settings.shovel[n];
-    
-        // Loop over the pieces in this shovel list
-        for(var m in VGT.pieces[list])   { thing = VGT.pieces[list][m];
-          
-          // If this piece contains the current values of this thing (and it's higher), select it
-          if( this.contains(thing.x.value, thing.y.value)
-          && thing.is_higher_than(this) ) thing.select(team);
+      // Loop over the shovel group names
+      var group, piece;
+      for(var n in this.settings.shovel) { group  = this.settings.shovel[n];
         
-        } // End of loop over things in list
+        // Loop over the pieces in this group
+        for(var m in VGT.pieces[group])   { piece = VGT.pieces[group][m];
+          
+          // If this piece contains the current values of this piece (and it's higher), select it
+          if( this.contains(piece.x.value, piece.y.value)
+          && piece.is_higher_than(this) ) piece.select(team);
+        
+        } // End of loop over pieces in group
       
-      } // End of loop over shovel lists
+      } // End of loop over shovel groups
     
     } // End of "is shovel"
   
@@ -2453,8 +2488,12 @@ class _Thing {
    * Things.
    */
   fill_container() {
-    for(var i=0; i<this.sprites.length; i++) 
-      this.container.addChild(this.sprites[i]);
+
+    // Add the sprites
+    for(var i=0; i<this.sprites.length; i++) this.container.addChild(this.sprites[i]);
+
+    // Add the graphics layer
+    this.container.addChild(this.graphics);
   }
 
   get_dimensions() {
@@ -2612,16 +2651,18 @@ class _Thing {
     this.update_q_out('R','R', do_not_update_q_out);
   }
 
-  // Returns an object with the lowest snap score from this.settings.snap_lists with the score and targets {score, x, y, r, s}
+  // Returns an object with the lowest snap score from this.settings.groups with the score and targets {score, x, y, r, s}
   get_best_snap_relationship() {
-    var relationship, best = false; 
 
-    // Loop over all the snap_lists associated with this piece
-    for(var i in this.settings.snap_lists) {
-      for(var n in VGT.snaps[this.settings.snap_lists[i]]) { 
+    // Loop over all the piece groups
+    var group, relationship, best = false;
+    for(var i in this.settings.groups) { group = this.settings.groups[i];
+      
+      // Loop over all the snaps for this group
+      for(var n in VGT.snaps[group]) { 
         
         // Get the score object
-        relationship = VGT.snaps[this.settings.snap_lists[i]][n].get_relationship(this);
+        relationship = VGT.snaps[group][n].get_relationship(this);
         
         // If it's valid (within influence) and beats our current lowest score, remember this one
         if(relationship && (!best || relationship.score < best.score)) best = relationship;
@@ -2670,6 +2711,27 @@ class _Things {
     this.selected = {}; // lists of things selected, indexed by team
     this.held     = {}; // lists of things held, indexed by client id
   }
+  
+  /** Adds a _Thing to the list, and queues it for addition to the table. */
+  add_thing(thing) {
+
+    // Assign the thing id, and add it to the global lookup table
+    thing.id_thing = this.all.length;
+    this.all.push(thing);
+
+    // Loop over the other groups, and add them
+    var group;
+    for(var n in thing.settings.groups) { 
+      group = thing.settings.groups[n];
+      
+      // Make sure the group list exists
+      if(!this[group]) this[group] = [];
+
+      // Add the thing to it
+      this[group].push(thing);
+    }
+
+  } // End of Things.add_thing()
 
   // Collect things into a pile
   collect(things, x, y, r, r_stack, dx, dy, center_on_top, supplied_order) {
@@ -2913,13 +2975,6 @@ class _Things {
     }
   }
 
-  /** Adds a _Thing to the list, and queues it for addition to the table. */
-  add_thing(thing) {
-
-    // Assign the thing id, and add it to the global lookup table
-    thing.id_thing = this.all.length;
-    this.all.push(thing);
-  }
 
   /**
    * Sets up the drag for all selected things for this team
@@ -2989,10 +3044,23 @@ class _Pieces {
     this.all = [];
   }
 
-  // Adds a thing to the list, and queues it for addition to the table. 
-  add_thing(piece) {
-    piece.id_piece = this.all.length;
-    this.all.push(piece);
+  // PIECES: Adds a thing to the list, and queues it for addition to the table. 
+  // this function cannot be 'add_piece' because it is called from a general constructor.
+  add_thing(thing) {
+    thing.id_piece = this.all.length;
+    this.all.push(thing);
+
+    // Loop over the other groups, and add them
+    var group;
+    for(var n in thing.settings.groups) { 
+      group = thing.settings.groups[n];
+      
+      // Make sure the group list exists
+      if(!this[group]) this[group] = [];
+
+      // Add the thing to it
+      this[group].push(thing);
+    }
   }
 
   // Resets coordinates
@@ -3004,12 +3072,10 @@ VGT.Piece  = _Piece;
 /** Animated Polygon */
 class _Polygon extends _Thing { 
 
-  constructor(vs) {
+  constructor(vs, settings) {
 
-    // Settings for a polygon
-    var settings = {
-      image_paths : null, // No textures, just GL drawing.
-    };
+    if(!settings) settings = {};
+    settings.image_paths = null; // No textures, just GL drawing.
 
     // Run the usual thing initialization
     super(settings);
@@ -3152,8 +3218,8 @@ class _Hand extends _Thing {
     // id of client this hand belongs to
     this.id_client = 0;
 
-    // Create the selection rectangle
-    this.polygon = new _Polygon([[0,0],[0,0],[0,0],[0,0]]); // Does not add the polygon to the "playable" lists, q's etc.
+    // Create the selection rectangle, without adding it to the "playable" lists and q's
+    this.polygon = new _Polygon([[0,0],[0,0],[0,0],[0,0]], {layer: VGT.tabletop.LAYER_SELECT}); 
     this.polygon.container.alpha = 0.4;
   }
 

@@ -97,31 +97,215 @@ new VGT.Game({
   setups: ['3 Players', '4 Players', '5 Players'],
 });
 
-// Game Boards
+///////////////////////////// PLAYER BOARDS
 var settings = {
-  layer:1,             // Layer of these pieces
-  shovel:true,         // Whether selecting this piece up also selects those on top of it
-  local_snaps:[        // List of snap specification objects
-    {        
-      ax:10,
-      ay:0,
-      bx:0,
-      by:10,
-      type:VGT.SnapGrid, 
-      boundary: [-75,-75, 75,-75, 75,75, -75,75],
+  layer:  1,                 // Layer of these pieces
+  groups: ['boards'],        // List of groups to which this piece belongs
+  shovel: ['pieces'],        // Which groups this piece will shovel when selecting
+
+  // Coordinates and scale
+  x: 0,
+  y: 0,
+  r: 0,
+  s: 0.5,
+
+  snaps:[ // List of snap specification objects
+    
+    { // Small buildings grid 
+      type: VGT.SnapGrid,          // class used to create this snap
+      groups: ['small_buildings'], // list of snap groups
+      x0: -695,     // Origin of grid, x-coordinate
+      y0: -482,     // Origin of grid, y-coordinate                   
+      ax: 248,   // Basis vector 'a', x-coordinate
+      ay: 0,     // Basis vector 'a', y-coordinate
+      bx: 0,     // Basis vector 'b', x-coordinate
+      by: 146,   // Basis vector 'b', y-coordinate
+      r : 0,     // Rotation when snapped
+      boundary: [-819,-555, -819,-117, 173,-117, 173,-555], // Polygon boundary points
+    }, 
+
+    { // Large buildings grid 
+      type: VGT.SnapGrid,          // class used to create this snap
+      groups: ['large_buildings'], // list of snap groups
+      x0: -695,     // Origin of grid, x-coordinate
+      y0: -409,     // Origin of grid, y-coordinate                   
+      ax: 248,   // Basis vector 'a', x-coordinate
+      ay: 0,     // Basis vector 'a', y-coordinate
+      bx: 0,     // Basis vector 'b', x-coordinate
+      by: 146,   // Basis vector 'b', y-coordinate
+      r : 0,     // Rotation when snapped
+      boundary: [-819,-472, -819,-199, 173,-199, 173,-472], // Polygon boundary points
+    }, 
+
+    { // First column of tiles
+      type: VGT.SnapGrid,          // class used to create this snap
+      groups: ['tiles'], // list of snap groups
+      x0: -571,     // Origin of grid, x-coordinate
+      y0: 154,      // Origin of grid, y-coordinate                   
+      ax: 500,   // Basis vector 'a', x-coordinate
+      ay: 0,     // Basis vector 'a', y-coordinate
+      bx: 0,     // Basis vector 'b', x-coordinate
+      by: 164,   // Basis vector 'b', y-coordinate
+      r : 0,     // Rotation when snapped
+      boundary: [-652,72, -652,566, -489,566, -489,72], // Polygon boundary points
+    }, 
+
+    { // Second column of tiles
+      type: VGT.SnapGrid,          // class used to create this snap
+      groups: ['tiles'], // list of snap groups
+      x0: -409,     // Origin of grid, x-coordinate
+      y0: 82,      // Origin of grid, y-coordinate                   
+      ax: 500,   // Basis vector 'a', x-coordinate
+      ay: 0,     // Basis vector 'a', y-coordinate
+      bx: 0,     // Basis vector 'b', x-coordinate
+      by: 164,   // Basis vector 'b', y-coordinate
+      r : 0,     // Rotation when snapped
+      boundary: [-490,1, -490,493, -327,493, -327,1], // Polygon boundary points
+    }, 
+
+    { // Third column of tiles
+      type: VGT.SnapGrid,          // class used to create this snap
+      groups: ['tiles'], // list of snap groups
+      x0: -246,     // Origin of grid, x-coordinate
+      y0: 134,      // Origin of grid, y-coordinate                   
+      ax: 500,   // Basis vector 'a', x-coordinate
+      ay: 0,     // Basis vector 'a', y-coordinate
+      bx: 0,     // Basis vector 'b', x-coordinate
+      by: 164,   // Basis vector 'b', y-coordinate
+      r : 0,     // Rotation when snapped
+      boundary: [-328,52, -328,545, -165,545, -165,52], // Polygon boundary points
+    }, 
+
+    { // Fourth column of tiles
+      type: VGT.SnapGrid,          // class used to create this snap
+      groups: ['tiles'], // list of snap groups
+      x0: -84,     // Origin of grid, x-coordinate
+      y0: 212,      // Origin of grid, y-coordinate                   
+      ax: 500,   // Basis vector 'a', x-coordinate
+      ay: 0,     // Basis vector 'a', y-coordinate
+      bx: 0,     // Basis vector 'b', x-coordinate
+      by: 164,   // Basis vector 'b', y-coordinate
+      r : 0,     // Rotation when snapped
+      boundary: [-165,131, -165,459, -2,459, -2,131], // Polygon boundary points
+    }, 
+
+    { // Fifth "column" of tiles
+      type: VGT.SnapGrid,          // class used to create this snap
+      groups: ['tiles'], // list of snap groups
+      x0: 78,    // Origin of grid, x-coordinate
+      y0: 287,   // Origin of grid, y-coordinate                   
+      ax: 500,   // Basis vector 'a', x-coordinate
+      ay: 0,     // Basis vector 'a', y-coordinate
+      bx: 0,     // Basis vector 'b', x-coordinate
+      by: 164,   // Basis vector 'b', y-coordinate
+      r : 0,     // Rotation when snapped
+      boundary: [-2,205, -2,369, 160,369, 160,205], // Polygon boundary points
     }, 
   ]
-}; // end of piece settings
+}; // end of settings
 
-// Create the boards
+// Create the 5 player boards
 var player_boards = [];
 for(var n=0; n<5; n++) player_boards.push(new VGT.Piece({...settings, image_paths:[['board-player.jpg']]}));
 
 
 
+////////////////////////////////// SMALL BUILDINGS
+var settings = {
+  layer:  2,                             // Layer of these pieces
+  groups: ['pieces', 'small_buildings'], // List of groups to which this piece belongs
+  shovel: ['workers'],                   // Which groups this piece will shovel when selecting
 
-/** Function to start a new game */ 
+  // Coordinates and scale
+  x: 0,
+  y: 0,
+  r: 0,
+  s: 0.5,
+}; // end of settings
+
+// Create pieces
+var haciendas = []; for(var n=0; n<2; n++) player_boards.push(new VGT.Piece({...settings, image_paths:[['build-hacienda.jpg']]}));
+
+
+////////////////////////////////// LARGE BUILDINGS
+var settings = {
+  layer:  2,                             // Layer of these pieces
+  groups: ['pieces', 'large_buildings'], // List of groups to which this piece belongs
+  shovel: ['workers'],                   // Which groups this piece will shovel when selecting
+
+  // Coordinates and scale
+  x: 0,
+  y: 0,
+  r: 0,
+  s: 0.5,
+}; // end of settings
+
+// Create pieces
+var large_buildings = []; large_buildings.push(new VGT.Piece({...settings, image_paths:[['build-cityhall.jpg']]}));
+
+
+
+///////////////////////////////////// TILES
+var settings = {
+  layer:  2,                   // Layer of these pieces
+  groups: ['pieces', 'tiles'], // List of groups to which this piece belongs
+  shovel: ['workers'],         // Which groups this piece will shovel when selecting
+
+  // Coordinates and scale
+  x: 0,
+  y: 0,
+  r: 0,
+  s: 0.5,
+
+  // List of snap specification objects
+  snaps:[ 
+    { // Worker dot
+      type: VGT.SnapCirle, // class used to create this snap
+      groups: ['workers'], // list of snap groups
+      x0: -27,     // Center, x-coordinate
+      y0: 22,      // Center, y-coordinate                   
+      radius: 27,  // Radius of snap region
+    },
+  ]
+}; // end of settings
+
+// Create pieces
+var tiles = [];
+for(var n=0; n<5; n++) tiles.push(new VGT.Piece({...settings, image_paths:[['tile-corn.jpg']]}));
+
+
+
+//////////////////////////////////// WORKERS
+var settings = {
+  layer:  3,                     // Layer of these pieces
+  groups: ['pieces', 'workers'], // List of groups to which this piece belongs
+  shape: 'circle',               // Shape of the pieces
+
+  // Coordinates and scale
+  x: 0,
+  y: 0,
+  r: 0,
+  s: 0.5, 
+
+}; // end of settings
+
+// Create pieces
+var workers = []; for(var n=0; n<5; n++) workers.push(new VGT.Piece({...settings, image_paths:[['colonist.png']]}));
+
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////////// NEW GAME SETUP
 function new_game() { 
   log('\n\n------- NEW GAME -------');
 
 } // End of new_game()
+

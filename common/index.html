@@ -174,7 +174,7 @@
         <h1>Setup</h1>
         <table>
           <tr><td>
-            <select id="setups" onchange="interaction.onchange_game_mode();">
+            <select id="setups" onchange="VGT.interaction.onchange_game_mode();">
             </select>
             <button id='new_game' onclick="new_game();">New Game</button>
           </td></tr>
@@ -198,7 +198,7 @@
           </tr>
           <tr>
             <td>
-              <input id="chat-box" tabindex="2" onchange="interaction.onchat()" value="Type your chat messages here..." style='color: rgb(187, 70, 70);' onfocus="this.value=''; this.style='color: black';"/>
+              <input id="chat-box" tabindex="2" onchange="VGT.interaction.onchat()" value="Type your chat messages here..." style='color: rgb(187, 70, 70);' onfocus="this.value=''; this.style='color: black';"/>
             </td>
           </tr>
         </table>
