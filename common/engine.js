@@ -549,8 +549,8 @@ class _Pixi {
   
     // Assemble the full image path list
     image_paths.full = [];
-    image_paths.root = finish_directory_path(image_paths.root);
-    for(var n=0; n<image_paths.list.length; n++) image_paths.full.push(image_paths.root+image_paths.list[n]);
+    image_paths.root = finish_directory_path(image_paths.root); // Adds the '/' "smartly".
+    for(var n=0; n<image_paths.list.length; n++) image_paths.full.push(image_paths.root + image_paths.list[n]);
 
     // Send these paths to the loader and tell it what to do when complete.
     this.loader.add(image_paths.full).load(this.loader_oncomplete.bind(this)); 
@@ -659,7 +659,7 @@ class _Pixi {
     log('progress: loaded', resource.url, loader.progress, '%');
 
       // Update the loader progress in the html
-      VGT.html.loader.innerHTML = '<h1>Loading: ' + loader.progress.toFixed(0) + '%</h1><br>' + resource.url;
+      VGT.html.loader.innerHTML = '<h1>Loaded: ' + loader.progress.toFixed(0) + '%</h1><br>' + resource.url;
   }
 
   /** Called every 1/60 of a second (roughly).
@@ -1934,8 +1934,8 @@ class _Thing {
   
   // Default settings for a new object
   default_settings = {
-    texture_paths : [['nofile.png']], // paths relative to the root, with each sub-list being a layer (can animate), e.g. [['a.png','b.png'],['c.png']]
-    texture_root  : '',               // Sub-folder in the search directories (path = image_paths.root + texture_root + path), e.g. images/
+    image_paths   : [['nofile.png']], // paths relative to the root, with each sub-list being a layer (can animate), e.g. [['a.png','b.png'],['c.png']]
+    image_root    : '',               // Sub-folder in the search directories (path = image_paths.root + image_root + path), e.g. images/
     shape         : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
     type          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
     sets          : [],               // List of other sets to which this thing can belong (pieces, hands, ...)
@@ -1976,7 +1976,7 @@ class _Thing {
     this.settings = {...this.default_settings, ...settings};
     
     // Make sure the paths end with a /
-    this.settings.texture_root = finish_directory_path(this.settings.texture_root);
+    this.settings.image_root = finish_directory_path(this.settings.image_root);
 
     // Add to a user-supplied sets
     for(var n in this.settings.sets) this.settings.sets[n].add_thing(this);
@@ -2103,20 +2103,20 @@ class _Thing {
     // Keep a list of texture lists for reference, one texture list for each layer. 
     this.textures = [];
     
-    // If texture_paths = null, no textures. sprites will stay empty too.
-    if(this.settings.texture_paths != null) {
+    // If image_paths = null, no textures. sprites will stay empty too.
+    if(this.settings.image_paths != null) {
 
       this.width  = 0;   // Maximum width of the biggest sprites
       this.height = 0;   // Maximum height of the biggest sprites
       var path, texture; // reused in loop
-      for(var n=0; n<this.settings.texture_paths.length; n++) {
+      for(var n=0; n<this.settings.image_paths.length; n++) {
         
         // One list of frames per layer; these do not have to match length
         this.textures.push([]); 
-        for(var m = 0; m<this.settings.texture_paths[n].length; m++) {
+        for(var m = 0; m<this.settings.image_paths[n].length; m++) {
           
           // Add the actual texture object
-          path = image_paths.root + this.settings.texture_root + this.settings.texture_paths[n][m];
+          path = image_paths.root + this.settings.image_root + this.settings.image_paths[n][m];
           if(VGT.pixi.resources[path]) {
             texture = VGT.pixi.resources[path].texture;
 
@@ -2127,9 +2127,9 @@ class _Thing {
             // Add it to the list
             this.textures[n].push(texture);
           }
-          else throw 'No resource for '+ path;
+          else throw 'No resource for '+ path +'. Usually this is because one of the image_paths provided upon piece creation does not match one of those in image_paths.list.';
         }
-      } // Done with loop over texture_paths.
+      } // Done with loop over image_paths.
     }
       
     // Loop over the layers, creating one sprite per layer
@@ -3008,7 +3008,7 @@ class _Polygon extends _Thing {
 
     // Settings for a polygon
     var settings = {
-      texture_paths : null, // No textures, just GL drawing.
+      image_paths : null, // No textures, just GL drawing.
     };
 
     // Run the usual thing initialization
@@ -3135,8 +3135,8 @@ class _Hand extends _Thing {
 
     // Create the settings for a hand
     var settings = {
-      texture_paths : [['hand.png', 'fist.png']], // paths relative to the root
-      texture_root  : 'hands',                    // Image root path.
+      image_paths : [['hand.png', 'fist.png']], // paths relative to the root
+      image_root  : 'hands',                    // Image root path.
       layer         : VGT.tabletop.LAYER_HANDS,   // Hands layer.
       t_pause       : 1200,                       // How long to wait since last move before faiding out.
       t_fade        : 500,                        // Time to fade out.
@@ -3324,7 +3324,7 @@ class _Game {
   // Default minimal settings that can be overridden.
   default_settings = {
 
-    background_color : 0xf9ecec,
+    background_color : 0xf9ecec, // Tabletop background color
 
     // Available teams for clients and their colors.
     teams : {
@@ -3341,11 +3341,11 @@ class _Game {
     },
 
     // Available game setup modes
-    setups : ['Standard'],
+    setups : ['Standard'],  // Populates the pull-down menu next to the "New Game" button
 
     // How long to wait in between housekeepings.
-    t_housekeeping   : 100,
-    t_housekeeping_z : 10,
+    t_housekeeping   : 100, // For moving pieces around (already locally responsive)
+    t_housekeeping_z : 10,  // For asking the server's permission to change z-values (needs to be ~immediate but not spam the server with individual requests)
   }
 
   constructor(settings) {

@@ -62,14 +62,15 @@ reset_game();
 
 
 // port upon which the server listens
-fun.log_date('\nArguments:');
+fun.log_date('');
+fun.log_date('Arguments:');
 for(var n in process.argv) fun.log_date(process.argv[n]);
 
 // find out if a game name and port was supplied
 game_name = process.argv[2];
 port      = parseInt(process.argv[3]);
 
-if(game_name == '0') game_name = 'default';
+if(game_name == '0') game_name = 'puerto-rico';
 if(port      ==  0 ) port      = 38000;
 
 // get the directories
@@ -81,7 +82,8 @@ var games_directory    = root_directory + '/games/'    + game_name;
 var common_directory   = root_directory + '/common';
 
 // change to the root directory
-fun.log_date('\nSearch Order:');
+fun.log_date('');
+fun.log_date('Search Order:');
 fun.log_date('  '+private_directory);
 fun.log_date('  '+games_directory);
 fun.log_date('  '+common_directory);
@@ -119,6 +121,7 @@ function find_file(path) {
  */
 function send_file(response, path) {
   var full_path = find_file(path);
+  fun.log_date('  Sending ', full_path);
   if(full_path) response.sendFile(full_path);
 }
 
@@ -423,7 +426,6 @@ io.on('connection', function(socket) {
       // First make sure the holder exists in the current socket list
       if( state.pieces[id]['ih'] // If there is a holder id provided
       && !Object.keys(sockets).includes(String(state.pieces[id]['ih'])) ) {
-        //console.log('  holder socket.id', String(state.pieces[id]['ih']), 'not in', Object.keys(sockets), 'removing');
         delete state.pieces[id]['ih'];
         delete state.pieces[id]['ih.i'];
         delete state.pieces[id]['ih.n'];
