@@ -3658,6 +3658,9 @@ class _Clients {
     // Keep track of me
     this.me = this.all[VGT.net.id];
 
+    // Send my hand's rotation
+    this.me.hand.set_xyrs(undefined, undefined, VGT.tabletop.r.target);
+
     // Load my last nameplate position (everyone else does this), set it, and send to everyone.
     var s = load_cookie('my_nameplate_xyrs');
     if(s != "") {
