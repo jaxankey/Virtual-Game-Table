@@ -101,7 +101,8 @@ new VGT.Game({
 var settings = {
   layer:  1,                 // Layer of these pieces
   groups: ['boards'],        // List of groups to which this piece belongs
-  shovel: ['all'],        // Which groups this piece will shovel when selecting
+  shovel: ['all'],           // Which groups this piece will shovel when selecting
+  teams:  [],                // Which teams can grab / move this piece
 
   // Coordinates and scale
   x: 0,
@@ -118,7 +119,7 @@ var settings = {
   layer:  1,                 // Layer of these pieces
   groups: ['boards'],        // List of groups to which this piece belongs
   shovel: ['pieces'],        // Which groups this piece will shovel when selecting
-
+  
   // Coordinates and scale
   x: 0,
   y: 0,

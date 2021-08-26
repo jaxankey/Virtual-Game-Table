@@ -1244,8 +1244,14 @@ class _Interaction {
         container = layer.children[m]; 
        
         // Get the scaled bounds and test
-        if(container.thing.contains(x,y)) return container.thing;
-      
+        if(container.thing.contains(x,y)) {
+         
+          // If our team is allowed to control this thing, return it
+          if(container.thing.settings.teams == true || container.thing.settings.teams.includes(VGT.game.get_team_name(VGT.clients.me.team))) return container.thing;
+          
+          // Otherwise, return null so we don't get access to pieces below pieces (not intuitive)
+          else return null
+        }
       } // End of things in layer loop
 
     } // End of all layers loop
@@ -2081,8 +2087,10 @@ class _Thing {
     shape         : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
     type          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
     sets          : [],               // List of other sets (e.g. VGT.Pieces, VGT.Hands) to which this thing can belong
+    teams         : true,             // List of team names that can control this piece. Setting true means 'all of them', false or [] means 'none'.
     r_step        : 45,               // How many degrees to rotate when taking a rotation step.
     rotate_with_view : false,         // Whether the piece should retain its orientation with respect to the screen when rotating the view / table
+    text          : false,            // Whether to include a text layer 
 
     // Targeted x, y, r, and s
     x : 0,
@@ -2105,8 +2113,6 @@ class _Thing {
     expand_dx : undefined, // px shift for expanding in the x-direction; undefined is 'automatic'
     expand_dy : undefined, // px shift for expanding in the y-direction; undefined is 'automatic'
 
-    // Text layer?
-    text: false 
   };
 
   constructor(settings) {
@@ -2696,9 +2702,9 @@ class _Thing {
       // Add a less janky shadow; this will be rendered to a sprite whenever refill_container happens
       var a;
       for(var n=1; n<=50; n++) {
-        a = (50-n)*0.02;
-        this.text_graphics.beginFill(0x000000, 0.001*n);
-        this.text_graphics.drawRoundedRect(-0.5*w-20*5/3*a, -0.5*h-25*a, w+40*5/3*a, h+50*a, 20*a);
+        a = (50-n)*0.016;
+        this.text_graphics.beginFill(0x000000, 0.003*n);
+        this.text_graphics.drawRoundedRect(-0.5*w-38*a, -0.5*h-25*a, w+76*a, h+50*a, 20*a);
         this.text_graphics.endFill();
       }
       
