@@ -414,16 +414,12 @@ class _Net {
     // also loads our cookie for where our nameplate was last positioned, and sends this via set_xyrs()
     VGT.clients.rebuild();
 
-    // Process the hands JACK removed (necessary?)
-    //this.q_hands_in  = server_state['hands'];
-    //this.process_queues();
-
-    // Now show controls
+    // Now hide the loader page so the user can interact
     VGT.html.loader.style.visibility  = 'hidden';
 
     // Say hello
     VGT.html.chat('Server', 'Welcome, '+ VGT.net.clients[VGT.net.id].name + '!')
-  
+
   } // End of on_state
 
   /** Someone sends the client table data. */
@@ -831,9 +827,13 @@ class _Tabletop {
     this.y = new _Animated(0);
     this.r = new _Animated(0);
     this.s = new _Animated(1); 
+    
+    // Load the last view immediately
+    this.load_view('last', true);
+
+    // Update the 
     this.container.rotation = this.r.value*0.01745329251; // to radians
     this.container.scale.y  = this.container.scale.x = this.s.value;
-    this.vx = this.vy = this.vr = this.vs = 0;
 
     // center the container within the window
     this.container.x = 0.5*window.innerWidth;  
@@ -861,10 +861,7 @@ class _Tabletop {
     var y1 = y - this.container.y + (this.container.pivot.x*Math.sin(r_rad) + this.container.pivot.y*Math.cos(r_rad))*this.container.scale.x;
     
     // Undo the rotation and scale of the tabletop
-    var v = rotate_vector(
-      [x1/this.container.scale.x,
-       y1/this.container.scale.y],
-         -r_deg);
+    var v = rotate_vector( [x1/this.container.scale.x, y1/this.container.scale.y], -r_deg);
     return {x:v[0], y:v[1]}
   }
 
@@ -888,10 +885,11 @@ class _Tabletop {
     this.container.scale.y  =  this.s.value;
 
     // Update the mouse position
-    if(Math.abs(this.x.value-this.x.target) > 0.1/this.s.value
-    || Math.abs(this.y.value-this.y.target) > 0.1/this.s.value
-    || Math.abs(this.r.value-this.r.target) > 0.001/this.s.value
-    || Math.abs(this.s.value-this.s.target) > 0.001/this.s.value) 
+    if( (Math.abs(this.x.value-this.x.target) > 0.1/this.s.value
+      || Math.abs(this.y.value-this.y.target) > 0.1/this.s.value
+      || Math.abs(this.r.value-this.r.target) > 0.001/this.s.value
+      || Math.abs(this.s.value-this.s.target) > 0.001/this.s.value)
+      && VGT.interaction.last_pointermove_e ) 
       VGT.interaction.onpointermove(VGT.interaction.last_pointermove_e);
 
     // Set the hand scale
@@ -903,11 +901,6 @@ class _Tabletop {
         for(var i in VGT.things.selected[t])
           VGT.things.selected[t][i].draw_select_graphics(t); */
   }
-
-  /**
-   * Returns an object with x, y, r, and s.
-   */
-  get_xyrs() {return {x:this.x.value, y:this.y.value, r:this.r.value, s:this.s.value}}
 
   /** 
   * TABLETOP Sets the target x,y,r,s for the tabletop.
@@ -921,6 +914,9 @@ class _Tabletop {
     if(r!=undefined && r != this.r.target) {this.r.set(r, immediate);}
     if(s!=undefined && s != this.s.target) {this.s.set(s, immediate);}
     this.t_last_move = Date.now();
+
+    // Remember the last view
+    this.save_view('last');
   }
   
   // Panning the view
@@ -1000,6 +996,31 @@ class _Tabletop {
     }
   }
 
+  /**
+   * Saves the current view as a cookie with the specified key name
+   * @param {String} key String identifier for the view
+   */
+  save_view(key) {
+    save_cookie(key, [this.x.target, this.y.target, this.r.target, this.s.target]);
+  }
+
+  /**
+   * Loads the view cookie with the specified key
+   * @param {String} key String identifier for the view
+   * @param {boolean} immediate Do this immediately
+   * @returns 
+   */
+  load_view(key, immediate) {
+    var c = load_cookie(key);
+    if(c == '') this.set_xyrs(0,0,0,1);
+    else { 
+      // Get [x,y,r,s]
+      var v = eval('['+c+']');
+
+      // Set it
+      this.set_xyrs(...v, immediate);
+    }
+  }
 
   zoom(factor) {
 
@@ -1056,6 +1077,9 @@ class _Interaction {
 
       start_roll                : this.start_roll.bind(this),
       roll                      : this.roll.bind(this),
+
+      save_view : this.save_view.bind(this),
+      load_view : this.load_view.bind(this),
     }
 
     // Dictionary of functions for each key
@@ -1113,6 +1137,30 @@ class _Interaction {
       MinusDown:          this.actions.zoom_out,
       NumpadSubtractDown: this.actions.zoom_out,
 
+      // Load / save views
+      BackquoteDown: this.actions.load_view,
+      Digit1Down: this.actions.load_view,
+      Digit2Down: this.actions.load_view,
+      Digit3Down: this.actions.load_view,
+      Digit4Down: this.actions.load_view,
+      Digit5Down: this.actions.load_view,
+      Digit6Down: this.actions.load_view,
+      Digit7Down: this.actions.load_view,
+      Digit8Down: this.actions.load_view,
+      Digit9Down: this.actions.load_view,
+      Digit0Down: this.actions.load_view,
+      ShiftDigit1Down: this.actions.save_view,
+      ShiftDigit2Down: this.actions.save_view,
+      ShiftDigit3Down: this.actions.save_view,
+      ShiftDigit4Down: this.actions.save_view,
+      ShiftDigit5Down: this.actions.save_view,
+      ShiftDigit6Down: this.actions.save_view,
+      ShiftDigit7Down: this.actions.save_view,
+      ShiftDigit8Down: this.actions.save_view,
+      ShiftDigit9Down: this.actions.save_view,
+      ShiftDigit0Down: this.actions.save_view,
+      
+
       // Collect, expand, shuffle
       KeyCDown:      this.actions.collect_selected_to_mouse,
       ShiftKeyCDown: this.actions.collect_selected_to_mouse,
@@ -1144,6 +1192,22 @@ class _Interaction {
     VGT.pixi.app.view.onpointerup   = this.onpointerup  .bind(this);
     VGT.pixi.app.view.onpointerout  = this.onpointerup  .bind(this);
     VGT.pixi.app.view.onwheel       = this.onwheel      .bind(this);
+  }
+
+  // Loads the view associated with the pressed key
+  load_view(e) {
+    log('load_view()', e.code);
+
+    // Load the cookie
+    VGT.tabletop.load_view('view'+e.code);
+  }
+
+  // Saves the view associated with the pressed key
+  save_view(e) {
+    log('save_view()', e.code);
+
+    // Save the cookie
+    VGT.tabletop.save_view('view'+e.code);
   }
 
   increment_selected_textures(e) {
@@ -2462,7 +2526,7 @@ class _Thing {
 
   /* Sends data associated with key (this[key]) to the associated VGT.net.q_pieces_out[this.id_thing][qkey]. */
   update_q_out(key, qkey, only_if_exists, immediate) { 
-    log('Thing.update_q_out()', key, qkey, only_if_exists);
+    //log('Thing.update_q_out()', key, qkey, only_if_exists);
     
     // If qkey is not supplied, use the key
     if(qkey == undefined) qkey = key;
