@@ -218,7 +218,7 @@ class _Net {
       c = this.q_pieces_in[id_piece]; // incoming changes for this thing
       p = VGT.pieces.all[id_piece];   // the actual piece object
 
-      // If it's a valid piece
+      // If it's a valid piece (sometimes it might be a fluctuating piece id, like nameplates)
       if(p) {
         
         // Put it in the z-order
@@ -265,13 +265,14 @@ class _Net {
 
         // Now update the different attributes only if we're not holding it (our hold supercedes everything)
         if(p.id_client_hold != VGT.net.id) {
+          var immediate = c['now'];
 
           // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update          immediate, do_not_update_q_out, do_not_reset_R
-          if(c['x']  != undefined && (c['x.i']  != VGT.net.id || c['x.n']  >= p.last_nqs['x'] )) p.set_xyrs(c.x, undefined, undefined, undefined, false, true, true);
-          if(c['y']  != undefined && (c['y.i']  != VGT.net.id || c['y.n']  >= p.last_nqs['y'] )) p.set_xyrs(undefined, c.y, undefined, undefined, false, true, true);
-          if(c['r']  != undefined && (c['r.i']  != VGT.net.id || c['r.n']  >= p.last_nqs['r'] )) p.set_xyrs(undefined, undefined, c.r, undefined, false, true, true);
-          if(c['s']  != undefined && (c['s.i']  != VGT.net.id || c['s.n']  >= p.last_nqs['s'] )) p.set_xyrs(undefined, undefined, undefined, c.s, false, true, true);
-          if(c['R']  != undefined && (c['R.i']  != VGT.net.id || c['R.n']  >= p.last_nqs['R'] )) p.set_R   (c.R,                                  false, true);
+          if(c['x']  != undefined && (c['x.i']  != VGT.net.id || c['x.n']  >= p.last_nqs['x'] )) p.set_xyrs(c.x, undefined, undefined, undefined, immediate, true, true);
+          if(c['y']  != undefined && (c['y.i']  != VGT.net.id || c['y.n']  >= p.last_nqs['y'] )) p.set_xyrs(undefined, c.y, undefined, undefined, immediate, true, true);
+          if(c['r']  != undefined && (c['r.i']  != VGT.net.id || c['r.n']  >= p.last_nqs['r'] )) p.set_xyrs(undefined, undefined, c.r, undefined, immediate, true, true);
+          if(c['s']  != undefined && (c['s.i']  != VGT.net.id || c['s.n']  >= p.last_nqs['s'] )) p.set_xyrs(undefined, undefined, undefined, c.s, immediate, true, true);
+          if(c['R']  != undefined && (c['R.i']  != VGT.net.id || c['R.n']  >= p.last_nqs['R'] )) p.set_R   (c.R,                                  immediate, true);
           if(c['n']  != undefined && (c['n.i']  != VGT.net.id || c['n.n']  >= p.last_nqs['n'] )) p.set_texture_index(c.n, true);
           if(c['ts'] != undefined && (c['ts.i'] != VGT.net.id || c['ts.n'] >= p.last_nqs['ts'])) p.select(c.ts, true);
 
@@ -297,7 +298,7 @@ class _Net {
     // Loop over the hands in the input queue
     for(var id_hand in this.q_hands_in) {
       c = this.q_hands_in[id_hand]; // Incoming changes
-      p = VGT.hands.all[id_hand];       // Actual hand
+      p = VGT.hands.all[id_hand];   // Actual hand
 
       // Visually update the hand's position (x,y,r,s), texture (n), and mousedown table coordinates (vd) if it's not our hand
       if(p && p.id_client != VGT.net.id){
@@ -405,13 +406,17 @@ class _Net {
     // The server assigned VGT.net.me a unique id
     this.id = parseInt(id);
 
-    // Send client information to the gui (rebuilds the HTML), and the clients object
+    // Process the incoming pieces, ignoring the nameplates, basically
+    this.q_pieces_in = server_state['pieces'];
+    this.process_queues();
+
+    // Rebuild the client object, hands, nameplates and HTML; 
+    // also loads our cookie for where our nameplate was last positioned, and sends this via set_xyrs()
     VGT.clients.rebuild();
 
-    // Transfer / initialize the input queue, then process it.
-    this.q_pieces_in = server_state['pieces'];
-    this.q_hands_in  = server_state['hands'];
-    this.process_queues();
+    // Process the hands JACK removed (necessary?)
+    //this.q_hands_in  = server_state['hands'];
+    //this.process_queues();
 
     // Now show controls
     VGT.html.loader.style.visibility  = 'hidden';
@@ -519,9 +524,9 @@ class _Pixi {
 
     // Create the app instance
     this.app = new PIXI.Application({
-      autoResize: true, 
-      resolution: devicePixelRatio, 
-      antialias: true, 
+      autoResize:  true, 
+      resolution:  devicePixelRatio, 
+      antialias:   true, 
       transparent: false,
     });
 
@@ -773,7 +778,9 @@ class _Animated {
 
   // Run the transition dynamics for a single frame of duration delta/(60 Hz)
   animate(delta) {
-    
+    // If we're there, poop out
+    if(this.value == this.target) return 0;
+
     // Use the current location and target location to determine
     // the target velocity. Target velocity should be proportional to the distance.
     // We want it to arrive in t_transition / (16.7 ms) frames
@@ -784,12 +791,15 @@ class _Animated {
     var b = (delta*16.7)/this.settings.t_acceleration; // inverse number of frames to get to max velocity
     var acceleration = b*(velocity_target - this.velocity);
     
-    // If we're slowing down, do it FASTER to avoid overshoot
-    //if(Math.sign(acceleration) != Math.sign(this.velocity)) acceleration = acceleration*2;
-
     // Increment the velocity
     this.velocity += acceleration-this.velocity*this.settings.damping;
     this.value    += this.velocity;
+
+    // If we're close enough, snap
+    if(Math.abs(this.velocity) < 1e-8) {
+      this.value = this.target;
+      this.velocity = 0;
+    }
 
     return this.velocity;
   }
@@ -865,9 +875,9 @@ class _Tabletop {
    animate_xyrs(delta) { if(!delta) delta = 1;
     
     // Update the internal quantities
-    this.x.animate(delta);
-    this.y.animate(delta);
-    this.r.animate(delta);
+    var vx = this.x.animate(delta);
+    var vy = this.y.animate(delta);
+    var vr = this.r.animate(delta);
     var vs = this.s.animate(delta); // vs used for scaling below
 
     // Set the actual position, rotation, and scale
@@ -885,7 +895,7 @@ class _Tabletop {
       VGT.interaction.onpointermove(VGT.interaction.last_pointermove_e);
 
     // Set the hand scale
-    VGT.hands.set_scale(1.0/this.s.value);
+    if(Math.abs(vs) > 1e-8) VGT.hands.set_scale(1.0/this.s.value);
 
     // Redraw selection graphics if the scale is still changing (gets heavy with lots of selection; why scale?)
     /*if(Math.abs(vs) > 1e-6)
@@ -2204,7 +2214,7 @@ class _Thing {
     for(var n in this.textures) {
 
       // Create the layer sprite with the zeroth image by default
-      var sprite = new PIXI.Sprite(this.textures[n][0])
+      var sprite = new PIXI.Sprite(this.textures[n][0]);
       
       // Center the image
       sprite.anchor.set(0.5, 0.5);
@@ -2353,6 +2363,11 @@ class _Thing {
       this.graphics.lineStyle(t2, c2, a);
       this.graphics.drawRect(-w*0.5, -h*0.5, w, h);
     }
+
+    // Render this to a sprite for nicer-looking images
+    this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
+    this.graphics_sprite.anchor.set(0.5, 0.5);
+    this.refill_container();
   }
 
   /**
@@ -2410,6 +2425,12 @@ class _Thing {
 
     // Remove rectangle
     this.graphics.clear();
+    
+    // Render to a graphics sprite for refill
+    this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
+    this.graphics_sprite.anchor.set(0.5, 0.5);
+    this.refill_container();
+
   } // End of unselect()
 
   // Selects all the pieces on this piece
@@ -2440,8 +2461,8 @@ class _Thing {
  
 
   /* Sends data associated with key (this[key]) to the associated VGT.net.q_pieces_out[this.id_thing][qkey]. */
-  update_q_out(key, qkey, only_if_exists) { 
-    //log('Thing.update_q_out()', key, qkey, only_if_exists);
+  update_q_out(key, qkey, only_if_exists, immediate) { 
+    log('Thing.update_q_out()', key, qkey, only_if_exists);
     
     // If qkey is not supplied, use the key
     if(qkey == undefined) qkey = key;
@@ -2475,6 +2496,9 @@ class _Thing {
     else if(qkey == 'z')                     q_out[id][qkey] = this.get_z();
     else if(qkey == 'l')                     q_out[id][qkey] = Math.round(this.settings.layer);
     else                                     q_out[id][qkey] = this[key];
+
+    // If the immediate flag is true
+    if(immediate) q_out[id]['now'] = true;
 
     // Remember the index that will be attached to this on the next process_qs
     this.last_nqs[qkey] = VGT.net.nq+1;
@@ -2549,11 +2573,16 @@ class _Thing {
     for(var i=0; i<this.sprites.length; i++) this.container.addChild(this.sprites[i]);
 
     // Add the graphics layer
-    this.container.addChild(this.graphics);
+    //this.container.addChild(this.graphics); // Faster? Looks jankier.
+    if(this.graphics_sprite) this.container.addChild(this.graphics_sprite);
 
     // Add the text layers
     if(this.text) {
-      this.container.addChild(this.text_graphics);
+
+      // Render to a texture to improve appearance / get rid of jankies
+      if(this.text_graphics_sprite) this.container.addChild(this.text_graphics_sprite);
+
+      //this.container.addChild(this.text_graphics);
       this.container.addChild(this.text);
     }
 
@@ -2584,25 +2613,47 @@ class _Thing {
   /** Sets the text and redraws */
   set_text(text, style, background_color) {
     // Default style
-    var style_default = {fontFamily : 'Arial', fontSize: 48, fill : 0x000000, align : 'center'}
+    var style_default = {fontFamily : 'Arial', fontSize: 48, fill : 0x000000, align : 'center', wordWrap: 10}
     style = {...style_default, ...style}
 
     // Set the text
     if(text)  this.text.text = text;
     if(style) for(var k in style) this.text.style[k] = style[k];
+
+    // Clear the text_graphics
+    this.text_graphics.clear();
+
+    // If we are doing a plate + drop shadow
     if(background_color) {
       var w = this.text.width;
       var h = this.text.height;
-      var d = h*0.25
+      var d = 8;
 
-      this.text_graphics.clear();
+      // Add a less janky shadow; this will be rendered to a sprite whenever refill_container happens
+      var a;
+      for(var n=1; n<=50; n++) {
+        a = (50-n)*0.02;
+        this.text_graphics.beginFill(0x000000, 0.001*n);
+        this.text_graphics.drawRoundedRect(-0.5*w-20*5/3*a, -0.5*h-25*a, w+40*5/3*a, h+50*a, 20*a);
+        this.text_graphics.endFill();
+      }
+      
+      this.text_graphics.beginFill(0xFFFFFF, 1);
+      this.text_graphics.drawRect(-0.5*w-2.5*d, -0.5*h-1.5*d, w+5*d, h+3*d);
+      this.text_graphics.endFill();
+      
       this.text_graphics.beginFill(background_color, 1);
-      this.text_graphics.drawRoundedRect(-0.5*w-2*d, -0.5*h-d, w+4*d, h+2*d, d);
-      this.text_graphics.endFill(); 
+      this.text_graphics.drawRect(-0.5*w-2*d, -0.5*h-d, w+4*d, h+2*d);
+      this.text_graphics.endFill();
     }
 
     // Update the width / height of the total object
     [this.width, this.height] = this.get_dimensions();
+
+    // Render this to a sprite here, so it's not bogging down the refill_container calls.
+    this.text_graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.text_graphics)); 
+    this.text_graphics_sprite.anchor.set(0.5, 0.5);
+    this.refill_container();
   }
 
   /**
@@ -2706,6 +2757,7 @@ class _Thing {
    * @param {boolean} do_not_reset_R        if true, do not reset the auxiliary rotation thing.R when setting r.
    */
   set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) { 
+    //console.log('set_xyrs()', x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R)
 
     // Now for each supplied coordinate, update and send
     if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}
@@ -2717,7 +2769,13 @@ class _Thing {
     }
     if(s!=undefined && s != this.s.target) {this.s.set(s,immediate); this.update_q_out('s', 's', do_not_update_q_out);}
     this.t_last_move = Date.now();
+
+    // Dummy function overloaded by sub-classes, e.g., NamePlate
+    this.after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R);
   }
+
+  // Called after set_xyrs(); dummy function to overload
+  after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) {};
 
   /**
    * Sets the x,y,r,s of this thing relative to the supplied thing's target coordinates.
@@ -3256,6 +3314,11 @@ class _Polygon extends _Thing {
     // Clear the graphics
     this.graphics.clear();
 
+    // Render to a graphics sprite for refill
+    this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
+    this.graphics_sprite.anchor.set(0.5, 0.5);
+    this.refill_container();
+
     // No need to redraw; that's the whole point.
     this.needs_redraw = false;
   }
@@ -3271,6 +3334,11 @@ class _Polygon extends _Thing {
     this.graphics.beginFill(this.get_tint(), 1);
     this.graphics.drawPolygon(ps);
     this.graphics.endFill();
+
+    // Render it to a sprite for refill
+    this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
+    this.graphics_sprite.anchor.set(0.5, 0.5);
+    this.refill_container();
 
     // Don't need to do this again!
     this.needs_redraw = false;
@@ -3295,6 +3363,24 @@ class _Polygons {
 }
 VGT.polygons = new _Polygons();
 VGT.Polygons = _Polygons;
+
+class _NamePlate extends _Piece {
+
+  constructor(settings) { if(!settings) settings = {};
+    super(settings);
+  }
+
+  // Called after set_xyrs(); here we just save our location with a cookie
+  after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) {
+    
+    // Make sure it's showing (doing this here avoids weird snapping when reloading the page)
+    this.show();
+
+    // If it's associated with my hand, save it
+    if(this.hand.id_client == VGT.clients.me.id_client) 
+      save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target,this.s.target]);
+  }
+} // End of NamePlate
 
 /** Floating hand on top of everything. */
 class _Hand extends _Thing {
@@ -3325,7 +3411,8 @@ class _Hand extends _Thing {
     this.polygon.container.alpha = 0.4;
 
     // Create a nameplate with the hand
-    this.nameplate = new _Piece({text:'player', layer: VGT.tabletop.LAYER_NAMEPLATES});
+    this.nameplate = new _NamePlate({text:'player', layer: VGT.tabletop.LAYER_NAMEPLATES});
+    this.nameplate.hand = this;
   }
 
   /** Sets the tint of all the textures AND the selection box */
@@ -3412,14 +3499,28 @@ class _Hands { constructor() {this.all = [];}
   get_unused_hand() {
     
     // Loop over hands trying to find a free one
-    for(var l in this.all) if(this.all[l].id_client == 0) return this.all[l];
+    for(var l in this.all) if(this.all[l].id_client == 0) {
+      
+      // Show the nameplate and return the hand.
+      this.all[l].nameplate.show();
+      return this.all[l];
+    }
+
 
     // If we haven't returned yet, we need a new one
     return new _Hand();
   }
 
   /** Frees all hands from ownership */
-  free_all_hands() { for(var l in this.all) this.all[l].id_client = 0; }
+  free_all_hands() { 
+
+    // For each hand, set the client to 0 (server or no one),
+    // And make the nameplate invisible
+    for(var l in this.all) {
+      this.all[l].id_client = 0; 
+      this.all[l].nameplate.hide();
+    }
+  }
 
   // Sets the scale target for all hands immediately without telling the net or changing the fade out
   set_scale(scale) { 
@@ -3468,6 +3569,7 @@ class _Clients {
         id_client : c.id,
       }
       this.all[c.id].nameplate = this.all[c.id].hand.nameplate;
+      this.all[c.id].nameplate.unselect();
 
       // Set the hand id_client
       this.all[c.id].hand.id_client = c.id;
@@ -3479,21 +3581,33 @@ class _Clients {
       // Update the hand color
       this.all[c.id].hand.set_tint(this.all[c.id].color);
 
+      // Update the nameplate and colors
+      var color = this.all[c.id].color;
+      // If the color is too bright (per ITU-R BT.709 definition of luma), go black with the text
+      if(get_luma_ox(color) > 0.7) var text_color = 'black';
+      else                         var text_color = 'white';
+      this.all[c.id].nameplate.set_text(c.name, {fill:text_color}, color);
+      this.all[c.id].nameplate.hide();
+
     } // End of loop over client list
 
     // Keep track of me
     this.me = this.all[VGT.net.id];
 
-    // Update the nameplate and colors
-    var color = this.all[c.id].color;
-    // If the color is too bright (per ITU-R BT.709 definition of luma), go black with the text
-    if(get_luma_ox(color) > 0.7) var text_color = 'black';
-    else                         var text_color = 'white';
-    this.all[c.id].nameplate.set_text(c.name, {fill:text_color}, color);
-
-    // For nameplates, add a drop shadow
-    //this.all[c.id].nameplate.text_graphics.filters = [new PIXI.filters.DropShadowFilter({quality:3, distance:0})];
-    // new PIXI.filters.BlurFilter({strength:1}), 
+    // Load my last nameplate position (everyone else does this), set it, and send to everyone.
+    var s = load_cookie('my_nameplate_xyrs');
+    if(s != "") {
+      var xyrs = eval('['+s+']');
+      console.log('  Updating nameplate xyrs', xyrs);
+      this.me.nameplate.set_xyrs(...xyrs, true); // immediate
+      this.me.nameplate.show();
+      
+      // Force the q update in case the target matches the cookie value, and make it snap immediately
+      this.me.nameplate.update_q_out('x', undefined, undefined, true);
+      this.me.nameplate.update_q_out('y', undefined, undefined, true);
+      this.me.nameplate.update_q_out('r', undefined, undefined, true);
+      this.me.nameplate.update_q_out('s', undefined, undefined, true);
+    }
 
     // Finally, using the current VGT.net.clients, rebuild the html table.
     VGT.html.rebuild_client_table();

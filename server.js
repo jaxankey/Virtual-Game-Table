@@ -452,6 +452,9 @@ io.on('connection', function(socket) {
       // Loop over attributes and transfer or defer to state, depending on who is holding the piece
       for(k in q_pieces[id]) {
         
+        // Immediate flag to relay, not store in the server
+        if(k == 'now') continue;
+
         // If it is valid to update the server state for this piece
         if(update_server_piece) {
 
