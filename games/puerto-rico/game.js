@@ -30,65 +30,65 @@ var image_paths = {
     'hands/hand.png',
     'hands/fist.png',
 
-    'build-cityhall.jpg',
-    'tile-sugar.jpg',
-    'build-customshouse.jpg',
-    'role-trader.jpg',
-    'governor.jpg',
-    'tile-quarry.jpg',
-    'tradinghouse.jpg',
-    'build-indigo.jpg',
-    'build-residence.jpg',
-    'tile-back.jpg',
-    'build-indigo-small.jpg',
-    'role-captain.jpg',
-    'tile-indigo.jpg',
+    'build-cityhall.png',
+    'tile-sugar.png',
+    'build-customshouse.png',
+    'role-trader.png',
+    'governor.png',
+    'tile-quarry.png',
+    'tradinghouse.png',
+    'build-indigo.png',
+    'build-residence.png',
+    'tile-back.png',
+    'build-indigo-small.png',
+    'role-captain.png',
+    'tile-indigo.png',
     'victory-1.png',
-    'tile-tobacco.jpg',
-    'build-fortress.jpg',
-    'build-factory.jpg',
-    'build-wharf.jpg',
+    'tile-tobacco.png',
+    'build-fortress.png',
+    'build-factory.png',
+    'build-wharf.png',
     'doubloon-1.png',
     'goods-indigo.png',
-    'role-settler.jpg',
+    'role-settler.png',
     'doubloon-5.png',
-    'build-coffee.jpg',
-    'build-constructionhut.jpg',
-    'build-warehouse-small.jpg',
+    'build-coffee.png',
+    'build-constructionhut.png',
+    'build-warehouse-small.png',
     'goods-corn.png',
-    'build-market-large.jpg',
-    'board-supply.jpg',
-    'build-hospice.jpg',
-    'role-builder.jpg',
+    'build-market-large.png',
+    'board-supply.png',
+    'build-hospice.png',
+    'role-builder.png',
     'colonist.png',
-    'build-university.jpg',
-    'role-mayor.jpg',
-    'build-hacienda.jpg',
-    'build-tobacco.jpg',
-    'build-sugar.jpg',
-    'tile-coffee.jpg',
-    'build-market-small.jpg',
-    'splash.jpg',
-    'tile-corn.jpg',
-    'ship-4.jpg',
-    'ship-6.jpg',
-    'ship-7.jpg',
-    'ship-8.jpg',
+    'build-university.png',
+    'role-mayor.png',
+    'build-hacienda.png',
+    'build-tobacco.png',
+    'build-sugar.png',
+    'tile-coffee.png',
+    'build-market-small.png',
+    'splash.png',
+    'tile-corn.png',
+    'ship-4.png',
+    'ship-6.png',
+    'ship-7.png',
+    'ship-8.png',
     'victory-5.png',
-    'board-player.jpg',
+    'board-player.png',
     'victory-back.png',
-    'ship-5.jpg',
-    'build-sugar-small.jpg',
-    'ship-colonist.jpg',
-    'role-prospector.jpg',
-    'build-guildhall.jpg',
-    'role-craftsman.jpg',
+    'ship-5.png',
+    'build-sugar-small.png',
+    'ship-colonist.png',
+    'role-prospector.png',
+    'build-guildhall.png',
+    'role-craftsman.png',
     'goods-tobacco.png',
-    'build-office.jpg',
+    'build-office.png',
     'goods-coffee.png',
-    'build-harbor.jpg',
+    'build-harbor.png',
     'goods-sugar.png',
-    'build-warehouse-large.jpg',
+    'build-warehouse-large.png',
   ],
 }
 
@@ -109,7 +109,7 @@ var settings = {
   r: 0,
   s: 0.5,
 }
-var board = new VGT.Piece({...settings, image_paths:[['board-supply.jpg']]});
+var board = new VGT.Piece({...settings, image_paths:[['board-supply.png']]});
 
 
 
@@ -222,7 +222,7 @@ var settings = {
 
 // Create the 5 player boards
 var player_boards = [];
-for(var n=0; n<5; n++) player_boards.push(new VGT.Piece({...settings, image_paths:[['board-player.jpg']]}));
+for(var n=0; n<5; n++) player_boards.push(new VGT.Piece({...settings, image_paths:[['board-player.png']]}));
 
 
 
@@ -251,7 +251,7 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-var haciendas = []; for(var n=0; n<2; n++) player_boards.push(new VGT.Piece({...settings, image_paths:[['build-hacienda.jpg']]}));
+var haciendas = []; for(var n=0; n<2; n++) player_boards.push(new VGT.Piece({...settings, image_paths:[['build-hacienda.png']]}));
 
 
 ////////////////////////////////// LARGE BUILDINGS
@@ -280,7 +280,7 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-var large_buildings = []; large_buildings.push(new VGT.Piece({...settings, image_paths:[['build-cityhall.jpg']]}));
+var large_buildings = []; large_buildings.push(new VGT.Piece({...settings, image_paths:[['build-cityhall.png']]}));
 
 
 
@@ -310,7 +310,7 @@ var settings = {
 
 // Create pieces
 var tiles = [];
-for(var n=0; n<5; n++) tiles.push(new VGT.Piece({...settings, image_paths:[['tile-corn.jpg']]}));
+for(var n=0; n<5; n++) tiles.push(new VGT.Piece({...settings, image_paths:[['tile-corn.png']]}));
 
 
 
