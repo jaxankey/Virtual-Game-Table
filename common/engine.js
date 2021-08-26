@@ -53,7 +53,32 @@ CURRENTLY
 */
 
 // Object that holds all the relevant namespace for a game designer.
-var VGT = {};
+var VGT = {
+
+  /**
+   * Creates and returns a new piece according to the specified settings
+   * @param {Object} settings  Piece specifications
+   * @param {String} images    Optional images list (overwrites settings.images)
+   * @returns _Piece
+   */
+  add_piece(settings, images) {
+    if(images != undefined) settings.images = images;
+    return new VGT.Piece(settings)
+  },
+  
+  /**
+   * Creates and returns a list of new, identical pieces according to the specified settings.
+   * @param {int} count        Number of copies to make 
+   * @param {Object} settings  Pieces specifications
+   * @param {String} images    Optional images list (overwrites settings.images)
+   */
+  add_pieces(count, settings, images) { console.log('add_pieces()', count, settings, images);
+    var pieces = [];
+    for(var n=0; n<count; n++) pieces.push(VGT.add_piece(settings, images));
+    return pieces;
+  },
+
+};
 
 // Object for interacting with the html page.
 class _Html {
@@ -535,6 +560,10 @@ class _Pixi {
     this.stage       = this.app.stage;
     this.renderer    = this.app.renderer;
 
+    // Seeing if this prevents a garbage collection from causing the context lost error.
+    this.canvas      = this.renderer.view;
+    this.context     = this.renderer.context; 
+
     // Set up the renderer
     this.renderer.backgroundColor     = 0x000000;
     this.renderer.autoDensity         = true;
@@ -549,12 +578,12 @@ class _Pixi {
     this.loader.onProgress.add(this.loader_onprogress.bind(this));
   
     // Assemble the full image path list
-    image_paths.full = [];
-    image_paths.root = finish_directory_path(image_paths.root); // Adds the '/' "smartly".
-    for(var n=0; n<image_paths.list.length; n++) image_paths.full.push(image_paths.root + image_paths.list[n]);
+    images.full = [];
+    images.root = finish_directory_path(images.root); // Adds the '/' "smartly".
+    for(var n=0; n<images.list.length; n++) images.full.push(images.root + images.list[n]);
 
     // Send these paths to the loader and tell it what to do when complete.
-    this.loader.add(image_paths.full).load(this.loader_oncomplete.bind(this)); 
+    this.loader.add(images.full).load(this.loader_oncomplete.bind(this)); 
   
     // Game loop counter
     this.n_loop = 0;
@@ -1973,6 +2002,14 @@ class _SnapGrid {
     VGT.snaps.add_snap(this);
   }
 
+  // Returns {x:, y:} of grid point n,m relative to the origin x0, y0
+  get_grid_xy(n,m) {
+    return {
+      x: this.settings.ax*n + this.settings.bx*m + this.settings.x0,
+      y: this.settings.ay*n + this.settings.by*m + this.settings.y0
+    }
+  }
+
   // Returns a distance score (usually distance squared for speed reasons) between the thing target and the snap
   get_relationship(thing) {
 
@@ -2082,8 +2119,8 @@ class _Thing {
   
   // Default settings for a new object
   default_settings = {
-    image_paths   : null,             // paths relative to the root, with each sub-list being a layer (can animate), e.g. [['a.png','b.png'],['c.png']]
-    image_root    : '',               // Sub-folder in the search directories (path = image_paths.root + image_root + path), e.g. images/
+    images        : null,             // paths relative to the root, with each sub-list being a layer (can animate), e.g. [['a.png','b.png'],['c.png']]
+    image_root    : '',               // Sub-folder in the search directories (path = images.root + image_root + path), e.g. images/
     shape         : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
     type          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
     sets          : [],               // List of other sets (e.g. VGT.Pieces, VGT.Hands) to which this thing can belong
@@ -2116,6 +2153,18 @@ class _Thing {
   };
 
   constructor(settings) {
+
+    // Fix up settings shortcuts
+    
+    // Make sure the image list is a list of lists of strings for layered sprites.
+    if(typeof settings.images == 'string') settings.images = [[settings.images]]
+    if(settings.images) 
+      for(var n in settings.images) 
+        if(typeof settings.images[n] == 'string') settings.images[n] = [settings.images[n]]
+      
+    
+
+    // Remember what this is for later checking
     this.type = 'Thing';
 
     // This piece is not ready yet, until initializing / doing pixi stuff later.
@@ -2252,32 +2301,32 @@ class _Thing {
   _initialize_pixi() {
     
     // Make sure the paths end with a /
-    image_paths.root = finish_directory_path(image_paths.root);
+    images.root = finish_directory_path(images.root);
     
     // Keep a list of texture lists for reference, one texture list for each layer. 
     this.textures = [];
     
-    // If image_paths = null, no textures. sprites will stay empty too.
-    if(this.settings.image_paths != null) {
+    // If images = null, no textures. sprites will stay empty too.
+    if(this.settings.images != null) {
 
       var path, texture; // reused in loop
-      for(var n=0; n<this.settings.image_paths.length; n++) {
+      for(var n=0; n<this.settings.images.length; n++) {
         
         // One list of frames per layer; these do not have to match length
         this.textures.push([]); 
-        for(var m = 0; m<this.settings.image_paths[n].length; m++) {
+        for(var m = 0; m<this.settings.images[n].length; m++) {
           
           // Add the actual texture object
-          path = image_paths.root + this.settings.image_root + this.settings.image_paths[n][m];
+          path = images.root + this.settings.image_root + this.settings.images[n][m];
           if(VGT.pixi.resources[path]) {
             texture = VGT.pixi.resources[path].texture;
 
             // Add it to the list
             this.textures[n].push(texture);
           }
-          else throw 'No resource for '+ path +'. Usually this is because one of the image_paths provided upon piece creation does not match one of those in image_paths.list.';
+          else throw 'No resource for '+ path +'. Usually this is because one of the images provided upon piece creation does not match one of those in images.list.';
         }
-      } // Done with loop over image_paths.
+      } // Done with loop over images.
     }
       
     // Loop over the layers, creating one sprite per layer
@@ -2709,6 +2758,8 @@ class _Thing {
       }
       
       this.text_graphics.beginFill(0xFFFFFF, 1);
+//      if(get_luma_ox(background_color) < 0.95) this.text_graphics.beginFill(0xFFFFFF, 1);
+//      else                                     this.text.graphics.beginFill(0xDDDDDD, 1);
       this.text_graphics.drawRect(-0.5*w-2.5*d, -0.5*h-1.5*d, w+5*d, h+3*d);
       this.text_graphics.endFill();
       
@@ -3306,7 +3357,7 @@ class _Polygon extends _Thing {
   constructor(vs, settings) {
 
     if(!settings) settings = {};
-    settings.image_paths = null; // No textures, just GL drawing.
+    settings.images = null; // No textures, just GL drawing.
 
     // Run the usual thing initialization
     super(settings);
@@ -3459,7 +3510,7 @@ class _Hand extends _Thing {
 
     // Create the settings for a hand
     var settings = {
-      image_paths : [['hand.png', 'fist.png']], // paths relative to the root
+      images : [['hand.png', 'fist.png']], // paths relative to the root
       image_root  : 'hands',                    // Image root path.
       layer         : VGT.tabletop.LAYER_HANDS,   // Hands layer.
       t_pause       : 1200,                       // How long to wait since last move before faiding out.
@@ -3654,7 +3705,7 @@ class _Clients {
       // Update the nameplate and colors
       var color = this.all[c.id].color;
       // If the color is too bright (per ITU-R BT.709 definition of luma), go black with the text
-      if(get_luma_ox(color) > 0.7) var text_color = 'black';
+      if(get_luma_ox(color) > 0.7) var text_color = 'gray';
       else                         var text_color = 'white';
       this.all[c.id].nameplate.set_text(c.name, {fill:text_color}, color);
       this.all[c.id].nameplate.hide();

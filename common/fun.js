@@ -428,6 +428,7 @@ exports.get_random_location_disc = get_random_location_disc;
 
 
 function get_luma_ox(ox) {
+  if(typeof ox == 'string') return 1;
   rgb = ox_to_rgb(ox);
   return 0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2];
 }

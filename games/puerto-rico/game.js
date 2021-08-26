@@ -24,7 +24,7 @@
 var sound_list = {};
 
 // Master list of all images. This is needed for the preloader to work.
-var image_paths = {
+var images = {
   root : 'images',
   list : [
     'hands/hand.png',
@@ -97,6 +97,12 @@ new VGT.Game({
   setups: ['3 Players', '4 Players', '5 Players'],
 });
 
+
+// My pieces object
+var pieces = {};
+
+
+
 ///////////////////////////// GAME BOARD
 var settings = {
   layer:  1,                 // Layer of these pieces
@@ -104,13 +110,16 @@ var settings = {
   shovel: ['all'],           // Which groups this piece will shovel when selecting
   teams:  [],                // Which teams can grab / move this piece
 
+  // List of lists of images to use for each of the piece's internal layers
+  images: 'board-supply.png', 
+  
   // Coordinates and scale
   x: 0,
   y: 0,
   r: 0,
   s: 0.5,
 }
-var board = new VGT.Piece({...settings, image_paths:[['board-supply.png']]});
+pieces.board = new VGT.Piece(settings);
 
 
 
@@ -119,6 +128,9 @@ var settings = {
   layer:  1,                 // Layer of these pieces
   groups: ['boards'],        // List of groups to which this piece belongs
   shovel: ['pieces'],        // Which groups this piece will shovel when selecting
+  
+  // List of lists of images to use for each of the piece's internal layers
+  images: 'board-player.png', 
   
   // Coordinates and scale
   x: 0,
@@ -220,14 +232,10 @@ var settings = {
     }, 
   ]
 }; // end of settings
-
-// Create the 5 player boards
-var player_boards = [];
-for(var n=0; n<5; n++) player_boards.push(new VGT.Piece({...settings, image_paths:[['board-player.png']]}));
+pieces.player_boards = VGT.add_pieces(5, settings);
 
 
-
-////////////////////////////////// SMALL BUILDINGS
+////////////////////////////////// SMALL BUILDINGS, ONE WORKER
 var settings = {
   layer:  2,                             // Layer of these pieces
   groups: ['pieces', 'small_buildings'], // List of groups to which this piece belongs
@@ -252,8 +260,8 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-var haciendas = []; for(var n=0; n<2; n++) player_boards.push(new VGT.Piece({...settings, image_paths:[['build-hacienda.png']]}));
-
+pieces.haciendas        = VGT.add_pieces(2, settings, 'build-hacienda.png');
+pieces.constructionhuts = VGT.add_pieces(2, settings, 'build-constructionhut.png');
 
 ////////////////////////////////// LARGE BUILDINGS
 var settings = {
@@ -281,7 +289,6 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-var large_buildings = []; large_buildings.push(new VGT.Piece({...settings, image_paths:[['build-cityhall.png']]}));
 
 
 
@@ -311,7 +318,7 @@ var settings = {
 
 // Create pieces
 var tiles = [];
-for(var n=0; n<5; n++) tiles.push(new VGT.Piece({...settings, image_paths:[['tile-corn.png']]}));
+for(var n=0; n<5; n++) tiles.push(new VGT.Piece({...settings, images:[['tile-corn.png']]}));
 
 
 
@@ -330,7 +337,7 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-var workers = []; for(var n=0; n<5; n++) workers.push(new VGT.Piece({...settings, image_paths:[['colonist.png']]}));
+var workers = []; for(var n=0; n<5; n++) workers.push(new VGT.Piece({...settings, images:[['colonist.png']]}));
 
 
 
