@@ -922,8 +922,8 @@ class _Tabletop {
   // Panning the view
   pan_up() { 
     var dr = this.settings.pan_step*window.innerHeight/this.s.value;
-    var dx = dr*Math.sin(this.r.value);
-    var dy = dr*Math.cos(this.r.value);
+    var dx = dr*Math.sin(this.r.value*0.01745329251);
+    var dy = dr*Math.cos(this.r.value*0.01745329251);
     this.set_xyrs(
       -this.container.pivot.x + dx, 
       -this.container.pivot.y + dy,
@@ -931,8 +931,8 @@ class _Tabletop {
   }
   pan_down() { 
     var dr = this.settings.pan_step*window.innerHeight/this.s.value;
-    var dx = dr*Math.sin(this.r.value);
-    var dy = dr*Math.cos(this.r.value);
+    var dx = dr*Math.sin(this.r.value*0.01745329251);
+    var dy = dr*Math.cos(this.r.value*0.01745329251);
     this.set_xyrs(
       -this.container.pivot.x - dx, 
       -this.container.pivot.y - dy,
@@ -940,8 +940,8 @@ class _Tabletop {
   }
   pan_left() { 
     var dr = this.settings.pan_step*window.innerHeight/this.s.value;
-    var dx =  dr*Math.cos(this.r.value);
-    var dy = -dr*Math.sin(this.r.value);
+    var dx =  dr*Math.cos(this.r.value*0.01745329251);
+    var dy = -dr*Math.sin(this.r.value*0.01745329251);
     this.set_xyrs(
       -this.container.pivot.x + dx, 
       -this.container.pivot.y + dy,
@@ -949,8 +949,8 @@ class _Tabletop {
   }
   pan_right() { 
     var dr = this.settings.pan_step*window.innerHeight/this.s.value;
-    var dx =  dr*Math.cos(this.r.value);
-    var dy = -dr*Math.sin(this.r.value);
+    var dx =  dr*Math.cos(this.r.value*0.01745329251);
+    var dy = -dr*Math.sin(this.r.value*0.01745329251);
     this.set_xyrs(
       -this.container.pivot.x - dx, 
       -this.container.pivot.y - dy,
