@@ -1935,7 +1935,7 @@ class _SnapCircle {
 
     // Otherwise, the parent is a Thing, so use the parent's coordinates
     else {
-      v = parent.xy_tabletop_to_local(thing.x.target, thing.y.target); //container.localTransform.applyInverse( new PIXI.Point( thing.x.target, thing.y.target ) )
+      v = parent.xy_tabletop_to_local(thing.x.target, thing.y.target); 
       x = v.x;
       y = v.y;
     };
@@ -1955,7 +1955,7 @@ class _SnapCircle {
       
       // If the parent is a piece, do the transform from local to tabletop coordinates
       if(parent != undefined && parent != VGT.tabletop) {
-        v = parent.xy_local_to_tabletop(x,y); //.container.localTransform.apply( new PIXI.Point( x, y ) )
+        v = parent.xy_local_to_tabletop(x,y); 
         x = v.x;
         y = v.y;
         if(r == undefined) r = 0;
@@ -2036,7 +2036,7 @@ class _SnapGrid {
 
     // Otherwise, the parent is a Thing, so use the parent's coordinates
     else {
-      var v = parent.xy_tabletop_to_local(thing.x.target, thing.y.target); //container.localTransform.applyInverse( new PIXI.Point( thing.x.target, thing.y.target ) )
+      var v = parent.xy_tabletop_to_local(thing.x.target, thing.y.target); 
       var x = v.x;
       var y = v.y;
     };
@@ -2071,7 +2071,7 @@ class _SnapGrid {
 
       // If the parent is a thing, do the transform from local to tabletop coordinates
       if(parent != undefined && parent != VGT.tabletop) {
-        var vs = parent.xy_local_to_tabletop(xs,ys); //container.localTransform.apply( new PIXI.Point( xs, ys ) )
+        var vs = parent.xy_local_to_tabletop(xs,ys); 
         xs = vs.x;
         ys = vs.y;
         if(r == undefined) r = 0;
@@ -2268,7 +2268,7 @@ class _Thing {
   contains(x,y) { 
 
     // Transform table coordinates to local coordinates
-    var v = this.xy_tabletop_to_local(x,y); //container.localTransform.applyInverse(new PIXI.Point(x,y));
+    var v = this.xy_tabletop_to_local(x,y); 
     
     // Inner circle: minimum of width and height
     if(this.settings.shape == 'circle_inner') {    
@@ -2306,6 +2306,7 @@ class _Thing {
   }
   get_tint() { return this.tint; }
 
+  // Called once when pixi resources are loaded.
   _initialize_pixi() {
     
     // Make sure the paths end with a /
@@ -2863,9 +2864,9 @@ class _Thing {
    * @param {float} y y-coordinate in the tabletop's coordinate system
    */
   xy_tabletop_to_local(x,y) {
-      var v = this.container.localTransform.applyInverse(new PIXI.Point(x,y));
-      return v;
-    }
+    var v = this.container.localTransform.applyInverse(new PIXI.Point(x,y)); // Possible memory leak
+    return v;
+  }
 
   /**
    * Converts the "local" coordinates (x,y) to tabletop coordinates.
@@ -2873,7 +2874,7 @@ class _Thing {
    * @param {float} y y-coordinate in this thing's coordinate system
    */
   xy_local_to_tabletop(x,y) {
-    var v = this.container.localTransform.apply(new PIXI.Point(x,y));
+    var v = this.container.localTransform.apply(new PIXI.Point(x,y)); // Possible memory leak
     return v;
   }
 
@@ -2922,7 +2923,7 @@ class _Thing {
   set_xyrs_relative_to(thing, x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) {
     
     // First convert to tabletop {x:, y:}
-    var v = thing.xy_local_to_tabletop(x,y); //container.localTransform.apply(new PIXI.Point(x,y));
+    var v = thing.xy_local_to_tabletop(x,y);
     
     // Get the relative rotation
     if(r != undefined) r += thing.r.target + thing.R.target;
@@ -3388,9 +3389,30 @@ class _Polygon extends _Thing {
     // If we're supposed to redraw
     this.needs_redraw = false;
   }
+  
+  // Clear it out and make sure it doesn't draw again
+  clear() {
 
+    // Finish the animation so it doesn't trigger redraws
+    var v;
+    for(var n in this.vertices) { v = this.vertices[n];
+      v[0].set(v[0].target, true);
+      v[1].set(v[1].target, true);
+    }
+
+    // Clear the graphics
+    this.graphics.clear();
+
+    // Render to a graphics sprite for refill
+    if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
+    this.refill_container();
+
+    // No need to redraw; that's the whole point.
+    this.needs_redraw = false;
+  }
+  
   // Adds a vertex, e.g., [27,289]
-  add_vertex(v) { this.vertices.push([new _Animated(v[0]), new _Animated(v[1])]); }
+  add_vertex(v) { this.vertices.push([new _Animated(v[0]), new _Animated(v[1])]); } // Possible memory leak
 
   // Adds a list of vertices, e.g. [[100,10],[50,50],[32,37],...]
   add_vertices(vs) { for(var n in vs) this.add_vertex(vs[n]); }
@@ -3418,7 +3440,7 @@ class _Polygon extends _Thing {
         this.vertices[n][1].value));
 
     // Make the pixi polygon
-    return new PIXI.Polygon(...vs);
+    return new PIXI.Polygon(...vs); // Possible memory leak
   }
 
   // Animate the vertices
@@ -3436,34 +3458,12 @@ class _Polygon extends _Thing {
     if(max_velocity > 1e-5 || this.needs_redraw) this.redraw();
   }
 
-  // Clear it out and make sure it doesn't draw again
-  clear() {
-
-    // Finish the animation so it doesn't trigger redraws
-    var v;
-    for(var n in this.vertices) { v = this.vertices[n];
-      v[0].set(v[0].target, true);
-      v[1].set(v[1].target, true);
-    }
-
-    // Clear the graphics
-    this.graphics.clear();
-
-    // Render to a graphics sprite for refill
-    if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
-    this.refill_container();
-
-    // No need to redraw; that's the whole point.
-    this.needs_redraw = false;
-  }
-
   // Clear and redraw the whole thing
   redraw() {
 
     // Get the list of pixi points with the most recent value
     var ps = [];
-    for(var n in this.vertices) ps.push(new PIXI.Point(this.vertices[n][0].value, this.vertices[n][1].value));
-    //console.log('HAY', this.vertices[0][0].value, this.vertices[0][1].value, this.vertices[2][0].value, this.vertices[2][1].value);
+    for(var n in this.vertices) ps.push(new PIXI.Point(this.vertices[n][0].value, this.vertices[n][1].value)); // Possible memory leak
     this.graphics.clear();
     this.graphics.beginFill(this.get_tint(), 1);
     this.graphics.drawPolygon(ps);
@@ -3543,7 +3543,7 @@ class _Hand extends _Thing {
     this.id_client = 0;
 
     // Create the selection rectangle, without adding it to the "playable" lists and q's
-    this.polygon = new VGT.Polygon({vertices: [[0,0],[0,0],[0,0],[0,0]], layer: VGT.tabletop.LAYER_SELECT}); 
+    this.polygon = new VGT.Polygon({vertices: [[0,0],[0,0],[0,0],[0,0]], layer: VGT.tabletop.LAYER_SELECT});
     this.polygon.container.alpha = 0.4;
 
     // Create a nameplate with the hand
