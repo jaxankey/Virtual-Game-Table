@@ -329,7 +329,7 @@ class _Net {
       if(p && p.id_client != VGT.net.id){
       
         // Undefined quantities do nothing to these functions
-        p        .set_xyrs(c.x, c.y, c.r, c.s,       false, true);
+        p        .set_xyrs(c.x, c.y, c.r, undefined, false, true);
         p.polygon.set_xyrs(c.x, c.y, c.r, undefined, false, true); 
         p.set_texture_index(c.n, true);
         
@@ -922,7 +922,7 @@ class _Tabletop {
       VGT.interaction.onpointermove(VGT.interaction.last_pointermove_e);
 
     // Set the hand scale
-    if(Math.abs(vs) > 1e-8) VGT.hands.set_scale(1.0/this.s.value);
+    if(Math.abs(vs) > 1e-8) VGT.hands.set_scale(1.0/this.s.value, true);
 
     // Redraw selection graphics if the scale is still changing (gets heavy with lots of selection; why scale?)
     /*if(Math.abs(vs) > 1e-6)
@@ -3591,19 +3591,26 @@ class _Hand extends _Thing {
       
       // If I have a hand, update the selection rectangle to extend back to where the click originated
       this.polygon.set_vertices(vs, true, true ); // immediate, do_not_update_q_out
+
+      // Set the anchor for the generated image
+      if(v[0] > 0) var xa = 1;
+      else         var xa = 0;
+      if(v[1] > 0) var ya = 1;
+      else             ya = 0;
+      this.polygon.settings.anchor = {x:xa,y:ya}
     
       // At a reduced frame rate, check for pieces within the polygon
-      if(VGT.pixi.n_loop % 1 == 0 && this.is_me()) {
+      if(VGT.pixi.n_loop % 5 == 0 && this.is_me()) {
 
         // Get the polygon in tabletop coordinates
-        var poly = this.polygon.get_tabletop_polygon();
-
+        var poly = this.polygon.get_tabletop_polygon(); 
+        
         // Loop over the pieces and select those that are in it.
         var p;
         for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
-          if(poly.contains(p.x.value, p.y.value))       p.select(VGT.clients.me.team);
+          if(poly.contains(p.x.value, p.y.value)) p.select(VGT.clients.me.team);
           else if(!this.originally_selected || this.originally_selected 
-              && !this.originally_selected.includes(p)) p.unselect();
+              &&  !this.originally_selected.includes(p)) p.unselect();
         }  
       } // End of reduced frame rate
     } // End of if(vd)
@@ -3661,7 +3668,7 @@ class _Hands { constructor() {this.all = [];}
     var h, t0;
     for(var n in this.all) { h=this.all[n];
       t0 = h.t_last_move;
-      this.all[n].set_xyrs(undefined,undefined,undefined,scale,true,true,true); 
+      this.all[n].set_xyrs(undefined,undefined,undefined,scale,true,true,true);
       h.t_last_move = t0;
     }
   }
