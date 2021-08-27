@@ -166,8 +166,8 @@ class _Html {
           o.style = 'background-color: #'+color.toString(16)+'FF;';
 
           // If the color is too bright (per ITU-R BT.709 definition of luma), go black with the text
-          if(get_luma_ox(color) > 0.7) o.style.color='black';
-          else                         o.style.color='white';
+          if(get_luma_ox(color) > 0.7) o.style.color=0x000000;
+          else                         o.style.color=0xFFFFFF;
 
           // Add it to the list
           s.appendChild(o);
@@ -183,8 +183,8 @@ class _Html {
 
       // Set the text to white or black, depending on how light it is
       rgb = ox_to_rgb(color);
-      if(0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2] > 0.7) s.style.color='black';
-      else                                                    s.style.color='white'; // = 'color: white;';
+      if(0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2] > 0.7) s.style.color=0x000000;
+      else                                                    s.style.color=0xFFFFFF; // = 'color: white;';
       
       // Finally, append it to the team cell
       cell_team.appendChild(s);
@@ -462,7 +462,7 @@ class _Net {
   on_yabooted() {
     log('NETR_yabooted');
     document.body.innerHTML = 'Booted. Reload page to rejoin.'
-    document.body.style.color = 'white';
+    document.body.style.color = 0xFFFFFF;
   } // End of on_yabooted
 
   /** Someone plays a sync'd sound */
@@ -2757,12 +2757,13 @@ class _Thing {
         this.text_graphics.endFill();
       }
       
-      this.text_graphics.beginFill(0xFFFFFF, 1);
-//      if(get_luma_ox(background_color) < 0.95) this.text_graphics.beginFill(0xFFFFFF, 1);
-//      else                                     this.text.graphics.beginFill(0xDDDDDD, 1);
+      // White (or light gray) border
+      if(get_luma_ox(background_color) < 0.95) this.text_graphics.beginFill(0xFFFFFF, 1);
+      else                                     this.text_graphics.beginFill(0xDDDDDD, 1);
       this.text_graphics.drawRect(-0.5*w-2.5*d, -0.5*h-1.5*d, w+5*d, h+3*d);
       this.text_graphics.endFill();
       
+      // Main background
       this.text_graphics.beginFill(background_color, 1);
       this.text_graphics.drawRect(-0.5*w-2*d, -0.5*h-d, w+4*d, h+2*d);
       this.text_graphics.endFill();
@@ -3705,8 +3706,8 @@ class _Clients {
       // Update the nameplate and colors
       var color = this.all[c.id].color;
       // If the color is too bright (per ITU-R BT.709 definition of luma), go black with the text
-      if(get_luma_ox(color) > 0.7) var text_color = 'gray';
-      else                         var text_color = 'white';
+      if(get_luma_ox(color) > 0.7) var text_color = 0x888888;
+      else                         var text_color = 0xFFFFFF;
       this.all[c.id].nameplate.set_text(c.name, {fill:text_color}, color);
       this.all[c.id].nameplate.hide();
 
