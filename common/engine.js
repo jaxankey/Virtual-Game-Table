@@ -72,7 +72,7 @@ var VGT = {
    * @param {Object} settings  Pieces specifications
    * @param {String} images    Optional images list (overwrites settings.images)
    */
-  add_pieces(count, settings, images) { console.log('add_pieces()', count, settings, images);
+  add_pieces(count, settings, images) { log('add_pieces()', count, settings, images);
     var pieces = [];
     for(var n=0; n<count; n++) pieces.push(VGT.add_piece(settings, images));
     return pieces;
@@ -1431,7 +1431,7 @@ class _Interaction {
     if(thing != null) {
       
       // Get the coordinates on the thing
-      var a = thing.xy_tabletop_to_local(v.x, v.y); console.log('     on piece:', a);
+      var a = thing.xy_tabletop_to_local(v.x, v.y); log('     on piece:', a);
 
       // The piece we click is the snap leader
       thing.is_snap_leader = true;
@@ -2135,6 +2135,7 @@ class _Thing {
     r_step        : 45,               // How many degrees to rotate when taking a rotation step.
     rotate_with_view : false,         // Whether the piece should retain its orientation with respect to the screen when rotating the view / table
     text          : false,            // Whether to include a text layer 
+    anchor        : {x:0.5, y:0.5},   // Anchor point for the graphic
 
     // Targeted x, y, r, and s
     x : 0,
@@ -2239,7 +2240,7 @@ class _Thing {
     if(this.settings.text) {
       this.text_graphics = new PIXI.Graphics();
       this.text          = new PIXI.Text();
-      this.text.anchor.set(0.5,0.5);
+      this.text.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
       this.text.scale.x = 0.5;
       this.text.scale.y = 0.5;
     }
@@ -2343,7 +2344,7 @@ class _Thing {
       var sprite = new PIXI.Sprite(this.textures[n][0]);
       
       // Center the image
-      sprite.anchor.set(0.5, 0.5);
+      sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
     
       // Keep it in our personal list, and add it to the container
       this.sprites.push(sprite);
@@ -2491,8 +2492,9 @@ class _Thing {
     }
 
     // Render this to a sprite for nicer-looking images
+    if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
     this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
-    this.graphics_sprite.anchor.set(0.5, 0.5);
+    this.graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
     this.refill_container();
   }
 
@@ -2500,7 +2502,7 @@ class _Thing {
    * Selects the thing visually and adds it to the approriate list of selected things.
    */
   select(team, do_not_update_q_out) { //log('thing.select()', this.id_thing, team, do_not_update_q_out, this.team_select, this.id_client_hold);
-
+    
     // If team is not specified (used by process_queues()), there is no change, or
     // it is being held by someone who is not on the same team, do nothing.
     if(team == undefined || team == this.team_select 
@@ -2538,8 +2540,8 @@ class _Thing {
   unselect(do_not_update_q_out) { //log('thing.unselect()', this.id_thing, this.selected_id);
 
     // If we're already unselected, or it is held by someone do nothing
-    if(this.team_select < 0 && this.id_client_hold) return;
-
+    if(this.team_select < 0 || this.id_client_hold) return;
+    
     // Remove it from the list
     if(VGT.things.selected[this.team_select] &&
        VGT.things.selected[this.team_select][this.id_thing])
@@ -2553,8 +2555,7 @@ class _Thing {
     this.graphics.clear();
     
     // Render to a graphics sprite for refill
-    this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
-    this.graphics_sprite.anchor.set(0.5, 0.5);
+    if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
     this.refill_container();
 
   } // End of unselect()
@@ -2780,8 +2781,9 @@ class _Thing {
     [this.width, this.height] = this.get_dimensions();
 
     // Render this to a sprite here, so it's not bogging down the refill_container calls.
+    if(this.text_graphics_sprite) this.text_graphics_sprite.destroy(true); delete this.text_graphics_sprite // Prevent memory leak!
     this.text_graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.text_graphics)); 
-    this.text_graphics_sprite.anchor.set(0.5, 0.5);
+    this.text_graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
     this.refill_container();
   }
 
@@ -2886,7 +2888,7 @@ class _Thing {
    * @param {boolean} do_not_reset_R        if true, do not reset the auxiliary rotation thing.R when setting r.
    */
   set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) { 
-    //console.log('set_xyrs()', x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R)
+    //log('set_xyrs()', x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R)
 
     // Now for each supplied coordinate, update and send
     if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}
@@ -3057,8 +3059,8 @@ class _Things {
     var dx = sorted[0].settings.expand_dx;
     var dy = sorted[0].settings.expand_dy;
     if(!Nx) Nx = 10;
-    if(!dx) dx = sorted[0].width;
-    if(!dy) dy = sorted[0].height;
+    if(!dx) dx = sorted[0].width*sorted[0].scale;
+    if(!dy) dy = sorted[0].height*sorted[0].scale;
 
     // Assemble a 2d array, one element per row
     var row=0;
@@ -3362,7 +3364,11 @@ VGT.Piece  = _Piece;
 /** Animated Polygon */
 class _Polygon extends _Thing { 
 
-  constructor(vs, settings) {
+  default_settings = {
+    vertices: undefined,     // List of vertices, e.g. [[x1,y1],[x2,y2],...]
+  }
+
+  constructor(settings) {
 
     if(!settings) settings = {};
     settings.images = null; // No textures, just GL drawing.
@@ -3377,7 +3383,7 @@ class _Polygon extends _Thing {
     this.vertices = [];
 
     // If we supplied vertices, add them
-    if(vs) this.add_vertices(vs);
+    if(settings.vertices) this.add_vertices(settings.vertices);
 
     // If we're supposed to redraw
     this.needs_redraw = false;
@@ -3444,8 +3450,7 @@ class _Polygon extends _Thing {
     this.graphics.clear();
 
     // Render to a graphics sprite for refill
-    this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
-    this.graphics_sprite.anchor.set(0.5, 0.5);
+    if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
     this.refill_container();
 
     // No need to redraw; that's the whole point.
@@ -3458,15 +3463,16 @@ class _Polygon extends _Thing {
     // Get the list of pixi points with the most recent value
     var ps = [];
     for(var n in this.vertices) ps.push(new PIXI.Point(this.vertices[n][0].value, this.vertices[n][1].value));
-    
+    //console.log('HAY', this.vertices[0][0].value, this.vertices[0][1].value, this.vertices[2][0].value, this.vertices[2][1].value);
     this.graphics.clear();
     this.graphics.beginFill(this.get_tint(), 1);
     this.graphics.drawPolygon(ps);
     this.graphics.endFill();
 
     // Render it to a sprite for refill
+    if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
     this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
-    this.graphics_sprite.anchor.set(0.5, 0.5);
+    this.graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
     this.refill_container();
 
     // Don't need to do this again!
@@ -3537,7 +3543,7 @@ class _Hand extends _Thing {
     this.id_client = 0;
 
     // Create the selection rectangle, without adding it to the "playable" lists and q's
-    this.polygon = new _Polygon([[0,0],[0,0],[0,0],[0,0]], {layer: VGT.tabletop.LAYER_SELECT}); 
+    this.polygon = new VGT.Polygon({vertices: [[0,0],[0,0],[0,0],[0,0]], layer: VGT.tabletop.LAYER_SELECT}); 
     this.polygon.container.alpha = 0.4;
 
     // Create a nameplate with the hand
@@ -3576,7 +3582,7 @@ class _Hand extends _Thing {
   /** Other animations associate with the hand. */
   animate_other(delta) { 
     
-    // If it has vd set to a vector (not false or undefined), update the multi-piece selection rectangle
+    // If it has vd (vector of mouse down) set to a vector (not false or undefined), update the multi-piece selection rectangle
     if(this.vd) {
 
       // Get the distance vector traveled since the pointer came down
@@ -3584,7 +3590,7 @@ class _Hand extends _Thing {
       var vs = [ [0,0], [-v[0],0], [-v[0],-v[1]], [0,-v[1]] ];
       
       // If I have a hand, update the selection rectangle to extend back to where the click originated
-      this.polygon.set_vertices(vs, true, true ); // immediate, do_not_update_q_out (if I end up coding this...)
+      this.polygon.set_vertices(vs, true, true ); // immediate, do_not_update_q_out
     
       // At a reduced frame rate, check for pieces within the polygon
       if(VGT.pixi.n_loop % 1 == 0 && this.is_me()) {
@@ -3595,12 +3601,10 @@ class _Hand extends _Thing {
         // Loop over the pieces and select those that are in it.
         var p;
         for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
-          if(poly.contains(p.x.value, p.y.value)) 
-            p.select(VGT.clients.me.team);
-          else if(this.originally_selected && !this.originally_selected.includes(p))
-            p.unselect();
-        }
-        
+          if(poly.contains(p.x.value, p.y.value))       p.select(VGT.clients.me.team);
+          else if(!this.originally_selected || this.originally_selected 
+              && !this.originally_selected.includes(p)) p.unselect();
+        }  
       } // End of reduced frame rate
     } // End of if(vd)
 
@@ -3731,7 +3735,7 @@ class _Clients {
     var s = load_cookie('my_nameplate_xyrs');
     if(s != "") {
       var xyrs = eval('['+s+']');
-      console.log('  Updating nameplate xyrs', xyrs);
+      log('  Updating nameplate xyrs', xyrs);
       this.me.nameplate.set_xyrs(...xyrs, true); // immediate
       this.me.nameplate.show();
       

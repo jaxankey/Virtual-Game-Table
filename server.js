@@ -512,9 +512,10 @@ io.on('connection', function(socket) {
 
 // Send a full update to everyone, excluding recently touched pieces
 function send_full_update() { 
-
+  fun.log_date('send_full_update()', Object.keys(sockets).length, 'sockets');
+    
   // Send the queue if any sockets exist.
-  if(sockets.length) {
+  if(Object.keys(sockets).length) {
 
     // Create a similar object to state.pieces, but without the unneeded information
     data = { ...state.pieces };
@@ -524,8 +525,7 @@ function send_full_update() {
       delete data[id]['l.i'];
       delete data[id]['l.n'];
     }
-
-    fun.log_date('send_full_update()', Object.keys(data).length, 'pieces');
+    fun.log_date( '  ', Object.keys(data).length, 'pieces');
     delay_send(io, 'q', [0, 0, data, {}]);
   }
 
