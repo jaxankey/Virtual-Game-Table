@@ -922,7 +922,7 @@ class _Tabletop {
       VGT.interaction.onpointermove(VGT.interaction.last_pointermove_e);
 
     // Set the hand scale
-    if(Math.abs(vs) > 1e-8) VGT.hands.set_scale(1.0/this.s.value, true);
+    if(Math.abs(vs) > 1e-8) VGT.hands.set_scale(1.0/this.s.value);
 
     // Redraw selection graphics if the scale is still changing (gets heavy with lots of selection; why scale?)
     /*if(Math.abs(vs) > 1e-6)
@@ -3549,6 +3549,8 @@ class _Hand extends _Thing {
     // Create a nameplate with the hand
     this.nameplate = new _NamePlate({text:'player', layer: VGT.tabletop.LAYER_NAMEPLATES});
     this.nameplate.hand = this;
+
+    VGT.hands.set_scale(1.0/VGT.tabletop.s.value);
   }
 
   /** Sets the tint of all the textures AND the selection box */
