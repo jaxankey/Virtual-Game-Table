@@ -235,7 +235,19 @@ var settings = {
 pieces.player_boards = VGT.add_pieces(5, settings);
 
 
-////////////////////////////////// SMALL BUILDINGS, ONE WORKER
+////////////////////////////////// SMALL BUILDINGS
+
+// Snap grid just for placing pieces during setup. Doesn't snap anything
+var grid_small_buildings = new VGT.SnapGrid({
+  groups: [], // list of snap groups (no snaps)
+  x0: -215, // Origin of grid, x-coordinate
+  y0: -320,   // Origin of grid, y-coordinate                   
+  ax: 145.5, // Basis vector 'a', x-coordinate
+  ay: 0.2,      // Basis vector 'a', y-coordinate
+  bx: -0.3,      // Basis vector 'b', x-coordinate
+  by: 76.7,   // Basis vector 'b', y-coordinate
+})
+
 var settings = {
   layer:  2,                             // Layer of these pieces
   groups: ['pieces', 'small_buildings'], // List of groups to which this piece belongs

@@ -2002,12 +2002,19 @@ class _SnapGrid {
     VGT.snaps.add_snap(this);
   }
 
-  // Returns {x:, y:} of grid point n,m relative to the origin x0, y0
+  // Returns {x:, y:} of grid point n,m (integer lattice basis vector steps) relative to the origin x0, y0
   get_grid_xy(n,m) {
     return {
       x: this.settings.ax*n + this.settings.bx*m + this.settings.x0,
       y: this.settings.ay*n + this.settings.by*m + this.settings.y0
     }
+  }
+
+  // Sends the supplied piece to grid point n,m (integer lattice basis vector steps) relative to the origin x0, y0
+  send_piece_to_grid_xy(piece, n, m) {
+    var v = this.get_grid_xy(n,m);
+    piece.set_xyrs(v.x, v.y);
+    return v;
   }
 
   // Returns a distance score (usually distance squared for speed reasons) between the thing target and the snap
@@ -3490,6 +3497,7 @@ class _NamePlate extends _Piece {
 
   constructor(settings) { if(!settings) settings = {};
     super(settings);
+    this.show();
   }
 
   // Called after set_xyrs(); here we just save our location with a cookie
