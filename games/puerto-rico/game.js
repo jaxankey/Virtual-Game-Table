@@ -98,7 +98,6 @@ game = new VGT.Game({
   nameplate_xyrs : [0,-460,0,1],
 });
 
-
 // My pieces object
 var P = {};
 
@@ -326,7 +325,7 @@ var settings = {
   shovel: ['workers'],         // Which groups this piece will shovel when selecting
 
   // Coordinates and scale
-  x: 0,
+  x: 400,
   y: 0,
   r: 0,
   s: 0.5,
@@ -344,9 +343,13 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-P.tiles = [];
-P.corns = VGT.add_pieces(5, settings, ['tile-corn.png', 'tile-back.png']);
-
+P.tiles_corn    = VGT.add_pieces(10, settings, ['tile-back.png', 'tile-corn.png']);
+P.tiles_indigo  = VGT.add_pieces(12, settings, ['tile-back.png', 'tile-indigo.png']);
+P.tiles_tobacco = VGT.add_pieces(9, settings, ['tile-back.png', 'tile-tobacco.png']);
+P.tiles_coffee  = VGT.add_pieces(8, settings, ['tile-back.png', 'tile-coffee.png']);
+P.tiles_sugar   = VGT.add_pieces(11, settings, ['tile-back.png', 'tile-sugar.png']);
+P.tiles_quarry  = VGT.add_pieces(8, settings, ['tile-back.png', 'tile-quarry.png']);
+P.tiles = [...P.tiles_corn, ...P.tiles_indigo, ...P.tiles_tobacco, ...P.tiles_coffee, ...P.tiles_sugar, ...P.tiles_quarry];
 
 //////////////////////////////////// WORKERS
 var settings = {
@@ -356,14 +359,14 @@ var settings = {
 
   // Coordinates and scale
   x: 400,
-  y: 300,
+  y: 200,
   r: 0,
   s: 0.5, 
 
 }; // end of settings
 
 // Create pieces
-var workers = []; for(var n=0; n<5; n++) workers.push(new VGT.Piece({...settings, images:[['colonist.png']]}));
+P.colonists = VGT.add_pieces(8, settings, 'colonist.png');
 
 
 

@@ -55,6 +55,8 @@ CURRENTLY
 // Object that holds all the relevant namespace for a game designer.
 var VGT = {
 
+  debug_level : 3,
+
   /**
    * Creates and returns a new piece according to the specified settings
    * @param {Object} settings  Piece specifications
@@ -78,7 +80,7 @@ var VGT = {
     return pieces;
   },
 
-};
+}; // End of VGT base object
 
 // Object for interacting with the html page.
 class _Html {
@@ -105,7 +107,8 @@ class _Html {
   /**
    * Updates the chat box with the supplied name and message.
    */
-  chat(name, message) {
+  chat(name, message) { log('Html.chat()', name, message);
+
     // messages div object
     var m = VGT.html.messages;
 
@@ -120,7 +123,7 @@ class _Html {
 
   // Updates the client information in the GUI
   rebuild_client_table() {
-    log('VGT.html.rebuild_client_table()');
+    log('Html.rebuild_client_table()');
 
     // Clear out the clients table
     var clients_table = document.getElementById('clients');
@@ -3573,7 +3576,7 @@ class _NamePlate extends _Thing {
       save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target,this.s.target]);
   }
 } // End of NamePlate
-VGT.NamePlate = _NamePlate;
+//VGT.NamePlate = _NamePlate;
 
 class _NamePlates {
   
@@ -3588,7 +3591,7 @@ class _NamePlates {
   }  
 }
 VGT.nameplates = new _NamePlates();
-VGT.NamePlates = _NamePlates;
+//VGT.NamePlates = _NamePlates;
 
 /** Floating hand on top of everything. */
 class _Hand extends _Thing {
