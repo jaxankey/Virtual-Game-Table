@@ -93,8 +93,9 @@ var images = {
 }
 
 // Create an instance of the Game object (stores itself in VGT.game)
-new VGT.Game({
+game = new VGT.Game({
   setups: ['3 Players', '4 Players', '5 Players'],
+  nameplate_xyrs : [0,-460,0,1],
 });
 
 

@@ -21,9 +21,10 @@
 var state = {
   slots  : 32,              // Maximum number of clients
   max_name_length: 20,      // Maximum number of characters in each player's name
-  clients: {},              // List of client data
-  pieces : {},              // List of piece properties
-  hands  : {},              // list of hand properties
+  clients    : {},              // List of client data
+  pieces     : {},              // List of piece properties
+  nameplates : {},              // List of nameplate properties
+  hands      : {},              // List of hand properties
   t_simulated_lag : 0,      // Simulated lag when routing packets.
   t_full_update   : 4000,   // How often to send a full update
 }; 
@@ -32,6 +33,7 @@ var state = {
 var state_keys_no_set = [
   'clients', 
   'pieces', 
+  'nameplates',
   'hands',
   'slots',
 ];
@@ -422,35 +424,34 @@ io.on('connection', function(socket) {
   }
   socket.on('z', function(data) {delay_function(on_z, data)});
 
-
-
-  // Client has sent a q of changes
-  function on_q(data) { fun.log_date('NETR_q_'+String(socket.id), 'nq =', data[0], 'with', Object.keys(data[1]).length, 'Pieces', Object.keys(data[2]).length, 'Hands');
-    var nq       = data[0];
-    var q_pieces = data[1];
-    var q_hands  = data[2];
-    var k, update_server_piece;
+  /**
+   * Loops over the q, determines whether to update the state or the q (IN PLACE), and returns the q to send to everyone else
+   * @param {Object} q          Incoming q object, e.g. q_pieces
+   * @param {Object} state_list Associated state object, e.g. state.pieces
+   */
+  function handle_q_in(q, state_list, nq) {
+    var k, update_server_piece; // Flag to reuse below
 
     // Loop over the incoming pieces q by id.
-    for(var id in q_pieces) { 
+    for(var id in q) { 
 
       // Make sure we have a place to hold the data in the global list
-      if(!state.pieces[id]) state.pieces[id] = {};
+      if(!state_list[id]) state_list[id] = {};
 
       // First make sure the holder exists in the current socket list
-      if( state.pieces[id]['ih'] // If there is a holder id provided
-      && !Object.keys(sockets).includes(String(state.pieces[id]['ih'])) ) {
-        delete state.pieces[id]['ih'];
-        delete state.pieces[id]['ih.i'];
-        delete state.pieces[id]['ih.n'];
+      if( state_list[id]['ih'] // If there is a holder id provided
+      && !Object.keys(sockets).includes(String(state_list[id]['ih'])) ) {
+        delete state_list[id]['ih'];
+        delete state_list[id]['ih.i'];
+        delete state_list[id]['ih.n'];
       }
 
       // If no one is hold it (0 or undefined) OR the holder is this client, set a flag to update the server state for this piece
-      // Otherwise, we update the incoming q_pieces state with that of the server
-      update_server_piece = !state.pieces[id]['ih'] || state.pieces[id]['ih'] == socket.id;    
+      // Otherwise, we update the incoming q state with that of the server
+      update_server_piece = !state_list[id]['ih'] || state_list[id]['ih'] == socket.id;    
 
       // Loop over attributes and transfer or defer to state, depending on who is holding the piece
-      for(k in q_pieces[id]) {
+      for(k in q[id]) {
         
         // Immediate flag to relay, not store in the server
         if(k == 'now') continue;
@@ -459,23 +460,35 @@ io.on('connection', function(socket) {
         if(update_server_piece) {
 
           // Update the state with the value, last setter, and last setter nq.
-          state.pieces[id][k]      = q_pieces[id][k];
-          state.pieces[id][k+'.i'] = q_pieces[id][k+'.i'] = socket.id;
-          state.pieces[id][k+'.n'] = q_pieces[id][k+'.n'] = nq;
+          state_list[id][k]      = q[id][k];
+          state_list[id][k+'.i'] = q[id][k+'.i'] = socket.id;
+          state_list[id][k+'.n'] = q[id][k+'.n'] = nq;
         }
         
-        // Otherwise overwrite the q_pieces entry
+        // Otherwise overwrite the q entry
         else {
           // Defer to the state's value, last setter, and last setter's nq
-          q_pieces[id][k]      = state.pieces[id][k];
-          q_pieces[id][k+'.i'] = state.pieces[id][k+'.i'];
-          q_pieces[id][k+'.n'] = state.pieces[id][k+'.i'];
+          q[id][k]      = state_list[id][k];
+          q[id][k+'.i'] = state_list[id][k+'.i'];
+          q[id][k+'.n'] = state_list[id][k+'.i'];
         }
       } // end of corrective loop over attributes
     } // end of loop over pieces
+  }
 
+  // Client has sent a q of changes
+  function on_q(data) { fun.log_date('NETR_q_'+String(socket.id), 'nq =', data[0], 'with', Object.keys(data[1]).length, 'Pieces', Object.keys(data[2]).length, 'Hands', Object.keys(data[3]).length, 'Nameplates');
+    var nq           = data[0];
+    var q_pieces     = data[1];
+    var q_hands      = data[2];
+    var q_nameplates = data[3];
+    var k;
 
-    // Loop over the hands q.
+    // Handle the piece-like q's
+    handle_q_in(q_pieces,     state.pieces,     nq);
+    handle_q_in(q_nameplates, state.nameplates, nq);
+    
+    // Loop over the hands q. Simpler because no one grabs them...
     for(var id in q_hands) {
 
       // Store the supplied properties
@@ -483,7 +496,7 @@ io.on('connection', function(socket) {
       for(var k in q_hands[id]) state.hands[id][k] = q_hands[id][k];
     }
 
-    delay_send(io, 'q', [socket.id, nq, q_pieces, q_hands]);
+    delay_send(io, 'q', [socket.id, nq, q_pieces, q_hands, q_nameplates]);
     //broadcast('q', [socket.id, q_pieces, q_hands]); // Leads to unsync
   }
   socket.on('q', function(data) {delay_function(on_q, data)});

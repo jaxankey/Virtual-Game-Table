@@ -210,14 +210,16 @@ class _Net {
     this.clients      = {}; // Client objects by client id
     
     // Queue of outbound information for the next housekeeping.
-    this.q_pieces_out   = {}; 
-    this.q_hands_out    = {}; 
-    this.q_z_out        = []; // Ordered list of requested z-operations
+    this.q_pieces_out     = {};
+    this.q_hands_out      = {}; 
+    this.q_nameplates_out = {}; 
+    this.q_z_out          = []; // Ordered list of requested z-operations
 
     // Queue of inbound information for the next housekeeping.
-    this.q_pieces_in    = {}; 
-    this.q_hands_in     = {};
-    this.q_z_in         = []; // Ordered list of z-operations to implement
+    this.q_pieces_in     = {}; 
+    this.q_hands_in      = {};
+    this.q_nameplates_in = {};
+    this.q_z_in          = []; // Ordered list of z-operations to implement
     
     // Last sent q packet number
     this.nq = 0;  
@@ -238,7 +240,8 @@ class _Net {
     // object, indexed by layer, of lists of piece datas having z-order to set
     var zs = {}; 
 
-    // Loop over the pieces in the q to handle 'simple' quantities
+
+    //// PIECES
     for(var id_piece in this.q_pieces_in) { 
       c = this.q_pieces_in[id_piece]; // incoming changes for this thing
       p = VGT.pieces.all[id_piece];   // the actual piece object
@@ -260,48 +263,8 @@ class _Net {
           zs[c.l].push(c); 
         } 
 
-        // We do not want to let the server change anything about the pieces we're holding, 
-        // UNLESS it's overriding our hold status, for example, when someone else grabbed it first. 
-        // As such, we should update the hold status first!
-        //
-        // If two clients grab the same piece at nearly the same time, 
-        //   - Their packets (sender net ids ih.i = 1 and 2, say) will reach the server at nearly the same time. 
-        //   - The server will update the hold status of the piece based on the first-arriving packet (ih.i=ih=1, say).
-        //     The second-arriving packet (ih.i=ih=2) should be corrected (ih.i=2, ih.i=1 or ih.i=ih=undefined) 
-        //     to have the first person holding it (or no information) before re-broadcast
-        //       During this round-trip time, the second person will be able to move the piece around until the first packet arrives.
-        //         This packet will have ih=ih.i=1 the holder should be switched to the first player.
-        //   - The second packet, with the corrected (or absent) change of who is holding will arrive next.
-        //         This packet will have ih=1 or undefined and ih.i=2 or undefined
-        //
-        
-        // All attributes have 
-        //   - their value, e.g. 'ih' for the id of the holder
-        //   - the id of the sender, e.g. 'ih.i' for the holder sender
-        //   - the sender's incrementing packet index, e.g. 'ih.n'
-
-        // Before deciding what to do with the other attributes, we need to
-        // update the holder id if necessary. The server's job is to ensure that it relays the correct holder always.
-        // ALSO we should ensure that, if it's either someone else's packet, or it's ours and we 
-        // have not since queued a newer packet updating the hold status
-        if(c['ih'] != undefined && (c['ih.i'] != VGT.net.id || c['ih.n'] >= p.last_nqs['ih'])) {
-          p.hold(c.ih, true, true); // client_id, force, do_not_update_q_out)
-        } 
-
-        // Now update the different attributes only if we're not holding it (our hold supercedes everything)
-        if(p.id_client_hold != VGT.net.id) {
-          var immediate = c['now'];
-
-          // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update          immediate, do_not_update_q_out, do_not_reset_R
-          if(c['x']  != undefined && (c['x.i']  != VGT.net.id || c['x.n']  >= p.last_nqs['x'] )) p.set_xyrs(c.x, undefined, undefined, undefined, immediate, true, true);
-          if(c['y']  != undefined && (c['y.i']  != VGT.net.id || c['y.n']  >= p.last_nqs['y'] )) p.set_xyrs(undefined, c.y, undefined, undefined, immediate, true, true);
-          if(c['r']  != undefined && (c['r.i']  != VGT.net.id || c['r.n']  >= p.last_nqs['r'] )) p.set_xyrs(undefined, undefined, c.r, undefined, immediate, true, true);
-          if(c['s']  != undefined && (c['s.i']  != VGT.net.id || c['s.n']  >= p.last_nqs['s'] )) p.set_xyrs(undefined, undefined, undefined, c.s, immediate, true, true);
-          if(c['R']  != undefined && (c['R.i']  != VGT.net.id || c['R.n']  >= p.last_nqs['R'] )) p.set_R   (c.R,                                  immediate, true);
-          if(c['n']  != undefined && (c['n.i']  != VGT.net.id || c['n.n']  >= p.last_nqs['n'] )) p.set_texture_index(c.n, true);
-          if(c['ts'] != undefined && (c['ts.i'] != VGT.net.id || c['ts.n'] >= p.last_nqs['ts'])) p.select(c.ts, true);
-
-        } // End of we are not holding this.
+        // Process the data for this piece, determine and set holder, selected, xyrs, etc.
+        p.process_q_data(c);
       
       } // End of valid piece
     
@@ -310,6 +273,23 @@ class _Net {
     // Clear out the piece queue
     this.q_pieces_in = {}; 
   
+
+
+    //// NAMEPLATES
+    for(var id_nameplate in this.q_nameplates_in) { 
+      c = this.q_nameplates_in[id_nameplate]; // incoming changes for this thing
+      p = VGT.nameplates.all[id_nameplate];   // the actual piece object
+
+      // If it's a valid piece (sometimes it might be a fluctuating piece id, like nameplates)
+      // Determine and set the holder, selection, xyrs, etc
+      if(p) p.process_q_data(c);
+          
+    }; // End of loop over q_nameplates_in
+    
+    // Clear out the piece queue
+    this.q_nameplates_in = {}; 
+  
+
     // Loop over the layers, sorting by the desired z, and then sending to that z
     for(l in zs) { if(zs[l].length == 0) continue;
 
@@ -349,17 +329,18 @@ class _Net {
     // OUTBOUND
 
     // Send the outbound information
-    if(Object.keys(this.q_pieces_out).length 
-    || Object.keys(this.q_hands_out ).length) {
+    if(Object.keys(this.q_pieces_out    ).length 
+    || Object.keys(this.q_hands_out     ).length
+    || Object.keys(this.q_nameplates_out).length) {
 
       // Send the outbound information and clear it.
       this.nq++;
-      log(    'NETS_q_'+String(VGT.net.id), this.nq, this.q_pieces_out, this.q_hands_out);
-      this.io.emit('q', [this.nq, this.q_pieces_out, this.q_hands_out]);
-      this.q_pieces_out = {};
-      this.q_hands_out  = {};
+      log(    'NETS_q_'+String(VGT.net.id), this.nq, this.q_pieces_out, this.q_hands_out, this.q_nameplates_out);
+      this.io.emit('q', [this.nq, this.q_pieces_out, this.q_hands_out, this.q_nameplates_out]);
+      this.q_pieces_out     = {};
+      this.q_hands_out      = {};
+      this.q_nameplates_out = {};
     }
-
   } // End of process_queues()
 
   // Processes the inbound and outbound z queues
@@ -400,14 +381,16 @@ class _Net {
   on_q(data) { if(!this.ready) return; log('NETR_q_'+String(data[0]), data[1], data);
   
     // Unpack
-    var id_client = data[0];
-    var nq        = data[1];
-    var q_pieces  = data[2];
-    var q_hands   = data[3];  
+    var id_client    = data[0];
+    var nq           = data[1];
+    var q_pieces     = data[2];
+    var q_hands      = data[3];
+    var q_nameplates = data[4];  
 
     // Update the q's
-    this.transfer_to_q_in(q_pieces, this.q_pieces_in, id_client, nq);
-    this.transfer_to_q_in(q_hands,  this.q_hands_in,  id_client, nq);
+    this.transfer_to_q_in(q_pieces,     this.q_pieces_in,     id_client, nq);
+    this.transfer_to_q_in(q_hands,      this.q_hands_in,      id_client, nq);
+    this.transfer_to_q_in(q_nameplates, this.q_nameplates_in, id_client, nq);
   
   } // end of on_q
 
@@ -432,7 +415,9 @@ class _Net {
     this.id = parseInt(id);
 
     // Process the incoming pieces, ignoring the nameplates, basically
-    this.q_pieces_in = server_state['pieces'];
+    this.q_pieces_in     = server_state['pieces'];
+    //this.q_nameplates_in = server_state['nameplates']; // Nameplates are not even assigned yet
+    //this.q_hands_in      = server_state['hands'];
     this.process_queues();
 
     // Rebuild the client object, hands, nameplates and HTML; 
@@ -2600,6 +2585,10 @@ class _Thing {
       var q_out = VGT.net.q_hands_out;
       var id    = this.id_hand;
     }
+    else if(this.type == 'NamePlate') {
+      var q_out = VGT.net.q_nameplates_out;
+      var id    = this.id_nameplate;
+    }
     else return this;
 
     // If we are only updating what exists, look for the key
@@ -2627,6 +2616,55 @@ class _Thing {
     // Remember the index that will be attached to this on the next process_qs
     this.last_nqs[qkey] = VGT.net.nq+1;
     return this;
+  }
+
+  /**
+   * Import the data sent from the server for this piece
+   * @param {Object} d Data packet for this piece
+   */
+  process_q_data(d) { 
+
+    // We do not want to let the server change anything about the pieces we're holding, 
+    // UNLESS it's overriding our hold status, for example, when someone else grabbed it first. 
+    // As such, we should update the hold status first!
+    //
+    // If two clients grab the same piece at nearly the same time, 
+    //   - Their packets (sender net ids ih.i = 1 and 2, say) will reach the server at nearly the same time. 
+    //   - The server will update the hold status of the piece based on the first-arriving packet (ih.i=ih=1, say).
+    //     The second-arriving packet (ih.i=ih=2) should be corrected (ih.i=2, ih.i=1 or ih.i=ih=undefined) 
+    //     to have the first person holding it (or no information) before re-broadcast
+    //       During this round-trip time, the second person will be able to move the piece around until the first packet arrives.
+    //         This packet will have ih=ih.i=1 the holder should be switched to the first player.
+    //   - The second packet, with the corrected (or absent) change of who is holding will arrive next.
+    //         This packet will have ih=1 or undefined and ih.i=2 or undefined
+    //
+    
+    // All attributes have 
+    //   - their value, e.g. 'ih' for the id of the holder
+    //   - the id of the sender, e.g. 'ih.i' for the holder sender
+    //   - the sender's incrementing packet index, e.g. 'ih.n'
+
+    // Before deciding what to do with the other attributes, we need to
+    // update the holder id if necessary. The server's job is to ensure that it relays the correct holder always.
+    // ALSO we should ensure that, if it's either someone else's packet, or it's ours and we 
+    // have not since queued a newer packet updating the hold status
+    if( d['ih']   != undefined // If there is a client id for the hold (resolved already at server)
+    && ( d['ih.i'] != VGT.net.id || d['ih.n'] >= this.last_nqs['ih'] ) ) this.hold(d.ih, true, true); // client_id, force, do_not_update_q_out
+
+    // Now update the different attributes only if we're not holding it (our hold supercedes everything)
+    if(this.id_client_hold != VGT.net.id) {
+      var immediate = d['now'];
+
+      // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update          immediate, do_not_update_q_out, do_not_reset_R
+      if(d['x']  != undefined && (d['x.i']  != VGT.net.id || d['x.n']  >= this.last_nqs['x'] )) this.set_xyrs(d.x, undefined, undefined, undefined, immediate, true, true);
+      if(d['y']  != undefined && (d['y.i']  != VGT.net.id || d['y.n']  >= this.last_nqs['y'] )) this.set_xyrs(undefined, d.y, undefined, undefined, immediate, true, true);
+      if(d['r']  != undefined && (d['r.i']  != VGT.net.id || d['r.n']  >= this.last_nqs['r'] )) this.set_xyrs(undefined, undefined, d.r, undefined, immediate, true, true);
+      if(d['s']  != undefined && (d['s.i']  != VGT.net.id || d['s.n']  >= this.last_nqs['s'] )) this.set_xyrs(undefined, undefined, undefined, d.s, immediate, true, true);
+      if(d['R']  != undefined && (d['R.i']  != VGT.net.id || d['R.n']  >= this.last_nqs['R'] )) this.set_R   (d.R,                                  immediate, true);
+      if(d['n']  != undefined && (d['n.i']  != VGT.net.id || d['n.n']  >= this.last_nqs['n'] )) this.set_texture_index(d.n, true);
+      if(d['ts'] != undefined && (d['ts.i'] != VGT.net.id || d['ts.n'] >= this.last_nqs['ts'])) this.select  (d.ts, true);
+
+    } // End of we are not holding this.
   }
 
   // Returns the z-order index (pieces with lower index are behind this one)
@@ -3508,12 +3546,24 @@ class _Polygons {
 VGT.polygons = new _Polygons();
 VGT.Polygons = _Polygons;
 
-class _NamePlate extends _Piece {
+class _NamePlate extends _Thing {
 
   constructor(settings) { if(!settings) settings = {};
+    
+    // Include the sets and run the usual initialization
+    settings.sets = [VGT.nameplates];
     super(settings);
-    this.show();
+
+    // Stick it at the starting point
+    if(VGT.game.settings.nameplate_xyrs) this.set_xyrs(...VGT.game.settings.nameplate_xyrs);
+
+    // Remember the type
+    this.type = 'NamePlate';
   }
+
+  // No z-setting or q for this; that's only for pieces
+  // JACK: Could have the z requests by thing ID? Unfortunately things are not well-ordered
+  set_z() {};
 
   // Called after set_xyrs(); here we just save our location with a cookie
   after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) {
@@ -3522,10 +3572,26 @@ class _NamePlate extends _Piece {
     this.show();
 
     // If it's associated with my hand, save it
-    if(this.hand.id_client == VGT.clients.me.id_client) 
+    if(this.hand && this.hand.id_client == VGT.clients.me.id_client) 
       save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target,this.s.target]);
   }
 } // End of NamePlate
+VGT.NamePlate = _NamePlate;
+
+class _NamePlates {
+  
+  constructor() {
+    this.all = [];
+  }
+
+  // Adds a thing to the list, and queues it for addition to the table. 
+  add_thing(nameplate) {
+    nameplate.id_nameplate = this.all.length;
+    this.all.push(nameplate);
+  }  
+}
+VGT.nameplates = new _NamePlates();
+VGT.NamePlates = _NamePlates;
 
 /** Floating hand on top of everything. */
 class _Hand extends _Thing {
@@ -3651,13 +3717,7 @@ class _Hands { constructor() {this.all = [];}
   get_unused_hand() {
     
     // Loop over hands trying to find a free one
-    for(var l in this.all) if(this.all[l].id_client == 0) {
-      
-      // Show the nameplate and return the hand.
-      this.all[l].nameplate.show();
-      return this.all[l];
-    }
-
+    for(var l in this.all) if(this.all[l].id_client == 0) return this.all[l];
 
     // If we haven't returned yet, we need a new one
     return new _Hand();
@@ -3670,7 +3730,7 @@ class _Hands { constructor() {this.all = [];}
     // And make the nameplate invisible
     for(var l in this.all) {
       this.all[l].id_client = 0; 
-      this.all[l].nameplate.hide();
+      this.all[l].nameplate.hide(); // Clears unassigned nameplates
     }
   }
 
@@ -3698,7 +3758,7 @@ class _Clients {
     this.all = {};
   }
 
-  /** Rebuilds the client list and GUI based on VGT.net.clients. */
+  /** CLIENTS Rebuilds the client list and GUI based on VGT.net.clients. */
   rebuild() {
     log('VGT.clients.rebuild()');
 
@@ -3720,9 +3780,7 @@ class _Clients {
         hand  : VGT.hands.get_unused_hand(),
         id_client : c.id,
       }
-      this.all[c.id].nameplate = this.all[c.id].hand.nameplate;
-      this.all[c.id].nameplate.unselect();
-
+      
       // Set the hand id_client
       this.all[c.id].hand.id_client = c.id;
       
@@ -3733,13 +3791,18 @@ class _Clients {
       // Update the hand color
       this.all[c.id].hand.set_tint(this.all[c.id].color);
 
+      // Get the nameplate
+      this.all[c.id].nameplate = this.all[c.id].hand.nameplate;
+
       // Update the nameplate and colors
       var color = this.all[c.id].color;
+      
       // If the color is too bright (per ITU-R BT.709 definition of luma), go black with the text
       if(get_luma_ox(color) > 0.7) var text_color = 0x888888;
       else                         var text_color = 0xFFFFFF;
       this.all[c.id].nameplate.set_text(c.name, {fill:text_color}, color);
-      this.all[c.id].nameplate.hide();
+      this.all[c.id].nameplate.unselect(); // Selection doesn't change shape yet, so we unselect it
+      this.all[c.id].nameplate.show();     // Hide it because they get shuffled around and we want them to appear only when they're in their final location
 
     } // End of loop over client list
 
@@ -3753,9 +3816,9 @@ class _Clients {
     var s = load_cookie('my_nameplate_xyrs');
     if(s != "") {
       var xyrs = eval('['+s+']');
+      for(var n in xyrs) if(typeof xyrs[n] != 'number') xyrs[n] = 0; // Bad cookie fixing.
       log('  Updating nameplate xyrs', xyrs);
       this.me.nameplate.set_xyrs(...xyrs, true); // immediate
-      this.me.nameplate.show();
       
       // Force the q update in case the target matches the cookie value, and make it snap immediately
       this.me.nameplate.update_q_out('x', undefined, undefined, true);
@@ -3763,6 +3826,9 @@ class _Clients {
       this.me.nameplate.update_q_out('r', undefined, undefined, true);
       this.me.nameplate.update_q_out('s', undefined, undefined, true);
     }
+
+    // Without a cookie, we need to move this to the starting position
+    else this.me.nameplate.set_xyrs(...VGT.game.settings.nameplate_xyrs);
 
     // Finally, using the current VGT.net.clients, rebuild the html table.
     VGT.html.rebuild_client_table();
@@ -3794,6 +3860,9 @@ class _Game {
 
     // Available game setup modes
     setups : ['Standard'],  // Populates the pull-down menu next to the "New Game" button
+
+    // Locations of the nameplates
+    nameplate_xyrs : [0,0,0,0],
 
     // How long to wait in between housekeepings.
     t_housekeeping   : 100, // For moving pieces around (already locally responsive)
