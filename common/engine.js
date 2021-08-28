@@ -2876,6 +2876,9 @@ class _Thing {
     else       this.container.visible = false;
   }
   set_visible(enabled) {this.show(!enabled);}
+  is_hidden() { return !this.container.visible; }
+  is_showing(){ return  this.container.visible; }
+  is_visible(){ return  this.container.visible; }
 
   // Written right after a 10mg THC capsule kicked in. I'm a lightweight, everyone relax.
   // I will update this if I change anything in this function.
@@ -2890,9 +2893,6 @@ class _Thing {
     // Otherwise, false or null or something.
     return false;
   }
-
-  is_enabled()  {return  this.container.visible;}
-  is_disabled() {return !this.container.visible;}
 
   // Returns true if this thing is in a higher layer or higher index than the supplied thing
   is_higher_than(thing) {
@@ -2937,7 +2937,7 @@ class _Thing {
    * @param {boolean} do_not_reset_R        if true, do not reset the auxiliary rotation thing.R when setting r.
    */
   set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) { 
-    //log('set_xyrs()', x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R)
+    if(this.type=='NamePlate') log('set_xyrs()', x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R)
 
     // Now for each supplied coordinate, update and send
     if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}
@@ -3554,9 +3554,6 @@ class _NamePlate extends _Thing {
     settings.sets = [VGT.nameplates];
     super(settings);
 
-    // Stick it at the starting point
-    if(VGT.game.settings.nameplate_xyrs) this.set_xyrs(...VGT.game.settings.nameplate_xyrs);
-
     // Remember the type
     this.type = 'NamePlate';
   }
@@ -3624,6 +3621,7 @@ class _Hand extends _Thing {
     // Create a nameplate with the hand
     this.nameplate = new _NamePlate({text:'player', layer: VGT.tabletop.LAYER_NAMEPLATES});
     this.nameplate.hand = this;
+    this.nameplate.hide(); // New Hands need to be hidden. The other thing that hides them is free_all_hands()
 
     VGT.hands.set_scale(1.0/VGT.tabletop.s.value);
   }
@@ -3730,7 +3728,7 @@ class _Hands { constructor() {this.all = [];}
     // And make the nameplate invisible
     for(var l in this.all) {
       this.all[l].id_client = 0; 
-      this.all[l].nameplate.hide(); // Clears unassigned nameplates
+      this.all[l].nameplate.hide();                // Clears unassigned nameplates
     }
   }
 
@@ -3765,7 +3763,7 @@ class _Clients {
     // Clear out the list
     this.all = {};
 
-    // Unassign all hands (sets id_client to 0)
+    // Unassign all hands, hide at plates, sets id_client's to 0
     VGT.hands.free_all_hands();
 
     // Loop over the client list
@@ -3802,8 +3800,7 @@ class _Clients {
       else                         var text_color = 0xFFFFFF;
       this.all[c.id].nameplate.set_text(c.name, {fill:text_color}, color);
       this.all[c.id].nameplate.unselect(); // Selection doesn't change shape yet, so we unselect it
-      this.all[c.id].nameplate.show();     // Hide it because they get shuffled around and we want them to appear only when they're in their final location
-
+      
     } // End of loop over client list
 
     // Keep track of me
@@ -3814,21 +3811,29 @@ class _Clients {
 
     // Load my last nameplate position (everyone else does this), set it, and send to everyone.
     var s = load_cookie('my_nameplate_xyrs');
-    if(s != "") {
-      var xyrs = eval('['+s+']');
-      for(var n in xyrs) if(typeof xyrs[n] != 'number') xyrs[n] = 0; // Bad cookie fixing.
-      log('  Updating nameplate xyrs', xyrs);
-      this.me.nameplate.set_xyrs(...xyrs, true); // immediate
-      
-      // Force the q update in case the target matches the cookie value, and make it snap immediately
-      this.me.nameplate.update_q_out('x', undefined, undefined, true);
-      this.me.nameplate.update_q_out('y', undefined, undefined, true);
-      this.me.nameplate.update_q_out('r', undefined, undefined, true);
-      this.me.nameplate.update_q_out('s', undefined, undefined, true);
-    }
 
-    // Without a cookie, we need to move this to the starting position
-    else this.me.nameplate.set_xyrs(...VGT.game.settings.nameplate_xyrs);
+    // With a cookie, we use the cookie value
+    if(s != "") var xyrs = eval('['+s+']');
+
+    // Without a cookie, we need to move OUR nampelate to the starting position and tell everyone about it.
+    else var xyrs = VGT.game.settings.nameplate_xyrs;
+
+    // Fill out / fix the undefineds
+    for(var n in xyrs) if(typeof xyrs[n] != 'number') xyrs[n] = 1;
+
+    // Set the position with a snap and don't tell anyone yet
+    log('Setting my nameplate xyrs to', xyrs[0], xyrs[1], xyrs[2], xyrs[3]);
+    this.me.nameplate.set_xyrs(xyrs[0], xyrs[1], xyrs[2], xyrs[3], true, true); // immediate, do_not_update_q_out
+
+    // Manually force the q update for MY nameplate in case the target matches the cookie value, and make it snap immediately for everyone else
+    this.me.nameplate.update_q_out('x', undefined, undefined, true);
+    this.me.nameplate.update_q_out('y', undefined, undefined, true);
+    this.me.nameplate.update_q_out('r', undefined, undefined, true);
+    this.me.nameplate.update_q_out('s', undefined, undefined, true);
+
+    // Since we know we've got MINE in the right place, show it.
+    // The other nameplates will be shown when we receive the first location.
+    this.me.nameplate.show();
 
     // Finally, using the current VGT.net.clients, rebuild the html table.
     VGT.html.rebuild_client_table();

@@ -303,6 +303,10 @@ io.on('connection', function(socket) {
     if(clients) state.clients = clients;
     else fun.log_date('  ERROR: no clients provided!');
 
+    // Clear out the nameplate & hand data
+    state.nameplates = {};
+    state.hands      = {};
+
     // Send the game state
     delay_send(io, 'clients', clients);
   }
