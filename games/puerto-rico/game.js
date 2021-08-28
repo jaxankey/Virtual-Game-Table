@@ -134,7 +134,7 @@ var settings = {
   
   // Coordinates and scale
   x: 0,
-  y: 0,
+  y: -800,
   r: 0,
   s: 0.5,
 
@@ -254,8 +254,8 @@ var settings = {
   shovel: ['workers'],                   // Which groups this piece will shovel when selecting
 
   // Coordinates and scale
-  x: 0,
-  y: 0,
+  x: 400,
+  y: -400,
   r: 0,
   s: 0.5,
 
@@ -293,8 +293,8 @@ var settings = {
   shovel: ['workers'],                   // Which groups this piece will shovel when selecting
 
   // Coordinates and scale
-  x: 0,
-  y: 0,
+  x: 400,
+  y: -200,
   r: 0,
   s: 0.5,
 
@@ -312,8 +312,11 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-
-
+P.cityhall     = VGT.add_piece(settings, 'build-cityhall.png');
+P.fortress     = VGT.add_piece(settings, 'build-fortress.png');
+P.guildhall    = VGT.add_piece(settings, 'build-guildhall.png');
+P.residence    = VGT.add_piece(settings, 'build-residence.png');
+P.customshouse = VGT.add_piece(settings, 'build-customshouse.png');
 
 ///////////////////////////////////// TILES
 var settings = {
@@ -340,9 +343,8 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-var tiles = [];
-for(var n=0; n<5; n++) tiles.push(new VGT.Piece({...settings, images:[['tile-corn.png']]}));
-
+P.tiles = [];
+P.corns = VGT.add_pieces(5, settings, ['tile-corn.png', 'tile-back.png']);
 
 
 //////////////////////////////////// WORKERS
@@ -352,8 +354,8 @@ var settings = {
   shape: 'circle',               // Shape of the pieces
 
   // Coordinates and scale
-  x: 0,
-  y: 0,
+  x: 400,
+  y: 300,
   r: 0,
   s: 0.5, 
 

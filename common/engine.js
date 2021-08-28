@@ -2165,12 +2165,8 @@ class _Thing {
     // Fix up settings shortcuts
     
     // Make sure the image list is a list of lists of strings for layered sprites.
-    if(typeof settings.images == 'string') settings.images = [[settings.images]]
-    if(settings.images) 
-      for(var n in settings.images) 
-        if(typeof settings.images[n] == 'string') settings.images[n] = [settings.images[n]]
-      
-    
+    if(typeof settings.images == 'string') settings.images = [[settings.images]];
+    if(settings.images && typeof settings.images[0] == 'string') settings.images = [settings.images];
 
     // Remember what this is for later checking
     this.type = 'Thing';
@@ -2842,6 +2838,20 @@ class _Thing {
     else       this.container.visible = false;
   }
   set_visible(enabled) {this.show(!enabled);}
+
+  // Written right after a 10mg THC capsule kicked in. I'm a lightweight, everyone relax.
+  // I will update this if I change anything in this function.
+  is_selectable_by_me() {
+
+    // Everyone can select this thing. Sounds good.
+    if(this.settings.teams == true) return true;
+    
+    // Otherwise it could be a list of team names.
+    if(this.settings.teams) return this.settings.teams.includes(VGT.game.get_team_name(VGT.clients.me.team));
+
+    // Otherwise, false or null or something.
+    return false;
+  }
 
   is_enabled()  {return  this.container.visible;}
   is_disabled() {return !this.container.visible;}
@@ -3609,7 +3619,7 @@ class _Hand extends _Thing {
         // Loop over the pieces and select those that are in it.
         var p;
         for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
-          if(poly.contains(p.x.value, p.y.value)) p.select(VGT.clients.me.team);
+          if(p.is_selectable_by_me() && poly.contains(p.x.value, p.y.value)) p.select(VGT.clients.me.team);
           else if(!this.originally_selected || this.originally_selected 
               &&  !this.originally_selected.includes(p)) p.unselect();
         }  
