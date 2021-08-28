@@ -3056,12 +3056,13 @@ class _Things {
     else var sorted = VGT.things.sort_by_z(things);
 
     // Get the row count from the first element
-    var Nx = sorted[0].settings.expand_Nx;
-    var dx = sorted[0].settings.expand_dx;
-    var dy = sorted[0].settings.expand_dy;
+    var n = sorted.length-1;
+    var Nx = sorted[n].settings.expand_Nx;
+    var dx = sorted[n].settings.expand_dx;
+    var dy = sorted[n].settings.expand_dy;
     if(!Nx) Nx = 10;
-    if(!dx) dx = sorted[0].width*sorted[0].scale;
-    if(!dy) dy = sorted[0].height*sorted[0].scale;
+    if(!dx) dx = sorted[n].width*sorted[n].s.target;
+    if(!dy) dy = sorted[n].height*sorted[n].s.target;
 
     // Assemble a 2d array, one element per row
     var row=0;
@@ -3084,8 +3085,6 @@ class _Things {
     // Start positioning things
     var v;
     for(var i in expanded) for(var j in expanded[i]) {
-
-
       v = rotate_vector([-(expanded[i].length-1)*0.5*dx + j*dx, y0+i*dy], r_stack);
       expanded[i][j].set_xyrs(x+v[0], y+v[1], r);
     }

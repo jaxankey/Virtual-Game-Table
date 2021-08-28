@@ -99,7 +99,7 @@ new VGT.Game({
 
 
 // My pieces object
-var pieces = {};
+var P = {};
 
 
 
@@ -119,7 +119,7 @@ var settings = {
   r: 0,
   s: 0.5,
 }
-pieces.board = new VGT.Piece(settings);
+P.board = new VGT.Piece(settings);
 
 
 
@@ -232,7 +232,7 @@ var settings = {
     }, 
   ]
 }; // end of settings
-pieces.player_boards = VGT.add_pieces(5, settings);
+P.player_boards = VGT.add_pieces(5, settings);
 
 
 ////////////////////////////////// SMALL BUILDINGS
@@ -272,8 +272,19 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-pieces.haciendas        = VGT.add_pieces(2, settings, 'build-hacienda.png');
-pieces.constructionhuts = VGT.add_pieces(2, settings, 'build-constructionhut.png');
+P.haciendas        = VGT.add_pieces(2, settings, 'build-hacienda.png');
+P.constructionhuts = VGT.add_pieces(2, settings, 'build-constructionhut.png');
+P.factories        = VGT.add_pieces(2, settings, 'build-factory.png');
+P.harbors          = VGT.add_pieces(2, settings, 'build-harbor.png');
+P.hospices         = VGT.add_pieces(2, settings, 'build-hospice.png');
+P.largemarkets     = VGT.add_pieces(2, settings, 'build-market-large.png');
+P.smallmarkets     = VGT.add_pieces(2, settings, 'build-market-small.png');
+P.offices          = VGT.add_pieces(2, settings, 'build-office.png');
+P.universities     = VGT.add_pieces(2, settings, 'build-university.png');
+P.largewarehouses  = VGT.add_pieces(2, settings, 'build-warehouse-large.png');
+P.smallwarehouses  = VGT.add_pieces(2, settings, 'build-warehouse-small.png');
+P.wharfs           = VGT.add_pieces(2, settings, 'build-wharf.png');
+
 
 ////////////////////////////////// LARGE BUILDINGS
 var settings = {
