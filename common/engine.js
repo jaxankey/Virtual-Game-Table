@@ -164,11 +164,11 @@ class _Html {
           // Match the color
           color = VGT.game.settings.teams[k];
           o.style = 'background-color: #'+color.toString(16)+'FF;';
-
+          
           // If the color is too bright (per ITU-R BT.709 definition of luma), go black with the text
-          if(get_luma_ox(color) > 0.7) o.style.color=0x000000;
-          else                         o.style.color=0xFFFFFF;
-
+          if(get_luma_ox(color) > 0.7) o.style.color='black';
+          else                         o.style.color='white';
+          
           // Add it to the list
           s.appendChild(o);
       }
@@ -183,8 +183,8 @@ class _Html {
 
       // Set the text to white or black, depending on how light it is
       rgb = ox_to_rgb(color);
-      if(0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2] > 0.7) s.style.color=0x000000;
-      else                                                    s.style.color=0xFFFFFF; // = 'color: white;';
+      if(get_luma_ox(color) > 0.7) s.style.color='black';
+      else                         s.style.color='white';
       
       // Finally, append it to the team cell
       cell_team.appendChild(s);
