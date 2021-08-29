@@ -94,12 +94,15 @@ var images = {
 
 // Create an instance of the Game object (stores itself in VGT.game)
 game = new VGT.Game({
-  setups: ['3 Players', '4 Players', '5 Players'],
+  name           : 'Puerto Rico',
+  setups         : ['3 Players', '4 Players', '5 Players'],
   nameplate_xyrs : [0,-460,0,1],
 });
 
 // My pieces object
 var P = {};
+
+
 
 
 
@@ -120,6 +123,8 @@ var settings = {
   s: 0.5,
 }
 P.board = new VGT.Piece(settings);
+
+
 
 
 
@@ -235,6 +240,9 @@ var settings = {
 P.player_boards = VGT.add_pieces(5, settings);
 
 
+
+
+
 ////////////////////////////////// SMALL BUILDINGS
 
 // Snap grid just for placing pieces during setup. Doesn't snap anything
@@ -251,7 +259,7 @@ var grid_small_buildings = new VGT.SnapGrid({
 var settings = {
   layer:  2,                             // Layer of these pieces
   groups: ['pieces', 'small_buildings'], // List of groups to which this piece belongs
-  shovel: ['workers'],                   // Which groups this piece will shovel when selecting
+  shovel: ['colonists'],                   // Which groups this piece will shovel when selecting
 
   // Coordinates and scale
   x: 400,
@@ -263,7 +271,7 @@ var settings = {
   snaps:[ 
     { // Worker dot
       type: VGT.SnapCirle, // class used to create this snap
-      groups: ['workers'], // list of snap groups
+      groups: ['colonists'], // list of snap groups
       x0: -72,     // Center, x-coordinate
       y0: 19,      // Center, y-coordinate                   
       radius: 50,  // Radius of snap region
@@ -286,11 +294,14 @@ P.smallwarehouses  = VGT.add_pieces(2, settings, 'build-warehouse-small.png');
 P.wharfs           = VGT.add_pieces(2, settings, 'build-wharf.png');
 
 
+
+
+
 ////////////////////////////////// LARGE BUILDINGS
 var settings = {
   layer:  2,                             // Layer of these pieces
   groups: ['pieces', 'large_buildings'], // List of groups to which this piece belongs
-  shovel: ['workers'],                   // Which groups this piece will shovel when selecting
+  shovel: ['colonists'],                   // Which groups this piece will shovel when selecting
 
   // Coordinates and scale
   x: 400,
@@ -302,7 +313,7 @@ var settings = {
   snaps:[ 
     { // Worker dot
       type: VGT.SnapCirle, // class used to create this snap
-      groups: ['workers'], // list of snap groups
+      groups: ['colonists'], // list of snap groups
       x0: -72,     // Center, x-coordinate
       y0: 93,      // Center, y-coordinate                   
       radius: 50,  // Radius of snap region
@@ -318,11 +329,15 @@ P.guildhall    = VGT.add_piece(settings, 'build-guildhall.png');
 P.residence    = VGT.add_piece(settings, 'build-residence.png');
 P.customshouse = VGT.add_piece(settings, 'build-customshouse.png');
 
+
+
+
+
 ///////////////////////////////////// TILES
 var settings = {
   layer:  2,                   // Layer of these pieces
   groups: ['pieces', 'tiles'], // List of groups to which this piece belongs
-  shovel: ['workers'],         // Which groups this piece will shovel when selecting
+  shovel: ['colonists'],         // Which groups this piece will shovel when selecting
 
   // Coordinates and scale
   x: 400,
@@ -334,7 +349,7 @@ var settings = {
   snaps:[ 
     { // Worker dot
       type: VGT.SnapCirle, // class used to create this snap
-      groups: ['workers'], // list of snap groups
+      groups: ['colonists'], // list of snap groups
       x0: -27,     // Center, x-coordinate
       y0: 22,      // Center, y-coordinate                   
       radius: 50,  // Radius of snap region
@@ -343,30 +358,127 @@ var settings = {
 }; // end of settings
 
 // Create pieces
+P.tiles_quarry  = VGT.add_pieces(8,  settings, ['tile-back.png', 'tile-quarry.png']);
+P.tiles_coffee  = VGT.add_pieces(8,  settings, ['tile-back.png', 'tile-coffee.png']);
+P.tiles_tobacco = VGT.add_pieces(9,  settings, ['tile-back.png', 'tile-tobacco.png']);
 P.tiles_corn    = VGT.add_pieces(10, settings, ['tile-back.png', 'tile-corn.png']);
-P.tiles_indigo  = VGT.add_pieces(12, settings, ['tile-back.png', 'tile-indigo.png']);
-P.tiles_tobacco = VGT.add_pieces(9, settings, ['tile-back.png', 'tile-tobacco.png']);
-P.tiles_coffee  = VGT.add_pieces(8, settings, ['tile-back.png', 'tile-coffee.png']);
 P.tiles_sugar   = VGT.add_pieces(11, settings, ['tile-back.png', 'tile-sugar.png']);
-P.tiles_quarry  = VGT.add_pieces(8, settings, ['tile-back.png', 'tile-quarry.png']);
+P.tiles_indigo  = VGT.add_pieces(12, settings, ['tile-back.png', 'tile-indigo.png']);
 P.tiles = [...P.tiles_corn, ...P.tiles_indigo, ...P.tiles_tobacco, ...P.tiles_coffee, ...P.tiles_sugar, ...P.tiles_quarry];
 
-//////////////////////////////////// WORKERS
+
+
+
+
+//////////////////////////////////// COLONISTS
 var settings = {
   layer:  3,                     // Layer of these pieces
-  groups: ['pieces', 'workers'], // List of groups to which this piece belongs
+  groups: ['pieces', 'colonists'], // List of groups to which this piece belongs
   shape: 'circle',               // Shape of the pieces
 
   // Coordinates and scale
   x: 400,
-  y: 200,
+  y: 150,
   r: 0,
   s: 0.5, 
 
 }; // end of settings
 
 // Create pieces
-P.colonists = VGT.add_pieces(8, settings, 'colonist.png');
+P.colonists = VGT.add_pieces(100, settings, 'colonist.png');
+
+
+
+
+
+
+//////////////////////////////////// GOODS
+var settings = {
+  layer:  3,                   // Layer of these pieces
+  groups: ['pieces', 'goods'], // List of groups to which this piece belongs
+  shape: 'circle',             // Shape of the pieces
+
+  // Coordinates and scale
+  x: 400,
+  y: 300,
+  r: 0,
+  s: 0.5, 
+
+}; // end of settings
+
+// Create pieces
+P.coffee  = VGT.add_pieces(9,  settings, 'goods-coffee.png');
+P.tobacco = VGT.add_pieces(9,  settings, 'goods-tobacco.png');
+P.corn    = VGT.add_pieces(10, settings, 'goods-corn.png');
+P.sugar   = VGT.add_pieces(11, settings, 'goods-sugar.png');
+P.indigo  = VGT.add_pieces(12, settings, 'goods-indigo.png');
+
+
+
+
+
+//////////////////////////////////// DOUBLOONS & VP
+var settings = {
+  layer:  3,                   // Layer of these pieces
+  groups: ['pieces', 'goods'], // List of groups to which this piece belongs
+  shape: 'circle',             // Shape of the pieces
+
+  // Coordinates and scale
+  x: 400,
+  y: 300,
+  r: 0,
+  s: 0.5, 
+
+}; // end of settings
+
+// Create pieces
+P.doubloon1s = VGT.add_pieces(46, settings, 'doubloon-1.png');
+P.doubloon5s = VGT.add_pieces( 8, settings, 'doubloon-5.png');
+
+settings.x = -400;
+P.vp1s = VGT.add_pieces(32, settings, ['victory-1.png', 'victory-back.png'])
+P.vp5s = VGT.add_pieces(18, settings, ['victory-5.png', 'victory-back.png'])
+
+
+
+
+
+/////////////////////////////////// SPECIAL CARDS
+var settings = {
+  layer:  2,                     // Layer of these pieces
+  groups: ['pieces', 'special'], // List of groups to which this piece belongs
+  shovel: ['pieces'],            // Which groups this piece will shovel when selecting
+
+  // Coordinates and scale
+  x: -400,
+  y: -350,
+  r: 0,
+  s: 0.5,
+
+}; // end of settings
+
+// Create the cards
+P.builder     = VGT.add_piece(settings, 'role-builder.png');
+P.captain     = VGT.add_piece(settings, 'role-captain.png');
+P.craftsman   = VGT.add_piece(settings, 'role-craftsman.png');
+P.mayor       = VGT.add_piece(settings, 'role-mayor.png');
+P.settler     = VGT.add_piece(settings, 'role-settler.png');
+P.trader      = VGT.add_piece(settings, 'role-trader.png');
+P.prospector1 = VGT.add_piece(settings, 'role-prospector.png');
+P.prospector2 = VGT.add_piece(settings, 'role-prospector.png');
+P.governor    = VGT.add_piece(settings, 'governor.png');
+
+settings.y = -125;
+P.ship_colonist = VGT.add_piece(settings, 'ship-colonist.png');
+P.ship4         = VGT.add_piece(settings, 'ship-4.png');
+P.ship5         = VGT.add_piece(settings, 'ship-5.png');
+P.ship6         = VGT.add_piece(settings, 'ship-6.png');
+P.ship7         = VGT.add_piece(settings, 'ship-7.png');
+P.ship8         = VGT.add_piece(settings, 'ship-8.png');
+
+settings.y = 100;
+P.trading_house = VGT.add_piece(settings, 'tradinghouse.png');
+
 
 
 
@@ -381,7 +493,10 @@ P.colonists = VGT.add_pieces(8, settings, 'colonist.png');
 
 //////////////////////////////////// NEW GAME SETUP
 function new_game() { 
-  log('\n\n------- NEW GAME -------');
+  console.log('\n------- NEW GAME: '+ VGT.html.setups.value +' -------\n\n');
+
+
+
 
 } // End of new_game()
 

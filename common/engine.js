@@ -2485,6 +2485,9 @@ class _Thing {
 
   /**
    * Selects the thing visually and adds it to the approriate list of selected things.
+   * @param {int} team Team index selecting the piece
+   * @param {boolean} do_not_update_q_out whether to tell the server
+   * @returns 
    */
   select(team, do_not_update_q_out) { //log('thing.select()', this.id_thing, team, do_not_update_q_out, this.team_select, this.id_client_hold);
     
@@ -2853,6 +2856,9 @@ class _Thing {
 
     // Finish this function for function finishing purposes
   }
+
+  // Returns the texture index
+  get_texture_index() {return this._n;}
   
   // Increment the texture
   increment_texture() {
@@ -3850,6 +3856,8 @@ class _Game {
   // Default minimal settings that can be overridden.
   default_settings = {
 
+    name: 'VGT', // Game name
+
     background_color : 0xf9ecec, // Tabletop background color
 
     // Available teams for clients and their colors.
@@ -3912,6 +3920,125 @@ class _Game {
 
   /** Gets the color from the index */
   get_team_color(n) {return this.settings.teams[Object.keys(this.settings.teams)[n]]; }
+
+  /** Returns a string for the current setup. */
+  get_state() {
+
+    // State object for holding all the information
+    var state = {pieces: {}};
+
+    // Save the pieces
+    var p;
+    for(var id in VGT.pieces.all) { p = VGT.pieces.all[id];
+
+      // Save the configuration
+      state.pieces[id] = {
+        x: p.x.target,
+        y: p.y.target,
+        r: p.r.target,
+        R: p.R.target,
+        s: p.s.target,
+        n: p.get_texture_index(),
+        h: p.is_hidden(),
+        ts: p.team_select,
+      }
+
+    } // End of loop over pieces
+
+    return state;
+  }
+
+  /**
+   * Sets the state according to the specified object.
+   * @param {Object} state 
+   */
+  set_state(state) {
+
+    // Restore the piece information
+    var c, p;
+    for(var id in state.pieces) { 
+      p = VGT.pieces.all[id];
+
+      // If it's a valid piece
+      if(p) {
+        c = state.pieces[id];
+        p.set_xyrs(c.x, c.y, c.r, c.s);
+        p.set_R(c.R);
+        p.set_texture_index(c.n);
+        p.show(c.h);
+        p.select(c.ts);
+      }
+    } // End of loop over pieces
+  }
+
+
+  /** Saves the current setup. */
+  save_state() {
+    
+    // Convert the current configuration into a string.
+    var text = JSON.stringify(this.get_state()); // JSON.parse to undo
+
+    // Get the filename.
+    var filename = get_date_string() + ' ' + this.settings.name + '.txt';
+
+    // Create a link element for downloading
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    // Click it (download the file).
+    element.click();
+
+    // Clean up.
+    document.body.removeChild(element);
+  }
+
+  /** Loads the state from a file we supply. */
+  load_state_from_file() {
+
+    // Create a temporary input element
+    var input = document.createElement('input');
+    input.type = 'file';
+
+    // Code to grab the content of the file.
+    input.onchange = e => { 
+
+      // getting a hold of the file reference
+      var file = e.target.files[0]; 
+
+      // setting up the reader
+      var reader = new FileReader();
+      reader.readAsText(file,'UTF-8');
+
+      // here we tell the reader what to do when it's done reading...
+      reader.onload = readerEvent => {
+
+          // Get the result string
+          var s = readerEvent.target.result; 
+
+          // now update the pieces
+          this.set_state(JSON.parse(s));
+      }
+    }
+
+    // Run it
+    input.click();
+
+    // Clean up (apparently not necessary; these don't accumulate like the 'a' does above)
+    // document.body.removeChild(input); 
+  }
+
+  /** Loads the state from a server file. */
+  load_state_from_server(filename) {
+
+    // Get the data
+    fetch('setups/test.txt', {method: 'GET'})
+      .then((response) => response.json())
+      .then((state) => this.set_state(state))
+
+  }
 
   /** Function called every quarter second to do housekeeping. */
   housekeeping(e) {
