@@ -1277,12 +1277,14 @@ class _Interaction {
 
   // Starts the shuffle animation
   start_shuffle(e) {
+    // Kill out of control is down or we have nothing selected
+    if(e.ctrlKey || !VGT.things.selected[VGT.clients.me.team]) return;
 
     // Get the list of things we're shuffling
     this.shuffling = Object.values(VGT.things.selected[VGT.clients.me.team]);
 
     // Send out the cards
-    VGT.things.sneeze_things(this.shuffling, this.xm_tabletop, this.ym_tabletop, 1, 0.7); 
+    VGT.things.sneeze(this.shuffling, this.xm_tabletop, this.ym_tabletop, 1, 0.7); 
 
     // Has ugly "pop" when shuffled at the end (too much overlap)
     /*var v, p;
@@ -1339,7 +1341,7 @@ class _Interaction {
     if(this.rolling) {
 
       // Distribute them around the mouse
-      VGT.things.scramble_things(Object.values(this.rolling), this.xm_tabletop, this.ym_tabletop);
+      VGT.things.scramble(Object.values(this.rolling), this.xm_tabletop, this.ym_tabletop);
 
       // Not rolling
       this.rolling.length = 0;
@@ -1362,8 +1364,10 @@ class _Interaction {
     var pieces = Object.values(VGT.things.selected[team]);
 
     // Do the collection
-    if(e.shiftKey || no_offsets) VGT.things.collect(pieces, x, y, r, r, 0,         0,         true);
-    else                         VGT.things.collect(pieces, x, y, r, r, undefined, undefined, true);
+    if(e.shiftKey || no_offsets) 
+      VGT.things.pile(pieces, x, y);
+      // VGT.things.collect(pieces, x, y, r, r, 0,         0,         true);
+    else VGT.things.collect(pieces, x, y, r, r, undefined, undefined, true);
   }
 
   // Expands the selected pieces in a grid below the mouse
@@ -2140,12 +2144,12 @@ class _Thing {
     shovel : [],   // List of groups this piece will shovel; e.g., true or ['all'] to shovel all pieces.
 
     // Collecting and expanding
-    collect_dx: 2,         // px shift in x-direction for collecting
-    collect_dy: -2,        // px shift in y-direction for collecting
-    expand_Nx : 10,        // number of columns when expanding
-    expand_dx : undefined, // px shift for expanding in the x-direction; undefined is 'automatic'
-    expand_dy : undefined, // px shift for expanding in the y-direction; undefined is 'automatic'
-
+    collect_dx  : 2,         // px shift in x-direction for collecting
+    collect_dy  : -2,        // px shift in y-direction for collecting
+    expand_Nx   : 10,        // number of columns when expanding
+    expand_dx   : null,      // px shift for expanding in the x-direction; null is 'automatic'
+    expand_dy   : null,      // px shift for expanding in the y-direction; null is 'automatic'
+    pile_radius : null,      // radius of disc when scattering in a pile; null is 'automatic'
   };
 
   constructor(settings) {
@@ -3077,7 +3081,7 @@ class _Things {
 
   } // End of Things.add_thing()
 
-  // Collect things into a pile
+  // Collect things into a tidy stack
   collect(things, x, y, r, r_stack, dx, dy, center_on_top, supplied_order) {
 
     // Get an object, indexed by layer with lists of things, sorted by z
@@ -3100,6 +3104,30 @@ class _Things {
       p.set_xyrs(x+v[0], y+v[1], r);
       n++;
     }
+  }
+
+  // Drop into a disordered heap of the specified radius
+  pile(things, x, y, radius) {
+    if(x == undefined) x = 0;
+    if(y == undefined) y = 0;
+
+    // Loop over the supplied things
+    var p, v;
+    for(var k in things) { p = things[k];
+
+      // If no radius is given, use the piece's
+      if(!radius) radius = p.settings.pile_radius;
+
+      // If the piece is in auto mode
+      if(!radius) radius = Math.min(p.width, p.height)*p.s.target;  
+      
+      // Get the random coordinate
+      v = get_random_location_disc(radius);
+
+      // Set it
+      p.set_xyrs(x+v.x,y+v.y,v.r);
+    }
+
   }
 
   // Expand these into a grid
@@ -3185,7 +3213,7 @@ class _Things {
   /**
    * "Sneezes" the supplied list of things at random locations and rotations 
    * around the specified coordinates in a randomly populated
-   * hex grid. Does not randomize z or the image indices. See also "scramble_things()"
+   * hex grid. Does not randomize z or the image indices. See also "scramble()"
    * 
    * @param {array} things list of things to sneeze out on the table
    * @param {float} x      x-coordinate to center the scramble on
@@ -3193,7 +3221,7 @@ class _Things {
    * @param {int}   space  average lattice sites per piece (on hex grid) (default 1.5)
    * @param {float} scale  scale for spacing of hex grid (default 1)
    */
-  sneeze_things(things, x, y, space, scale) {
+  sneeze(things, x, y, space, scale) {
 
     // Bonk out and handle defaults
     if(!things || things.length==0 || x==undefined || y==undefined) return;
@@ -3238,7 +3266,7 @@ class _Things {
    * @param {int}   space  average lattice sites per piece (on hex grid) (default 1.5)
    * @param {float} scale  scale for spacing of hex grid (default 1)
    */
-  scramble_things(things, x, y, space, scale, do_not_randomize_texture) {
+  scramble(things, x, y, space, scale, do_not_randomize_texture) {
     
     // Bonk out and handle defaults
     if(!things || things.length==0 || x==undefined || y==undefined) return;
@@ -3247,8 +3275,8 @@ class _Things {
 
     // Shuffle z, sneeze them out around the x, y coordinates, and randomize each texture
     this.shuffle_z(things);
-    this.sneeze_things(things, x, y, space, scale);
-    for(var n in things) things[n].randomize_texture_index();
+    this.sneeze(things, x, y, space, scale);
+    for(var n in things) if(!do_not_randomize_texture) things[n].randomize_texture_index();
   }
 
   // Sets the z of the supplied list of things in order of their id (and sends them to the top)
@@ -4034,7 +4062,7 @@ class _Game {
   load_state_from_server(filename) {
 
     // Get the data
-    fetch('setups/test.txt', {method: 'GET'})
+    fetch(filename, {method: 'GET'})
       .then((response) => response.json())
       .then((state) => this.set_state(state))
 

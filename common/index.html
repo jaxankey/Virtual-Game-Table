@@ -176,7 +176,9 @@
           <tr><td>
             <select id="setups" onchange="VGT.interaction.onchange_game_mode();">
             </select>
-            <button id='new_game' onclick="new_game();">New Game</button>
+            <button id='new'  onclick="new_game();">New</button>
+            <button id='save' onclick="VGT.game.save_state();">Save</button>
+            <button id='load' onclick="VGT.game.load_state_from_file();">Load</button>
           </td></tr>
         </table>
 

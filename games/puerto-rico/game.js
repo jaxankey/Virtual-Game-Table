@@ -130,9 +130,9 @@ P.board = new VGT.Piece(settings);
 
 ///////////////////////////// PLAYER BOARDS
 var settings = {
-  layer:  1,                 // Layer of these pieces
-  groups: ['boards'],        // List of groups to which this piece belongs
-  shovel: ['pieces'],        // Which groups this piece will shovel when selecting
+  layer:  1,                   // Layer of these pieces
+  groups: ['boards'],          // List of groups to which this piece belongs
+  shovel: ['pieces', 'cards'], // Which groups this piece will shovel when selecting
   
   // List of lists of images to use for each of the piece's internal layers
   images: 'board-player.png', 
@@ -273,7 +273,7 @@ var settings = {
       type: VGT.SnapCirle, // class used to create this snap
       groups: ['colonists'], // list of snap groups
       x0: -72,     // Center, x-coordinate
-      y0: 19,      // Center, y-coordinate                   
+      y0: 16,      // Center, y-coordinate                   
       radius: 50,  // Radius of snap region
     },
   ]
@@ -293,7 +293,27 @@ P.largewarehouses  = VGT.add_pieces(2, settings, 'build-warehouse-large.png');
 P.smallwarehouses  = VGT.add_pieces(2, settings, 'build-warehouse-small.png');
 P.wharfs           = VGT.add_pieces(2, settings, 'build-wharf.png');
 
+P.indigo_plants_small = VGT.add_pieces(2, settings, 'build-indigo-small.png');
+P.sugar_plants_small  = VGT.add_pieces(2, settings, 'build-sugar-small.png');
 
+// 2 spaces
+settings.snaps.push({ // Second worker dot
+    type: VGT.SnapCirle,   // class used to create this snap
+    groups: ['colonists'], // list of snap groups
+    x0: -13,               // Center, x-coordinate
+    y0: 16,                // Center, y-coordinate                   
+    radius: 50, })         // Radius of snap region
+P.sugar_plants_large  = VGT.add_pieces(2, settings, 'build-coffee.png');
+
+// 3 spaces
+settings.snaps.push({ // Second worker dot
+  type: VGT.SnapCirle,   // class used to create this snap
+  groups: ['colonists'], // list of snap groups
+  x0: 47,               // Center, x-coordinate
+  y0: 16,                // Center, y-coordinate                   
+  radius: 50, })         // Radius of snap region
+P.indigo_plants_large = VGT.add_pieces(2, settings, 'build-indigo.png');
+P.tobacco_plants      = VGT.add_pieces(2, settings, 'build-tobacco.png');
 
 
 
@@ -305,7 +325,7 @@ var settings = {
 
   // Coordinates and scale
   x: 400,
-  y: -200,
+  y: -250,
   r: 0,
   s: 0.5,
 
@@ -341,7 +361,7 @@ var settings = {
 
   // Coordinates and scale
   x: 400,
-  y: 0,
+  y: -100,
   r: 0,
   s: 0.5,
 
@@ -378,9 +398,9 @@ var settings = {
 
   // Coordinates and scale
   x: 400,
-  y: 150,
+  y: 0,
   r: 0,
-  s: 0.5, 
+  s: 0.52, 
 
 }; // end of settings
 
@@ -400,7 +420,7 @@ var settings = {
 
   // Coordinates and scale
   x: 400,
-  y: 300,
+  y: 150,
   r: 0,
   s: 0.5, 
 
@@ -445,9 +465,9 @@ P.vp5s = VGT.add_pieces(18, settings, ['victory-5.png', 'victory-back.png'])
 
 /////////////////////////////////// SPECIAL CARDS
 var settings = {
-  layer:  2,                     // Layer of these pieces
-  groups: ['pieces', 'special'], // List of groups to which this piece belongs
-  shovel: ['pieces'],            // Which groups this piece will shovel when selecting
+  layer:  2,             // Layer of these pieces
+  groups: ['cards'],     // List of groups to which this piece belongs
+  shovel: ['pieces'],    // Which groups this piece will shovel when selecting
 
   // Coordinates and scale
   x: -400,
