@@ -397,7 +397,13 @@ function shuffle_array(array) {
 }
 exports.shuffle_array = shuffle_array;
 
-// In-place sorts the supplied list of objects by the specified key.
+/**
+ * In-place sorts the supplied list of objects by the specified key.
+ * @param {list} objects 
+ * @param {string} key 
+ * @param {boolean} descending 
+ * @returns 
+ */
 function sort_objects_by_key(objects, key, descending) {
 
     // If increasing

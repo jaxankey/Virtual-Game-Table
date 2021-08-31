@@ -831,8 +831,8 @@ class _Tabletop {
       pan_step: 0.2, // Fraction of width or height when panning 1 step
       r_step:    45, // Degrees for table rotation steps
       s_step:   1.2, // Fraction for each zoom step.
-      s_max:    2.5, // Largest zoom-in level
-      s_min:    0.25, // Max zoom-out
+      s_max:    4, // Largest zoom-in level
+      s_min:    0.1, // Max zoom-out
     }
 
     // Create the container to hold all the layers.
@@ -937,8 +937,9 @@ class _Tabletop {
   }
   
   // Panning the view
-  pan_up() { 
-    var dr = this.settings.pan_step*window.innerHeight/this.s.value;
+  pan_up(e) { 
+    var scale = 1; if(e && e.altKey) scale = 0.02;
+    var dr = scale*this.settings.pan_step*window.innerHeight/this.s.value;
     var dx = dr*Math.sin(this.r.value*0.01745329251);
     var dy = dr*Math.cos(this.r.value*0.01745329251);
     this.set_xyrs(
@@ -946,8 +947,9 @@ class _Tabletop {
       -this.container.pivot.y + dy,
       undefined, undefined);
   }
-  pan_down() { 
-    var dr = this.settings.pan_step*window.innerHeight/this.s.value;
+  pan_down(e) { 
+    var scale = 1; if(e && e.altKey) scale = 0.02;
+    var dr = scale*this.settings.pan_step*window.innerHeight/this.s.value;
     var dx = dr*Math.sin(this.r.value*0.01745329251);
     var dy = dr*Math.cos(this.r.value*0.01745329251);
     this.set_xyrs(
@@ -955,8 +957,9 @@ class _Tabletop {
       -this.container.pivot.y - dy,
       undefined, undefined);
   }
-  pan_left() { 
-    var dr = this.settings.pan_step*window.innerHeight/this.s.value;
+  pan_left(e) { 
+    var scale = 1; if(e && e.altKey) scale = 0.02;
+    var dr = scale*this.settings.pan_step*window.innerHeight/this.s.value;
     var dx =  dr*Math.cos(this.r.value*0.01745329251);
     var dy = -dr*Math.sin(this.r.value*0.01745329251);
     this.set_xyrs(
@@ -964,8 +967,9 @@ class _Tabletop {
       -this.container.pivot.y + dy,
       undefined, undefined);
   }
-  pan_right() { 
-    var dr = this.settings.pan_step*window.innerHeight/this.s.value;
+  pan_right(e) { 
+    var scale = 1; if(e && e.altKey) scale = 0.02;
+    var dr = scale*this.settings.pan_step*window.innerHeight/this.s.value;
     var dx =  dr*Math.cos(this.r.value*0.01745329251);
     var dy = -dr*Math.sin(this.r.value*0.01745329251);
     this.set_xyrs(
@@ -1090,7 +1094,8 @@ class _Interaction {
 
       collect_selected_to_mouse : this.collect_selected_to_mouse.bind(this),
       expand_selected_to_mouse  : this.expand_selected_to_mouse.bind(this),
-      start_shuffle                   : this.start_shuffle.bind(this),
+      start_shuffle_or_undo_redo             : this.start_shuffle_or_undo_redo.bind(this),
+      align_distribute_selected          : this.align_distribute_selected.bind(this),
 
       start_roll                : this.start_roll.bind(this),
       roll                      : this.roll.bind(this),
@@ -1148,6 +1153,13 @@ class _Interaction {
       ShiftArrowDownDown: this.actions.rotate_selected_to_hand,
       ShiftNumpad5Down:   this.actions.rotate_selected_to_hand,
 
+      // Align / distribute selected pieces
+      KeyHDown:           this.actions.align_distribute_selected,
+      KeyVDown:           this.actions.align_distribute_selected,
+      ShiftKeyHDown:      this.actions.align_distribute_selected,
+      ShiftKeyVDown:      this.actions.align_distribute_selected,
+
+
       // Zoom
       EqualDown:          this.actions.zoom_in,
       NumpadAddDown:      this.actions.zoom_in,
@@ -1183,8 +1195,8 @@ class _Interaction {
       ShiftKeyCDown: this.actions.collect_selected_to_mouse,
       KeyXDown:      this.actions.expand_selected_to_mouse,
       ShiftKeyXDown: this.actions.expand_selected_to_mouse,
-      KeyZDown:      this.actions.start_shuffle,
-      ShiftKeyZDown: this.actions.start_shuffle,
+      KeyZDown:      this.actions.start_shuffle_or_undo_redo,
+      ShiftKeyZDown: this.actions.start_shuffle_or_undo_redo,
       KeyRDown:      this.actions.start_roll,
       KeyRUp:        this.actions.roll,
 
@@ -1275,11 +1287,24 @@ class _Interaction {
     return null;
   }
 
-  // Starts the shuffle animation
-  start_shuffle(e) {
-    // Kill out of control is down or we have nothing selected
-    if(e.ctrlKey || !VGT.things.selected[VGT.clients.me.team]) return;
+  // Undo / redo
+  undo_redo(e) {
+    if(e.shiftKey) VGT.game.redo();
+    else           VGT.game.undo();
+  }
 
+  // Starts the shuffle animation
+  start_shuffle_or_undo_redo(e) {
+    
+    // Undo / redo
+    if(e.ctrlKey) {
+      this.undo_redo(e);
+      return;
+    }
+
+    // Nothing selected to shuffle
+    if(!VGT.things.selected[VGT.clients.me.team]) return;
+    
     // Get the list of things we're shuffling
     this.shuffling = Object.values(VGT.things.selected[VGT.clients.me.team]);
 
@@ -1388,6 +1413,67 @@ class _Interaction {
     VGT.things.expand(pieces, x, y, r, r, e.shiftKey);
   }
 
+  align_distribute_selected(e) {
+    console.log('align_distribute_selected()', e.key);
+
+    // team index
+    var team = VGT.clients.me.team; 
+    
+    // Get the unsorted pieces list
+    var pieces = Object.values(VGT.things.selected[team]);
+
+
+    // Do nothing if there are no selected pieces.
+    if(!pieces || !pieces.length) return;
+
+    // Give each a simple key for x and y targets, for sorting
+    for(var n in pieces) { pieces[n]._x_target = pieces[n].x.target; pieces[n]._y_target = pieces[n].y.target; }
+    
+    // Horizontal alignment
+    if(e.key == 'h') {
+      // Get the mean and set all to this
+      var x_sum = 0;
+      for(var n in pieces) x_sum += pieces[n].x.target;
+      var x_mean = x_sum / pieces.length;
+      for(var n in pieces) pieces[n].set_xyrs(x_mean, undefined);
+    }
+
+    // Vertical alignment
+    else if (e.key == 'v') {
+      // Get the mean and set all to this
+      var y_sum = 0;
+      for(var n in pieces) y_sum += pieces[n].y.target;
+      var y_mean = y_sum / pieces.length;
+      for(var n in pieces) pieces[n].set_xyrs(undefined, y_mean);
+    }
+
+    // Horizontal distribution
+    else if(e.key == 'H') {
+
+      // Sort pieces by x values
+      sort_objects_by_key(pieces, '_x_target');
+      
+      // Loop over them, setting the x-value appropriately
+      var N  = pieces.length-1;
+      var x0 = pieces[0].x.target;
+      var xN = pieces[N].x.target;
+      for(var n in pieces) pieces[n].set_xyrs(x0 + n*(xN-x0)/N, undefined);
+    }
+
+    // Vertical distribution
+    else if (e.key == 'V') {
+
+      // Sort pieces by x values
+      sort_objects_by_key(pieces, '_y_target');
+
+      // Loop over them, setting the x-value appropriately
+      var N  = pieces.length-1;
+      var y0 = pieces[0].y.target;
+      var yN = pieces[N].y.target;
+      for(var n in pieces) pieces[n].set_xyrs(undefined, y0 + n*(yN-y0)/N);
+    }
+  }
+
   // Pointer touches the underlying surface.
   onpointerdown(e) {
     this.last_pointerdown = e;
@@ -1438,7 +1524,7 @@ class _Interaction {
       // Otherwise, select it and hold everything, sending it to the top or bottom.
       else {
         thing.select(VGT.clients.me.team); // send q, shovel
-        thing.shovel_select(VGT.clients.me.team);
+        if(!e.shiftKey) thing.shovel_select(VGT.clients.me.team);
         VGT.things.hold_selected(VGT.net.id, false);
 
         // Send the selection to the top or bottom, depending on button etc
@@ -1673,6 +1759,13 @@ class _Interaction {
     log(   'NETS_clients', VGT.net.clients);
     VGT.net.io.emit('clients', VGT.net.clients);
   } // End of onchange_name()
+
+  // When someone changes the setups pull-down
+  onchange_setups(e) {
+    var v = VGT.html.setups.value;
+    console.log('onchange_setups()', v);
+    save_cookie('setups.value', v);
+  }
 
   // When the volume changes.
   onchange_volume(e) {
@@ -1994,12 +2087,12 @@ class _SnapGrid {
     VGT.snaps.add_snap(this);
   }
 
-  // Returns {x:, y:} of grid point n,m (integer lattice basis vector steps) relative to the origin x0, y0
+  // Returns [x,y] of grid point n,m (integer lattice basis vector steps) relative to the origin x0, y0
   get_grid_xy(n,m) {
-    return {
-      x: this.settings.ax*n + this.settings.bx*m + this.settings.x0,
-      y: this.settings.ay*n + this.settings.by*m + this.settings.y0
-    }
+    return [
+      this.settings.ax*n + this.settings.bx*m + this.settings.x0,
+      this.settings.ay*n + this.settings.by*m + this.settings.y0,
+    ]
   }
 
   // Sends the supplied piece to grid point n,m (integer lattice basis vector steps) relative to the origin x0, y0
@@ -3256,6 +3349,11 @@ class _Things {
     }
   }
 
+  // Sets the texture index for the supplied list or object of things
+  set_texture_index(things, n) {
+    for(var k in things) things[k].set_texture_index(n);
+  }
+
   /**
    * Scramble the supplied things, like rolling dice: randomizes locations in a pattern determined by the 
    * last piece's diameter, minimizing overlap. 
@@ -3884,7 +3982,9 @@ class _Game {
   // Default minimal settings that can be overridden.
   default_settings = {
 
-    name: 'VGT', // Game name
+    name: 'VGT',        // Game name
+    rules: 'rules.pdf', // Link to rules for this game
+    undos: 500,         // Number of undos to remember (each 0.5 seconds minimum)
 
     background_color : 0xf9ecec, // Tabletop background color
 
@@ -3932,6 +4032,9 @@ class _Game {
         o.text  = this.settings.setups[k];
         VGT.html.setups.appendChild(o);
     }
+    // Set the last known setups
+    var c = load_cookie('setups.value');
+    if(c != '') VGT.html.setups.value = c;
 
     // Start the slow housekeeping
     setInterval(this.housekeeping.bind(this), this.settings.t_housekeeping);
@@ -3949,7 +4052,85 @@ class _Game {
   /** Gets the color from the index */
   get_team_color(n) {return this.settings.teams[Object.keys(this.settings.teams)[n]]; }
 
-  /** Returns a string for the current setup. */
+
+  /** Adds an undo level if something has changed */
+  save_undo() {
+
+    // Make sure we have the last undo time
+    if(!this._t_last_save_undo) this._t_last_save_undo = Date.now();
+
+    // If it hasn't been long enough for an undo, don't bother
+    if(Date.now()-this._t_last_save_undo < 1000) return;
+
+    // First make sure we have a list
+    if(!this._undos) this._undos = [];
+
+    // Get the state string
+    var s = JSON.stringify(this.get_state());
+
+    // If this state is different from the last undo, add another undo and clear the redos
+    if(s != this._undos[0]) {
+
+      // Add the new undo at the beginning of the array and reset the redos
+      this._undos.splice(0, 0, s);
+      if(this._redos) this._redos.length = 0;
+
+      // Impose the maximum undos
+      this._undos.length = Math.min(this._undos.length, this.settings.undos);
+
+      // Prevent another undo for awhile
+      this._t_last_save_undo = Date.now();
+
+      log('save_undo()', this._undos.length);
+    }
+  }
+
+  /** Restores an undo */
+  undo() {
+
+    // First make sure we have a list
+    if(!this._undos) this._undos = [];
+
+    // poop out if we have none
+    if(!this._undos.length) return
+
+    // Make sure we have a redos list
+    if(!this._redos) this._redos = [];
+
+    // The usual state of affairs should be the 0'th undo matching the current state.
+
+    // Save the current state as a redo and trim the list
+    this._redos.splice(0,0,JSON.stringify(this.get_state()));
+    this._redos.length = Math.min(this._redos.length, this.settings.undos);
+
+    // Pop the first one and use the "top" one
+    if(this._undos.length > 1) this._undos.splice(0,1)[0];
+
+    // Set the state to the most recent undo
+    this.set_state(JSON.parse(this._undos[0]));
+
+    log('undo()', this._undos.length, 'undos, ', this._redos.length, 'redos');
+  }
+
+  /** Undoes an undo */
+  redo() {
+
+    // First make sure we have a redo list
+    if(!this._redos || !this._redos.length) return;
+
+    // Make sure we have an undo list
+    if(!this._undos) this._undos = [];
+
+    // Pop off the redo and stick it at the top of the undos
+    this._undos.splice(0,0,this._redos.splice(0,1));
+
+    // Restore the top of the undos to make them match
+    this.set_state(JSON.parse(this._undos[0]));
+
+    log('redo()', this._undos.length, 'undos, ', this._redos.length, 'redos');
+  }
+
+  /** Returns an object for the current state of pieces etc. */
   get_state() {
 
     // State object for holding all the information
@@ -3979,8 +4160,9 @@ class _Game {
   /**
    * Sets the state according to the specified object.
    * @param {Object} state 
+   * @param {function} after function to call when done (optional)
    */
-  set_state(state) {
+  set_state(state, after) {
 
     // Restore the piece information
     var c, p;
@@ -3997,6 +4179,8 @@ class _Game {
         p.select(c.ts);
       }
     } // End of loop over pieces
+
+    if(after) after(state);
   }
 
 
@@ -4058,18 +4242,32 @@ class _Game {
     // document.body.removeChild(input); 
   }
 
-  /** Loads the state from a server file. */
-  load_state_from_server(filename) {
+  /**
+   * Loads a state from a server file (txt, identical to those files saved in game).
+   * Since this relies on promises and will be delayed, you can also specify a function 
+   * to call after things are loaded and the state is set.
+   * 
+   * @param {string} filename Path to file
+   * @param {function} after Function to call after setting the state
+   */
+  load_state_from_server(filename, after) {
 
     // Get the data
     fetch(filename, {method: 'GET'})
       .then((response) => response.json())
-      .then((state) => this.set_state(state))
+      .then((state   ) => this.set_state(state, after))
+  }
 
+  /** Opens the game.settings.rules in a new tab */
+  open_rules() {
+    window.open(this.settings.rules);
   }
 
   /** Function called every quarter second to do housekeeping. */
-  housekeeping(e) {
+  housekeeping() {
+    
+    // Save an undo if we're not holding pieces (and if it's been awhile, which is handled by the function itself)
+    if(!VGT.things.held[VGT.net.id]) this.save_undo();
 
     // If Pixi has finally finished loading, we still haven't connected, 
     // and everything is loaded, connect to server
@@ -4087,8 +4285,10 @@ class _Game {
         d = get_random_location_disc(Math.min(VGT.interaction.rolling[n].width, VGT.interaction.rolling[n].height));
         VGT.interaction.rolling[n].set_xyrs(VGT.interaction.xroll+d.x, VGT.interaction.yroll+d.y, d.r*4);
       }
+
     // Process net queues.
     VGT.net.process_queues();
+
 
   } // End of housekeeping.
 
@@ -4100,33 +4300,3 @@ class _Game {
 
 } // End of Game
 VGT.Game = _Game;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

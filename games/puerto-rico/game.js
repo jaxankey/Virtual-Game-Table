@@ -96,7 +96,7 @@ var images = {
 game = new VGT.Game({
   name           : 'Puerto Rico',
   setups         : ['3 Players', '4 Players', '5 Players'],
-  nameplate_xyrs : [0,-460,0,1],
+  nameplate_xyrs : [0,480,0,1],
 });
 
 // My pieces object
@@ -281,16 +281,16 @@ var settings = {
 
 // Create pieces
 P.haciendas        = VGT.add_pieces(2, settings, 'build-hacienda.png');
-P.constructionhuts = VGT.add_pieces(2, settings, 'build-constructionhut.png');
+P.construction_huts = VGT.add_pieces(2, settings, 'build-constructionhut.png');
 P.factories        = VGT.add_pieces(2, settings, 'build-factory.png');
 P.harbors          = VGT.add_pieces(2, settings, 'build-harbor.png');
 P.hospices         = VGT.add_pieces(2, settings, 'build-hospice.png');
-P.largemarkets     = VGT.add_pieces(2, settings, 'build-market-large.png');
-P.smallmarkets     = VGT.add_pieces(2, settings, 'build-market-small.png');
+P.markets_large     = VGT.add_pieces(2, settings, 'build-market-large.png');
+P.markets_small     = VGT.add_pieces(2, settings, 'build-market-small.png');
 P.offices          = VGT.add_pieces(2, settings, 'build-office.png');
 P.universities     = VGT.add_pieces(2, settings, 'build-university.png');
-P.largewarehouses  = VGT.add_pieces(2, settings, 'build-warehouse-large.png');
-P.smallwarehouses  = VGT.add_pieces(2, settings, 'build-warehouse-small.png');
+P.warehouses_large  = VGT.add_pieces(2, settings, 'build-warehouse-large.png');
+P.warehouses_small  = VGT.add_pieces(2, settings, 'build-warehouse-small.png');
 P.wharfs           = VGT.add_pieces(2, settings, 'build-wharf.png');
 
 P.indigo_plants_small = VGT.add_pieces(2, settings, 'build-indigo-small.png');
@@ -303,7 +303,7 @@ settings.snaps.push({ // Second worker dot
     x0: -13,               // Center, x-coordinate
     y0: 16,                // Center, y-coordinate                   
     radius: 50, })         // Radius of snap region
-P.sugar_plants_large  = VGT.add_pieces(2, settings, 'build-coffee.png');
+P.coffee_plants_large  = VGT.add_pieces(2, settings, 'build-coffee.png');
 
 // 3 spaces
 settings.snaps.push({ // Second worker dot
@@ -314,6 +314,7 @@ settings.snaps.push({ // Second worker dot
   radius: 50, })         // Radius of snap region
 P.indigo_plants_large = VGT.add_pieces(2, settings, 'build-indigo.png');
 P.tobacco_plants      = VGT.add_pieces(2, settings, 'build-tobacco.png');
+P.sugar_plants_large  = VGT.add_pieces(2, settings, 'build-sugar.png')
 
 
 
@@ -357,7 +358,9 @@ P.customshouse = VGT.add_piece(settings, 'build-customshouse.png');
 var settings = {
   layer:  2,                   // Layer of these pieces
   groups: ['pieces', 'tiles'], // List of groups to which this piece belongs
-  shovel: ['colonists'],         // Which groups this piece will shovel when selecting
+  shovel: ['colonists'],       // Which groups this piece will shovel when selecting
+  collect_dx: 0.5,             // x-offset for pieces when collecting into a stack
+  collect_dy: -0.5,            // y-offset for pieces when collecting into a stack
 
   // Coordinates and scale
   x: 400,
@@ -512,11 +515,75 @@ P.trading_house = VGT.add_piece(settings, 'tradinghouse.png');
 
 
 //////////////////////////////////// NEW GAME SETUP
+
 function new_game() { 
   console.log('\n------- NEW GAME: '+ VGT.html.setups.value +' -------\n\n');
 
+  // game.load_state_from_server() uses "promises", meaning it takes some time before
+  // the state is downloaded and set up. As such, we do a basic load_state_from_server
+  // and then use different functions for the small differences & randomization with 
+  // each setup.
+  
+  // Setup for 5 players
+  if(VGT.html.setups.value == '5 Players') 
+    game.load_state_from_server('setups/setup-5.txt', setup_5);
 
 
+  
 
 } // End of new_game()
 
+function reset_buildings() {
+  VGT.things.collect(P.indigo_plants_small, ...grid_small_buildings.get_grid_xy(0,0), 0, 0);
+  VGT.things.collect(P.sugar_plants_small , ...grid_small_buildings.get_grid_xy(0,1), 0, 0);
+  VGT.things.collect(P.markets_small      , ...grid_small_buildings.get_grid_xy(0,2), 0, 0);
+  VGT.things.collect(P.haciendas          , ...grid_small_buildings.get_grid_xy(0,3), 0, 0);
+  VGT.things.collect(P.construction_huts  , ...grid_small_buildings.get_grid_xy(0,4), 0, 0);
+  VGT.things.collect(P.warehouses_small   , ...grid_small_buildings.get_grid_xy(0,5), 0, 0);
+  VGT.things.collect(P.indigo_plants_large, ...grid_small_buildings.get_grid_xy(1,0), 0, 0);
+  VGT.things.collect(P.sugar_plants_large , ...grid_small_buildings.get_grid_xy(1,1), 0, 0);
+  VGT.things.collect(P.hospices           , ...grid_small_buildings.get_grid_xy(1,2), 0, 0);
+  VGT.things.collect(P.offices            , ...grid_small_buildings.get_grid_xy(1,3), 0, 0);
+  VGT.things.collect(P.markets_large      , ...grid_small_buildings.get_grid_xy(1,4), 0, 0);
+  VGT.things.collect(P.warehouses_large   , ...grid_small_buildings.get_grid_xy(1,5), 0, 0);
+  VGT.things.collect(P.tobacco_plants     , ...grid_small_buildings.get_grid_xy(2,0), 0, 0);
+  VGT.things.collect(P.coffee_plants_large, ...grid_small_buildings.get_grid_xy(2,1), 0, 0);
+  VGT.things.collect(P.factories          , ...grid_small_buildings.get_grid_xy(2,2), 0, 0);
+  VGT.things.collect(P.universities       , ...grid_small_buildings.get_grid_xy(2,3), 0, 0);
+  VGT.things.collect(P.harbors            , ...grid_small_buildings.get_grid_xy(2,4), 0, 0);
+  VGT.things.collect(P.wharfs             , ...grid_small_buildings.get_grid_xy(2,5), 0, 0);
+}
+
+// Setup function for 5 teams.
+function setup_5() {
+
+  // The buildings are the same for every setup
+  reset_buildings();
+
+  // Special indigos and corns
+  P.tiles_indigo[0].set_xyrs_relative_to(P.player_boards[0], 0,0)
+  P.tiles_indigo[1].set_xyrs_relative_to(P.player_boards[3], 0,0)
+  P.tiles_indigo[2].set_xyrs_relative_to(P.player_boards[4], 0,0)
+  P.tiles_corn  [0].set_xyrs_relative_to(P.player_boards[1], 0,0);
+  P.tiles_corn  [1].set_xyrs_relative_to(P.player_boards[2], 0,0)
+  
+  // 3 fewer indigo and 2 fewer corn
+  var indigos = P.tiles_indigo.slice(3);
+  var corns   = P.tiles_corn  .slice(2);
+
+  // Assemble remaining tiles, shuffle,
+  var tiles   = [...corns, ...indigos, ...P.tiles_sugar, ...P.tiles_coffee, ...P.tiles_tobacco];
+  shuffle_array(tiles);
+
+  // Put out the 6 & quarries
+  for(var n=0; n<6; n++) {
+    tiles[n].set_texture_index(1);
+    tiles[n].set_xyrs(               -267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); }
+  VGT.things.collect(P.tiles_quarry, -267,-490, 0, 0);
+
+  // Rest of pieces
+  tiles = tiles.slice(6);
+  VGT.things.set_texture_index(tiles, 0);
+  n = 6;
+  VGT.things.collect(tiles, -267+1.02*n*tiles[n].width*tiles[n].s.target,-490, 0, 0)
+}

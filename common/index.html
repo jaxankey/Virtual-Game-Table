@@ -166,15 +166,12 @@
     <div id="controls">
       
       <div id="setup">
-        <h1>People</h1>
-        <table id='clients'></table>
         
-        <br>
+        <h1>Game <button onclick="VGT.game.open_rules();">Rules</button></h1>
         
-        <h1>Setup</h1>
         <table>
           <tr><td>
-            <select id="setups" onchange="VGT.interaction.onchange_game_mode();">
+            <select id="setups" onchange="VGT.interaction.onchange_setups();">
             </select>
             <button id='new'  onclick="new_game();">New</button>
             <button id='save' onclick="VGT.game.save_state();">Save</button>
@@ -185,12 +182,15 @@
         <table>
           <tr><td><input class='othername' value="Volume:" style="width: 3.5em"/></td><td><input type="range" min="0" max="100" value="25"  class="slider" id="volume" onchange="interaction.onchange_volume();"></td></tr>
         </table>
+        
+        <br>
 
-
+        <h1>People</h1>
+        <table id='clients'></table>
+        
       </div>
 
       <div id="chat">
-        <h1>Chat</h1>
         <table>
           <tr>
             <td>
