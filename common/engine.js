@@ -2794,6 +2794,8 @@ class _Thing {
 
   // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
   _set_z(z) {
+    if(z == undefined) return;
+
     // Get the parent of the container
     var parent = this.container.parent;
     
@@ -4150,6 +4152,7 @@ class _Game {
         n: p.get_texture_index(),
         h: p.is_hidden(),
         ts: p.team_select,
+        z: p.get_z(),
       }
 
     } // End of loop over pieces
@@ -4177,6 +4180,7 @@ class _Game {
         p.set_texture_index(c.n);
         p.show(c.h);
         p.select(c.ts);
+        p.set_z(c.z);
       }
     } // End of loop over pieces
 
