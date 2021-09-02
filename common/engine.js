@@ -248,10 +248,10 @@ class _Net {
       c = this.q_pieces_in[id_piece]; // incoming changes for this thing
       p = VGT.pieces.all[id_piece];   // the actual piece object
 
-      // If it's a valid piece (sometimes it might be a fluctuating piece id, like nameplates)
+      // If it's a valid piece
       if(p) {
         
-        // If the incoming piece has z data
+        // If the incoming piece has z data (small changes may not)
         if(c.z != undefined && c.l != undefined) { 
 
           // Give easy access to the piece object
@@ -275,6 +275,17 @@ class _Net {
     // Clear out the piece queue
     this.q_pieces_in = {}; 
   
+    // Loop over the layers, sorting by the desired z, and then sending to that z
+    for(l in zs) { if(zs[l].length == 0) continue;
+
+      // Sort by z
+      sort_objects_by_key(zs[l], 'z');
+      
+      // Now insert them from bottom to top.
+      for(n in zs[l]) zs[l][n].piece._set_z_value(zs[l][n].z);
+    }
+
+  
 
 
     //// NAMEPLATES
@@ -291,16 +302,6 @@ class _Net {
     // Clear out the piece queue
     this.q_nameplates_in = {}; 
   
-
-    // Loop over the layers, sorting by the desired z, and then sending to that z
-    for(l in zs) { if(zs[l].length == 0) continue;
-
-      // Sort by z
-      sort_objects_by_key(zs[l], 'z');
-      
-      // Now insert them from bottom to top.
-      for(n in zs[l]) zs[l][n].piece._set_z_value(zs[l][n].z);
-    }
 
     // Loop over the hands in the input queue
     for(var id_hand in this.q_hands_in) {
@@ -1103,8 +1104,8 @@ class _Interaction {
       rotate_selected_to_hand   : VGT.tabletop.rotate_selected_to_hand.bind(VGT.tabletop),
       rotate_selected_to_table  : VGT.tabletop.rotate_selected_to_table.bind(VGT.tabletop),
 
-      collect_selected_to_mouse : this.collect_selected_to_mouse.bind(this),
-      expand_selected_to_mouse  : this.expand_selected_to_mouse.bind(this),
+      collect_selected_to_mouse   : this.collect_selected_to_mouse.bind(this),
+      expand_selected_to_mouse    : this.expand_selected_to_mouse.bind(this),
       start_shuffle_or_undo_redo  : this.start_shuffle_or_undo_redo.bind(this),
       align_distribute_selected   : this.align_distribute_selected.bind(this),
 
@@ -1113,6 +1114,8 @@ class _Interaction {
 
       save_view : this.save_view.bind(this),
       load_view : this.load_view.bind(this),
+
+      count_selected: this.count_selected.bind(this),
     }
 
     // Dictionary of functions for each key
@@ -1211,6 +1214,10 @@ class _Interaction {
       KeyRDown:      this.actions.start_roll,
       KeyRUp:        this.actions.roll,
 
+      // Count pieces
+      EnterDown:       this.actions.count_selected,
+      NumpadEnterDown: this.actions.count_selected,
+
       // Cycle images
       SpaceDown: this.increment_selected_textures,
     }
@@ -1232,6 +1239,11 @@ class _Interaction {
     VGT.pixi.app.view.onpointerup   = this.onpointerup  .bind(this);
     VGT.pixi.app.view.onpointerout  = this.onpointerup  .bind(this);
     VGT.pixi.app.view.onwheel       = this.onwheel      .bind(this);
+  }
+
+  // Count the selected items
+  count_selected(e) {
+    
   }
 
   // Loads the view associated with the pressed key
@@ -4181,7 +4193,7 @@ class _Game {
       // Prevent another undo for awhile
       this._t_last_save_undo = Date.now();
 
-      log('save_undo()', this._undos.length);
+      log('save_undo()', this._undos.length, '(zero redos)');
     }
   }
 
@@ -4261,10 +4273,13 @@ class _Game {
   /**
    * Sets the state according to the specified object.
    * @param {Object} state 
-   * @param {function} after function to call when done (optional)
+   * @param {function} after function to call when done (optional); argument is the state
    */
   set_state(state, after) {
 
+    // Let's let process_queues handle it
+    //VGT.net.q_pieces_in = state.pieces;
+    
     // Restore the piece information
     var c, p;
 
@@ -4277,26 +4292,28 @@ class _Game {
       pieces.push(state.pieces[id]);
     }
     
-    // Make sure it has a z-value (shouldn't happen for newer saves)
+    // Make sure it has a z-value (just a fix for older saves)
     for(var n in pieces) if(pieces[n].z == undefined) pieces[n].z = 0;
     sort_objects_by_key(pieces, 'z');
 
+    // loop over the incoming pieces of the state
     for(var n in pieces) { 
 
-      // Get the real piece
+      // Get the incoming piece data and the real piece
+      c = pieces[n];
       p = VGT.pieces.all[pieces[n].id_piece];
 
       // If it's a valid piece
       if(p) {
-        c = pieces[n];
         p.set_xyrs(c.x, c.y, c.r, c.s);
         p.set_R(c.R);
         p.set_texture_index(c.n);
         p.show(c.h);
         p.select(c.ts);
+        p.send_to_top();
       }
     } // End of loop over pieces
-
+    
     if(after) after(state);
   }
 
