@@ -387,12 +387,13 @@ io.on('connection', function(socket) {
 
       // Unpack
       id_piece = data[n];
-      c        = state.pieces[id_piece] // incoming piece data
+      c        = state.pieces[id_piece] // existing state piece data
       if(!c) continue;                  // Only happens if someone has the wrong number of pieces compared to the server.
-      l        = c['l'];                // Layer
-      zi       = c['z'];                // Initial z-position
+      l        = c['l'];                // Layer (uploaded by the first client, guaranteed to exist here)
+      zi       = c['z'];                // Initial z-position (uploaded by the first client, guaranteed to exist here)
       zf       = data[n+1];             // Final z-position
       
+
       // If zf > zi 
       //   p.z < zi         no change
       //   p.z == zi        set to zf

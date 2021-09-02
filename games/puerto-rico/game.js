@@ -381,7 +381,7 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-P.tiles_quarry  = VGT.add_pieces(8,  settings, ['tile-back.png', 'tile-quarry.png']);
+P.tiles_quarry  = VGT.add_pieces(8,  settings, ['tile-quarry.png']);
 P.tiles_coffee  = VGT.add_pieces(8,  settings, ['tile-back.png', 'tile-coffee.png']);
 P.tiles_tobacco = VGT.add_pieces(9,  settings, ['tile-back.png', 'tile-tobacco.png']);
 P.tiles_corn    = VGT.add_pieces(10, settings, ['tile-back.png', 'tile-corn.png']);
@@ -561,29 +561,33 @@ function setup_5() {
   reset_buildings();
 
   // Special indigos and corns
-  P.tiles_indigo[0].set_xyrs_relative_to(P.player_boards[0], 0,0)
-  P.tiles_indigo[1].set_xyrs_relative_to(P.player_boards[3], 0,0)
-  P.tiles_indigo[2].set_xyrs_relative_to(P.player_boards[4], 0,0)
-  P.tiles_corn  [0].set_xyrs_relative_to(P.player_boards[1], 0,0);
-  P.tiles_corn  [1].set_xyrs_relative_to(P.player_boards[2], 0,0)
+  var b;
+  b = P.player_boards[0]; P.tiles_indigo[0].set_xyrs(b.x.target,b.y.target,0);
+  b = P.player_boards[3]; P.tiles_indigo[1].set_xyrs(b.x.target,b.y.target,0);
+  b = P.player_boards[4]; P.tiles_indigo[2].set_xyrs(b.x.target,b.y.target,0);
+  b = P.player_boards[1]; P.tiles_corn  [0].set_xyrs(b.x.target,b.y.target,0);
+  b = P.player_boards[2]; P.tiles_corn  [1].set_xyrs(b.x.target,b.y.target,0);
+  //P.tiles_indigo[1].set_xyrs(P.player_boards[3].x.target, P.player_boards[3].y.target, 0,0);
+  //P.tiles_indigo[2].set_xyrs(P.player_boards[4].x.target, P.player_boards[4].y.target, 0,0);
+  //P.tiles_corn  [0].set_xyrs(P.player_boards[1].x.target, P.player_boards[1].y.target, 0,0);
+  //P.tiles_corn  [1].set_xyrs(P.player_boards[2].x.target, P.player_boards[2].y.target, 0,0);
   
   // 3 fewer indigo and 2 fewer corn
   var indigos = P.tiles_indigo.slice(3);
   var corns   = P.tiles_corn  .slice(2);
 
   // Assemble remaining tiles, shuffle,
-  var tiles   = [...corns, ...indigos, ...P.tiles_sugar, ...P.tiles_coffee, ...P.tiles_tobacco];
-  shuffle_array(tiles);
-
+  var tiles = [...corns, ...indigos, ...P.tiles_sugar, ...P.tiles_coffee, ...P.tiles_tobacco];
+  tiles = VGT.things.shuffle_z(tiles);
+  
   // Put out the 6 & quarries
   for(var n=0; n<6; n++) {
     tiles[n].set_texture_index(1);
-    tiles[n].set_xyrs(               -267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); }
+    tiles[n].set_xyrs(-267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); }
   VGT.things.collect(P.tiles_quarry, -267,-490, 0, 0);
 
   // Rest of pieces
-  tiles = tiles.slice(6);
-  VGT.things.set_texture_index(tiles, 0);
-  n = 6;
-  VGT.things.collect(tiles, -267+1.02*n*tiles[n].width*tiles[n].s.target,-490, 0, 0)
+  P.x = tiles.slice(6); 
+  VGT.things.set_texture_index(P.x, 0);
+  n = 7; VGT.things.collect(P.x, 0,0);// -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
 }

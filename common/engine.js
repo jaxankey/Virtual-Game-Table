@@ -233,7 +233,7 @@ class _Net {
   } // End of constructor()
 
   /** Deals with the incoming AND outbound packets. */
-  process_queues() {
+  process_queues(immediate) {
     if(!this.ready) return;
     var c, p, n, l;
     
@@ -243,7 +243,6 @@ class _Net {
     // object, indexed by layer, of lists of piece datas having z-order to set
     var zs = {}; 
 
-
     //// PIECES
     for(var id_piece in this.q_pieces_in) { 
       c = this.q_pieces_in[id_piece]; // incoming changes for this thing
@@ -252,7 +251,7 @@ class _Net {
       // If it's a valid piece (sometimes it might be a fluctuating piece id, like nameplates)
       if(p) {
         
-        // Put it in the z-order
+        // If the incoming piece has z data
         if(c.z != undefined && c.l != undefined) { 
 
           // Give easy access to the piece object
@@ -267,7 +266,7 @@ class _Net {
         } 
 
         // Process the data for this piece, determine and set holder, selected, xyrs, etc.
-        p.process_q_data(c);
+        p.process_q_data(c, immediate);
       
       } // End of valid piece
     
@@ -285,7 +284,7 @@ class _Net {
 
       // If it's a valid piece (sometimes it might be a fluctuating piece id, like nameplates)
       // Determine and set the holder, selection, xyrs, etc
-      if(p) p.process_q_data(c);
+      if(p) p.process_q_data(c, immediate);
           
     }; // End of loop over q_nameplates_in
     
@@ -312,8 +311,8 @@ class _Net {
       if(p && p.id_client != VGT.net.id){
       
         // Undefined quantities do nothing to these functions
-        p        .set_xyrs(c.x, c.y, c.r, undefined, false, true);
-        p.polygon.set_xyrs(c.x, c.y, c.r, undefined, false, true); 
+        p        .set_xyrs(c.x, c.y, c.r, undefined, immediate, true);
+        p.polygon.set_xyrs(c.x, c.y, c.r, undefined, immediate, true); 
         p.set_texture_index(c.n, true);
         
         // vd should be null or [x,y] for the down click coordinates
@@ -404,11 +403,16 @@ class _Net {
     var id           = data[0];
     var server_state = data[1];
     
-    // If there are no pieces on the server, send all of the layer and z data
-    if(Object.keys(data[1].pieces).length != VGT.pieces.all.length) {
+    // If there are no or too few pieces on the server, initialize / create entries the server's state with layer and z data
+    // This should only actually happen if the server has NO pieces, and we're just creating our z-data for it.
+    if(Object.keys(data[1].pieces).length < VGT.pieces.all.length) {
       log('  NETR_state: Mismatched number of pieces; sending layer and z info...');
-      for(var n in VGT.pieces.all) 
-        VGT.pieces.all[n].update_q_out('z').update_q_out('l');
+      var p;
+      for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
+        p.update_q_out('z');
+        p.update_q_out('l');
+        p._zf = p.get_z();   // The other place this "engine tracking" z is set is when the server sends us info, in process_queues
+      }
     }
 
     // Store all the info we need to keep locally
@@ -417,18 +421,21 @@ class _Net {
     // The server assigned VGT.net.me a unique id
     this.id = parseInt(id);
 
-    // Process the incoming pieces, ignoring the nameplates, basically
-    this.q_pieces_in     = server_state['pieces'];
-    //this.q_nameplates_in = server_state['nameplates']; // Nameplates are not even assigned yet
-    //this.q_hands_in      = server_state['hands'];
-    this.process_queues();
-
     // Rebuild the client object, hands, nameplates and HTML; 
     // also loads our cookie for where our nameplate was last positioned, and sends this via set_xyrs()
     VGT.clients.rebuild();
 
-    // Now hide the loader page so the user can interact
-    VGT.html.loader.style.visibility  = 'hidden';
+    // Regardless of the z-fix above, process rest of the incoming piece data (xyrs, etc), ignoring the nameplates and hands
+    this.q_pieces_in = server_state['pieces'];
+    //this.q_nameplates_in = server_state['nameplates']; // Nameplates are not even assigned yet
+    //this.q_hands_in      = server_state['hands'];
+    this.process_queues(true); // immediate
+
+    // Now (delayed, so pieces can snap to their starting locations) hide the loader page so the user can interact
+    VGT.html.loader.hidden = true;
+
+    // Reset the fade-in ticker
+    VGT.tabletop._t0_fade_in = Date.now();
 
     // Say hello
     VGT.html.chat('Server', 'Welcome, '+ VGT.net.clients[VGT.net.id].name + '!')
@@ -719,7 +726,7 @@ class _Pixi {
     VGT.pixi.app.ticker.add(delta => VGT.pixi.game_loop(delta)); 
     
     // Hide the loader so users can actually interact with the game
-    VGT.html.loader.hidden = true;
+    //VGT.html.loader.hidden = true;
   }
 
   /**
@@ -752,7 +759,7 @@ class _Pixi {
     }
 
     // Animate the table
-    VGT.tabletop.animate_xyrs(delta);
+    VGT.tabletop.animate(delta);
     
   } // End of game_loop
 
@@ -860,6 +867,8 @@ class _Tabletop {
     this.LAYER_SELECT     = -2; // Layer just below the hands for selection rectangles
     this.LAYER_NAMEPLATES = -3; // Layer just below selection rectangles for nameplates.
     this.layers           = []; // List of containers for each layer
+
+    this._t0_fade_in = 0; // Start time for fade-in. Will be reset when everything is ready
   }
 
   /**
@@ -886,7 +895,7 @@ class _Tabletop {
    * Updates the actual tabletop location / geometry via the error decay animation, 
    * and should be called once per frame.
    */
-   animate_xyrs(delta) { if(!delta) delta = 1;
+   animate(delta) { if(!delta) delta = 1;
     
     // Update the internal quantities
     var vx = this.x.animate(delta);
@@ -900,7 +909,7 @@ class _Tabletop {
     this.container.rotation =  this.r.value*0.01745329251; // to radians
     this.container.scale.x  =  this.s.value;
     this.container.scale.y  =  this.s.value;
-
+    this.container.alpha    = 1-fader_smooth(500+this._t0_fade_in, 700)
     // Update the mouse position
     if( (Math.abs(this.x.value-this.x.target) > 0.1/this.s.value
       || Math.abs(this.y.value-this.y.target) > 0.1/this.s.value
@@ -911,6 +920,7 @@ class _Tabletop {
 
     // Set the hand scale
     if(Math.abs(vs) > 1e-8) VGT.hands.set_scale(1.0/this.s.value);
+
 
     // Redraw selection graphics if the scale is still changing (gets heavy with lots of selection; why scale?)
     /*if(Math.abs(vs) > 1e-6)
@@ -1297,10 +1307,16 @@ class _Interaction {
   start_shuffle_or_undo_redo(e) {
     
     // Undo / redo
-    if(e.ctrlKey) {
+    if(e && e.ctrlKey) {
       this.undo_redo(e);
       return;
     }
+
+    // Shuffle selected
+    else this.start_shuffle(e);
+  }
+
+  start_shuffle(e) {
 
     // Nothing selected to shuffle
     if(!VGT.things.selected[VGT.clients.me.team]) return;
@@ -1310,14 +1326,6 @@ class _Interaction {
 
     // Send out the cards
     VGT.things.sneeze(this.shuffling, this.xm_tabletop, this.ym_tabletop, 1, 0.7); 
-
-    // Has ugly "pop" when shuffled at the end (too much overlap)
-    /*var v, p;
-    for(var n in this.shuffling) {
-      p = this.shuffling[n];
-      v = get_random_location_disc(Math.max(p.width, p.height));
-      p.set_xyrs(this.xm_tabletop+v.x, this.ym_tabletop+v.y, v.r);
-    }*/
 
     // Start the finish shuffle (cancel any existing one)
     clearTimeout(this.timer_shuffling);
@@ -2659,6 +2667,7 @@ class _Thing {
         for(var m in VGT.pieces[group])   { piece = VGT.pieces[group][m];
           
           // If this piece contains the current values of this piece (and it's higher), select it
+          // NOTE: there is a delay between setting z and it arriving. This tests the VALUE, not TARGET
           if( this.contains(piece.x.value, piece.y.value)
           && piece.is_higher_than(this) ) piece.select(team);
         
@@ -2725,7 +2734,7 @@ class _Thing {
    * Import the data sent from the server for this piece
    * @param {Object} d Data packet for this piece
    */
-  process_q_data(d) { 
+  process_q_data(d, immediate) { 
 
     // We do not want to let the server change anything about the pieces we're holding, 
     // UNLESS it's overriding our hold status, for example, when someone else grabbed it first. 
@@ -2756,8 +2765,8 @@ class _Thing {
 
     // Now update the different attributes only if we're not holding it (our hold supercedes everything)
     if(this.id_client_hold != VGT.net.id) {
-      var immediate = d['now'];
-
+      if(d['now'] != undefined) immediate = d['now'];
+      
       // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update          immediate, do_not_update_q_out, do_not_reset_R
       if(d['x']  != undefined && (d['x.i']  != VGT.net.id || d['x.n']  >= this.last_nqs['x'] )) this.set_xyrs(d.x, undefined, undefined, undefined, immediate, true, true);
       if(d['y']  != undefined && (d['y.i']  != VGT.net.id || d['y.n']  >= this.last_nqs['y'] )) this.set_xyrs(undefined, d.y, undefined, undefined, immediate, true, true);
@@ -2785,11 +2794,58 @@ class _Thing {
   // This will do NOTHING locally, waiting instead for the server
   // to tell us what to do with it. Here we just send a z request to the server immediately.
   set_z(z) { 
+    
+    // Add it to the quick q
     VGT.net.q_z_out.push(this.id_piece);
     VGT.net.q_z_out.push(z);
 
-    //log('NETS_z_'+String(VGT.net.id), [this.id_piece, z]);
-    //VGT.net.io.emit('z', [this.id_piece, z]);
+    // Loop over the layer and set the "target" z's
+    // If this is the first time set_z is called, this will be correctly ordered prior to the set
+    // If it's a later call, all the values will already have _zf.
+    var p;
+    for(var n in VGT.tabletop.layers[this.settings.layer].children) {
+      p = VGT.tabletop.layers[this.settings.layer].children[n].thing;
+
+      // Set the z value
+      if(p._zf == undefined) p._zf = n;
+
+      // If it's the one we're moving this is the initial value
+      if(p = this) p._zi = n;
+    }
+
+    // If zf > zi 
+    //   p.z < zi         no change
+    //   p.z == zi        set to zf
+    //   zi < p.z <= zf   subtract one
+    //   p.z > zf         no change
+    
+    // If zi > zf
+    //   p.z < zf         no change
+    //   zf <= p.z < zi   add one
+    //   p.z == zi        set to zf
+    //   p.x > zi         no change
+
+    /* Now that we have the zi and zf, loop over the state pieces, updating the z's of those in the layer.
+      var p;
+      for(var i in state.pieces) if(l == state.pieces[i]['l']) { p = state.pieces[i];
+
+        // Do different numbering depending on where the z is relative to the initial and final values.
+        
+        // No matter what, if the z matches the initial z, this is the one to set
+        if(p.z == zi) { p.z = zf; }
+        
+        // If zf > zi, we're moving it up in z order, so the middle numbers shift down.
+        else if(zi < p.z && p.z <= zf) { p.z--; }
+
+        // If zi > zf, we're moving it lower, so the middle numbers shift up
+        else if(zf <= p.z && p.z < zi) { p.z++; }
+      }
+    */
+
+    // Remember the target z
+    this._zf = z;
+
+    // Now increment all those above the target
   }
 
   // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
@@ -2814,6 +2870,14 @@ class _Thing {
 
       // stuff it back in
       parent.addChildAt(c, z);
+    }
+
+    // Update the z-values to a well-ordered list
+    // Loop over the layer and set the "target" z's
+    var p;
+    for(var n in VGT.tabletop.layers[this.settings.layer].children) {
+      p = VGT.tabletop.layers[this.settings.layer].children[n].thing;
+      p._zf = n;
     }
   }
 
@@ -3003,6 +3067,7 @@ class _Thing {
   }
 
   // Returns true if this thing is in a higher layer or higher index than the supplied thing
+  // Note this tests the VALUE, not the TARGET z.
   is_higher_than(thing) {
 
     // Higher or lower layer
@@ -3173,14 +3238,13 @@ class _Things {
       // Add the thing to it
       this[group].push(thing);
     }
-
   } // End of Things.add_thing()
 
   // Collect things into a tidy stack
   collect(things, x, y, r, r_stack, dx, dy, center_on_top, supplied_order) {
 
     // Get an object, indexed by layer with lists of things, sorted by z
-    if(!supplied_order) var sorted = VGT.things.sort_by_z(things); 
+    if(!supplied_order) var sorted = VGT.things.sort_by_z_value(things); 
     else                var sorted = things; 
 
     // Loop over layers and stack at the mouse coordinates
@@ -3199,6 +3263,8 @@ class _Things {
       p.set_xyrs(x+v[0], y+v[1], r);
       n++;
     }
+
+    return sorted;
   }
 
   // Drop into a disordered heap of the specified radius
@@ -3233,7 +3299,7 @@ class _Things {
     if(sort) var sorted = this.sort_z_by_id(things);
 
     // Get an object, indexed by layer with lists of things, sorted by z
-    else var sorted = VGT.things.sort_by_z(things);
+    else var sorted = VGT.things.sort_by_z_value(things);
 
     // Get the row count from the first element
     var n = sorted.length-1;
@@ -3391,7 +3457,8 @@ class _Things {
   }
 
   // Given a list of things returns a list sorted by layer then z-index.
-  sort_by_z(things, descending) { 
+  // This is based on the current z value, not the target
+  sort_by_z_value(things, descending) { 
 
     // First sort by layers
     var sorted = {}, layer;
@@ -3423,6 +3490,40 @@ class _Things {
     return result;
   }
 
+  // Given a list of things returns a list sorted by layer then z-index.
+  // This is based on the TARGET z value, not the actual value (waiting for server request)
+  sort_by_zf(things, descending) { 
+
+    // First sort by layers
+    var sorted = {}, layer;
+    for(var n in things) { 
+
+      // Attach its z-value for easy sorting; this will lead to duplicate z-values
+      if(things[n]._zf == undefined) things[n]._zf = things[n].get_z();
+
+      // If we don't have a list for this layer yet, make an empty one
+      layer = things[n].settings.layer;
+      if(!sorted[layer]) sorted[layer] = []; 
+
+      // Stick it in the sorted list.
+      sorted[layer].push(things[n]);
+    }
+
+    // Now loop over the sorted layers, and sort each array
+    for(var k in sorted) sort_objects_by_key(sorted[k], '_zf', descending);
+
+    // Now loop over the sorted layers and assemble the master list
+    var layers = Object.keys(sorted);
+    if(descending) layers.sort(function(a, b) { return b - a; })
+    else           layers.sort(function(a, b) { return a - b; });
+
+    // Get the final result
+    var result = [];
+    for(var n in layers) for(var i in sorted[layers[n]]) result.push(sorted[layers[n]][i]);
+
+    return result;
+  }
+
   // Sends all selected things to the top.
   send_selected_to_top(team) { 
 
@@ -3430,7 +3531,7 @@ class _Things {
     if(this.selected[team]) {
       
       // Get the sorted held objects, indexed by layer
-      var sorted = this.sort_by_z(Object.values(this.selected[team]));
+      var sorted = this.sort_by_z_value(Object.values(this.selected[team]));
       
       // Send them to the top, bottom first
       for(var k in sorted) sorted[k].send_to_top();
@@ -3445,7 +3546,7 @@ class _Things {
     if(this.selected[team]) {
       
       // Get the sorted held objects
-      var sorted = this.sort_by_z(Object.values(this.selected[team]), true);
+      var sorted = this.sort_by_z_value(Object.values(this.selected[team]), true);
       
       // Send them to the top, bottom first
       for(var k in sorted) sorted[k].send_to_bottom();
@@ -3695,7 +3796,7 @@ class _NamePlate extends _Thing {
     this.type = 'NamePlate';
   }
 
-  // No z-setting or q for this; that's only for pieces
+  // NAMEPLATE: No z-setting or q for this; that's only for pieces
   // JACK: Could have the z requests by thing ID? Unfortunately things are not well-ordered
   set_z() {};
 
@@ -4169,18 +4270,36 @@ class _Game {
 
     // Restore the piece information
     var c, p;
-    for(var id in state.pieces) { 
-      p = VGT.pieces.all[id];
+
+    // Get a z-sorted list
+    var pieces = []; // To be filled
+
+    // Make sure the incoming piece data includes the id and is in the list
+    for(var id in state.pieces) {
+      console.log('hay', id, state.pieces[id])
+      state.pieces[id].id_piece = id; 
+      pieces.push(state.pieces[id]);
+    }
+    
+    // Make sure it has a z-value (shouldn't happen for newer saves)
+    for(var n in pieces) if(pieces[n].z == undefined) pieces[n].z = 0;
+    sort_objects_by_key(pieces, 'z');
+
+    console.log('hay', pieces);
+    
+    for(var n in pieces) { 
+
+      // Get the real piece
+      p = VGT.pieces.all[pieces[n].id_piece];
 
       // If it's a valid piece
       if(p) {
-        c = state.pieces[id];
+        c = pieces[n];
         p.set_xyrs(c.x, c.y, c.r, c.s);
         p.set_R(c.R);
         p.set_texture_index(c.n);
         p.show(c.h);
         p.select(c.ts);
-        p.set_z(c.z);
       }
     } // End of loop over pieces
 
