@@ -525,8 +525,9 @@ function new_game() {
   // each setup.
   
   // Setup for 5 players
-  if(VGT.html.setups.value == '5 Players') 
-    game.load_state_from_server('setups/setup-5.txt', setup_5);
+  if(VGT.html.setups.value == '5 Players') game.load_state_from_server('setups/setup-5.txt', setup_5);
+  if(VGT.html.setups.value == '4 Players') game.load_state_from_server('setups/setup-4.txt', setup_4);
+  if(VGT.html.setups.value == '3 Players') game.load_state_from_server('setups/setup-3.txt', setup_3);
 
 
   
@@ -560,6 +561,9 @@ function setup_5() {
   // The buildings are the same for every setup
   reset_buildings();
 
+  // Tiles face up to start
+  VGT.things.set_texture_index(P.tiles, 1);
+
   // Special indigos and corns
   var b;
   b = P.player_boards[0]; P.tiles_indigo[0].set_xyrs(b.x.target,b.y.target,0);
@@ -567,10 +571,6 @@ function setup_5() {
   b = P.player_boards[4]; P.tiles_indigo[2].set_xyrs(b.x.target,b.y.target,0);
   b = P.player_boards[1]; P.tiles_corn  [0].set_xyrs(b.x.target,b.y.target,0);
   b = P.player_boards[2]; P.tiles_corn  [1].set_xyrs(b.x.target,b.y.target,0);
-  //P.tiles_indigo[1].set_xyrs(P.player_boards[3].x.target, P.player_boards[3].y.target, 0,0);
-  //P.tiles_indigo[2].set_xyrs(P.player_boards[4].x.target, P.player_boards[4].y.target, 0,0);
-  //P.tiles_corn  [0].set_xyrs(P.player_boards[1].x.target, P.player_boards[1].y.target, 0,0);
-  //P.tiles_corn  [1].set_xyrs(P.player_boards[2].x.target, P.player_boards[2].y.target, 0,0);
   
   // 3 fewer indigo and 2 fewer corn
   var indigos = P.tiles_indigo.slice(3);
@@ -581,13 +581,79 @@ function setup_5() {
   tiles = VGT.things.shuffle_z(tiles);
   
   // Put out the 6 & quarries
-  for(var n=0; n<6; n++) {
-    tiles[n].set_texture_index(1);
-    tiles[n].set_xyrs(-267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); }
+  for(var n=0; n<6; n++) tiles[n].set_xyrs(-267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); 
   VGT.things.collect(P.tiles_quarry, -267,-490, 0, 0);
 
   // Rest of pieces
   P.x = tiles.slice(6); 
   VGT.things.set_texture_index(P.x, 0);
-  n = 7; VGT.things.collect(P.x, 0,0);// -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
+  n = 7; VGT.things.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
+}
+
+// Setup function for 5 teams.
+function setup_4() {
+
+  // The buildings are the same for every setup
+  reset_buildings();
+
+  // Tiles face up to start
+  VGT.things.set_texture_index(P.tiles, 1);
+
+  // Special indigos and corns
+  var b;
+  b = P.player_boards[0]; P.tiles_indigo[0].set_xyrs(b.x.target,b.y.target,0);
+  b = P.player_boards[3]; P.tiles_indigo[1].set_xyrs(b.x.target,b.y.target,0);
+  //b = P.player_boards[4]; P.tiles_indigo[2].set_xyrs(b.x.target,b.y.target,0);
+  b = P.player_boards[4]; P.tiles_corn  [0].set_xyrs(b.x.target,b.y.target,0);
+  b = P.player_boards[2]; P.tiles_corn  [1].set_xyrs(b.x.target,b.y.target,0);
+  
+  // 3 fewer indigo and 2 fewer corn
+  var indigos = P.tiles_indigo.slice(2);
+  var corns   = P.tiles_corn  .slice(2);
+
+  // Assemble remaining tiles, shuffle,
+  var tiles = [...corns, ...indigos, ...P.tiles_sugar, ...P.tiles_coffee, ...P.tiles_tobacco];
+  tiles = VGT.things.shuffle_z(tiles);
+  
+  // Put out the 6 & quarries
+  for(var n=0; n<5; n++) tiles[n].set_xyrs(-267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); 
+  VGT.things.collect(P.tiles_quarry, -267,-490, 0, 0);
+
+  // Rest of pieces
+  P.x = tiles.slice(5); 
+  VGT.things.set_texture_index(P.x, 0);
+  n = 6; VGT.things.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
+}
+
+// Setup function for 3 teams.
+function setup_3() {
+
+  // The buildings are the same for every setup
+  reset_buildings();
+
+  // Tiles face up to start
+  VGT.things.set_texture_index(P.tiles, 1);
+
+  // Special indigos and corns
+  var b;
+  b = P.player_boards[4]; P.tiles_indigo[0].set_xyrs(b.x.target,b.y.target,0);
+  b = P.player_boards[3]; P.tiles_indigo[1].set_xyrs(b.x.target,b.y.target,0);
+  b = P.player_boards[2]; P.tiles_corn  [0].set_xyrs(b.x.target,b.y.target,0);
+  
+  // 3 fewer indigo and 2 fewer corn
+  var indigos = P.tiles_indigo.slice(2);
+  var corns   = P.tiles_corn  .slice(1);
+
+  // Assemble remaining tiles, shuffle,
+  var tiles = [...corns, ...indigos, ...P.tiles_sugar, ...P.tiles_coffee, ...P.tiles_tobacco];
+  tiles = VGT.things.shuffle_z(tiles);
+  
+  // Put out the 6 & quarries
+  for(var n=0; n<4; n++) tiles[n].set_xyrs(-267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); 
+  VGT.things.collect(P.tiles_quarry, -267,-490, 0, 0);
+
+  // Rest of pieces
+  P.x = tiles.slice(4); 
+  VGT.things.set_texture_index(P.x, 0);
+  n = 5; VGT.things.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
 }

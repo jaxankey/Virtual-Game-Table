@@ -299,7 +299,7 @@ class _Net {
       sort_objects_by_key(zs[l], 'z');
       
       // Now insert them from bottom to top.
-      for(n in zs[l]) zs[l][n].piece._set_z(zs[l][n].z);
+      for(n in zs[l]) zs[l][n].piece._set_z_value(zs[l][n].z);
     }
 
     // Loop over the hands in the input queue
@@ -376,7 +376,7 @@ class _Net {
   on_z(data) { if(!this.ready) return; log('NETR_z', data);
 
     // Set the z locally
-    for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z(data[n+1]);
+    for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1]);
   }
 
   /** We receive a queue of piece information from the server. */
@@ -411,7 +411,7 @@ class _Net {
       for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
         p.update_q_out('z');
         p.update_q_out('l');
-        p._zf = p.get_z();   // The other place this "engine tracking" z is set is when the server sends us info, in process_queues
+        p._z_target = p.get_z_value();   // The other place this "engine tracking" z is set is when the server sends us info, in process_queues
       }
     }
 
@@ -910,6 +910,7 @@ class _Tabletop {
     this.container.scale.x  =  this.s.value;
     this.container.scale.y  =  this.s.value;
     this.container.alpha    = 1-fader_smooth(500+this._t0_fade_in, 700)
+    
     // Update the mouse position
     if( (Math.abs(this.x.value-this.x.target) > 0.1/this.s.value
       || Math.abs(this.y.value-this.y.target) > 0.1/this.s.value
@@ -1104,8 +1105,8 @@ class _Interaction {
 
       collect_selected_to_mouse : this.collect_selected_to_mouse.bind(this),
       expand_selected_to_mouse  : this.expand_selected_to_mouse.bind(this),
-      start_shuffle_or_undo_redo             : this.start_shuffle_or_undo_redo.bind(this),
-      align_distribute_selected          : this.align_distribute_selected.bind(this),
+      start_shuffle_or_undo_redo  : this.start_shuffle_or_undo_redo.bind(this),
+      align_distribute_selected   : this.align_distribute_selected.bind(this),
 
       start_roll                : this.start_roll.bind(this),
       roll                      : this.roll.bind(this),
@@ -2718,7 +2719,7 @@ class _Thing {
 
     // Update the q depending on the kind of data it is.
     if(['x','y','r','R','s'].includes(qkey)) q_out[id][qkey] = this[key].target;
-    else if(qkey == 'z')                     q_out[id][qkey] = this.get_z();
+    else if(qkey == 'z')                     q_out[id][qkey] = this.get_z_value();
     else if(qkey == 'l')                     q_out[id][qkey] = Math.round(this.settings.layer);
     else                                     q_out[id][qkey] = this[key];
 
@@ -2780,7 +2781,7 @@ class _Thing {
   }
 
   // Returns the z-order index (pieces with lower index are behind this one)
-  get_z() {
+  get_z_value() {
 
     // Get the parent of the container
     var parent = this.container.parent;
@@ -2793,26 +2794,22 @@ class _Thing {
   // User function for setting the z-index of this piece.
   // This will do NOTHING locally, waiting instead for the server
   // to tell us what to do with it. Here we just send a z request to the server immediately.
-  set_z(z) { 
+  set_z_target(z) { 
     
     // Add it to the quick q
     VGT.net.q_z_out.push(this.id_piece);
     VGT.net.q_z_out.push(z);
 
-    // Loop over the layer and set the "target" z's
-    // If this is the first time set_z is called, this will be correctly ordered prior to the set
-    // If it's a later call, all the values will already have _zf.
-    var p;
-    for(var n in VGT.tabletop.layers[this.settings.layer].children) {
-      p = VGT.tabletop.layers[this.settings.layer].children[n].thing;
+    // For each piece, every time the server sends z information (process_q or process_z_q),
+    // The pieces go through _set_z_target(), which shuffles them around and updates their 
+    // this._z_target values to a well-ordered list. Before the server has data, _z_target is also set well.
+    
+    // Get this piece's zi (initial / current value) and zf (setpoint)
+    var zi = this._z_target
+    var zf = parseInt(z);
 
-      // Set the z value
-      if(p._zf == undefined) p._zf = n;
-
-      // If it's the one we're moving this is the initial value
-      if(p = this) p._zi = n;
-    }
-
+    // We follow the same numbering logic of the server:
+    //
     // If zf > zi 
     //   p.z < zi         no change
     //   p.z == zi        set to zf
@@ -2825,38 +2822,36 @@ class _Thing {
     //   p.z == zi        set to zf
     //   p.x > zi         no change
 
-    /* Now that we have the zi and zf, loop over the state pieces, updating the z's of those in the layer.
-      var p;
-      for(var i in state.pieces) if(l == state.pieces[i]['l']) { p = state.pieces[i];
+    // Now that we have the zi and zf, loop over the pieces in this layer and update the z's according to the above.
+    var p;
+    for(var i in this.container.parent.children) { p = this.container.parent.children[i].thing;
 
-        // Do different numbering depending on where the z is relative to the initial and final values.
-        
-        // No matter what, if the z matches the initial z, this is the one to set
-        if(p.z == zi) { p.z = zf; }
-        
-        // If zf > zi, we're moving it up in z order, so the middle numbers shift down.
-        else if(zi < p.z && p.z <= zf) { p.z--; }
+      // Do different numbering depending on where the z is relative to the initial and final values.
+      
+      // No matter what, if the z matches the initial z (i.e., it is this piece), this is the one to set
+      if(p == this) { p._z_target = zf; }
+      
+      // If zf > zi, we're moving it up in z order, so the middle numbers shift down.
+      else if(zi < p._z_target && p._z_target <= zf) { p._z_target--; }
 
-        // If zi > zf, we're moving it lower, so the middle numbers shift up
-        else if(zf <= p.z && p.z < zi) { p.z++; }
-      }
-    */
+      // If zi > zf, we're moving it lower, so the middle numbers shift up
+      else if(zf <= p._z_target && p._z_target < zi) { p._z_target++; }
+    
+    } // End of _z_target update loop
+  
+    //for(var i in this.container.parent.children) { p = this.container.parent.children[i]; console.log('HAY', p.thing._z_target);}
 
-    // Remember the target z
-    this._zf = z;
-
-    // Now increment all those above the target
-  }
+  } // End of set_z_target
 
   // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
-  _set_z(z) {
+  _set_z_value(z) {
     if(z == undefined) return;
 
     // Get the parent of the container
     var parent = this.container.parent;
     
     // Get the current index
-    var n_old = this.get_z();
+    var n_old = this.get_z_value();
 
     // If it's in the list, pop it out and stick it where it belongs
     if(n_old >= 0) {
@@ -2872,12 +2867,11 @@ class _Thing {
       parent.addChildAt(c, z);
     }
 
-    // Update the z-values to a well-ordered list
-    // Loop over the layer and set the "target" z's
+    // Update the z-values to a well-ordered list for this layer
     var p;
     for(var n in VGT.tabletop.layers[this.settings.layer].children) {
       p = VGT.tabletop.layers[this.settings.layer].children[n].thing;
-      p._zf = n;
+      p._z_target = parseInt(n);
     }
   }
 
@@ -2887,10 +2881,10 @@ class _Thing {
     var parent = this.container.parent;
     
     // If it exists, send it to the top of the parent's list.
-    if(parent) this.set_z(parent.children.length-1);
+    if(parent) this.set_z_target(parent.children.length-1);
   }
 
-  send_to_bottom() {this.set_z(0);}
+  send_to_bottom() {this.set_z_target(0);}
 
   /**
    * Fills the container with all the sprites. This can be overloaded for more complex
@@ -3075,7 +3069,7 @@ class _Thing {
     if(this.settings.layer < thing.settings.layer) return false;
 
     // Equal layer
-    if(this.get_z() > thing.get_z()) return true;
+    if(this.get_z_value() > thing.get_z_value()) return true;
     else                             return false;
   }
 
@@ -3244,7 +3238,7 @@ class _Things {
   collect(things, x, y, r, r_stack, dx, dy, center_on_top, supplied_order) {
 
     // Get an object, indexed by layer with lists of things, sorted by z
-    if(!supplied_order) var sorted = VGT.things.sort_by_z_value(things); 
+    if(!supplied_order) var sorted = VGT.things.sort_by_z_target(things); 
     else                var sorted = things; 
 
     // Loop over layers and stack at the mouse coordinates
@@ -3465,7 +3459,7 @@ class _Things {
     for(var n in things) { 
 
       // Attach its z-value for easy sorting
-      things[n]._z = things[n].get_z();
+      things[n]._z = things[n].get_z_value();
 
       // If we don't have a list for this layer yet, make an empty one
       layer = things[n].settings.layer;
@@ -3492,14 +3486,17 @@ class _Things {
 
   // Given a list of things returns a list sorted by layer then z-index.
   // This is based on the TARGET z value, not the actual value (waiting for server request)
-  sort_by_zf(things, descending) { 
+  sort_by_z_target(things, descending) { 
 
     // First sort by layers
     var sorted = {}, layer;
     for(var n in things) { 
 
       // Attach its z-value for easy sorting; this will lead to duplicate z-values
-      if(things[n]._zf == undefined) things[n]._zf = things[n].get_z();
+      if(things[n]._z_target == undefined) {
+        log("WEIRD: No z-target on piece", things.id_piece);
+        things[n]._z_target = things[n].get_z_value();
+      } 
 
       // If we don't have a list for this layer yet, make an empty one
       layer = things[n].settings.layer;
@@ -3510,7 +3507,7 @@ class _Things {
     }
 
     // Now loop over the sorted layers, and sort each array
-    for(var k in sorted) sort_objects_by_key(sorted[k], '_zf', descending);
+    for(var k in sorted) sort_objects_by_key(sorted[k], '_z_target', descending);
 
     // Now loop over the sorted layers and assemble the master list
     var layers = Object.keys(sorted);
@@ -3798,7 +3795,7 @@ class _NamePlate extends _Thing {
 
   // NAMEPLATE: No z-setting or q for this; that's only for pieces
   // JACK: Could have the z requests by thing ID? Unfortunately things are not well-ordered
-  set_z() {};
+  set_z_target() {};
 
   // Called after set_xyrs(); here we just save our location with a cookie
   after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) {
@@ -4253,7 +4250,7 @@ class _Game {
         n: p.get_texture_index(),
         h: p.is_hidden(),
         ts: p.team_select,
-        z: p.get_z(),
+        z: p.get_z_value(),
       }
 
     } // End of loop over pieces
@@ -4276,7 +4273,6 @@ class _Game {
 
     // Make sure the incoming piece data includes the id and is in the list
     for(var id in state.pieces) {
-      console.log('hay', id, state.pieces[id])
       state.pieces[id].id_piece = id; 
       pieces.push(state.pieces[id]);
     }
@@ -4285,8 +4281,6 @@ class _Game {
     for(var n in pieces) if(pieces[n].z == undefined) pieces[n].z = 0;
     sort_objects_by_key(pieces, 'z');
 
-    console.log('hay', pieces);
-    
     for(var n in pieces) { 
 
       // Get the real piece
