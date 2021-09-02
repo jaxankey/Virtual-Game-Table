@@ -476,12 +476,12 @@ class _Net {
     var message = data[1];
     log('NETR_chat', id, message);
 
-    // Safe-ify the name
+    // Safe-ify the message
     message = html_encode(message);
     
     // Get the name
     if(id == 0) var name = 'Server'
-    else        var name = this.clients[id].name
+    else        var name = htmls_encode(this.clients[id].name);
     
     // Update the interface
     VGT.html.chat(name, message);
@@ -1243,7 +1243,9 @@ class _Interaction {
 
   // Count the selected items
   count_selected(e) {
-    
+    var c = VGT.things.count(VGT.things.selected[VGT.clients.me.team]);
+    log('count_selected()', c);
+    VGT.net.io.emit('chat', '('+String(c.count)+' pieces worth '+String(c.worth)+')');
   }
 
   // Loads the view associated with the pressed key
@@ -1265,9 +1267,8 @@ class _Interaction {
   increment_selected_textures(e) {
     log('VGT.interaction.increment_selected_textures()', e);
 
-    // Loop over the selected items
-    for(var id_thing in VGT.things.selected[VGT.clients.me.team]) 
-      VGT.things.selected[VGT.clients.me.team][id_thing].increment_texture();
+    // Increment all the textures
+    VGT.things.increment_textures(VGT.things.selected[VGT.clients.me.team])
   }
 
   /**
@@ -2242,6 +2243,7 @@ class _Thing {
     rotate_with_view : false,         // Whether the piece should retain its orientation with respect to the screen when rotating the view / table
     text          : false,            // Whether to include a text layer 
     anchor        : {x:0.5, y:0.5},   // Anchor point for the graphic
+    worth         : 0,                // For counting.
 
     // Targeted x, y, r, and s
     x : 0,
@@ -3029,10 +3031,17 @@ class _Thing {
   // Returns the texture index
   get_texture_index() {return this._n;}
   
-  // Increment the texture
-  increment_texture() {
-    log('_Piece.increment_texture()', this.id, this._n+1);
+  // Increment the texture by n (1 if not supplied)
+  increment_texture(n) {
+    if(n==undefined) n = 1;
+    //log('_Piece.increment_texture()', this.id, this._n+n);
     this.set_texture_index(this._n+1);
+  }
+
+  // Decrements the texture by n (1 if not supplied)
+  decrement_texture(n) {
+    if(n==undefined) n=1;
+    this.increment_texture(-n);
   }
 
   // Increment the texture if we've passed a certain amount of time
@@ -3246,6 +3255,17 @@ class _Things {
     }
   } // End of Things.add_thing()
 
+  // Returns {count:, worth: } of the supplied list or object of pieces
+  count(things) {
+    var worth = 0;
+    var count = 0;
+    for(var k in things) {
+      worth += things[k].settings.worth;
+      count += 1;
+    }
+    return {count: count, worth: worth}
+  }
+
   // Collect things into a tidy stack
   collect(things, x, y, r, r_stack, dx, dy, center_on_top, supplied_order) {
 
@@ -3426,6 +3446,17 @@ class _Things {
   // Sets the texture index for the supplied list or object of things
   set_texture_index(things, n) {
     for(var k in things) things[k].set_texture_index(n);
+  }
+
+  /** Increments the selected textures by the given amount (undefined = 1) */
+  increment_textures(things, n) {
+    for(var id_thing in things) things[id_thing].increment_texture(n);
+  }
+
+  /** Decrements the selected textures by the given amount (undefined = 1) */
+  decrement_textures(things, n) {
+    if(n==undefined) n=1;
+    this.increment_textures(things, -n);
   }
 
   /**

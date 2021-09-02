@@ -455,12 +455,12 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-P.doubloon1s = VGT.add_pieces(46, settings, 'doubloon-1.png');
-P.doubloon5s = VGT.add_pieces( 8, settings, 'doubloon-5.png');
+settings.worth = 1; P.doubloon1s = VGT.add_pieces(46, settings, 'doubloon-1.png');
+settings.worth = 5; P.doubloon5s = VGT.add_pieces( 8, settings, 'doubloon-5.png');
 
 settings.x = -400;
-P.vp1s = VGT.add_pieces(32, settings, ['victory-1.png', 'victory-back.png'])
-P.vp5s = VGT.add_pieces(18, settings, ['victory-5.png', 'victory-back.png'])
+settings.worth = 1; P.vp1s = VGT.add_pieces(32, settings, ['victory-1.png', 'victory-back.png'])
+settings.worth = 5; P.vp5s = VGT.add_pieces(18, settings, ['victory-5.png', 'victory-back.png'])
 
 
 
