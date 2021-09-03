@@ -4136,12 +4136,12 @@ class _Game {
     teams : {
       Observer : 0xFFFFFF,
       Red      : 0xFF2A2A,
-      Gray     : 0x808080,
-      Yellow   : 0xFFE84B,
       Orange   : 0xFF6600,
-      Blue     : 0x5599FF,
+      Yellow   : 0xFFE84B,
       Green    : 0x118855,
+      Blue     : 0x5599FF,
       Violet   : 0xD62CFF,
+      Gray     : 0x808080,
       Brown    : 0x883300,
       Manager  : 0x333333
     },
