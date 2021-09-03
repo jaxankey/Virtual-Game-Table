@@ -1690,7 +1690,7 @@ class _Interaction {
     this.button = -1;
 
     // Stop holding VGT.things
-    VGT.game.release_all(VGT.net.id, false, false);
+    VGT.game.client_release(VGT.net.id, false, false);
 
     // If we have a hand, store the down click and update the outbound q
     var hand = null; if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) hand = VGT.clients.me.hand;
@@ -2058,8 +2058,7 @@ class _SnapCircle {
         v = parent.xy_local_to_tabletop(x,y); 
         x = v.x;
         y = v.y;
-        if(r == undefined) r = 0;
-        r += parent.r.target + parent.R.target;
+        if(r != undefined) r += parent.r.target + parent.R.target;
       }
 
       return {score:r2, x:x, y:y, r:r, s:this.settings.s};
@@ -2174,8 +2173,7 @@ class _SnapGrid {
         var vs = parent.xy_local_to_tabletop(xs,ys); 
         xs = vs.x;
         ys = vs.y;
-        if(r == undefined) r = 0;
-        r += parent.r.target + parent.R.target;
+        if(r != undefined) r += parent.r.target + parent.R.target;
       }
       return {score:dx*dx+dy*dy, x:xs, y:ys, r:r, s:this.settings.s};
     }
@@ -2523,8 +2521,8 @@ class _Thing {
 
         // Now loop over the releasing piece list and update the coordinates
         var p;
-        for(var id in VGT.things._releasing) { 
-          p = VGT.things._releasing[id];
+        for(var id in VGT.game._releasing) { 
+          p = VGT.game._releasing[id];
           p.set_xyrs(p.x.target+dx, p.y.target+dy, a.r, a.s); // Animate, tell the world, and do reset R.
         }
       } // End of "found snap point"
@@ -3193,7 +3191,7 @@ class _Thing {
   }
 
   // Returns an object with the lowest snap score from this.settings.groups with the score and targets {score, x, y, r, s}
-  get_best_snap_relationship() {
+  get_best_snap_relationship() { 
 
     // Loop over all the piece groups
     var group, relationship, best = false;
@@ -3209,7 +3207,7 @@ class _Thing {
         if(relationship && (!best || relationship.score < best.score)) best = relationship;
       }
     }
-
+    log('get_best_snap_relationship()', best);
     return best;
   }
 
@@ -4229,12 +4227,12 @@ class _Game {
   reset() {for(var n in VGT.things.all) VGT.things.all[n].reset(); }
 
   /** Releases all things with the supplied client id. */
-  release_all(id_client, force, do_not_update_q_out) { log('release_all()', id_client, VGT.things.held[id_client]);
+  client_release(id_client, force, do_not_update_q_out) { log('client_release()', id_client, VGT.things.held[id_client]);
     
     // If we have a held list for this client id
     if(VGT.things.held[id_client]) {
       
-      // Remember the previously held pieces so they know what to do
+      // Remember the previously held pieces so they know what to do with the snap etc
       this._releasing = {...VGT.things.held[id_client]};
       
       // Loop over the list and reset the id_client_hold

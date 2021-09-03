@@ -48,7 +48,7 @@ VGT.images = {
 
 // Create the Game instance (also stores itself in VGT.game)
 game = new VGT.Game({
-  name           : 'Chesskers',    // Game name
+  name           : 'Chess',        // Game name
   setups         : ['Standard'],   // List of setups
   nameplate_xyrs : [480, 0, 0, 1], // Spawn point for new nameplates
   background_color: 0x777777,
@@ -92,8 +92,8 @@ var settings = {
   layer:  1,              // Layer of the piece
   groups: ['pieces'],     // Groups to which this piece belongs
   rotate_with_view: true, // Piece always keeps its orientation relative to the screen when we rotate the board
-  width:  70,
-  height: 70,
+  width:  64,
+  height: 64,
 }
 
 // White pieces
