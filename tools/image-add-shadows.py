@@ -1,6 +1,9 @@
 import spinmob as sm
 import os
 
+opacity = 90 # Default opacity
+opacity = 50 # Chess value
+
 # Get all the paths you want to convert
 paths = sm.dialogs.load_multiple()
 
@@ -25,6 +28,6 @@ for path in paths:
     png = os.path.join(d,name)+'.png'
     
     # Now run the imagemagick
-    command = r'convert "'+b+r'" \( +clone -background black -shadow 90x7+0+0 \) +swap -background none -layers merge +repage "'+png+'"'
+    command = r'convert "'+b+r'" \( +clone -background black -shadow '+str(opacity)+'x7+0+0 \) +swap -background none -layers merge +repage "'+png+'"'
     print(command)
     os.system(command)

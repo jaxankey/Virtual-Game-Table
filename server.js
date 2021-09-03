@@ -75,7 +75,7 @@ for(var n in process.argv) fun.log_date(process.argv[n]);
 game_name = process.argv[2];
 port      = parseInt(process.argv[3]);
 
-if(game_name == '0') game_name = 'puerto-rico';
+if(game_name == '0') game_name = 'chess';
 if(port      ==  0 ) port      = 38000;
 
 // get the directories
@@ -530,11 +530,11 @@ io.on('connection', function(socket) {
 
 // Send a full update to everyone, excluding recently touched pieces
 function send_full_update() { 
-  fun.log_date('send_full_update()', Object.keys(sockets).length, 'sockets');
-    
+   
   // Send the queue if any sockets exist.
   if(Object.keys(sockets).length) {
-
+    fun.log_date('send_full_update()', Object.keys(sockets).length, 'sockets');
+   
     // Create a similar object to state.pieces, but without the unneeded information
     data = { ...state.pieces };
     for(id in data) { 

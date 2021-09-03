@@ -57,29 +57,6 @@ var VGT = {
 
   debug_level : 3,
 
-  /**
-   * Creates and returns a new piece according to the specified settings
-   * @param {Object} settings  Piece specifications
-   * @param {String} images    Optional images list (overwrites settings.images)
-   * @returns _Piece
-   */
-  add_piece(settings, images) {
-    if(images != undefined) settings.images = images;
-    return new VGT.Piece(settings)
-  },
-  
-  /**
-   * Creates and returns a list of new, identical pieces according to the specified settings.
-   * @param {int} count        Number of copies to make 
-   * @param {Object} settings  Pieces specifications
-   * @param {String} images    Optional images list (overwrites settings.images)
-   */
-  add_pieces(count, settings, images) { log('add_pieces()', count, settings, images);
-    var pieces = [];
-    for(var n=0; n<count; n++) pieces.push(VGT.add_piece(settings, images));
-    return pieces;
-  },
-
 }; // End of VGT base object
 
 // Object for interacting with the html page.
@@ -94,6 +71,7 @@ class _Html {
     this.controls  = document.getElementById('controls');
     this.messages  = document.getElementById('messages');
     this.setups    = document.getElementById('setups');
+    this.rules     = document.getElementById('rules');
   
   } // End of constructor
 
@@ -572,14 +550,15 @@ class _Pixi {
 
     // Set up loading progress indicator, which happens pre PIXI start
     this.loader.onProgress.add(this.loader_onprogress.bind(this));
-  
-    // Assemble the full image path list
-    images.full = [];
-    images.root = finish_directory_path(images.root); // Adds the '/' "smartly".
-    for(var n=0; n<images.list.length; n++) images.full.push(images.root + images.list[n]);
 
-    // Send these paths to the loader and tell it what to do when complete.
-    this.loader.add(images.full).load(this.loader_oncomplete.bind(this)); 
+    // Fix the root path to have the correct connecting character
+    VGT.images.root = finish_directory_path(VGT.images.root);
+
+    // Create a list of paths to send to the pre-loader
+    var full_paths = [];
+    
+    for(var k in VGT.images.paths) full_paths.push(VGT.images.root + VGT.images.paths[k]);
+    this.loader.add(full_paths).load(this.loader_oncomplete.bind(this)); 
   
     // Game loop counter
     this.n_loop = 0;
@@ -725,9 +704,6 @@ class _Pixi {
     // Start the game loop
     log('Starting game loop...');
     VGT.pixi.app.ticker.add(delta => VGT.pixi.game_loop(delta)); 
-    
-    // Hide the loader so users can actually interact with the game
-    //VGT.html.loader.hidden = true;
   }
 
   /**
@@ -764,7 +740,7 @@ class _Pixi {
     
   } // End of game_loop
 
-} // End of MyPixi
+} // End of _Pixi
 
 
 
@@ -2118,9 +2094,9 @@ class _SnapGrid {
   }
 
   // Sends the supplied piece to grid point n,m (integer lattice basis vector steps) relative to the origin x0, y0
-  send_piece_to_grid_xy(piece, n, m) {
+  send_piece_to(piece, n, m) {
     var v = this.get_grid_xy(n,m);
-    piece.set_xyrs(v.x, v.y);
+    piece.set_xyrs(v[0], v[1]);
     return v;
   }
 
@@ -2233,17 +2209,21 @@ class _Thing {
   
   // Default settings for a new object
   default_settings = {
-    images        : null,             // paths relative to the root, with each sub-list being a layer (can animate), e.g. [['a.png','b.png'],['c.png']]
-    image_root    : '',               // Sub-folder in the search directories (path = images.root + image_root + path), e.g. images/
-    shape         : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
-    type          : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
-    sets          : [],               // List of other sets (e.g. VGT.Pieces, VGT.Hands) to which this thing can belong
-    teams         : true,             // List of team names that can control this piece. Setting true means 'all of them', false or [] means 'none'.
-    r_step        : 45,               // How many degrees to rotate when taking a rotation step.
+    images           : null,             // Keys to images defined in VGT.images.paths with each sub-list being a layer (can animate), e.g. [['a','b'],['c']]
+    tint             : null,             // Tint to apply upon creation
+    type             : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
+    sets             : [],               // List of other sets (e.g. VGT.Pieces, VGT.Hands) to which this thing can belong
+    teams            : true,             // List of team names that can control this piece. Setting true means 'all of them', false or [] means 'none'.
+    r_step           : 45,               // How many degrees to rotate when taking a rotation step.
     rotate_with_view : false,         // Whether the piece should retain its orientation with respect to the screen when rotating the view / table
-    text          : false,            // Whether to include a text layer 
-    anchor        : {x:0.5, y:0.5},   // Anchor point for the graphic
-    worth         : 0,                // For counting.
+    text             : false,            // Whether to include a text layer 
+    anchor           : {x:0.5, y:0.5},   // Anchor point for the graphic
+    worth            : 0,                // For counting.
+
+    // Geometry
+    shape  : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
+    width  : null,             // Hitbox width; if null / false / undefined, defaults to image width
+    height : null,             // Hitbox height; if null / false / undefined, defaults to image height
 
     // Targeted x, y, r, and s
     x : 0,
@@ -2285,9 +2265,6 @@ class _Thing {
     // Store the settings, starting with defaults then overrides.
     this.settings = {...this.default_settings, ...settings};
     
-    // Make sure the paths end with a /
-    this.settings.image_root = finish_directory_path(this.settings.image_root);
-
     // Add to a user-supplied sets
     for(var n in this.settings.sets) this.settings.sets[n].add_thing(this);
 
@@ -2405,16 +2382,12 @@ class _Thing {
   /** Sets the tint of all the textures */
   set_tint(tint) {
     this.tint = tint; 
-    for(var n in this.sprites) 
-      this.sprites[n].tint = tint; 
+    for(var n in this.sprites) this.sprites[n].tint = tint; 
   }
   get_tint() { return this.tint; }
 
   // Called once when pixi resources are loaded.
   _initialize_pixi() {
-    
-    // Make sure the paths end with a /
-    images.root = finish_directory_path(images.root);
     
     // Keep a list of texture lists for reference, one texture list for each layer. 
     this.textures = [];
@@ -2430,14 +2403,14 @@ class _Thing {
         for(var m = 0; m<this.settings.images[n].length; m++) {
           
           // Add the actual texture object
-          path = images.root + this.settings.image_root + this.settings.images[n][m];
+          path = VGT.images.root + VGT.images.paths[this.settings.images[n][m]];
           if(VGT.pixi.resources[path]) {
             texture = VGT.pixi.resources[path].texture;
 
             // Add it to the list
             this.textures[n].push(texture);
           }
-          else throw 'No resource for '+ path +'. Usually this is because one of the images provided upon piece creation does not match one of those in images.list.';
+          else throw 'No resource for key '+ this.settings.images[n][m] +'. Usually this is because one of the images provided upon piece creation does not match one of the keys in VGT.images.paths';
         }
       } // Done with loop over images.
     }
@@ -2460,6 +2433,9 @@ class _Thing {
 
     // Add the sprites to the container (can be overloaded); also gets width and height
     this.refill_container();
+
+    // Set the tint
+    if(this.settings.tint != null) this.set_tint(this.settings.tint);
 
     // This piece is ready for action.
     this.ready = true;
@@ -2905,6 +2881,7 @@ class _Thing {
    * Things.
    */
   refill_container() {
+
     // Remove everything
     this.container.removeChildren();
 
@@ -2931,19 +2908,43 @@ class _Thing {
 
   /** Returns teh largest width and height [w,h] */
   get_dimensions() {
-    var w = 0, h = 0;
+    
 
-    // Loop over the layers, keeping the largest dimensions
-    for(var l=0; l<this.sprites.length; l++) {
-      var s = this.sprites[l];
-      w = Math.max(w, s.width);
-      h = Math.max(h, s.height);
+
+    // If there is a set width use this
+    if(this.settings.width) var w = this.settings.width;
+    
+    // Otherwise use the biggest sprite dimension
+    else {
+
+      // Loop over the layers, keeping the largest dimensions
+      var w = 0;
+      for(var l=0; l<this.sprites.length; l++) {
+        var s = this.sprites[l];
+        w = Math.max(w, s.width);
+      }
+
+      // If we have a text layer check that too
+      if(this.text) w = Math.max(w, this.text.width,  this.text_graphics.width);
     }
 
-    // If we have a text layer check that too
-    if(this.text) {
-      w = Math.max(w, this.text.width,  this.text_graphics.width);
-      h = Math.max(h, this.text.height, this.text_graphics.height);
+
+
+    // If there is a set height, use that
+    if(this.settings.height) var h = this.settings.height;
+    
+    // Otherwise use the biggest sprite dimension
+    else {
+
+      // Loop over the layers, keeping the largest dimensions
+      var h = 0;
+      for(var l=0; l<this.sprites.length; l++) {
+        var s = this.sprites[l];
+        h = Math.max(h, s.height);
+      }
+
+      // If we have a text layer check that too
+      if(this.text) h = Math.max(h, this.text.height, this.text_graphics.height);
     }
 
     return [w,h];
@@ -3875,8 +3876,7 @@ class _Hand extends _Thing {
 
     // Create the settings for a hand
     var settings = {
-      images : [['hand.png', 'fist.png']], // paths relative to the root
-      image_root  : 'hands',                    // Image root path.
+      images        : [['hand', 'fist']], // paths relative to the root
       layer         : VGT.tabletop.LAYER_HANDS,   // Hands layer.
       t_pause       : 1200,                       // How long to wait since last move before faiding out.
       t_fade        : 500,                        // Time to fade out.
@@ -3901,10 +3901,11 @@ class _Hand extends _Thing {
     this.nameplate.hand = this;
     this.nameplate.hide(); // New Hands need to be hidden. The other thing that hides them is free_all_hands()
 
+    // Set the initial scale
     VGT.hands.set_scale(1.0/VGT.tabletop.s.value);
   }
 
-  /** Sets the tint of all the textures AND the selection box */
+  /** HAND: Sets the tint of all the textures AND the polygon selection rectangle */
   set_tint(tint) {
 
     // Do the usual thing
@@ -4126,7 +4127,7 @@ class _Game {
   default_settings = {
 
     name: 'VGT',        // Game name
-    rules: 'rules.pdf', // Link to rules for this game
+    rules: null,        // path (e.g. 'rules.pdf') to rules for this game
     undos: 500,         // Number of undos to remember (each 0.5 seconds minimum)
 
     background_color : 0xf9ecec, // Tabletop background color
@@ -4179,6 +4180,9 @@ class _Game {
     var c = load_cookie('setups.value');
     if(c != '') VGT.html.setups.value = c;
 
+    // If we have no rules, hide the button
+    if(this.settings.rules == null) VGT.html.rules.style.visibility='hidden';
+
     // Start the slow housekeeping
     setInterval(this.housekeeping.bind(this), this.settings.t_housekeeping);
 
@@ -4186,6 +4190,29 @@ class _Game {
     setInterval(this.housekeeping_z.bind(this), this.settings.t_housekeeping_z);
   }
 
+  /**
+   * Creates and returns a new piece according to the specified settings
+   * @param {Object} settings  Piece specifications
+   * @param {String} images    Optional images list (overwrites settings.images)
+   * @returns _Piece
+   */
+  add_piece(settings, images) {
+  if(images != undefined) settings.images = images;
+    return new VGT.Piece(settings)
+  }
+  
+  /**
+   * Creates and returns a list of new, identical pieces according to the specified settings.
+   * @param {int} count        Number of copies to make 
+   * @param {Object} settings  Pieces specifications
+   * @param {String} images    Optional images list (overwrites settings.images)
+   */
+  add_pieces(count, settings, images) { log('add_pieces()', count, settings, images);
+    var pieces = [];
+    for(var n=0; n<count; n++) pieces.push(this.add_piece(settings, images));
+    return pieces;
+  }
+  
   /** Gets the team name from the list index. */
   get_team_name(n) {return Object.keys(this.settings.teams)[n];}
 

@@ -24,72 +24,82 @@
 var sound_list = {};
 
 // Master list of all images. This is needed for the preloader to work.
-var images = {
-  root : 'images',
-  list : [
-    'hands/hand.png',
-    'hands/fist.png',
+VGT.images = {
 
-    'build-cityhall.png',
-    'tile-sugar.png',
-    'build-customshouse.png',
-    'role-trader.png',
-    'governor.png',
-    'tile-quarry.png',
-    'tradinghouse.png',
-    'build-indigo.png',
-    'build-residence.png',
-    'tile-back.png',
-    'build-indigo-small.png',
-    'role-captain.png',
-    'tile-indigo.png',
-    'victory-1.png',
-    'tile-tobacco.png',
-    'build-fortress.png',
-    'build-factory.png',
-    'build-wharf.png',
-    'doubloon-1.png',
-    'goods-indigo.png',
-    'role-settler.png',
-    'doubloon-5.png',
-    'build-coffee.png',
-    'build-constructionhut.png',
-    'build-warehouse-small.png',
-    'goods-corn.png',
-    'build-market-large.png',
-    'board-supply.png',
-    'build-hospice.png',
-    'role-builder.png',
-    'colonist.png',
-    'build-university.png',
-    'role-mayor.png',
-    'build-hacienda.png',
-    'build-tobacco.png',
-    'build-sugar.png',
-    'tile-coffee.png',
-    'build-market-small.png',
-    'splash.png',
-    'tile-corn.png',
-    'ship-4.png',
-    'ship-6.png',
-    'ship-7.png',
-    'ship-8.png',
-    'victory-5.png',
-    'board-player.png',
-    'victory-back.png',
-    'ship-5.png',
-    'build-sugar-small.png',
-    'ship-colonist.png',
-    'role-prospector.png',
-    'build-guildhall.png',
-    'role-craftsman.png',
-    'goods-tobacco.png',
-    'build-office.png',
-    'goods-coffee.png',
-    'build-harbor.png',
-    'goods-sugar.png',
-    'build-warehouse-large.png',
-  ],
+    // Base path relative to private/game/, game/, or common/ folders (listed in search order)
+    root: 'images',
+
+    paths: {
+
+      // Required for 
+      'hand': 'hands/hand.png',
+      'fist': 'hands/fist.png',
+
+      'board-supply'         : 'board-supply.png',
+      'board-player'         : 'board-player.png',
+      
+      'tradinghouse'         : 'tradinghouse.png',
+      'ship-colonist'        : 'ship-colonist.png',
+      'ship-4'               : 'ship-4.png',
+      'ship-5'               : 'ship-5.png',
+      'ship-6'               : 'ship-6.png',
+      'ship-7'               : 'ship-7.png',
+      'ship-8'               : 'ship-8.png',
+      
+      'build-cityhall'       : 'build-cityhall.png',
+      'build-coffee'         : 'build-coffee.png',
+      'build-constructionhut': 'build-constructionhut.png',
+      'build-customshouse'   : 'build-customshouse.png',
+      'build-factory'        : 'build-factory.png',
+      'build-fortress'       : 'build-fortress.png',
+      'build-guildhall'      : 'build-guildhall.png',
+      'build-hacienda'       : 'build-hacienda.png',
+      'build-harbor'         : 'build-harbor.png',
+      'build-hospice'        : 'build-hospice.png',
+      'build-indigo-large'   : 'build-indigo.png',
+      'build-indigo-small'   : 'build-indigo-small.png',
+      'build-market-large'   : 'build-market-large.png',
+      'build-market-small'   : 'build-market-small.png',
+      'build-office'         : 'build-office.png',
+      'build-residence'      : 'build-residence.png',
+      'build-sugar-large'    : 'build-sugar.png',
+      'build-sugar-small'    : 'build-sugar-small.png',
+      'build-tobacco'        : 'build-tobacco.png',
+      'build-university'     : 'build-university.png',
+      'build-warehouse-large': 'build-warehouse-large.png',
+      'build-warehouse-small': 'build-warehouse-small.png',
+      'build-wharf'          : 'build-wharf.png',
+      
+      'governor'             : 'governor.png',
+      'role-builder'         : 'role-builder.png',
+      'role-captain'         : 'role-captain.png',
+      'role-craftsman'       : 'role-craftsman.png',
+      'role-mayor'           : 'role-mayor.png',
+      'role-prospector'      : 'role-prospector.png',
+      'role-settler'         : 'role-settler.png',
+      'role-trader'          : 'role-trader.png',
+      
+      'tile-back'            : 'tile-back.png',
+      'tile-coffee'          : 'tile-coffee.png',
+      'tile-corn'            : 'tile-corn.png',
+      'tile-indigo'          : 'tile-indigo.png',
+      'tile-quarry'          : 'tile-quarry.png',
+      'tile-sugar'           : 'tile-sugar.png',
+      'tile-tobacco'         : 'tile-tobacco.png',
+      
+      'doubloon-1'           : 'doubloon-1.png',
+      'doubloon-5'           : 'doubloon-5.png',
+      'colonist'             : 'colonist.png',
+      'goods-corn'           : 'goods-corn.png',
+      'goods-coffee'         : 'goods-coffee.png',
+      'goods-indigo'         : 'goods-indigo.png',
+      'goods-sugar'          : 'goods-sugar.png',
+      'goods-tobacco'        : 'goods-tobacco.png',
+      'victory-back'         : 'victory-back.png',
+      'victory-1'            : 'victory-1.png',
+      'victory-5'            : 'victory-5.png',
+
+    } // End of paths
 }
 
 // Create an instance of the Game object (stores itself in VGT.game)
@@ -114,7 +124,7 @@ var settings = {
   teams:  [],                // Which teams can grab / move this piece
 
   // List of lists of images to use for each of the piece's internal layers
-  images: 'board-supply.png', 
+  images: 'board-supply', 
   
   // Coordinates and scale
   x: 0,
@@ -135,7 +145,7 @@ var settings = {
   shovel: ['pieces', 'cards'], // Which groups this piece will shovel when selecting
   
   // List of lists of images to use for each of the piece's internal layers
-  images: 'board-player.png', 
+  images: 'board-player', 
   
   // Coordinates and scale
   x: 0,
@@ -237,7 +247,7 @@ var settings = {
     }, 
   ]
 }; // end of settings
-P.player_boards = VGT.add_pieces(5, settings);
+P.player_boards = game.add_pieces(5, settings);
 
 
 
@@ -280,21 +290,21 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-P.haciendas        = VGT.add_pieces(2, settings, 'build-hacienda.png');
-P.construction_huts = VGT.add_pieces(2, settings, 'build-constructionhut.png');
-P.factories        = VGT.add_pieces(2, settings, 'build-factory.png');
-P.harbors          = VGT.add_pieces(2, settings, 'build-harbor.png');
-P.hospices         = VGT.add_pieces(2, settings, 'build-hospice.png');
-P.markets_large     = VGT.add_pieces(2, settings, 'build-market-large.png');
-P.markets_small     = VGT.add_pieces(2, settings, 'build-market-small.png');
-P.offices          = VGT.add_pieces(2, settings, 'build-office.png');
-P.universities     = VGT.add_pieces(2, settings, 'build-university.png');
-P.warehouses_large  = VGT.add_pieces(2, settings, 'build-warehouse-large.png');
-P.warehouses_small  = VGT.add_pieces(2, settings, 'build-warehouse-small.png');
-P.wharfs           = VGT.add_pieces(2, settings, 'build-wharf.png');
+P.haciendas        = game.add_pieces(2, settings, 'build-hacienda');
+P.construction_huts = game.add_pieces(2, settings, 'build-constructionhut');
+P.factories        = game.add_pieces(2, settings, 'build-factory');
+P.harbors          = game.add_pieces(2, settings, 'build-harbor');
+P.hospices         = game.add_pieces(2, settings, 'build-hospice');
+P.markets_large     = game.add_pieces(2, settings, 'build-market-large');
+P.markets_small     = game.add_pieces(2, settings, 'build-market-small');
+P.offices          = game.add_pieces(2, settings, 'build-office');
+P.universities     = game.add_pieces(2, settings, 'build-university');
+P.warehouses_large  = game.add_pieces(2, settings, 'build-warehouse-large');
+P.warehouses_small  = game.add_pieces(2, settings, 'build-warehouse-small');
+P.wharfs           = game.add_pieces(2, settings, 'build-wharf');
 
-P.indigo_plants_small = VGT.add_pieces(2, settings, 'build-indigo-small.png');
-P.sugar_plants_small  = VGT.add_pieces(2, settings, 'build-sugar-small.png');
+P.indigo_plants_small = game.add_pieces(2, settings, 'build-indigo-small');
+P.sugar_plants_small  = game.add_pieces(2, settings, 'build-sugar-small');
 
 // 2 spaces
 settings.snaps.push({ // Second worker dot
@@ -303,7 +313,7 @@ settings.snaps.push({ // Second worker dot
     x0: -13,               // Center, x-coordinate
     y0: 16,                // Center, y-coordinate                   
     radius: 50, })         // Radius of snap region
-P.coffee_plants_large  = VGT.add_pieces(2, settings, 'build-coffee.png');
+P.coffee_plants_large  = game.add_pieces(2, settings, 'build-coffee');
 
 // 3 spaces
 settings.snaps.push({ // Second worker dot
@@ -312,9 +322,9 @@ settings.snaps.push({ // Second worker dot
   x0: 47,               // Center, x-coordinate
   y0: 16,                // Center, y-coordinate                   
   radius: 50, })         // Radius of snap region
-P.indigo_plants_large = VGT.add_pieces(2, settings, 'build-indigo.png');
-P.tobacco_plants      = VGT.add_pieces(2, settings, 'build-tobacco.png');
-P.sugar_plants_large  = VGT.add_pieces(2, settings, 'build-sugar.png')
+P.indigo_plants_large = game.add_pieces(2, settings, 'build-indigo-large');
+P.tobacco_plants      = game.add_pieces(2, settings, 'build-tobacco');
+P.sugar_plants_large  = game.add_pieces(2, settings, 'build-sugar-large')
 
 
 
@@ -344,11 +354,11 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-P.cityhall     = VGT.add_piece(settings, 'build-cityhall.png');
-P.fortress     = VGT.add_piece(settings, 'build-fortress.png');
-P.guildhall    = VGT.add_piece(settings, 'build-guildhall.png');
-P.residence    = VGT.add_piece(settings, 'build-residence.png');
-P.customshouse = VGT.add_piece(settings, 'build-customshouse.png');
+P.cityhall     = game.add_piece(settings, 'build-cityhall');
+P.fortress     = game.add_piece(settings, 'build-fortress');
+P.guildhall    = game.add_piece(settings, 'build-guildhall');
+P.residence    = game.add_piece(settings, 'build-residence');
+P.customshouse = game.add_piece(settings, 'build-customshouse');
 
 
 
@@ -381,12 +391,12 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-P.tiles_quarry  = VGT.add_pieces(8,  settings, ['tile-quarry.png']);
-P.tiles_coffee  = VGT.add_pieces(8,  settings, ['tile-back.png', 'tile-coffee.png']);
-P.tiles_tobacco = VGT.add_pieces(9,  settings, ['tile-back.png', 'tile-tobacco.png']);
-P.tiles_corn    = VGT.add_pieces(10, settings, ['tile-back.png', 'tile-corn.png']);
-P.tiles_sugar   = VGT.add_pieces(11, settings, ['tile-back.png', 'tile-sugar.png']);
-P.tiles_indigo  = VGT.add_pieces(12, settings, ['tile-back.png', 'tile-indigo.png']);
+P.tiles_quarry  = game.add_pieces(8,  settings, ['tile-quarry']);
+P.tiles_coffee  = game.add_pieces(8,  settings, ['tile-back', 'tile-coffee']);
+P.tiles_tobacco = game.add_pieces(9,  settings, ['tile-back', 'tile-tobacco']);
+P.tiles_corn    = game.add_pieces(10, settings, ['tile-back', 'tile-corn']);
+P.tiles_sugar   = game.add_pieces(11, settings, ['tile-back', 'tile-sugar']);
+P.tiles_indigo  = game.add_pieces(12, settings, ['tile-back', 'tile-indigo']);
 P.tiles = [...P.tiles_corn, ...P.tiles_indigo, ...P.tiles_tobacco, ...P.tiles_coffee, ...P.tiles_sugar, ...P.tiles_quarry];
 
 
@@ -408,7 +418,7 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-P.colonists = VGT.add_pieces(100, settings, 'colonist.png');
+P.colonists = game.add_pieces(100, settings, 'colonist');
 
 
 
@@ -430,11 +440,11 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-P.coffee  = VGT.add_pieces(9,  settings, 'goods-coffee.png');
-P.tobacco = VGT.add_pieces(9,  settings, 'goods-tobacco.png');
-P.corn    = VGT.add_pieces(10, settings, 'goods-corn.png');
-P.sugar   = VGT.add_pieces(11, settings, 'goods-sugar.png');
-P.indigo  = VGT.add_pieces(12, settings, 'goods-indigo.png');
+P.coffee  = game.add_pieces(9,  settings, 'goods-coffee');
+P.tobacco = game.add_pieces(9,  settings, 'goods-tobacco');
+P.corn    = game.add_pieces(10, settings, 'goods-corn');
+P.sugar   = game.add_pieces(11, settings, 'goods-sugar');
+P.indigo  = game.add_pieces(12, settings, 'goods-indigo');
 
 
 
@@ -455,12 +465,12 @@ var settings = {
 }; // end of settings
 
 // Create pieces
-settings.worth = 1; P.doubloon1s = VGT.add_pieces(46, settings, 'doubloon-1.png');
-settings.worth = 5; P.doubloon5s = VGT.add_pieces( 8, settings, 'doubloon-5.png');
+settings.worth = 1; P.doubloon1s = game.add_pieces(46, settings, 'doubloon-1');
+settings.worth = 5; P.doubloon5s = game.add_pieces( 8, settings, 'doubloon-5');
 
 settings.x = -400;
-settings.worth = 1; P.vp1s = VGT.add_pieces(32, settings, ['victory-1.png', 'victory-back.png'])
-settings.worth = 5; P.vp5s = VGT.add_pieces(18, settings, ['victory-5.png', 'victory-back.png'])
+settings.worth = 1; P.vp1s = game.add_pieces(32, settings, ['victory-1', 'victory-back'])
+settings.worth = 5; P.vp5s = game.add_pieces(18, settings, ['victory-5', 'victory-back'])
 
 
 
@@ -481,26 +491,26 @@ var settings = {
 }; // end of settings
 
 // Create the cards
-P.builder     = VGT.add_piece(settings, 'role-builder.png');
-P.captain     = VGT.add_piece(settings, 'role-captain.png');
-P.craftsman   = VGT.add_piece(settings, 'role-craftsman.png');
-P.mayor       = VGT.add_piece(settings, 'role-mayor.png');
-P.settler     = VGT.add_piece(settings, 'role-settler.png');
-P.trader      = VGT.add_piece(settings, 'role-trader.png');
-P.prospector1 = VGT.add_piece(settings, 'role-prospector.png');
-P.prospector2 = VGT.add_piece(settings, 'role-prospector.png');
-P.governor    = VGT.add_piece(settings, 'governor.png');
+P.builder     = game.add_piece(settings, 'role-builder');
+P.captain     = game.add_piece(settings, 'role-captain');
+P.craftsman   = game.add_piece(settings, 'role-craftsman');
+P.mayor       = game.add_piece(settings, 'role-mayor');
+P.settler     = game.add_piece(settings, 'role-settler');
+P.trader      = game.add_piece(settings, 'role-trader');
+P.prospector1 = game.add_piece(settings, 'role-prospector');
+P.prospector2 = game.add_piece(settings, 'role-prospector');
+P.governor    = game.add_piece(settings, 'governor');
 
 settings.y = -125;
-P.ship_colonist = VGT.add_piece(settings, 'ship-colonist.png');
-P.ship4         = VGT.add_piece(settings, 'ship-4.png');
-P.ship5         = VGT.add_piece(settings, 'ship-5.png');
-P.ship6         = VGT.add_piece(settings, 'ship-6.png');
-P.ship7         = VGT.add_piece(settings, 'ship-7.png');
-P.ship8         = VGT.add_piece(settings, 'ship-8.png');
+P.ship_colonist = game.add_piece(settings, 'ship-colonist');
+P.ship4         = game.add_piece(settings, 'ship-4');
+P.ship5         = game.add_piece(settings, 'ship-5');
+P.ship6         = game.add_piece(settings, 'ship-6');
+P.ship7         = game.add_piece(settings, 'ship-7');
+P.ship8         = game.add_piece(settings, 'ship-8');
 
 settings.y = 100;
-P.trading_house = VGT.add_piece(settings, 'tradinghouse.png');
+P.trading_house = game.add_piece(settings, 'tradinghouse');
 
 
 

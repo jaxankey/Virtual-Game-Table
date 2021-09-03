@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="744.09448"
+   height="1052.3622"
+   id="svg2"
+   version="1.1"
+   inkscape:version="1.1 (1:1.1+202105261517+ce6663b3b7)"
+   viewBox="0 0 744.09448 1052.3622"
+   sodipodi:docname="checker.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs4">
+    <filter
+       style="color-interpolation-filters:sRGB;"
+       inkscape:label="Drop Shadow"
+       id="filter4204">
+      <feFlood
+         flood-opacity="0.678431"
+         flood-color="rgb(0,0,0)"
+         result="flood"
+         id="feFlood4206" />
+      <feComposite
+         in="flood"
+         in2="SourceGraphic"
+         operator="in"
+         result="composite1"
+         id="feComposite4208" />
+      <feGaussianBlur
+         in="composite1"
+         stdDeviation="4"
+         result="blur"
+         id="feGaussianBlur4210" />
+      <feOffset
+         dx="0"
+         dy="0"
+         result="offset"
+         id="feOffset4212" />
+      <feComposite
+         in="SourceGraphic"
+         in2="offset"
+         operator="over"
+         result="composite2"
+         id="feComposite4214" />
+    </filter>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath4218">
+      <rect
+         style="opacity:1;fill:#cccccc;fill-opacity:0.24550901;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect4220"
+         width="130"
+         height="130"
+         x="59.999992"
+         y="52.362183" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath4218-2">
+      <rect
+         style="opacity:1;fill:#cccccc;fill-opacity:0.24550901;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect4220-1"
+         width="130"
+         height="130"
+         x="59.999992"
+         y="52.362183" />
+    </clipPath>
+    <filter
+       style="color-interpolation-filters:sRGB"
+       inkscape:label="Drop Shadow"
+       id="filter4204-5">
+      <feFlood
+         flood-opacity="0.678431"
+         flood-color="rgb(0,0,0)"
+         result="flood"
+         id="feFlood4206-4" />
+      <feComposite
+         in="flood"
+         in2="SourceGraphic"
+         operator="in"
+         result="composite1"
+         id="feComposite4208-1" />
+      <feGaussianBlur
+         in="composite1"
+         stdDeviation="4"
+         result="blur"
+         id="feGaussianBlur4210-3" />
+      <feOffset
+         dx="0"
+         dy="0"
+         result="offset"
+         id="feOffset4212-2" />
+      <feComposite
+         in="SourceGraphic"
+         in2="offset"
+         operator="over"
+         result="composite2"
+         id="feComposite4214-7" />
+    </filter>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath4218-2-9">
+      <rect
+         style="opacity:1;fill:#cccccc;fill-opacity:0.24550901;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect4220-1-2"
+         width="130"
+         height="130"
+         x="59.999992"
+         y="52.362183" />
+    </clipPath>
+    <filter
+       style="color-interpolation-filters:sRGB"
+       inkscape:label="Drop Shadow"
+       id="filter4204-5-4">
+      <feFlood
+         flood-opacity="0.678431"
+         flood-color="rgb(0,0,0)"
+         result="flood"
+         id="feFlood4206-4-6" />
+      <feComposite
+         in="flood"
+         in2="SourceGraphic"
+         operator="in"
+         result="composite1"
+         id="feComposite4208-1-8" />
+      <feGaussianBlur
+         in="composite1"
+         stdDeviation="4"
+         result="blur"
+         id="feGaussianBlur4210-3-9" />
+      <feOffset
+         dx="0"
+         dy="0"
+         result="offset"
+         id="feOffset4212-2-7" />
+      <feComposite
+         in="SourceGraphic"
+         in2="offset"
+         operator="over"
+         result="composite2"
+         id="feComposite4214-7-2" />
+    </filter>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath4218-8">
+      <rect
+         style="opacity:1;fill:#cccccc;fill-opacity:0.24550901;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect4220-8"
+         width="130"
+         height="130"
+         x="59.999992"
+         y="52.362183" />
+    </clipPath>
+    <filter
+       style="color-interpolation-filters:sRGB"
+       inkscape:label="Drop Shadow"
+       id="filter4204-3">
+      <feFlood
+         flood-opacity="0.678431"
+         flood-color="rgb(0,0,0)"
+         result="flood"
+         id="feFlood4206-9" />
+      <feComposite
+         in="flood"
+         in2="SourceGraphic"
+         operator="in"
+         result="composite1"
+         id="feComposite4208-9" />
+      <feGaussianBlur
+         in="composite1"
+         stdDeviation="4"
+         result="blur"
+         id="feGaussianBlur4210-8" />
+      <feOffset
+         dx="0"
+         dy="0"
+         result="offset"
+         id="feOffset4212-5" />
+      <feComposite
+         in="SourceGraphic"
+         in2="offset"
+         operator="over"
+         result="composite2"
+         id="feComposite4214-9" />
+    </filter>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath4218-3">
+      <rect
+         style="opacity:1;fill:#cccccc;fill-opacity:0.245509;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect4220-6"
+         width="130"
+         height="130"
+         x="59.999992"
+         y="52.362183" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath4218-8-0">
+      <rect
+         style="opacity:1;fill:#cccccc;fill-opacity:0.245509;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         id="rect4220-8-6"
+         width="130"
+         height="130"
+         x="59.999992"
+         y="52.362183" />
+    </clipPath>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.98994949"
+     inkscape:cx="-1.0101525"
+     inkscape:cy="343.95694"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     inkscape:window-width="1920"
+     inkscape:window-height="1015"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:object-nodes="true"
+     inkscape:pagecheckerboard="0">
+    <inkscape:grid
+       type="xygrid"
+       id="grid4141" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="115.15738"
+       y="260.40259"
+       id="text4135"><tspan
+         sodipodi:role="line"
+         id="tspan4137"
+         x="115.15738"
+         y="260.40259" /></text>
+    <g
+       id="g4151"
+       style=""
+       clip-path="url(#clipPath4218)"
+       inkscape:export-filename="king_black.png"
+       inkscape:export-xdpi="44.310001"
+       inkscape:export-ydpi="44.310001">
+      <circle
+         inkscape:export-ydpi="34.633961"
+         inkscape:export-xdpi="34.633961"
+         r="46.972092"
+         cy="117.36218"
+         cx="124.99999"
+         id="path4139"
+         style="opacity:1;fill:#6262ff;fill-opacity:1;stroke:#000080;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;"
+         d="M 171.97208,117.36218 A 46.972092,46.972092 0 0 1 124.99999,164.33427 46.972092,46.972092 0 0 1 78.027901,117.36218 46.972092,46.972092 0 0 1 124.99999,70.390091 46.972092,46.972092 0 0 1 171.97208,117.36218 Z" />
+      <rect
+         y="52.362183"
+         x="59.999992"
+         height="130"
+         width="130"
+         id="rect4143"
+         style="opacity:1;fill:none;fill-opacity:0.24550901;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;" />
+      <path
+         sodipodi:nodetypes="cccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4441"
+         d="m 93.373932,98.119644 12.666658,42.222236 38,0 12.66667,-42.222236 -12.66667,21.111136 -2.11111,-25.33334 -10.55556,21.1111 -6.33333,-25.333345 -6.33333,25.333345 -10.55556,-21.1111 -2.11111,25.33332 z"
+         style="opacity:1;fill:#ffffff;fill-rule:evenodd;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;" />
+    </g>
+    <g
+       transform="translate(5.9594051,172.02031)"
+       id="g4151-4"
+       style=""
+       clip-path="url(#clipPath4218-2)"
+       inkscape:export-filename="king_red.png"
+       inkscape:export-xdpi="44.310001"
+       inkscape:export-ydpi="44.310001">
+      <circle
+         inkscape:export-ydpi="34.633961"
+         inkscape:export-xdpi="34.633961"
+         r="46.972092"
+         cy="117.36218"
+         cx="124.99999"
+         id="path4139-3"
+         style="opacity:1;fill:#ff8080;fill-opacity:1;stroke:#d40000;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;"
+         d="M 171.97208,117.36218 A 46.972092,46.972092 0 0 1 124.99999,164.33427 46.972092,46.972092 0 0 1 78.027901,117.36218 46.972092,46.972092 0 0 1 124.99999,70.390091 46.972092,46.972092 0 0 1 171.97208,117.36218 Z" />
+      <rect
+         y="52.362183"
+         x="59.999992"
+         height="130"
+         width="130"
+         id="rect4143-4"
+         style="opacity:1;fill:none;fill-opacity:0.24550901;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;" />
+      <path
+         sodipodi:nodetypes="cccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4441-5"
+         d="m 93.373932,98.119644 12.666658,42.222236 38,0 12.66667,-42.222236 -12.66667,21.111136 -2.11111,-25.33334 -10.55556,21.1111 -6.33333,-25.333345 -6.33333,25.333345 -10.55556,-21.1111 -2.11111,25.33332 z"
+         style="opacity:1;fill:#ffffff;fill-rule:evenodd;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;" />
+    </g>
+    <g
+       transform="translate(183.95941,172.02031)"
+       id="g4151-4-4"
+       style=""
+       clip-path="url(#clipPath4218-2-9)"
+       inkscape:export-filename="checker_red.png"
+       inkscape:export-xdpi="44.310001"
+       inkscape:export-ydpi="44.310001">
+      <circle
+         inkscape:export-ydpi="34.633961"
+         inkscape:export-xdpi="34.633961"
+         r="46.972092"
+         cy="117.36218"
+         cx="124.99999"
+         id="path4139-3-2"
+         style="opacity:1;fill:#ff8080;fill-opacity:1;stroke:#d40000;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;"
+         d="M 171.97208,117.36218 A 46.972092,46.972092 0 0 1 124.99999,164.33427 46.972092,46.972092 0 0 1 78.027901,117.36218 46.972092,46.972092 0 0 1 124.99999,70.390091 46.972092,46.972092 0 0 1 171.97208,117.36218 Z" />
+      <rect
+         y="52.362183"
+         x="59.999992"
+         height="130"
+         width="130"
+         id="rect4143-4-4"
+         style="opacity:1;fill:none;fill-opacity:0.24550901;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;" />
+    </g>
+    <g
+       transform="translate(173.95941,2.020305)"
+       id="g4151-6"
+       style=""
+       clip-path="url(#clipPath4218-8)"
+       inkscape:export-filename="checker_black.png"
+       inkscape:export-xdpi="44.310001"
+       inkscape:export-ydpi="44.310001">
+      <circle
+         inkscape:export-ydpi="34.633961"
+         inkscape:export-xdpi="34.633961"
+         r="46.972092"
+         cy="117.36218"
+         cx="124.99999"
+         id="path4139-37"
+         style="opacity:1;fill:#6262ff;fill-opacity:1;stroke:#000080;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;"
+         d="M 171.97208,117.36218 A 46.972092,46.972092 0 0 1 124.99999,164.33427 46.972092,46.972092 0 0 1 78.027901,117.36218 46.972092,46.972092 0 0 1 124.99999,70.390091 46.972092,46.972092 0 0 1 171.97208,117.36218 Z" />
+      <rect
+         y="52.362183"
+         x="59.999992"
+         height="130"
+         width="130"
+         id="rect4143-2"
+         style="opacity:1;fill:none;fill-opacity:0.24550901;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;" />
+    </g>
+    <g
+       id="g4151-2"
+       style="stroke:#1a1a1a"
+       clip-path="url(#clipPath4218-3)"
+       inkscape:export-filename="king_black.png"
+       inkscape:export-xdpi="44.310001"
+       inkscape:export-ydpi="44.310001"
+       transform="translate(35.95941,349.65812)">
+      <circle
+         inkscape:export-ydpi="34.633961"
+         inkscape:export-xdpi="34.633961"
+         r="46.972092"
+         cy="117.36218"
+         cx="124.99999"
+         id="path4139-6"
+         style="opacity:1;fill:#4d4d4d;fill-opacity:1;stroke:#1a1a1a;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+      <rect
+         y="52.362183"
+         x="59.999992"
+         height="130"
+         width="130"
+         id="rect4143-1"
+         style="opacity:1;fill:none;fill-opacity:0.245509;stroke:#1a1a1a;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cccccccccccc"
+         inkscape:connector-curvature="0"
+         id="path4441-8"
+         d="m 93.373932,98.119644 12.666658,42.222236 h 38 l 12.66667,-42.222236 -12.66667,21.111136 -2.11111,-25.33334 -10.55556,21.1111 -6.33333,-25.333345 -6.33333,25.333345 -10.55556,-21.1111 -2.11111,25.33332 z"
+         style="opacity:1;fill:#ffffff;fill-rule:evenodd;stroke:#1a1a1a;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    </g>
+    <g
+       transform="translate(209.91882,351.67842)"
+       id="g4151-6-7"
+       clip-path="url(#clipPath4218-8-0)"
+       inkscape:export-filename="checker_black.png"
+       inkscape:export-xdpi="44.310001"
+       inkscape:export-ydpi="44.310001">
+      <circle
+         inkscape:export-ydpi="34.633961"
+         inkscape:export-xdpi="34.633961"
+         r="46.972092"
+         cy="117.36218"
+         cx="124.99999"
+         id="path4139-37-9"
+         style="opacity:1;fill:#4d4d4d;fill-opacity:1;stroke:#1a1a1a;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+      <rect
+         y="52.362183"
+         x="59.999992"
+         height="130"
+         width="130"
+         id="rect4143-2-2"
+         style="opacity:1;fill:none;fill-opacity:0.245509;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+    </g>
+  </g>
+</svg>
