@@ -545,24 +545,24 @@ function new_game() {
 } // End of new_game()
 
 function reset_buildings() {
-  VGT.things.collect(P.indigo_plants_small, ...grid_small_buildings.get_grid_xy(0,0), 0, 0);
-  VGT.things.collect(P.sugar_plants_small , ...grid_small_buildings.get_grid_xy(0,1), 0, 0);
-  VGT.things.collect(P.markets_small      , ...grid_small_buildings.get_grid_xy(0,2), 0, 0);
-  VGT.things.collect(P.haciendas          , ...grid_small_buildings.get_grid_xy(0,3), 0, 0);
-  VGT.things.collect(P.construction_huts  , ...grid_small_buildings.get_grid_xy(0,4), 0, 0);
-  VGT.things.collect(P.warehouses_small   , ...grid_small_buildings.get_grid_xy(0,5), 0, 0);
-  VGT.things.collect(P.indigo_plants_large, ...grid_small_buildings.get_grid_xy(1,0), 0, 0);
-  VGT.things.collect(P.sugar_plants_large , ...grid_small_buildings.get_grid_xy(1,1), 0, 0);
-  VGT.things.collect(P.hospices           , ...grid_small_buildings.get_grid_xy(1,2), 0, 0);
-  VGT.things.collect(P.offices            , ...grid_small_buildings.get_grid_xy(1,3), 0, 0);
-  VGT.things.collect(P.markets_large      , ...grid_small_buildings.get_grid_xy(1,4), 0, 0);
-  VGT.things.collect(P.warehouses_large   , ...grid_small_buildings.get_grid_xy(1,5), 0, 0);
-  VGT.things.collect(P.tobacco_plants     , ...grid_small_buildings.get_grid_xy(2,0), 0, 0);
-  VGT.things.collect(P.coffee_plants_large, ...grid_small_buildings.get_grid_xy(2,1), 0, 0);
-  VGT.things.collect(P.factories          , ...grid_small_buildings.get_grid_xy(2,2), 0, 0);
-  VGT.things.collect(P.universities       , ...grid_small_buildings.get_grid_xy(2,3), 0, 0);
-  VGT.things.collect(P.harbors            , ...grid_small_buildings.get_grid_xy(2,4), 0, 0);
-  VGT.things.collect(P.wharfs             , ...grid_small_buildings.get_grid_xy(2,5), 0, 0);
+  VGT.game.collect(P.indigo_plants_small, ...grid_small_buildings.get_grid_xy(0,0), 0, 0);
+  VGT.game.collect(P.sugar_plants_small , ...grid_small_buildings.get_grid_xy(0,1), 0, 0);
+  VGT.game.collect(P.markets_small      , ...grid_small_buildings.get_grid_xy(0,2), 0, 0);
+  VGT.game.collect(P.haciendas          , ...grid_small_buildings.get_grid_xy(0,3), 0, 0);
+  VGT.game.collect(P.construction_huts  , ...grid_small_buildings.get_grid_xy(0,4), 0, 0);
+  VGT.game.collect(P.warehouses_small   , ...grid_small_buildings.get_grid_xy(0,5), 0, 0);
+  VGT.game.collect(P.indigo_plants_large, ...grid_small_buildings.get_grid_xy(1,0), 0, 0);
+  VGT.game.collect(P.sugar_plants_large , ...grid_small_buildings.get_grid_xy(1,1), 0, 0);
+  VGT.game.collect(P.hospices           , ...grid_small_buildings.get_grid_xy(1,2), 0, 0);
+  VGT.game.collect(P.offices            , ...grid_small_buildings.get_grid_xy(1,3), 0, 0);
+  VGT.game.collect(P.markets_large      , ...grid_small_buildings.get_grid_xy(1,4), 0, 0);
+  VGT.game.collect(P.warehouses_large   , ...grid_small_buildings.get_grid_xy(1,5), 0, 0);
+  VGT.game.collect(P.tobacco_plants     , ...grid_small_buildings.get_grid_xy(2,0), 0, 0);
+  VGT.game.collect(P.coffee_plants_large, ...grid_small_buildings.get_grid_xy(2,1), 0, 0);
+  VGT.game.collect(P.factories          , ...grid_small_buildings.get_grid_xy(2,2), 0, 0);
+  VGT.game.collect(P.universities       , ...grid_small_buildings.get_grid_xy(2,3), 0, 0);
+  VGT.game.collect(P.harbors            , ...grid_small_buildings.get_grid_xy(2,4), 0, 0);
+  VGT.game.collect(P.wharfs             , ...grid_small_buildings.get_grid_xy(2,5), 0, 0);
 }
 
 // Setup function for 5 teams.
@@ -572,7 +572,7 @@ function setup_5() {
   reset_buildings();
 
   // Tiles face up to start
-  VGT.things.set_texture_index(P.tiles, 1);
+  VGT.game.set_texture_indices(P.tiles, 1);
 
   // Special indigos and corns
   var b;
@@ -588,16 +588,16 @@ function setup_5() {
 
   // Assemble remaining tiles, shuffle,
   var tiles = [...corns, ...indigos, ...P.tiles_sugar, ...P.tiles_coffee, ...P.tiles_tobacco];
-  tiles = VGT.things.shuffle_z(tiles);
+  tiles = VGT.game.shuffle_z(tiles);
   
   // Put out the 6 & quarries
   for(var n=0; n<6; n++) tiles[n].set_xyrs(-267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); 
-  VGT.things.collect(P.tiles_quarry, -267,-490, 0, 0);
+  VGT.game.collect(P.tiles_quarry, -267,-490, 0, 0);
 
   // Rest of pieces
   P.x = tiles.slice(6); 
-  VGT.things.set_texture_index(P.x, 0);
-  n = 7; VGT.things.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
+  VGT.game.set_texture_indices(P.x, 0);
+  n = 7; VGT.game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
 }
 
 // Setup function for 5 teams.
@@ -607,7 +607,7 @@ function setup_4() {
   reset_buildings();
 
   // Tiles face up to start
-  VGT.things.set_texture_index(P.tiles, 1);
+  VGT.game.set_texture_indices(P.tiles, 1);
 
   // Special indigos and corns
   var b;
@@ -623,16 +623,16 @@ function setup_4() {
 
   // Assemble remaining tiles, shuffle,
   var tiles = [...corns, ...indigos, ...P.tiles_sugar, ...P.tiles_coffee, ...P.tiles_tobacco];
-  tiles = VGT.things.shuffle_z(tiles);
+  tiles = VGT.game.shuffle_z(tiles);
   
   // Put out the 6 & quarries
   for(var n=0; n<5; n++) tiles[n].set_xyrs(-267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); 
-  VGT.things.collect(P.tiles_quarry, -267,-490, 0, 0);
+  VGT.game.collect(P.tiles_quarry, -267,-490, 0, 0);
 
   // Rest of pieces
   P.x = tiles.slice(5); 
-  VGT.things.set_texture_index(P.x, 0);
-  n = 6; VGT.things.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
+  VGT.game.set_texture_indices(P.x, 0);
+  n = 6; VGT.game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
 }
 
 // Setup function for 3 teams.
@@ -642,7 +642,7 @@ function setup_3() {
   reset_buildings();
 
   // Tiles face up to start
-  VGT.things.set_texture_index(P.tiles, 1);
+  VGT.game.set_texture_indices(P.tiles, 1);
 
   // Special indigos and corns
   var b;
@@ -656,14 +656,14 @@ function setup_3() {
 
   // Assemble remaining tiles, shuffle,
   var tiles = [...corns, ...indigos, ...P.tiles_sugar, ...P.tiles_coffee, ...P.tiles_tobacco];
-  tiles = VGT.things.shuffle_z(tiles);
+  tiles = VGT.game.shuffle_z(tiles);
   
   // Put out the 6 & quarries
   for(var n=0; n<4; n++) tiles[n].set_xyrs(-267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); 
-  VGT.things.collect(P.tiles_quarry, -267,-490, 0, 0);
+  VGT.game.collect(P.tiles_quarry, -267,-490, 0, 0);
 
   // Rest of pieces
   P.x = tiles.slice(4); 
-  VGT.things.set_texture_index(P.x, 0);
-  n = 5; VGT.things.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
+  VGT.game.set_texture_indices(P.x, 0);
+  n = 5; VGT.game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
 }

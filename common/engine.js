@@ -52,12 +52,8 @@ CURRENTLY
 
 */
 
-// Object that holds all the relevant namespace for a game designer.
-var VGT = {
-
-  debug_level : 3,
-
-}; // End of VGT base object
+// Holds the user name space
+var VGT = {};
 
 // Object for interacting with the html page.
 class _Html {
@@ -1092,6 +1088,10 @@ class _Interaction {
       load_view : this.load_view.bind(this),
 
       count_selected: this.count_selected.bind(this),
+
+      increment_selected_textures: this.increment_selected_textures.bind(this),
+      decrement_selected_textures: this.decrement_selected_textures.bind(this),
+      zero_selected_textures     : this.zero_selected_textures.bind(this),
     }
 
     // Dictionary of functions for each key
@@ -1179,7 +1179,6 @@ class _Interaction {
       ShiftDigit9Down: this.actions.save_view,
       ShiftDigit0Down: this.actions.save_view,
       
-
       // Collect, expand, shuffle
       KeyCDown:      this.actions.collect_selected_to_mouse,
       ShiftKeyCDown: this.actions.collect_selected_to_mouse,
@@ -1195,7 +1194,10 @@ class _Interaction {
       NumpadEnterDown: this.actions.count_selected,
 
       // Cycle images
-      SpaceDown: this.increment_selected_textures,
+      SpaceDown:        this.actions.increment_selected_textures,
+      PeriodDown:       this.actions.increment_selected_textures,
+      CommaDown:        this.actions.decrement_selected_textures,
+      ShiftSpaceDown:   this.actions.zero_selected_textures,
     }
 
     // Event listeners
@@ -1203,6 +1205,10 @@ class _Interaction {
     window  .addEventListener('resize',  this.onresize_window);
     window  .addEventListener('keydown', this.onkey.bind(this), true);
     window  .addEventListener('keyup',   this.onkey.bind(this), true);
+
+    // Starting values
+    this.xm_tabletop = 0;
+    this.ym_tabletop = 0;
 
     // Pointer interactions
     // Using the surface and objects with the built-in hit test is rough, because it
@@ -1219,7 +1225,7 @@ class _Interaction {
 
   // Count the selected items
   count_selected(e) {
-    var c = VGT.things.count(VGT.things.selected[VGT.clients.me.team]);
+    var c = VGT.game.count(VGT.things.selected[VGT.clients.me.team]);
     log('count_selected()', c);
     VGT.net.io.emit('chat', '('+String(c.count)+' pieces worth '+String(c.worth)+')');
   }
@@ -1244,7 +1250,21 @@ class _Interaction {
     log('VGT.interaction.increment_selected_textures()', e);
 
     // Increment all the textures
-    VGT.things.increment_textures(VGT.things.selected[VGT.clients.me.team])
+    VGT.game.increment_textures(VGT.things.selected[VGT.clients.me.team])
+  }
+
+  decrement_selected_textures(e) {
+    log('VGT.interaction.decrement_selected_textures()', e);
+
+    // Increment all the textures
+    VGT.game.decrement_textures(VGT.things.selected[VGT.clients.me.team])
+  }
+
+  zero_selected_textures(e) {
+    log('VGT.interaction.zero_selected_textures()', e);
+
+    // Set all textures to 0
+    VGT.game.set_texture_indices(VGT.things.selected[VGT.clients.me.team], 0);
   }
 
   /**
@@ -1312,33 +1332,30 @@ class _Interaction {
     if(!VGT.things.selected[VGT.clients.me.team]) return;
     
     // Get the list of things we're shuffling
-    this.shuffling = Object.values(VGT.things.selected[VGT.clients.me.team]);
+    var shuffling = Object.values(VGT.things.selected[VGT.clients.me.team]);
+
+    // Shuffle z; doing this here helps with the visual popping
+    shuffling = VGT.game.shuffle_z(shuffling);
 
     // Send out the cards
-    VGT.things.sneeze(this.shuffling, this.xm_tabletop, this.ym_tabletop, 1, 0.7); 
+    VGT.game.sneeze(shuffling, this.xm_tabletop, this.ym_tabletop, 1, 0.2, undefined, 1); 
 
     // Start the finish shuffle (cancel any existing one)
     clearTimeout(this.timer_shuffling);
-    this.timer_shuffling = setTimeout(this.finish_shuffle, 500, e, this.xm_tabletop, this.ym_tabletop, true);
+    this.timer_shuffling = setTimeout(this.finish_shuffle, 500, e, shuffling, this.xm_tabletop, this.ym_tabletop, true);
   }
 
   // Called a bit after the shuffle animation; actually shuffles and collects cards at the specified coordinates
-  finish_shuffle(e, x, y, center_on_top) {
-
-    // team index
-    var team = VGT.clients.me.team; 
+  finish_shuffle(e, shuffling, x, y, center_on_top) { console.log('finish_shuffle()', shuffling.length);
 
     // Last mouse move tabletop coordinates
     var r = VGT.clients.me.hand.r.value;       
 
-    // Get the unsorted pieces list
-    var pieces = Object.values(VGT.things.selected[team]);
-
-    // Shuffle z
-    var shuffled = VGT.things.shuffle_z(pieces);
+    // Re-send these to the top in case the server has sent an update in between
+    for(var n in shuffling) shuffling[n].send_to_top();
 
     // If we're not holding shift, collect them too
-    if(!e.shiftKey) VGT.things.collect(shuffled, x, y, r, r, undefined, undefined, center_on_top, true)
+    if(!e.shiftKey) VGT.game.collect(shuffling, x, y, r, r, undefined, undefined, center_on_top, true)
   }
 
   // Draws the pieces to the hand and starts the animation
@@ -1364,7 +1381,7 @@ class _Interaction {
     if(this.rolling) {
 
       // Distribute them around the mouse
-      VGT.things.scramble(Object.values(this.rolling), this.xm_tabletop, this.ym_tabletop);
+      VGT.game.scramble(Object.values(this.rolling), this.xm_tabletop, this.ym_tabletop, 1.5, 1.4);
 
       // Not rolling
       this.rolling.length = 0;
@@ -1388,9 +1405,9 @@ class _Interaction {
 
     // Do the collection
     if(e.shiftKey || no_offsets) 
-      VGT.things.pile(pieces, x, y);
-      // VGT.things.collect(pieces, x, y, r, r, 0,         0,         true);
-    else VGT.things.collect(pieces, x, y, r, r, undefined, undefined, true);
+      VGT.game.pile(pieces, x, y);
+      // VGT.game.collect(pieces, x, y, r, r, 0,         0,         true);
+    else VGT.game.collect(pieces, x, y, r, r, undefined, undefined, true);
   }
 
   // Expands the selected pieces in a grid below the mouse
@@ -1408,7 +1425,7 @@ class _Interaction {
     var pieces = Object.values(VGT.things.selected[team]);
 
     // Do the collection
-    VGT.things.expand(pieces, x, y, r, r, e.shiftKey);
+    VGT.game.expand(pieces, x, y, r, r, e.shiftKey);
   }
 
   align_distribute_selected(e) {
@@ -1514,7 +1531,7 @@ class _Interaction {
 
       // If we're not holding shift and it's not already a thing we've selected, 
       // unselect everything.
-      if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.things.unselect_all(VGT.clients.me.team);
+      if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.game.team_unselect(VGT.clients.me.team);
       
       // If we're holding shift and it's already selected, and we're not deselect
       if(e.shiftKey && thing.team_select == VGT.clients.me.team) thing.unselect()
@@ -1523,11 +1540,11 @@ class _Interaction {
       else {
         thing.select(VGT.clients.me.team); // send q, shovel
         if(!e.shiftKey) thing.shovel_select(VGT.clients.me.team);
-        VGT.things.hold_selected(VGT.net.id, false);
+        VGT.game.hold_selected(VGT.net.id, false);
 
         // Send the selection to the top or bottom, depending on button etc
-        if     (e.button == 0) VGT.things.send_selected_to_top(VGT.clients.me.team);
-        else if(e.button == 2) VGT.things.send_selected_to_bottom(VGT.clients.me.team);
+        if     (e.button == 0) VGT.game.send_selected_to_top(VGT.clients.me.team);
+        else if(e.button == 2) VGT.game.send_selected_to_bottom(VGT.clients.me.team);
       }
 
     } // End of "found thing under pointer"
@@ -1536,7 +1553,7 @@ class _Interaction {
     else {
      
       // If we're clicking the tabletop without shift, unselect everything
-      if(!e.shiftKey) VGT.things.unselect_all(VGT.clients.me.team);
+      if(!e.shiftKey) VGT.game.team_unselect(VGT.clients.me.team);
 
       // If we're going to start dragging the rectangle, send the table coordinates of the click
       if(e.button == 2 && hand) { 
@@ -1673,7 +1690,7 @@ class _Interaction {
     this.button = -1;
 
     // Stop holding VGT.things
-    VGT.things.release_all(VGT.net.id, false, false);
+    VGT.game.release_all(VGT.net.id, false, false);
 
     // If we have a hand, store the down click and update the outbound q
     var hand = null; if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) hand = VGT.clients.me.hand;
@@ -3256,368 +3273,6 @@ class _Things {
     }
   } // End of Things.add_thing()
 
-  // Returns {count:, worth: } of the supplied list or object of pieces
-  count(things) {
-    var worth = 0;
-    var count = 0;
-    for(var k in things) {
-      worth += things[k].settings.worth;
-      count += 1;
-    }
-    return {count: count, worth: worth}
-  }
-
-  // Collect things into a tidy stack
-  collect(things, x, y, r, r_stack, dx, dy, center_on_top, supplied_order) {
-
-    // Get an object, indexed by layer with lists of things, sorted by z
-    if(!supplied_order) var sorted = VGT.things.sort_by_z_target(things); 
-    else                var sorted = things; 
-
-    // Loop over layers and stack at the mouse coordinates
-    var p, n=0, dx0, dy0, v;
-    for(var k in sorted) { p = sorted[k];
-      if(dx == undefined) dx0 = p.settings.collect_dx;
-      else                dx0 = dx;
-      
-      if(dy == undefined) dy0 = p.settings.collect_dy;
-      else                dy0 = dy;
-
-      if(center_on_top) v = rotate_vector([(n-sorted.length+1)*dx0, (n-sorted.length+1)*dy0], r_stack);
-      else              v = rotate_vector([ n                 *dx0,  n                 *dy0], r_stack);
-
-      // Set the location and then increment the offset integer.
-      p.set_xyrs(x+v[0], y+v[1], r);
-      n++;
-    }
-
-    return sorted;
-  }
-
-  // Drop into a disordered heap of the specified radius
-  pile(things, x, y, radius) {
-    if(x == undefined) x = 0;
-    if(y == undefined) y = 0;
-
-    // Loop over the supplied things
-    var p, v;
-    for(var k in things) { p = things[k];
-
-      // If no radius is given, use the piece's
-      if(!radius) radius = p.settings.pile_radius;
-
-      // If the piece is in auto mode
-      if(!radius) radius = Math.min(p.width, p.height)*p.s.target;  
-      
-      // Get the random coordinate
-      v = get_random_location_disc(radius);
-
-      // Set it
-      p.set_xyrs(x+v.x,y+v.y,v.r);
-    }
-
-  }
-
-  // Expand these into a grid
-  expand(things, x, y, r, r_stack, sort) { log('expand()', things.length, x, y, r, sort);
-    
-    // If we're supposed to sort by z; this sends the request for z sorting,
-    // but relies on the server's response to actually do it.
-    if(sort) var sorted = this.sort_z_by_id(things);
-
-    // Get an object, indexed by layer with lists of things, sorted by z
-    else var sorted = VGT.things.sort_by_z_value(things);
-
-    // Get the row count from the first element
-    var n = sorted.length-1;
-    var Nx = sorted[n].settings.expand_Nx;
-    var dx = sorted[n].settings.expand_dx;
-    var dy = sorted[n].settings.expand_dy;
-    if(!Nx) Nx = 10;
-    if(!dx) dx = sorted[n].width*sorted[n].s.target;
-    if(!dy) dy = sorted[n].height*sorted[n].s.target;
-
-    // Assemble a 2d array, one element per row
-    var row=0;
-    var expanded = [];
-    for(var n in sorted) {
-      // Make sure we have a sub-array
-      if(!expanded[row]) expanded.push([]);
-      
-      // Add the element
-      expanded[row].push(sorted[n]);
-
-      // Make sure we don't need to start a new row
-      if(expanded[row].length >= Nx) row++; 
-    }
-    
-    // Calculate the upper left corner of the grid
-    var x0 = -(Nx-1)             *0.5*dx;
-    var y0 = -(expanded.length-1)*0.5*dy;
-    
-    // Start positioning things
-    var v;
-    for(var i in expanded) for(var j in expanded[i]) {
-      v = rotate_vector([-(expanded[i].length-1)*0.5*dx + j*dx, y0+i*dy], r_stack);
-      expanded[i][j].set_xyrs(x+v[0], y+v[1], r);
-    }
-      
-  }
-
-  // Resets coordinates
-  reset() {for(var n in this.all) this.all[n].reset(); }
-
-  /** Releases all things with the supplied client id. */
-  release_all(id_client, force, do_not_update_q_out) { log('_Things.release_all()', id_client, this.held[id_client]);
-    
-    // If we have a held list for this client id
-    if(this.held[id_client]) {
-      
-      // Remember the previously held pieces so they know what to do
-      this._releasing = {...this.held[id_client]};
-      
-      // Loop over the list and reset the id_client_hold
-      for(var id_thing in this.held[id_client]) this.held[id_client][id_thing].release(id_client, force, do_not_update_q_out);
-     
-      // Forget the previously held pieces
-      delete this._releasing;
-
-      // Delete the list
-      delete this.held[id_client];
-    }
-  }
-
-  // Shuffles the z-order of the supplied list of things
-  shuffle_z(things) {
-
-    // Make a copy for in-place shuffling
-    var shuffled = [...things];
-    shuffle_array(shuffled);
-    for(var n in shuffled) shuffled[n].send_to_top();
-
-    return shuffled;
-  }
-
-  /**
-   * "Sneezes" the supplied list of things at random locations and rotations 
-   * around the specified coordinates in a randomly populated
-   * hex grid. Does not randomize z or the image indices. See also "scramble()"
-   * 
-   * @param {array} things list of things to sneeze out on the table
-   * @param {float} x      x-coordinate to center the scramble on
-   * @param {float} y      y-coordinate to center the scramble on
-   * @param {int}   space  average lattice sites per piece (on hex grid) (default 1.5)
-   * @param {float} scale  scale for spacing of hex grid (default 1)
-   */
-  sneeze(things, x, y, space, scale) {
-
-    // Bonk out and handle defaults
-    if(!things || things.length==0 || x==undefined || y==undefined) return;
-    if(space == undefined) space = 1.5;
-    if(scale == undefined) scale = 1;
-
-    // Now find the basis vectors based on the biggest radius of the last piece
-    var D  = scale*Math.max(things[things.length-1].width, things[things.length-1].height);
-    var ax = D;
-    var ay = 0;
-    var bx = ax*0.5;
-    var by = ax*0.5*Math.sqrt(3.0);
-
-    // Rotate the basis vectors by a random angle
-    var r = 360*Math.random();
-    var a = rotate_vector([ax, ay], r);
-    var b = rotate_vector([bx, by], r);
-
-    // Generate all the available hex grid indices, skipping (0) at x,y.
-    var spots =[]; for(var n=1; n<things.length*space+1; n++) spots.push(n);
-    
-    // Set the piece coordinates on the hex grid, plus a little randomness
-    for(var n in things) {
-      var p = things[n];
-      var d = hex_spiral(spots.splice(random_integer(0, spots.length-1),1)); // Lattice integers
-      var v = get_random_location_disc(0.25*D); // Small deviation from lattice
-      
-      // Set the random location, orientation, and image
-      p.set_xyrs(x + d.n*a[0] + d.m*b[0] + v.x, 
-                 y + d.n*a[1] + d.m*b[1] + v.y, 
-                 v.r * 7);
-    }
-  }
-
-  // Sets the texture index for the supplied list or object of things
-  set_texture_index(things, n) {
-    for(var k in things) things[k].set_texture_index(n);
-  }
-
-  /** Increments the selected textures by the given amount (undefined = 1) */
-  increment_textures(things, n) {
-    for(var id_thing in things) things[id_thing].increment_texture(n);
-  }
-
-  /** Decrements the selected textures by the given amount (undefined = 1) */
-  decrement_textures(things, n) {
-    if(n==undefined) n=1;
-    this.increment_textures(things, -n);
-  }
-
-  /**
-   * Scramble the supplied things, like rolling dice: randomizes locations in a pattern determined by the 
-   * last piece's diameter, minimizing overlap. 
-   * 
-   * @param {array} things list of things to randomize
-   * @param {float} x      x-coordinate to center the scramble on
-   * @param {float} y      y-coordinate to center the scramble on
-   * @param {int}   space  average lattice sites per piece (on hex grid) (default 1.5)
-   * @param {float} scale  scale for spacing of hex grid (default 1)
-   */
-  scramble(things, x, y, space, scale, do_not_randomize_texture) {
-    
-    // Bonk out and handle defaults
-    if(!things || things.length==0 || x==undefined || y==undefined) return;
-    if(space == undefined) space = 1.5;
-    if(scale == undefined) scale = 1;
-
-    // Shuffle z, sneeze them out around the x, y coordinates, and randomize each texture
-    this.shuffle_z(things);
-    this.sneeze(things, x, y, space, scale);
-    for(var n in things) if(!do_not_randomize_texture) things[n].randomize_texture_index();
-  }
-
-  // Sets the z of the supplied list of things in order of their id (and sends them to the top)
-  sort_z_by_id(things, descending) {
-    
-    // Make a copy for in-place sorting
-    var sorted = [...things];
-    sort_objects_by_key(sorted, 'id_thing', descending);
-    for(var n in sorted) sorted[n].send_to_top();
-
-    return sorted;
-  }
-
-  // Given a list of things returns a list sorted by layer then z-index.
-  // This is based on the current z value, not the target
-  sort_by_z_value(things, descending) { 
-
-    // First sort by layers
-    var sorted = {}, layer;
-    for(var n in things) { 
-
-      // Attach its z-value for easy sorting
-      things[n]._z = things[n].get_z_value();
-
-      // If we don't have a list for this layer yet, make an empty one
-      layer = things[n].settings.layer;
-      if(!sorted[layer]) sorted[layer] = []; 
-
-      // Stick it in the sorted list.
-      sorted[layer].push(things[n]);
-    }
-
-    // Now loop over the sorted layers, and sort each array
-    for(var k in sorted) sort_objects_by_key(sorted[k], '_z', descending);
-
-    // Now loop over the sorted layers and assemble the master list
-    var layers = Object.keys(sorted);
-    if(descending) layers.sort(function(a, b) { return b - a; })
-    else           layers.sort(function(a, b) { return a - b; });
-
-    // Get the final result
-    var result = [];
-    for(var n in layers) for(var i in sorted[layers[n]]) result.push(sorted[layers[n]][i]);
-
-    return result;
-  }
-
-  // Given a list of things returns a list sorted by layer then z-index.
-  // This is based on the TARGET z value, not the actual value (waiting for server request)
-  sort_by_z_target(things, descending) { 
-
-    // First sort by layers
-    var sorted = {}, layer;
-    for(var n in things) { 
-
-      // Attach its z-value for easy sorting; this will lead to duplicate z-values
-      if(things[n]._z_target == undefined) {
-        log("WEIRD: No z-target on piece", things.id_piece);
-        things[n]._z_target = things[n].get_z_value();
-      } 
-
-      // If we don't have a list for this layer yet, make an empty one
-      layer = things[n].settings.layer;
-      if(!sorted[layer]) sorted[layer] = []; 
-
-      // Stick it in the sorted list.
-      sorted[layer].push(things[n]);
-    }
-
-    // Now loop over the sorted layers, and sort each array
-    for(var k in sorted) sort_objects_by_key(sorted[k], '_z_target', descending);
-
-    // Now loop over the sorted layers and assemble the master list
-    var layers = Object.keys(sorted);
-    if(descending) layers.sort(function(a, b) { return b - a; })
-    else           layers.sort(function(a, b) { return a - b; });
-
-    // Get the final result
-    var result = [];
-    for(var n in layers) for(var i in sorted[layers[n]]) result.push(sorted[layers[n]][i]);
-
-    return result;
-  }
-
-  // Sends all selected things to the top.
-  send_selected_to_top(team) { 
-
-    // If we have a held list for this client id
-    if(this.selected[team]) {
-      
-      // Get the sorted held objects, indexed by layer
-      var sorted = this.sort_by_z_value(Object.values(this.selected[team]));
-      
-      // Send them to the top, bottom first
-      for(var k in sorted) sorted[k].send_to_top();
-    }
-  }
-
-
-  // Sends all selected things to the bottom.
-  send_selected_to_bottom(team) { 
-
-    // If we have a held list for this client id
-    if(this.selected[team]) {
-      
-      // Get the sorted held objects
-      var sorted = this.sort_by_z_value(Object.values(this.selected[team]), true);
-      
-      // Send them to the top, bottom first
-      for(var k in sorted) sorted[k].send_to_bottom();
-    }
-  }
-
-
-  /**
-   * Sets up the drag for all selected things for this team
-   * @param {int} team 
-   */
-  hold_selected(id_client, force, do_not_update_q_out) { log('VGT.things.hold_selected()', id_client, force);
-
-    // Loop over the selected things and hold whatever isn't already held by someone else.
-    for(var k in this.selected[VGT.clients.all[id_client].team]) 
-      this.selected[VGT.clients.all[id_client].team][k].hold(id_client, force, do_not_update_q_out);
-  }
-
-  /**
-   * unselect all things for this team.
-   */
-  unselect_all(team) { log('VGT.things.unselect_all()', team);
-
-    // If no team, use our team
-    if(team == undefined) team = VGT.clients.me.team;
-
-    // Loop over all the selected things and pop them.
-    for(var k in this.selected[team]) this.selected[team][k].unselect(); 
-  }
-
 } // End of _Things
 VGT.things = new _Things();
 VGT.Thing = _Thing;
@@ -4184,10 +3839,10 @@ class _Game {
     if(this.settings.rules == null) VGT.html.rules.style.visibility='hidden';
 
     // Start the slow housekeeping
-    setInterval(this.housekeeping.bind(this), this.settings.t_housekeeping);
+    setInterval(this._housekeeping.bind(this), this.settings.t_housekeeping);
 
     // Start the fast housekeeping for z-stuff
-    setInterval(this.housekeeping_z.bind(this), this.settings.t_housekeeping_z);
+    setInterval(this._housekeeping_z.bind(this), this.settings.t_housekeeping_z);
   }
 
   /**
@@ -4455,8 +4110,389 @@ class _Game {
     window.open(this.settings.rules);
   }
 
+
+
+
+
+  
+  ///////////////////////////////////// PIECE MANIPULATIONS
+
+  // Returns {count:, worth: } of the supplied list or object of pieces
+  count(things) {
+    var worth = 0;
+    var count = 0;
+    for(var k in things) {
+      worth += things[k].settings.worth;
+      count += 1;
+    }
+    return {count: count, worth: worth}
+  }
+
+  // Collect things into a tidy stack
+  collect(things, x, y, r, r_stack, dx, dy, center_on_top, supplied_order) {
+
+    // Get an object, indexed by layer with lists of things, sorted by z
+    if(!supplied_order) var sorted = VGT.game.sort_by_z_target(things); 
+    else                var sorted = things; 
+
+    // Loop over layers and stack at the mouse coordinates
+    var p, n=0, dx0, dy0, v;
+    for(var k in sorted) { p = sorted[k];
+      if(dx == undefined) dx0 = p.settings.collect_dx;
+      else                dx0 = dx;
+      
+      if(dy == undefined) dy0 = p.settings.collect_dy;
+      else                dy0 = dy;
+
+      if(center_on_top) v = rotate_vector([(n-sorted.length+1)*dx0, (n-sorted.length+1)*dy0], r_stack);
+      else              v = rotate_vector([ n                 *dx0,  n                 *dy0], r_stack);
+
+      // Set the location and then increment the offset integer.
+      p.set_xyrs(x+v[0], y+v[1], r);
+      n++;
+    }
+
+    return sorted;
+  }
+
+  // Drop into a disordered heap of the specified radius
+  pile(things, x, y, radius) {
+    if(x == undefined) x = 0;
+    if(y == undefined) y = 0;
+
+    // Loop over the supplied things
+    var p, v;
+    for(var k in things) { p = things[k];
+
+      // If no radius is given, use the piece's
+      if(!radius) radius = p.settings.pile_radius;
+
+      // If the piece is in auto mode
+      if(!radius) radius = Math.min(p.width, p.height)*p.s.target;  
+      
+      // Get the random coordinate
+      v = get_random_location_disc(radius);
+
+      // Set it
+      p.set_xyrs(x+v.x,y+v.y,v.r);
+    }
+
+  }
+
+  // Expand these into a grid
+  expand(things, x, y, r, r_stack, sort) { log('expand()', things.length, x, y, r, sort);
+    
+    // If we're supposed to sort by z; this sends the request for z sorting,
+    // but relies on the server's response to actually do it.
+    if(sort) var sorted = this.sort_z_by_id(things);
+
+    // Get an object, indexed by layer with lists of things, sorted by z
+    else var sorted = VGT.game.sort_by_z_value(things);
+
+    // Get the row count from the first element
+    var n = sorted.length-1;
+    var Nx = sorted[n].settings.expand_Nx;
+    var dx = sorted[n].settings.expand_dx;
+    var dy = sorted[n].settings.expand_dy;
+    if(!Nx) Nx = 10;
+    if(!dx) dx = sorted[n].width*sorted[n].s.target;
+    if(!dy) dy = sorted[n].height*sorted[n].s.target;
+
+    // Assemble a 2d array, one element per row
+    var row=0;
+    var expanded = [];
+    for(var n in sorted) {
+      // Make sure we have a sub-array
+      if(!expanded[row]) expanded.push([]);
+      
+      // Add the element
+      expanded[row].push(sorted[n]);
+
+      // Make sure we don't need to start a new row
+      if(expanded[row].length >= Nx) row++; 
+    }
+    
+    // Calculate the upper left corner of the grid
+    var x0 = -(Nx-1)             *0.5*dx;
+    var y0 = -(expanded.length-1)*0.5*dy;
+    
+    // Start positioning things
+    var v;
+    for(var i in expanded) for(var j in expanded[i]) {
+      v = rotate_vector([-(expanded[i].length-1)*0.5*dx + j*dx, y0+i*dy], r_stack);
+      expanded[i][j].set_xyrs(x+v[0], y+v[1], r);
+    }
+      
+  }
+
+  // Resets coordinates
+  reset() {for(var n in VGT.things.all) VGT.things.all[n].reset(); }
+
+  /** Releases all things with the supplied client id. */
+  release_all(id_client, force, do_not_update_q_out) { log('release_all()', id_client, VGT.things.held[id_client]);
+    
+    // If we have a held list for this client id
+    if(VGT.things.held[id_client]) {
+      
+      // Remember the previously held pieces so they know what to do
+      this._releasing = {...VGT.things.held[id_client]};
+      
+      // Loop over the list and reset the id_client_hold
+      for(var id_thing in VGT.things.held[id_client]) VGT.things.held[id_client][id_thing].release(id_client, force, do_not_update_q_out);
+      
+      // Forget the previously held pieces
+      delete this._releasing;
+
+      // Delete the list
+      delete VGT.things.held[id_client];
+    }
+  }
+
+  // Shuffles the z-order of the supplied list of things
+  shuffle_z(things) {
+
+    // Make a copy for in-place shuffling
+    var shuffled = [...things];
+    shuffle_array(shuffled);
+
+    // Send each of these pieces to the top; this also ensures that the list is ordered by z target
+    for(var n in shuffled) shuffled[n].send_to_top();
+
+    // Return the list ordered by z target
+    return shuffled;
+  }
+
+  // Sets the texture index for the supplied list or object of things
+  set_texture_indices(things, n) { for(var k in things) things[k].set_texture_index(n); }
+
+  /** Increments the selected textures by the given amount (undefined = 1) */
+  increment_textures(things, n) {
+    for(var id_thing in things) things[id_thing].increment_texture(n);
+  }
+
+  /** Decrements the selected textures by the given amount (undefined = 1) */
+  decrement_textures(things, n) {
+    if(n==undefined) n=1;
+    this.increment_textures(things, -n);
+  }
+
+  /** Randomizes the texture indices for the list or object of things. */
+  randomize_texture_indices(things) { for(var n in things) things[n].randomize_texture_index(); }
+
+  /**
+   * "Sneezes" the supplied list of things at random locations and rotations 
+   * around the specified coordinates in a randomly populated
+   * hex grid. Does not randomize z or the image indices. See also "scramble()"
+   * 
+   * @param {array} things list of things to sneeze out on the table
+   * @param {float} x      x-coordinate to center the scramble on
+   * @param {float} y      y-coordinate to center the scramble on
+   * @param {int}   space  average lattice sites per piece (on hex grid) (default 1.5)
+   * @param {float} scale  scale for spacing of hex grid (default 1)
+   * @param {float} deviation disorder in position around the lattice site
+   * @param {float} rotation scale of random rotation
+   */
+  sneeze(things, x, y, space, scale, deviation, rotation) {
+
+    // Bonk out and handle defaults
+    if(!things || things.length==0 || x==undefined || y==undefined) return;
+    if(space == undefined) space = 1.5;
+    if(scale == undefined) scale = 1;
+    if(deviation == undefined) deviation = 0.25;
+    if(rotation == undefined) rotation = 7;
+
+    // Now find the basis vectors based on the biggest radius of the last piece
+    var p_top = things[things.length-1];
+    var D  = scale*p_top.s.target*Math.max(p_top.width, p_top.height);
+    var ax = D;
+    var ay = 0;
+    var bx = ax*0.5;
+    var by = ax*0.5*Math.sqrt(3.0);
+
+    // Rotate the basis vectors by a random angle
+    var r = 360*Math.random();
+    var a = rotate_vector([ax, ay], r);
+    var b = rotate_vector([bx, by], r);
+
+    // Generate all the available hex grid indices, skipping (0) at x,y.
+    var spots =[]; for(var n=1; n<things.length*space+1; n++) spots.push(n);
+    
+    // Set the piece coordinates on the hex grid, plus a little randomness
+    for(var n in things) {
+      var p = things[n];
+      var d = hex_spiral(spots.splice(random_integer(0, spots.length-1),1)); // Lattice integers
+      var v = get_random_location_disc(deviation*D); // Small deviation from lattice
+      
+      // Set the random location, orientation, and image
+      p.set_xyrs(x + d.n*a[0] + d.m*b[0] + v.x, 
+                  y + d.n*a[1] + d.m*b[1] + v.y, 
+                  v.r * rotation);
+    }
+  }
+  
+  /**
+   * Scramble the supplied things, like rolling dice: randomizes locations in a pattern determined by the 
+   * last piece's diameter, minimizing overlap. 
+   * 
+   * @param {array} things list of things to randomize
+   * @param {float} x      x-coordinate to center the scramble on
+   * @param {float} y      y-coordinate to center the scramble on
+   * @param {int}   space  average lattice sites per piece (on hex grid) (default 1.5)
+   * @param {float} scale  scale for spacing of hex grid (default 1)
+   * @param {float} deviation fractional disorder in position around each lattice site.
+   */
+  scramble(things, x, y, space, scale, deviation, do_not_randomize_texture) {
+    
+    // Bonk out and handle defaults
+    if(!things || things.length==0 || x==undefined || y==undefined) return;
+    if(space == undefined) space = 1.5;
+    if(scale == undefined) scale = 1.4;
+
+    // Shuffle z, sneeze them out around the x, y coordinates, and randomize each texture
+    this.shuffle_z(things);
+    this.sneeze(things, x, y, space, scale, deviation);
+    if(!do_not_randomize_texture) this.randomize_texture_indices(things);
+  }
+
+  // Sets the z of the supplied list of things in order of their id (and sends them to the top)
+  sort_z_by_id(things, descending) {
+    
+    // Make a copy for in-place sorting
+    var sorted = [...things];
+    sort_objects_by_key(sorted, 'id_thing', descending);
+    for(var n in sorted) sorted[n].send_to_top();
+
+    return sorted;
+  }
+
+  // Given a list of things returns a list sorted by layer then z-index.
+  // This is based on the current z value, not the target
+  sort_by_z_value(things, descending) { 
+
+    // First sort by layers
+    var sorted = {}, layer;
+    for(var n in things) { 
+
+      // Attach its z-value for easy sorting
+      things[n]._z = things[n].get_z_value();
+
+      // If we don't have a list for this layer yet, make an empty one
+      layer = things[n].settings.layer;
+      if(!sorted[layer]) sorted[layer] = []; 
+
+      // Stick it in the sorted list.
+      sorted[layer].push(things[n]);
+    }
+
+    // Now loop over the sorted layers, and sort each array
+    for(var k in sorted) sort_objects_by_key(sorted[k], '_z', descending);
+
+    // Now loop over the sorted layers and assemble the master list
+    var layers = Object.keys(sorted);
+    if(descending) layers.sort(function(a, b) { return b - a; })
+    else           layers.sort(function(a, b) { return a - b; });
+
+    // Get the final result
+    var result = [];
+    for(var n in layers) for(var i in sorted[layers[n]]) result.push(sorted[layers[n]][i]);
+
+    return result;
+  }
+
+  /**
+   * Given a list of things returns a list sorted by layer then TARGETED z value, which can be
+   * different than the current value when waiting for the server to send the next z update. */ 
+  sort_by_z_target(things, descending) { 
+
+    // First sort by layers
+    var sorted = {}, layer;
+    for(var n in things) { 
+
+      // Attach its z-value for easy sorting; this will lead to duplicate z-values
+      if(things[n]._z_target == undefined) {
+        log("WEIRD: No z-target on piece", things.id_piece);
+        things[n]._z_target = things[n].get_z_value();
+      } 
+
+      // If we don't have a list for this layer yet, make an empty one
+      layer = things[n].settings.layer;
+      if(!sorted[layer]) sorted[layer] = []; 
+
+      // Stick it in the sorted list.
+      sorted[layer].push(things[n]);
+    }
+
+    // Now loop over the sorted layers, and sort each array
+    for(var k in sorted) sort_objects_by_key(sorted[k], '_z_target', descending);
+
+    // Now loop over the sorted layers and assemble the master list
+    var layers = Object.keys(sorted);
+    if(descending) layers.sort(function(a, b) { return b - a; })
+    else           layers.sort(function(a, b) { return a - b; });
+
+    // Get the final result
+    var result = [];
+    for(var n in layers) for(var i in sorted[layers[n]]) result.push(sorted[layers[n]][i]);
+
+    return result;
+  }
+
+  // Sends all selected things to the top.
+  send_selected_to_top(team) { 
+
+    // If we have a held list for this client id
+    if(VGT.things.selected[team]) {
+      
+      // Get the sorted held objects, indexed by layer
+      var sorted = this.sort_by_z_value(Object.values(VGT.things.selected[team]));
+      
+      // Send them to the top, bottom first
+      for(var k in sorted) sorted[k].send_to_top();
+    }
+  }
+
+
+  // Sends all selected things to the bottom.
+  send_selected_to_bottom(team) { 
+
+    // If we have a held list for this client id
+    if(VGT.things.selected[team]) {
+      
+      // Get the sorted held objects
+      var sorted = this.sort_by_z_value(Object.values(VGT.things.selected[team]), true);
+      
+      // Send them to the top, bottom first
+      for(var k in sorted) sorted[k].send_to_bottom();
+    }
+  }
+
+
+  /**
+   * Sets up the drag for all selected things for this team
+   * @param {int} team 
+   */
+  hold_selected(id_client, force, do_not_update_q_out) { log('VGT.game.hold_selected()', id_client, force);
+
+    // Loop over the selected things and hold whatever isn't already held by someone else.
+    for(var k in VGT.things.selected[VGT.clients.all[id_client].team]) 
+      VGT.things.selected[VGT.clients.all[id_client].team][k].hold(id_client, force, do_not_update_q_out);
+  }
+
+  /**
+   * unselect all things for this team.
+   */
+  team_unselect(team) { log('VGT.game.team_unselect()', team);
+
+    // If no team, use our team
+    if(team == undefined) team = VGT.clients.me.team;
+
+    // Loop over all the selected things and pop them.
+    for(var k in VGT.things.selected[team]) VGT.things.selected[team][k].unselect(); 
+  }
+
+
   /** Function called every quarter second to do housekeeping. */
-  housekeeping() {
+  _housekeeping() {
     
     // Save an undo if we're not holding pieces (and if it's been awhile, which is handled by the function itself)
     if(!VGT.things.held[VGT.net.id]) this.save_undo();
@@ -4485,7 +4521,7 @@ class _Game {
   } // End of housekeeping.
 
   // Function called very often to send the z-queues
-  housekeeping_z(e) {
+  _housekeeping_z(e) {
     // Process z queues
     VGT.net.process_q_z_out();
   }
