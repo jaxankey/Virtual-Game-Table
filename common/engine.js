@@ -3820,7 +3820,7 @@ class _Game {
     VGT.pixi        = new _Pixi();
     VGT.tabletop    = new _Tabletop();
     VGT.interaction = new _Interaction();
-    VGT.sounds      = new _Sounds(sound_list);
+    if(VGT.sound_list) VGT.sounds = new _Sounds(sound_list);
     
     // Add elements to the setups combo box
     for (var k in this.settings.setups) {

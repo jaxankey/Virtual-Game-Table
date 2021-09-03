@@ -8,7 +8,7 @@
    version="1.1"
    inkscape:version="1.1 (1:1.1+202105261517+ce6663b3b7)"
    viewBox="0 0 744.09448 1052.3622"
-   sodipodi:docname="checker.svg"
+   sodipodi:docname="checker_drawing.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -396,7 +396,7 @@
          height="130"
          width="130"
          id="rect4143-1"
-         style="opacity:1;fill:none;fill-opacity:0.245509;stroke:#1a1a1a;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+         style="opacity:1;fill:none;fill-opacity:0.245509;stroke:none;stroke-width:1;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
       <path
          sodipodi:nodetypes="cccccccccccc"
          inkscape:connector-curvature="0"

@@ -20,9 +20,6 @@
 // Resource lists       //
 //////////////////////////
 
-// Master list of all sounds. Needed for the pre-loader to work.
-var sound_list = {};
-
 // Master list of all images. This is needed for the preloader to work.
 VGT.images = {
 

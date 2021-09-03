@@ -215,6 +215,7 @@ exports.to_string = to_string;
 
 // Makes sure there is a '/' at the end of a non-zero-length path.
 function finish_directory_path(p) {
+    if(!p) return '';
     if(p.length && p[p.length-1] != '/') return p+'/';
     return p;
 }
