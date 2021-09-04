@@ -2227,7 +2227,7 @@ class _Thing {
     images           : null,             // Keys to images defined in VGT.images.paths with each sub-list being a layer (can animate), e.g. [['a','b'],['c']]
     tint             : null,             // Tint to apply upon creation
     type             : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
-    sets             : [],               // List of other sets (e.g. VGT.Pieces, VGT.Hands) to which this thing can belong
+    sets             : [],               // List of other sets (e.g. VGT.pieces, VGT.hands) to which this thing can belong
     teams            : true,             // List of team names that can control this piece. Setting true means 'all of them', false or [] means 'none'.
     r_step           : 45,               // How many degrees to rotate when taking a rotation step.
     rotate_with_view : false,         // Whether the piece should retain its orientation with respect to the screen when rotating the view / table
@@ -3344,10 +3344,6 @@ VGT.Piece  = _Piece;
 /** Animated Polygon */
 class _Polygon extends _Thing { 
 
-  default_settings = {
-    vertices: undefined,     // List of vertices, e.g. [[x1,y1],[x2,y2],...]
-  }
-
   constructor(settings) {
 
     if(!settings) settings = {};
@@ -3391,7 +3387,7 @@ class _Polygon extends _Thing {
   }
   
   // Adds a vertex, e.g., [27,289]
-  add_vertex(v) { this.vertices.push([new _Animated(v[0]), new _Animated(v[1])]); } // Possible memory leak
+  add_vertex(v) { this.vertices.push([new _Animated(v[0]), new _Animated(v[1])]); this.needs_redraw = true} // Possible memory leak
 
   // Adds a list of vertices, e.g. [[100,10],[50,50],[32,37],...]
   add_vertices(vs) { for(var n in vs) this.add_vertex(vs[n]); }
@@ -3400,7 +3396,7 @@ class _Polygon extends _Thing {
   set_vertex(n, v, immediate) { 
     this.vertices[n][0].set(v[0], immediate); 
     this.vertices[n][1].set(v[1], immediate); 
-    if(immediate) this.needs_redraw = true;
+    this.needs_redraw = true;
 
     this.update_q_out(n);
   }
@@ -3477,6 +3473,22 @@ class _Polygons {
 }
 VGT.polygons = new _Polygons();
 VGT.Polygons = _Polygons;
+
+class _TeamZone extends _Polygon {
+
+  constructor(settings) {
+    if(!settings) settings = {}
+    settings.type = 'TeamZone'
+    settings.sets = [VGT.pieces]
+    
+    super(settings);
+
+    // Draw it the first time.
+    this.redraw();
+  }
+}
+VGT.TeamZone = _TeamZone;
+
 
 class _NamePlate extends _Thing {
 
