@@ -3418,6 +3418,11 @@ class _Polygon extends _Thing {
     return new PIXI.Polygon(...vs); // Possible memory leak
   }
 
+  // Returns true if the supplied tabletop coordinates are within this polygon
+  contains_tabletop_xy(x,y) {
+    return this.get_tabletop_polygon().contains(x,y);
+  }
+
   // Animate the vertices
   animate_other(delta) {
 
@@ -3474,20 +3479,121 @@ class _Polygons {
 VGT.polygons = new _Polygons();
 VGT.Polygons = _Polygons;
 
+/**
+ * Polygon that determines which teams can grab or see what pieces when they're contained within.
+ */
 class _TeamZone extends _Polygon {
+
+  default_settings = {
+    teams_grab:      [0,9],     // List of teams (indices) that can grab the pieces; null means everyone
+    teams_see:         [0],     // List of teams (indices) that can see the secret images; null means everyone
+    color:            null,     // Hex color (e.g. 0x123456) of the fill & line; null means "automatic" (the color of the first team in the list)
+    
+    alpha_fill_grab:    0.1,  // Opacity of the fill for the grab teams
+    alpha_line_grab:    0.8,  // Opacity of the line for the grab teams
+    alpha_fill_see:    null,  // Opacity of the fill for the see teams; supercedes grab alpha; null means match grab value
+    alpha_line_see:    null,  // Opacity of the line for the see teams; supercedes grab alpha; null means match grab value
+    alpha_fill_others:    1,  // Opacity of the fill for other teams
+    alpha_line_others:  0.5,  // Opacity of the line for other teams
+    
+    width_line:        2,       // Border width
+  }
 
   constructor(settings) {
     if(!settings) settings = {}
     settings.type = 'TeamZone'
-    settings.sets = [VGT.pieces]
+    settings.sets = [VGT.teamzones]
     
+    // Run the default stuff
     super(settings);
 
-    // Draw it the first time.
-    this.redraw();
+    // Now override defaults
+    for(var k in this.default_settings) 
+      if(settings[k] != undefined) this.settings[k] = settings[k];
+      else                         this.settings[k] = this.default_settings[k];
+
+    // Deal with nulls (convert to a list [0,1,2,3...])
+    if(this.settings.teams_grab == null) this.settings.teams_grab = [...Object.keys(VGT.game.settings.teams).keys()];
+    if(this.settings.teams_see  == null) this.settings.teams_see  = [...Object.keys(VGT.game.settings.teams).keys()];
+
+    // If we overrode the color, then the first color in the list, then the first team color
+    if(this.settings.color == null)
+      if(this.settings.teams_grab) this.settings.color = game.get_team_color(this.settings.teams_grab[0]);
+      else this.settings.color = game.get_team_color(0);
+
+    // Opacities
+    if(this.settings.alpha_fill_see == null) this.settings.alpha_fill_see = this.settings.alpha_fill_grab;
+    if(this.settings.alpha_line_see == null) this.settings.alpha_line_see = this.settings.alpha_line_grab;
+    
+    // These will be drawn once we rebuild the client list, so we know our colors etc.
+    //this.redraw();
   }
+
+  // Clear and redraw the whole thing
+  redraw() {
+    
+    // If this team zone is our see zone
+    if(this.settings.teams_see.includes(game.get_my_team_index())) {
+      var alpha_fill = this.settings.alpha_fill_see;
+      var alpha_line = this.settings.alpha_line_see;
+    }
+
+    // Otherwise if it's our grab zone, use that
+    else if(this.settings.teams_grab.includes(game.get_my_team_index())) {
+      var alpha_fill = this.settings.alpha_fill_grab;
+      var alpha_line = this.settings.alpha_line_grab;
+    }
+
+    // Otherwise, we're "someone else"
+    else {
+      var alpha_fill = this.settings.alpha_fill_others;
+      var alpha_line = this.settings.alpha_line_others;
+    }
+
+    // Clear the graphics
+    this.graphics.clear();
+    
+    // Get the list of pixi points with the most recent value
+    var ps = [];
+    for(var n in this.vertices) ps.push(new PIXI.Point(this.vertices[n][0].value, this.vertices[n][1].value)); // Possible memory leak
+    this.graphics.lineStyle(this.settings.width_line, this.settings.color, alpha_line);
+    this.graphics.beginFill(this.settings.color, alpha_fill);
+    this.graphics.drawPolygon(ps);
+    this.graphics.endFill();
+
+    // Render it to a sprite for refill
+    if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
+    this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
+    this.graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
+    
+    // Refill the container
+    this.refill_container();
+
+    // Don't need to do this again!
+    this.needs_redraw = false;
+  }
+  
+
 }
 VGT.TeamZone = _TeamZone;
+
+// List of team zones
+class _TeamZones {
+  constructor() {
+    this.all = [];
+  }
+
+  // Adds a thing to the list, and queues it for addition to the table. 
+  add_thing(teamzone) {
+    teamzone.id_teamzone = this.all.length;
+    this.all.push(teamzone);
+  }
+
+  // Resets coordinates
+  reset() {for(var n in this.all) this.all[n].reset(); }
+}
+VGT.teamzones = new _TeamZones();
+VGT.TeamZones = _TeamZones;
 
 
 class _NamePlate extends _Thing {
@@ -3781,6 +3887,9 @@ class _Clients {
 
     // Finally, using the current VGT.net.clients, rebuild the html table.
     VGT.html.rebuild_client_table();
+
+    // At this point, we have all the clients and their teams. Now redraw the team zones.
+    for(var n in VGT.teamzones.all) VGT.teamzones.all[n].needs_redraw = true;
   }
 }
 VGT.clients = new _Clients();
@@ -3879,14 +3988,22 @@ class _Game {
   }
   
   /** Gets the team name from the list index. */
-  get_team_name(n) {return Object.keys(this.settings.teams)[n];}
+  get_team_name(n)   {return Object.keys(this.settings.teams)[n];}
+  get_my_team_name() {return this.get_team_name(this.get_my_team_index());}
 
   /** Gets the team index from the name. Returns -1 for "not in list" */
   get_team_index(name) {return Object.keys(this.settings.teams).indexOf(name);  }
+  get_my_team_index()  {
+    if(VGT.clients && VGT.clients.me) return VGT.clients.me.team
+    else                              return 0;
+  }
 
   /** Gets the color from the index */
-  get_team_color(n) {return this.settings.teams[Object.keys(this.settings.teams)[n]]; }
-
+  get_team_color(n)   {return this.settings.teams[Object.keys(this.settings.teams)[n]]; }
+  get_my_team_color() {
+    if(VGT.clients && VGT.clients.me) return VGT.clients.me.color;
+    else                              return 0;
+  }
 
   /** Adds an undo level if something has changed */
   save_undo() {
@@ -4193,7 +4310,7 @@ class _Game {
   expand(things, x, y, r, r_stack, sort) { log('expand()', things.length, x, y, r, sort);
     
     // If we're supposed to sort by z; this sends the request for z sorting,
-    // but relies on the server's response to actually do it.
+    // but delayed by the server's response to actually do it.
     if(sort) var sorted = this.sort_z_by_id(things);
 
     // Get an object, indexed by layer with lists of things, sorted by z
@@ -4223,13 +4340,13 @@ class _Game {
     }
     
     // Calculate the upper left corner of the grid
-    var x0 = -(Nx-1)             *0.5*dx;
-    var y0 = -(expanded.length-1)*0.5*dy;
+    var x0 = -(expanded[0].length-1)*0.5*dx;
+    var y0 = -(expanded.length   -1)*0.5*dy;
     
     // Start positioning things
     var v;
     for(var i in expanded) for(var j in expanded[i]) {
-      v = rotate_vector([-(expanded[i].length-1)*0.5*dx + j*dx, y0+i*dy], r_stack);
+      v = rotate_vector([x0+j*dx, y0+i*dy], r_stack);
       expanded[i][j].set_xyrs(x+v[0], y+v[1], r);
     }
       
