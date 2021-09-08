@@ -282,13 +282,13 @@ class _Net {
       c = this.q_hands_in[id_hand]; // Incoming changes
       p = VGT.hands.all[id_hand];   // Actual hand
 
-      // Visually update the hand's position (x,y,r,s), texture (n), and mousedown table coordinates (vd) if it's not our hand
+      // Visually update the hand's position (x,y,r,s), image (n), and mousedown table coordinates (vd) if it's not our hand
       if(p && p.id_client != VGT.net.id){
       
         // Undefined quantities do nothing to these functions
         p        .set_xyrs(c.x, c.y, c.r, undefined, immediate, true);
         p.polygon.set_xyrs(c.x, c.y, c.r, undefined, immediate, true); 
-        p.set_texture_index(c.n, true);
+        p.set_image_index(c.n, true);
         
         // vd should be null or [x,y] for the down click coordinates
         if(c.vd != undefined) p.vd = c.vd;
@@ -1089,9 +1089,9 @@ class _Interaction {
 
       count_selected: this.count_selected.bind(this),
 
-      increment_selected_textures: this.increment_selected_textures.bind(this),
-      decrement_selected_textures: this.decrement_selected_textures.bind(this),
-      zero_selected_textures     : this.zero_selected_textures.bind(this),
+      increment_selected_images: this.increment_selected_images.bind(this),
+      decrement_selected_images: this.decrement_selected_images.bind(this),
+      zero_selected_images     : this.zero_selected_images.bind(this),
     }
 
     // Dictionary of functions for each key
@@ -1194,10 +1194,10 @@ class _Interaction {
       NumpadEnterDown: this.actions.count_selected,
 
       // Cycle images
-      SpaceDown:        this.actions.increment_selected_textures,
-      PeriodDown:       this.actions.increment_selected_textures,
-      CommaDown:        this.actions.decrement_selected_textures,
-      ShiftSpaceDown:   this.actions.zero_selected_textures,
+      SpaceDown:        this.actions.increment_selected_images,
+      PeriodDown:       this.actions.increment_selected_images,
+      CommaDown:        this.actions.decrement_selected_images,
+      ShiftSpaceDown:   this.actions.zero_selected_images,
     }
 
     // Event listeners
@@ -1246,25 +1246,25 @@ class _Interaction {
     VGT.tabletop.save_view('view'+e.code);
   }
 
-  increment_selected_textures(e) {
-    log('VGT.interaction.increment_selected_textures()', e);
+  increment_selected_images(e) {
+    log('VGT.interaction.increment_selected_images()', e);
 
-    // Increment all the textures
-    VGT.game.increment_textures(VGT.things.selected[VGT.clients.me.team])
+    // Increment all the images
+    VGT.game.increment_images(VGT.things.selected[VGT.clients.me.team])
   }
 
-  decrement_selected_textures(e) {
-    log('VGT.interaction.decrement_selected_textures()', e);
+  decrement_selected_images(e) {
+    log('VGT.interaction.decrement_selected_images()', e);
 
-    // Increment all the textures
-    VGT.game.decrement_textures(VGT.things.selected[VGT.clients.me.team])
+    // Increment all the images
+    VGT.game.decrement_images(VGT.things.selected[VGT.clients.me.team])
   }
 
-  zero_selected_textures(e) {
-    log('VGT.interaction.zero_selected_textures()', e);
+  zero_selected_images(e) {
+    log('VGT.interaction.zero_selected_images()', e);
 
-    // Set all textures to 0
-    VGT.game.set_texture_indices(VGT.things.selected[VGT.clients.me.team], 0);
+    // Set all images to 0
+    VGT.game.set_image_indices(VGT.things.selected[VGT.clients.me.team], 0);
   }
 
   /**
@@ -2224,16 +2224,17 @@ class _Thing {
   
   // Default settings for a new object
   default_settings = {
-    images           : null,             // Keys to images defined in VGT.images.paths with each sub-list being a layer (can animate), e.g. [['a','b'],['c']]
-    tint             : null,             // Tint to apply upon creation
-    type             : null,             // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
-    sets             : [],               // List of other sets (e.g. VGT.pieces, VGT.hands) to which this thing can belong
-    teams            : true,             // List of team names that can control this piece. Setting true means 'all of them', false or [] means 'none'.
-    r_step           : 45,               // How many degrees to rotate when taking a rotation step.
+    images           : null,          // Keys to images defined in VGT.images.paths with each sub-list being a layer (can animate), e.g. [['a','b'],['c']]
+    images_private   : null,          // Same-structured image list for what we see when it's in our team zone.
+    tint             : null,          // Tint to apply upon creation
+    type             : null,          // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
+    sets             : [],            // List of other sets (e.g. VGT.pieces, VGT.hands) to which this thing can belong
+    teams            : true,          // List of team names that can control this piece. Setting true means 'all of them', false or [] means 'none'.
+    r_step           : 45,            // How many degrees to rotate when taking a rotation step.
     rotate_with_view : false,         // Whether the piece should retain its orientation with respect to the screen when rotating the view / table
-    text             : false,            // Whether to include a text layer 
-    anchor           : {x:0.5, y:0.5},   // Anchor point for the graphic
-    worth            : 0,                // For counting.
+    text             : false,         // Whether to include a text layer 
+    anchor           : {x:0.5,y:0.5}, // Anchor point for the graphic
+    worth            : 0,             // For counting.
 
     // Geometry
     shape  : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
@@ -2268,8 +2269,10 @@ class _Thing {
     // Fix up settings shortcuts
     
     // Make sure the image list is a list of lists of strings for layered sprites.
-    if(typeof settings.images == 'string') settings.images = [[settings.images]];
-    if(settings.images && typeof settings.images[0] == 'string') settings.images = [settings.images];
+    if(typeof settings.images         == 'string') settings.images         = [[settings.images        ]];
+    if(typeof settings.images_private == 'string') settings.images_private = [[settings.images_private]];
+    if(settings.images         && typeof settings.images        [0] == 'string') settings.images         = [settings.images];
+    if(settings.images_private && typeof settings.images_private[0] == 'string') settings.images_private = [settings.images_private];
 
     // Remember what this is for later checking
     this.type = 'Thing';
@@ -2305,11 +2308,11 @@ class _Thing {
 
     // Time of last movement (used for fade out animation)
     this.t_last_move    = 0;
-    this.t_last_texture = 0;
+    this.t_last_image = 0;
     this.t_last_hold    = 0; // Last time we held the piece
 
-    // Texture parameters
-    this._n = 0;             // Current texture index
+    // image parameters
+    this._n = 0;             // Current image index
 
     // List of the q_out indices (nq's), indexed by key,
     // e.g., this.last_nqs['ts'] will be q_out index of the last update
@@ -2360,6 +2363,78 @@ class _Thing {
 
   } // End of constructor.
 
+
+  // Called once when pixi resources are loaded.
+  _initialize_pixi() { log('_initialize_pixi', this.id_thing);
+  
+    // Keep a list of image lists for reference, one image list for each layer. 
+    this.textures = [];
+
+    // If we have a different set of images to be seen when it's in our team zone, 
+    // keep a similarly structured list of those textures
+    if(this.settings.images_private) this.textures_private = [];
+    
+    // If images = null, no textures. sprites will stay empty too.
+    if(this.settings.images != null) {
+
+      var path; // reused in loop
+      for(var n=0; n<this.settings.images.length; n++) {
+        
+        // One list of frames per layer (and the private textures if specified); these do not have to match length
+        this.textures.push([]); 
+        if(this.textures_private) this.textures_private.push([]);
+
+        for(var m = 0; m<this.settings.images[n].length; m++) {
+          
+          // Add the actual texture object for the 'public' images
+          path = VGT.images.root + VGT.images.paths[this.settings.images[n][m]];
+          
+          // If we have a resource for this key, add it to the list
+          if(VGT.pixi.resources[path]) this.textures[n].push(VGT.pixi.resources[path].texture);
+          else throw 'No resource for key '+ this.settings.images[n][m] +'. Usually this is because one of the image keys provided upon piece creation does not match one of the keys in VGT.images.paths';
+        
+          // If we have specified private images
+          if(this.textures_private) {
+
+            // Add the actual texture object for the private images if we have those
+            path = VGT.images.root + VGT.images.paths[this.settings.images_private[n][m]];
+
+            // If we have a resource for this key, add it to the list
+            if(VGT.pixi.resources[path]) this.textures_private[n].push(VGT.pixi.resources[path].texture);
+            else throw 'No resource for key '+ this.settings.images[n][m] +'. Usually this is because one of the image keys provided upon piece creation does not match one of the keys in VGT.images.paths';
+          }
+
+        } // End of loop over images in this layer
+      } // Done with loop over images.
+    }
+      
+    // Loop over the layers, creating one sprite per layer
+    for(var n in this.textures) {
+
+      // Create the layer sprite with the zeroth image by default
+      var sprite = new PIXI.Sprite(this.textures[n][0]);
+      
+      // Center the image
+      sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
+    
+      // Keep it in our personal list, and add it to the container
+      this.sprites.push(sprite);
+    }
+
+    // Update the text for the first time
+    if(this.settings.text) this.set_text(this.settings.text);
+
+    // Add the sprites to the container (can be overloaded); also gets width and height
+    this.refill_container();
+
+    // Set the tint
+    if(this.settings.tint != null) this.set_tint(this.settings.tint);
+
+    // This piece is ready for action.
+    this.ready = true;
+  } // End of _initialize_pixi
+  
+
   // Whether the supplied table coordinates are contained within the object
   contains(x,y) { 
 
@@ -2394,67 +2469,13 @@ class _Thing {
     this.s.set(this.settings.s, immediate); this.s.velocity=0; this.update_q_out('s', 's', do_not_update_q_out);
   }
 
-  /** Sets the tint of all the textures */
+  /** Sets the tint of all the images */
   set_tint(tint) {
     this.tint = tint; 
     for(var n in this.sprites) this.sprites[n].tint = tint; 
   }
   get_tint() { return this.tint; }
 
-  // Called once when pixi resources are loaded.
-  _initialize_pixi() {
-    
-    // Keep a list of texture lists for reference, one texture list for each layer. 
-    this.textures = [];
-    
-    // If images = null, no textures. sprites will stay empty too.
-    if(this.settings.images != null) {
-
-      var path, texture; // reused in loop
-      for(var n=0; n<this.settings.images.length; n++) {
-        
-        // One list of frames per layer; these do not have to match length
-        this.textures.push([]); 
-        for(var m = 0; m<this.settings.images[n].length; m++) {
-          
-          // Add the actual texture object
-          path = VGT.images.root + VGT.images.paths[this.settings.images[n][m]];
-          if(VGT.pixi.resources[path]) {
-            texture = VGT.pixi.resources[path].texture;
-
-            // Add it to the list
-            this.textures[n].push(texture);
-          }
-          else throw 'No resource for key '+ this.settings.images[n][m] +'. Usually this is because one of the images provided upon piece creation does not match one of the keys in VGT.images.paths';
-        }
-      } // Done with loop over images.
-    }
-      
-    // Loop over the layers, creating one sprite per layer
-    for(var n in this.textures) {
-
-      // Create the layer sprite with the zeroth image by default
-      var sprite = new PIXI.Sprite(this.textures[n][0]);
-      
-      // Center the image
-      sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
-    
-      // Keep it in our personal list, and add it to the container
-      this.sprites.push(sprite);
-    }
-
-    // Update the text for the first time
-    if(this.settings.text) this.set_text(this.settings.text);
-
-    // Add the sprites to the container (can be overloaded); also gets width and height
-    this.refill_container();
-
-    // Set the tint
-    if(this.settings.tint != null) this.set_tint(this.settings.tint);
-
-    // This piece is ready for action.
-    this.ready = true;
-  }
 
   /**
    * Sets the controller id. 0 means no one is in control (server).
@@ -2780,7 +2801,7 @@ class _Thing {
       if(d['r']  != undefined && (d['r.i']  != VGT.net.id || d['r.n']  >= this.last_nqs['r'] )) this.set_xyrs(undefined, undefined, d.r, undefined, immediate, true, true);
       if(d['s']  != undefined && (d['s.i']  != VGT.net.id || d['s.n']  >= this.last_nqs['s'] )) this.set_xyrs(undefined, undefined, undefined, d.s, immediate, true, true);
       if(d['R']  != undefined && (d['R.i']  != VGT.net.id || d['R.n']  >= this.last_nqs['R'] )) this.set_R   (d.R,                                  immediate, true);
-      if(d['n']  != undefined && (d['n.i']  != VGT.net.id || d['n.n']  >= this.last_nqs['n'] )) this.set_texture_index(d.n, true);
+      if(d['n']  != undefined && (d['n.i']  != VGT.net.id || d['n.n']  >= this.last_nqs['n'] )) this.set_image_index(d.n, true);
       if(d['ts'] != undefined && (d['ts.i'] != VGT.net.id || d['ts.n'] >= this.last_nqs['ts'])) this.select  (d.ts, true);
 
     } // End of we are not holding this.
@@ -3015,10 +3036,29 @@ class _Thing {
   }
 
   /**
-   * Sets the texture index and resets the clock.
+   * Sets the image index and resets the clock. With undefined, just check and toggle whether it's public or private and return
    */
-  set_texture_index(n, do_not_update_q_out) {
-    if(n == undefined) return;
+  set_image_index(n, do_not_update_q_out) {
+    
+    // If undefined, just toggle whether it's public or private and do nothing else; this happens at the animation rate for everyone
+    if(n == undefined) {
+      
+      // If we have no private images, return
+      if(!this.textures_private) return;
+
+      // Get the (valid) image index
+      n = this.get_image_index();
+
+      // Figure out which image set to use
+      if(this.should_use_private_images()) var source = this.textures_private;
+      else                                 var source = this.textures;
+
+      // Loop over the layers, setting the texture of each
+      for(var l=0; l<this.sprites.length; l++) this.sprites[l].texture = source[l][n];
+
+      // Do nothing else; this is purely visual
+      return;
+    }
 
     // Loop over the layers, setting the texture of each
     for(var l=0; l<this.sprites.length; l++) {
@@ -3032,41 +3072,41 @@ class _Thing {
 
     // Remember the index we're on for cycling purposes
     this._n = n_valid;
-    //log('_Piece.set_texture_index()', this._n, do_not_update_q_out);
+    //log('_Piece.set_image_index()', this._n, do_not_update_q_out);
 
     // If we're supposed to send an update, make sure there is an entry in the queue
     this.update_q_out('_n', 'n', do_not_update_q_out);
 
     // Record the time of this switch for animation purposes
-    this.t_last_texture = Date.now();
+    this.t_last_image = Date.now();
 
     // Finish this function for function finishing purposes
   }
 
-  // Returns the texture index
-  get_texture_index() {return this._n;}
+  // Returns the image index
+  get_image_index() {return this._n;}
   
-  // Increment the texture by n (1 if not supplied)
-  increment_texture(n) {
+  // Increment the image by n (1 if not supplied)
+  increment_image(n) {
     if(n==undefined) n = 1;
-    //log('_Piece.increment_texture()', this.id, this._n+n);
-    this.set_texture_index(this._n+1);
+    //log('_Piece.increment_image()', this.id, this._n+n);
+    this.set_image_index(this._n+1);
   }
 
-  // Decrements the texture by n (1 if not supplied)
-  decrement_texture(n) {
+  // Decrements the image by n (1 if not supplied)
+  decrement_image(n) {
     if(n==undefined) n=1;
-    this.increment_texture(-n);
+    this.increment_image(-n);
   }
 
-  // Increment the texture if we've passed a certain amount of time
-  increment_texture_delayed() {
-    if(Date.now() - this.t_last_texture > this.t_texture_delay)
-      this.increment_texture();
+  // Increment the image if we've passed a certain amount of time
+  increment_image_delayed() {
+    if(Date.now() - this.t_last_image > this.t_image_delay)
+      this.increment_image();
   }
 
-  // Randomizes the shown texture
-  randomize_texture_index(do_not_update_q_out) { this.set_texture_index(random_integer(0,this.textures[0].length-1), do_not_update_q_out); }
+  // Randomizes the shown image
+  randomize_image_index(do_not_update_q_out) { this.set_image_index(random_integer(0,this.textures[0].length-1), do_not_update_q_out); }
 
   // show / hide the sprite
   show(invert)  {
@@ -3101,6 +3141,16 @@ class _Thing {
 
     // Otherwise, false or null or something.
     return false;
+  }
+
+  // Whether this is in my 'seeing' team zone
+  should_use_private_images() {
+    // If we don't have a team, should not use private images
+    if(!VGT.clients || !VGT.clients.me) return false
+
+    var s = VGT.teamzones.get_allowed_teams_at_tabletop_xy(this.x.value, this.y.value);
+    if(s.teams_see == null) return false;
+    return(s.teams_see.includes(VGT.clients.me.team));
   }
 
   // Returns true if this thing is in a higher layer or higher index than the supplied thing
@@ -3219,7 +3269,7 @@ class _Thing {
 
   /**
    * Updates the actual sprite location / geometry via the error decay animation, 
-   * and should be called once per frame.
+   * and should be called once per frame. 
    */
   animate_xyrs(delta) { if(!delta) delta = 1;
     
@@ -3240,7 +3290,12 @@ class _Thing {
     if(this.settings.rotate_with_view) this.container.rotation -= VGT.tabletop.r.value*0.01745329251; 
     this.container.scale.x  = this.s.value;
     this.container.scale.y  = this.s.value;
-  }
+
+    // If we have private images, make sure we're showing the right ones
+    this.set_image_index(); // Just toggles between public and private
+
+  } // End of animate_xyrs
+
 
   /** Other animations, like sprite image changes etc, to be overloaded. */
   animate_other(delta) { if(!delta) delta = 1;}
@@ -3353,7 +3408,7 @@ class _Polygon extends _Thing {
   constructor(settings) {
 
     if(!settings) settings = {};
-    settings.images = null; // No textures, just GL drawing.
+    settings.images = null; // No images, just GL drawing.
 
     // Run the usual thing initialization
     super(settings);
@@ -3762,7 +3817,7 @@ class _Hand extends _Thing {
     VGT.hands.set_scale(1.0/VGT.tabletop.s.value);
   }
 
-  /** HAND: Sets the tint of all the textures AND the polygon selection rectangle */
+  /** HAND: Sets the tint of all the images AND the polygon selection rectangle */
   set_tint(tint) {
 
     // Do the usual thing
@@ -3780,8 +3835,8 @@ class _Hand extends _Thing {
   }
 
   /** Closes / opens the hand */
-  close() {this.set_texture_index(1);}
-  open()  {this.set_texture_index(0);}
+  close() {this.set_image_index(1);}
+  open()  {this.set_image_index(0);}
   
   /** Whether the hand is open or closed. */
   is_closed() {return this._n == 1;}
@@ -3830,7 +3885,7 @@ class _Hand extends _Thing {
     else this.polygon.clear();
 
     // Time of most recent last change
-    var t0 = Math.max(this.t_last_texture, this.t_last_move);
+    var t0 = Math.max(this.t_last_image, this.t_last_move);
 
     // All we do is fade it out after some time.
     if(this.is_open()) this.container.alpha = fader_smooth(t0+this.settings.t_pause, this.settings.t_fade);
@@ -4052,24 +4107,27 @@ class _Game {
 
   /**
    * Creates and returns a new piece according to the specified settings
-   * @param {Object} settings  Piece specifications
-   * @param {String} images    Optional images list (overwrites settings.images)
+   * @param {Object} settings       Piece specifications
+   * @param {String} images         Optional images list (overwrites settings.images)
+   * @param {String} images_private Optional images that we see when it's in our team zone. Must match the structure of images!
    * @returns _Piece
    */
-  add_piece(settings, images) {
-  if(images != undefined) settings.images = images;
+  add_piece(settings, images, images_private) {
+    if(images         != undefined) settings.images         = images;
+    if(images_private != undefined) settings.images_private = images_private;
     return new VGT.Piece(settings)
   }
   
   /**
    * Creates and returns a list of new, identical pieces according to the specified settings.
-   * @param {int} count        Number of copies to make 
-   * @param {Object} settings  Pieces specifications
-   * @param {String} images    Optional images list (overwrites settings.images)
+   * @param {int} count             Number of copies to make 
+   * @param {Object} settings       Pieces specifications
+   * @param {String} images         Optional images list (overwrites settings.images)
+   * @param {String} images_private Optional images that we see when it's in our team zone. Must match the structure of images!
    */
-  add_pieces(count, settings, images) { log('add_pieces()', count, settings, images);
+  add_pieces(count, settings, images, images_private) { log('add_pieces()', count, settings, images);
     var pieces = [];
-    for(var n=0; n<count; n++) pieces.push(this.add_piece(settings, images));
+    for(var n=0; n<count; n++) pieces.push(this.add_piece(settings, images, images_private));
     return pieces;
   }
   
@@ -4185,7 +4243,7 @@ class _Game {
         r: p.r.target,
         R: p.R.target,
         s: p.s.target,
-        n: p.get_texture_index(),
+        n: p.get_image_index(),
         h: p.is_hidden(),
         ts: p.team_select,
         z: p.get_z_value(),
@@ -4233,7 +4291,7 @@ class _Game {
       if(p) {
         p.set_xyrs(c.x, c.y, c.r, c.s);
         p.set_R(c.R);
-        p.set_texture_index(c.n);
+        p.set_image_index(c.n);
         p.show(c.h);
         p.select(c.ts);
         p.send_to_top();
@@ -4475,22 +4533,22 @@ class _Game {
     return shuffled;
   }
 
-  // Sets the texture index for the supplied list or object of things
-  set_texture_indices(things, n) { for(var k in things) things[k].set_texture_index(n); }
+  // Sets the image index for the supplied list or object of things
+  set_image_indices(things, n) { for(var k in things) things[k].set_image_index(n); }
 
-  /** Increments the selected textures by the given amount (undefined = 1) */
-  increment_textures(things, n) {
-    for(var id_thing in things) things[id_thing].increment_texture(n);
+  /** Increments the selected images by the given amount (undefined = 1) */
+  increment_images(things, n) {
+    for(var id_thing in things) things[id_thing].increment_image(n);
   }
 
-  /** Decrements the selected textures by the given amount (undefined = 1) */
-  decrement_textures(things, n) {
+  /** Decrements the selected images by the given amount (undefined = 1) */
+  decrement_images(things, n) {
     if(n==undefined) n=1;
-    this.increment_textures(things, -n);
+    this.increment_images(things, -n);
   }
 
-  /** Randomizes the texture indices for the list or object of things. */
-  randomize_texture_indices(things) { for(var n in things) things[n].randomize_texture_index(); }
+  /** Randomizes the image indices for the list or object of things. */
+  randomize_image_indices(things) { for(var n in things) things[n].randomize_image_index(); }
 
   /**
    * "Sneezes" the supplied list of things at random locations and rotations 
@@ -4554,17 +4612,17 @@ class _Game {
    * @param {float} scale  scale for spacing of hex grid (default 1)
    * @param {float} deviation fractional disorder in position around each lattice site.
    */
-  scramble(things, x, y, space, scale, deviation, do_not_randomize_texture) {
+  scramble(things, x, y, space, scale, deviation, do_not_randomize_image) {
     
     // Bonk out and handle defaults
     if(!things || things.length==0 || x==undefined || y==undefined) return;
     if(space == undefined) space = 1.5;
     if(scale == undefined) scale = 1.4;
 
-    // Shuffle z, sneeze them out around the x, y coordinates, and randomize each texture
+    // Shuffle z, sneeze them out around the x, y coordinates, and randomize each image
     this.shuffle_z(things);
     this.sneeze(things, x, y, space, scale, deviation);
-    if(!do_not_randomize_texture) this.randomize_texture_indices(things);
+    if(!do_not_randomize_image) this.randomize_image_indices(things);
   }
 
   // Sets the z of the supplied list of things in order of their id (and sends them to the top)
@@ -4720,7 +4778,7 @@ class _Game {
       for(var n in VGT.interaction.rolling) {
 
         // Randomize the shown image
-        VGT.interaction.rolling[n].randomize_texture_index();
+        VGT.interaction.rolling[n].randomize_image_index();
 
         // Randomize the location around the hand
         d = get_random_location_disc(Math.min(VGT.interaction.rolling[n].width, VGT.interaction.rolling[n].height));

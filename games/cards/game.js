@@ -44,7 +44,10 @@ VGT.images = {
 // Rather than listing all the images, build the paths entries with a loop
 var values = ['1','2','3','4','5','6','7','8','9','10','j','q','k']
 var suits  = ['c','d','s','h']
-for(var m in suits) for(var n in values) VGT.images.paths[values[n]+suits[m]] = 'cards/'+values[n]+suits[m]+'.png'
+for(var m in suits) for(var n in values) {
+  VGT.images.paths[values[n]+suits[m]    ] = 'cards/'+values[n]+suits[m]+'.png'
+  VGT.images.paths[values[n]+suits[m]+'p'] = 'cards/'+values[n]+suits[m]+'p.png'
+}
 
 // Create the Game instance (also stores itself in VGT.game)
 game = new VGT.Game({
@@ -66,7 +69,7 @@ var settings = {
 
 // Get the cards
 var cards = [];
-for(var m in suits) for(var n in values) cards.push(game.add_piece(settings, ['back', values[n]+suits[m]]))
+for(var m in suits) for(var n in values) cards.push(game.add_piece(settings, ['back', values[n]+suits[m]], [values[n]+suits[m], values[n]+suits[m]+'p']))
 
 // Add a team zone
 var tz = new VGT.TeamZone({teams_grab:[1]});
