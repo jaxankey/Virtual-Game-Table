@@ -191,7 +191,7 @@ class _Net {
     this.q_hands_out      = {}; 
     this.q_nameplates_out = {}; 
     this.q_z_out          = []; // Ordered list of requested z-operations
-
+    
     // Queue of inbound information for the next housekeeping.
     this.q_pieces_in     = {}; 
     this.q_hands_in      = {};
@@ -312,7 +312,7 @@ class _Net {
 
       // Send the outbound information and clear it.
       this.nq++;
-      log(    'NETS_q_'+String(VGT.net.id), this.nq, this.q_pieces_out, this.q_hands_out, this.q_nameplates_out);
+      log(    'NETS_q_'+String(VGT.net.id), this.nq, Object.keys(this.q_pieces_out).length, Object.keys(this.q_hands_out).length, Object.keys(this.q_nameplates_out).length);
       this.io.emit('q', [this.nq, this.q_pieces_out, this.q_hands_out, this.q_nameplates_out]);
       this.q_pieces_out     = {};
       this.q_hands_out      = {};
@@ -746,7 +746,7 @@ class _Animated {
   default_settings = {
     t_transition   : 200, // Time to transition coordinates at full speed
     t_acceleration : 100, // Time to get to full speed   
-    damping        : 0.03, // Velocity damping coefficient
+    damping        : 0.05, // Velocity damping coefficient
   }
 
   constructor(value, settings) {
@@ -1581,14 +1581,10 @@ class _Interaction {
     this.xm_tabletop = v.x;
     this.ym_tabletop = v.y;
     this.rm_tabletop = VGT.tabletop.r.value;
-
-    // Move my hand and polygon
+    
     var hand = null;
-    if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand
-      hand        .set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, 1.0/VGT.tabletop.s.value, true);
-      hand.polygon.set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, undefined,                true);
-    }
-
+    var dragging_table = false;
+    
     // Only do stuff if the mouse is down
     if(this.button >= 0) {
       
@@ -1659,10 +1655,18 @@ class _Interaction {
           this.tabletop_xd + dx,
           this.tabletop_yd + dy, 
           undefined, undefined, true); // immediate
+
+        dragging_table = true;
       }
     
     } // End of 'button down'
     
+    // Move my hand and polygon, but only if we're not dragging the table
+    if(!dragging_table && VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand
+      hand        .set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, 1.0/VGT.tabletop.s.value, true);
+      hand.polygon.set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, undefined,                true);
+    }
+
   } // End of onpointermove
 
   onpointerup(e) { log('onpointerup()', e.button);
@@ -2262,6 +2266,8 @@ class _Thing {
     expand_dx   : null,      // px shift for expanding in the x-direction; null is 'automatic'
     expand_dy   : null,      // px shift for expanding in the y-direction; null is 'automatic'
     pile_radius : null,      // radius of disc when scattering in a pile; null is 'automatic'
+
+    render_graphics : false,  // If true, renders graphics to an image, which can be faster and smoother looking in some situations
   };
 
   constructor(settings) {
@@ -2565,9 +2571,6 @@ class _Thing {
 
   draw_select_graphics(team) {
     
-    // Clear whatever is there
-    this.graphics.clear();
-
     // Add the selection box
     var w = this.width;
     var h = this.height;
@@ -2583,6 +2586,9 @@ class _Thing {
       c2 = 0x000000;
       a  = 0.4;
     }
+
+    // Clear whatever is there
+    this.graphics.clear();
 
     // Drawing a circle
     if(['circle', 'circle_outer', 'circle_inner'].includes(this.settings.shape)) {
@@ -2609,9 +2615,13 @@ class _Thing {
     }
 
     // Render this to a sprite for nicer-looking images
-    if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
-    this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
-    this.graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
+    if(this.settings.render_graphics) {
+      if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
+      this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
+      this.graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
+    }
+
+    // Rebuild everything.
     this.refill_container();
   }
 
@@ -2924,16 +2934,16 @@ class _Thing {
     for(var i=0; i<this.sprites.length; i++) this.container.addChild(this.sprites[i]);
 
     // Add the graphics layer
-    //this.container.addChild(this.graphics); // Faster? Looks jankier.
-    if(this.graphics_sprite) this.container.addChild(this.graphics_sprite);
+    if(!this.settings.render_graphics) this.container.addChild(this.graphics); // Faster? Looks jankier.
+    else if(this.graphics_sprite)      this.container.addChild(this.graphics_sprite);
 
     // Add the text layers
     if(this.text) {
 
       // Render to a texture to improve appearance / get rid of jankies
-      if(this.text_graphics_sprite) this.container.addChild(this.text_graphics_sprite);
+      if(!this.settings.render_graphics) this.container.addChild(this.text_graphics);
+      else if(this.text_graphics_sprite) this.container.addChild(this.text_graphics_sprite);
 
-      //this.container.addChild(this.text_graphics);
       this.container.addChild(this.text);
     }
 
@@ -3029,9 +3039,11 @@ class _Thing {
     [this.width, this.height] = this.get_dimensions();
 
     // Render this to a sprite here, so it's not bogging down the refill_container calls.
-    if(this.text_graphics_sprite) this.text_graphics_sprite.destroy(true); delete this.text_graphics_sprite // Prevent memory leak!
-    this.text_graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.text_graphics)); 
-    this.text_graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
+    if(this.settings.render_graphics) {
+      if(this.text_graphics_sprite) this.text_graphics_sprite.destroy(true); delete this.text_graphics_sprite // Prevent memory leak!
+      this.text_graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.text_graphics)); 
+      this.text_graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
+    }
     this.refill_container();
   }
 
@@ -3405,6 +3417,10 @@ VGT.Piece  = _Piece;
 /** Animated Polygon */
 class _Polygon extends _Thing { 
 
+  default_settings = {
+    vertices: undefined,    // List of vertices, e.g., [[0,0],[1,100],[0,100]
+  }
+
   constructor(settings) {
 
     if(!settings) settings = {};
@@ -3554,11 +3570,15 @@ class _Polygon extends _Thing {
     this.graphics.endFill();
 
     // Render it to a sprite for refill
-    if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
-    this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
-    this.graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
+    if(this.settings.render_graphics) {
+      if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
+      this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
+      this.graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
+    }
+    
+    // Refill the cointainer.
     this.refill_container();
-
+    
     // Don't need to do this again!
     this.needs_redraw = false;
   }
@@ -3584,21 +3604,25 @@ VGT.polygons = new _Polygons();
 VGT.Polygons = _Polygons;
 
 /**
- * Polygon that determines which teams can grab or see what pieces when they're contained within.
+ * Polygon that determines which teams can grab or see what pieces when they're contained within. See Polygon for more settings, like vertices (!)
  */
 class _TeamZone extends _Polygon {
 
   default_settings = {
     teams_grab:      [0,9],     // List of teams (indices) that can grab the pieces; null means everyone
     teams_see:        null,     // List of teams (indices) that can see the secret images; null means "match teams_grab"
-    color:            null,     // Hex color (e.g. 0x123456) of the fill & line; null means "automatic" (the color of the first team in the list)
     
-    alpha_fill_grab:    0.1,  // Opacity of the fill for the grab teams
-    alpha_line_grab:    0.8,  // Opacity of the line for the grab teams
+    color_fill:       null,     // Hex color (e.g. 0x123456) of the fill; null means "automatic" (the color of the first team in the list)
+    color_line:       null,     // Hex color (e.g. 0x123456) of the line; null means "match fill"
+
+    alpha_fill:           1,  // Opacity of the fill for other teams
+    alpha_line:         0.5,  // Opacity of the line for other teams
+    
+    alpha_fill_grab:   null,  // Opacity of the fill for the grab teams; null means match alpha_fill
+    alpha_line_grab:   null,  // Opacity of the line for the grab teams; null means match alpha_line
+    
     alpha_fill_see:    null,  // Opacity of the fill for the see teams; supercedes grab alpha; null means match grab value
     alpha_line_see:    null,  // Opacity of the line for the see teams; supercedes grab alpha; null means match grab value
-    alpha_fill_others:    1,  // Opacity of the fill for other teams
-    alpha_line_others:  0.5,  // Opacity of the line for other teams
     
     width_line:        2,       // Border width
   }
@@ -3621,11 +3645,16 @@ class _TeamZone extends _Polygon {
     if(this.settings.teams_see  == null) this.settings.teams_see  = [...this.settings.teams_grab];
 
     // If we overrode the color, then the first color in the list, then the first team color
-    if(this.settings.color == null)
-      if(this.settings.teams_grab) this.settings.color = game.get_team_color(this.settings.teams_grab[0]);
-      else this.settings.color = game.get_team_color(0);
+    if(this.settings.color_fill == null)
+      if(this.settings.teams_grab) this.settings.color_fill = game.get_team_color(this.settings.teams_grab[0]);
+      else this.settings.color_fill = game.get_team_color(0);
+
+    // Get the line automatic color
+    if(this.settings.color_line == null) this.settings.color_line = this.settings.color_fill;
 
     // Opacities
+    if(this.settings.alpha_fill_grab == null) this.settings.alpha_fill_grab = this.settings.alpha_fill;
+    if(this.settings.alpha_line_grab == null) this.settings.alpha_line_grab = this.settings.alpha_line;
     if(this.settings.alpha_fill_see == null) this.settings.alpha_fill_see = this.settings.alpha_fill_grab;
     if(this.settings.alpha_line_see == null) this.settings.alpha_line_see = this.settings.alpha_line_grab;
     
@@ -3650,8 +3679,8 @@ class _TeamZone extends _Polygon {
 
     // Otherwise, we're "someone else"
     else {
-      var alpha_fill = this.settings.alpha_fill_others;
-      var alpha_line = this.settings.alpha_line_others;
+      var alpha_fill = this.settings.alpha_fill;
+      var alpha_line = this.settings.alpha_line;
     }
 
     // Clear the graphics
@@ -3660,23 +3689,27 @@ class _TeamZone extends _Polygon {
     // Get the list of pixi points with the most recent value
     var ps = [];
     for(var n in this.vertices) ps.push(new PIXI.Point(this.vertices[n][0].value, this.vertices[n][1].value)); // Possible memory leak
-    this.graphics.lineStyle(this.settings.width_line, this.settings.color, alpha_line);
-    this.graphics.beginFill(this.settings.color, alpha_fill);
+    
+    // Render the fill zone
+    this.graphics.lineStyle(this.settings.width_line, this.settings.color_line, alpha_line);
+    this.graphics.beginFill(this.settings.color_fill, alpha_fill);
     this.graphics.drawPolygon(ps);
     this.graphics.endFill();
 
     // Render it to a sprite for refill
-    if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
-    this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
-    this.graphics_sprite.anchor.set(0.5, 0.5);
-    
+    if(this.settings.render_graphics) {
+      if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
+      this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
+      this.graphics_sprite.anchor.set(0.5, 0.5);
+
+      // Also need to adjust the center location so that the supplied "tabletop" coordinates are actually the tabletop coordinates
+      // The anchor is at the center of the bounds, so we need to shift it by the center
+      var b = this.get_bounds('target');
+      this.set_xyrs(0.5*(b.xmin+b.xmax), 0.5*(b.ymin+b.ymax));
+    }
+
     // Refill the container
     this.refill_container();
-
-    // Also need to adjust the center location so that the supplied "tabletop" coordinates are actually the tabletop coordinates
-    // The anchor is at the center of the bounds, so we need to shift it by the center
-    var b = this.get_bounds('target');
-    this.set_xyrs(0.5*(b.xmin+b.xmax), 0.5*(b.ymin+b.ymax));
 
     // Don't need to do this again!
     this.needs_redraw = false;
@@ -4131,6 +4164,14 @@ class _Game {
     return pieces;
   }
   
+  /**
+   * Adds a teamzone with the specified settings
+   * @param {Object} settings 
+   */
+  add_teamzone(settings) { log('add_teamzone()', settings);
+    return new VGT.TeamZone(settings);
+  }
+
   /** Gets the team name from the list index. */
   get_team_name(n)   {return Object.keys(this.settings.teams)[n];}
   get_my_team_name() {return this.get_team_name(this.get_my_team_index());}
@@ -4484,13 +4525,13 @@ class _Game {
     }
     
     // Calculate the upper left corner of the grid
-    var x0 = -(expanded[0].length-1)*0.5*dx;
+    //var x0 = -(expanded[0].length-1)*0.5*dx; // Not needed because we use the row width to center things
     var y0 = -(expanded.length   -1)*0.5*dy;
     
     // Start positioning things
     var v;
     for(var i in expanded) for(var j in expanded[i]) {
-      v = rotate_vector([x0+j*dx, y0+i*dy], r_stack);
+      v = rotate_vector([-(expanded[i].length-1)*0.5*dx+j*dx, y0+i*dy], r_stack);
       expanded[i][j].set_xyrs(x+v[0], y+v[1], r);
     }
       
