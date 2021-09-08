@@ -455,7 +455,7 @@ class _Net {
     
     // Get the name
     if(id == 0) var name = 'Server'
-    else        var name = htmls_encode(this.clients[id].name);
+    else        var name = html_encode(this.clients[id].name);
     
     // Update the interface
     VGT.html.chat(name, message);
@@ -1521,7 +1521,7 @@ class _Interaction {
     var thing = this.find_thing_at(v.x,v.y);
 
     // If it's not null, handle this
-    if(thing != null) {
+    if(thing != null && thing.is_selectable_by_me()) {
       
       // Get the coordinates on the thing
       var a = thing.xy_tabletop_to_local(v.x, v.y); log('     on piece:', a);
@@ -2594,6 +2594,7 @@ class _Thing {
     this.refill_container();
   }
 
+
   /**
    * Selects the thing visually and adds it to the approriate list of selected things.
    * @param {int} team Team index selecting the piece
@@ -2844,8 +2845,6 @@ class _Thing {
     
     } // End of _z_target update loop
   
-    //for(var i in this.container.parent.children) { p = this.container.parent.children[i]; console.log('HAY', p.thing._z_target);}
-
   } // End of set_z_target
 
   // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
@@ -3086,6 +3085,13 @@ class _Thing {
   // Written right after a 10mg THC capsule kicked in. I'm a lightweight, everyone relax.
   // I will update this if I change anything in this function.
   is_selectable_by_me() {
+
+    // First make sure it's not in a forbidden teamzone
+    // Overlapping teamzones should share allowed teams
+    var a = VGT.teamzones.get_allowed_teams_at_tabletop_xy(this.x.value, this.y.value);
+    
+    // If it's not okay for everyone to grab and I'm not on the list, return false
+    if(a.teams_grab != null && !a.teams_grab.includes(VGT.clients.me.team)) return false
 
     // Everyone can select this thing. Sounds good.
     if(this.settings.teams == true) return true;
@@ -3404,13 +3410,28 @@ class _Polygon extends _Thing {
   // Sets the coordinates of many vertices, e.g. [[100,10],[50,50],[32,37],...]
   set_vertices(vs, immediate) { for(var n in vs) this.set_vertex(n,vs[n],immediate); }
 
+  // Returns a Polygon of this.vertices
+  get_polygon() {
+    var vs = [];
+
+    // Loop over the vertices and transform them into the tabletop frame
+    for(var n in this.vertices)
+      vs.push( // vertices for teamzones are tabletop coordinates
+        this.vertices[n][0].value, 
+        this.vertices[n][1].value);
+
+    // Make the pixi polygon
+    return new PIXI.Polygon(...vs); // Possible memory leak
+  }
+
   // Returns a Polygon of the same vertices in the *tabletop* coordinates
+  // Note this function may not be general / could break in a few situations, but it's used for the mouse selection, which currently works
   get_tabletop_polygon() {
     var vs = [];
 
     // Loop over the vertices and transform them into the tabletop frame
     for(var n in this.vertices)
-      vs.push(this.xy_local_to_tabletop(
+      vs.push(this.xy_local_to_tabletop( 
         this.vertices[n][0].value, 
         this.vertices[n][1].value));
 
@@ -3418,9 +3439,37 @@ class _Polygon extends _Thing {
     return new PIXI.Polygon(...vs); // Possible memory leak
   }
 
+  /**
+   * Get the bounds of the polygon {xmin:, xmax:, ymin:, ymax:}
+   * @param {string} mode can be either 'value' or 'target' (default is 'target')
+   * @returns 
+   */
+  get_bounds(mode) {
+    if(!mode) mode = 'target';
+
+    var xmin, xmax, ymin, ymax, v;
+  
+    for(var n in this.vertices) { v = this.vertices[n];
+    
+      // Initialize
+      if(n==0) {
+        xmin = xmax = v[0][mode];
+        ymin = ymax = v[1][mode];
+      }
+      else {
+        xmax = Math.max(v[0][mode], xmax);
+        ymax = Math.max(v[1][mode], ymax);
+        xmin = Math.min(v[0][mode], xmin);
+        ymin = Math.min(v[1][mode], ymin);
+      }
+    }
+
+    return {xmin:xmin, xmax:xmax, ymin:ymin, ymax:ymax}
+  }
+
   // Returns true if the supplied tabletop coordinates are within this polygon
   contains_tabletop_xy(x,y) {
-    return this.get_tabletop_polygon().contains(x,y);
+    return this.get_polygon().contains(x,y);
   }
 
   // Animate the vertices
@@ -3486,7 +3535,7 @@ class _TeamZone extends _Polygon {
 
   default_settings = {
     teams_grab:      [0,9],     // List of teams (indices) that can grab the pieces; null means everyone
-    teams_see:         [0],     // List of teams (indices) that can see the secret images; null means everyone
+    teams_see:        null,     // List of teams (indices) that can see the secret images; null means "match teams_grab"
     color:            null,     // Hex color (e.g. 0x123456) of the fill & line; null means "automatic" (the color of the first team in the list)
     
     alpha_fill_grab:    0.1,  // Opacity of the fill for the grab teams
@@ -3514,7 +3563,7 @@ class _TeamZone extends _Polygon {
 
     // Deal with nulls (convert to a list [0,1,2,3...])
     if(this.settings.teams_grab == null) this.settings.teams_grab = [...Object.keys(VGT.game.settings.teams).keys()];
-    if(this.settings.teams_see  == null) this.settings.teams_see  = [...Object.keys(VGT.game.settings.teams).keys()];
+    if(this.settings.teams_see  == null) this.settings.teams_see  = [...this.settings.teams_grab];
 
     // If we overrode the color, then the first color in the list, then the first team color
     if(this.settings.color == null)
@@ -3564,10 +3613,15 @@ class _TeamZone extends _Polygon {
     // Render it to a sprite for refill
     if(this.graphics_sprite) this.graphics_sprite.destroy(true); delete this.graphics_sprite; // Prevent memory leak!
     this.graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.graphics)); 
-    this.graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
+    this.graphics_sprite.anchor.set(0.5, 0.5);
     
     // Refill the container
     this.refill_container();
+
+    // Also need to adjust the center location so that the supplied "tabletop" coordinates are actually the tabletop coordinates
+    // The anchor is at the center of the bounds, so we need to shift it by the center
+    var b = this.get_bounds('target');
+    this.set_xyrs(0.5*(b.xmin+b.xmax), 0.5*(b.ymin+b.ymax));
 
     // Don't need to do this again!
     this.needs_redraw = false;
@@ -3587,6 +3641,38 @@ class _TeamZones {
   add_thing(teamzone) {
     teamzone.id_teamzone = this.all.length;
     this.all.push(teamzone);
+  }
+
+  // Returns a list of teamzones containing table point x,y
+  get_teamzones_containing_tabletop_xy(x,y) {
+
+    // Loop over the team zones
+    var tzs = [];
+    for(var n in this.all) if(this.all[n].contains_tabletop_xy(x,y)) tzs.push(this.all[n]);
+    return tzs;
+  }
+
+  // Returns lists of teams {teams_grab:[], teams_see:[]} for tabletop coordinates x,y; null for either means "everyone"
+  get_allowed_teams_at_tabletop_xy(x,y) {
+
+    // Lists to fill
+    var teams_grab = [], teams_see = [];
+
+    // Get all teamzones
+    var tzs = this.get_teamzones_containing_tabletop_xy(x,y);
+    
+    // If we have NO teamzones, all teams are allowed
+    if(!tzs.length) return {teams_grab:null, teams_see:null}
+
+    // Loop over them, filling the lists
+    for(var n in tzs) {
+
+      // Check grabs and sees and fill the lists without duplicates
+      for(var g in tzs[n].settings.teams_grab) if(!teams_grab.includes(tzs[n].settings.teams_grab[g])) teams_grab.push(tzs[n].settings.teams_grab[g]);
+      for(var s in tzs[n].settings.teams_see ) if(!teams_see .includes(tzs[n].settings.teams_see [s])) teams_see .push(tzs[n].settings.teams_see [s]);
+    }
+
+    return {teams_grab:teams_grab, teams_see:teams_see}
   }
 
   // Resets coordinates

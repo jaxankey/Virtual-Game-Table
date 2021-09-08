@@ -70,7 +70,7 @@ for(var m in suits) for(var n in values) cards.push(game.add_piece(settings, ['b
 
 // Add a team zone
 var tz = new VGT.TeamZone({teams_grab:[1]});
-tz.add_vertices([[0,0], [500,0], [500,500], [0,500]])
+tz.add_vertices([[-100,0], [500,0], [500,500], [0,500]])
 
 //////////////////////////////////// NEW GAME SETUP
 
