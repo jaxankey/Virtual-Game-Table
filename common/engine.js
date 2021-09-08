@@ -2577,9 +2577,10 @@ class _Thing {
     if(this.settings.shape == 'circle' || this.settings.shape == 'circle_inner') var r = Math.min(w,h)*0.5;
     else if(this.settings.shape == 'circle_outer')                               var r = Math.max(w,h)*0.5; 
 
-    var t1 = 8/this.s.value;
-    var t2 = 3/this.s.value;
+    var t1 = 8/this.s.value; // Thickness of first line
+    var t2 = 2/this.s.value; // Thickness of second line
     var c1 = VGT.game.get_team_color(team);
+    var aa = 0.4;            // Lightener alpha
     var c2 = 0xFFFFFF;
     var a  = 0.7;
     if(get_luma_ox(c1) > 0.9) {
@@ -2594,6 +2595,8 @@ class _Thing {
     if(['circle', 'circle_outer', 'circle_inner'].includes(this.settings.shape)) {
       this.graphics.lineStyle(t1, c1);
       this.graphics.drawCircle(0, 0, r);
+      this.graphics.lineStyle(t1, 0xFFFFFF, aa);
+      this.graphics.drawCircle(0, 0, r);
       this.graphics.lineStyle(t2, c2, a);
       this.graphics.drawCircle(0, 0, r);
     }
@@ -2602,6 +2605,8 @@ class _Thing {
     else if(this.settings.shape == 'ellipse') {
       this.graphics.lineStyle(t1, c1);
       this.graphics.drawEllipse(0, 0, this.width*0.5, this.height*0.5);
+      this.graphics.lineStyle(t1, 0xFFFFFF, aa);
+      this.graphics.drawEllipse(0, 0, this.width*0.5, this.height*0.5);
       this.graphics.lineStyle(t2, c2, a);
       this.graphics.drawEllipse(0, 0, this.width*0.5, this.height*0.5);
     }
@@ -2609,6 +2614,8 @@ class _Thing {
     // Drawing a rectangle
     else { 
       this.graphics.lineStyle(t1, c1);
+      this.graphics.drawRect(-w*0.5, -h*0.5, w, h);
+      this.graphics.lineStyle(t1, 0xFFFFFF, aa);
       this.graphics.drawRect(-w*0.5, -h*0.5, w, h);
       this.graphics.lineStyle(t2, c2, a);
       this.graphics.drawRect(-w*0.5, -h*0.5, w, h);
@@ -3044,6 +3051,8 @@ class _Thing {
       this.text_graphics_sprite = new PIXI.Sprite(VGT.pixi.renderer.generateTexture(this.text_graphics)); 
       this.text_graphics_sprite.anchor.set(this.settings.anchor.x, this.settings.anchor.y);
     }
+
+    // Refill the container
     this.refill_container();
   }
 
@@ -3773,7 +3782,8 @@ VGT.TeamZones = _TeamZones;
 class _NamePlate extends _Thing {
 
   constructor(settings) { if(!settings) settings = {};
-    
+    if(settings.render_graphics == undefined) settings.render_graphics = true;   
+
     // Include the sets and run the usual initialization
     settings.sets = [VGT.nameplates];
     super(settings);

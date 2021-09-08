@@ -67,8 +67,8 @@ var settings = {
   expand_Nx  :  13,     // When expanding, how many to have in each row
   expand_dx  :  37,     // Offset in x-direction when expanding
   expand_dy  :  70,     // Offset in y-direction when expanding
-  collect_dx :  0.2,    // x offset when collecting
-  collect_dy : -0.2,    // y offset when collecting
+  collect_dx :  0.15,    // x offset when collecting
+  collect_dy : -0.15,    // y offset when collecting
 }
 
 // Add the cards
