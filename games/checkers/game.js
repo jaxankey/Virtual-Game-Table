@@ -90,7 +90,7 @@ var blacks = game.add_pieces(12, settings, ['checker_black', 'king_black'])
 //////////////////////////////////// NEW GAME SETUP
 
 function new_game() { 
-  console.log('\n------- NEW GAME: '+ VGT.html.setups.value +' -------\n\n');
+  console.log('\n------- NEW GAME: '+ VGT.html.select_setups.value +' -------\n\n');
 
   game.load_state_from_server('setup-standard.txt')
 

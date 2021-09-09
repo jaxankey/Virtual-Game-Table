@@ -104,6 +104,7 @@ cards.push(game.add_piece(settings, ['back', 'bj'], ['bj', 'bjp']))
 // Paddle
 settings.layer  = 1
 settings.shovel = ['cards']
+settings.anchor = {x:0.485, y:0.413}
 var dealer = game.add_piece(settings, 'dealer');
 
 
@@ -146,6 +147,8 @@ for(var n=0; n<N; n++) {
 
 //////////////////////////////////// FUNCTIONALITY
 
+
+
 /**
  * Gets the team angle (degrees) for the team index n
  * @param {int} n team index to use; undefined means "my team index"
@@ -165,31 +168,66 @@ function get_team_angle(n) {
   return 360*(n-1)/N
 }
 
+
+
+// Sends a card to the specified team index
+function deal_card_to_team(n) {
+
+  // Get the team angle
+  var a = get_team_angle(n);
+  
+
+
+}
+
+
+
+function deal_to_all(e) { log('deal_to_all()', e)
+
+  // Get a sorted list of participating team indices
+  var teams   = game.get_participating_team_indices()
+  var my_team = game.get_my_team_index()
+
+  // If I'm playing, reorder the list so that the player to my left is first
+  if(my_team > 0 && my_team) {
+    var i = teams.indexOf(my_team)
+
+    // Only do this if we found a valid index and we're not the last in the list (already ok)
+    if(i >= 0 && i < teams.length-1) {
+      var a = teams.slice(i+1)   // start of the new array
+      var b = teams.slice(0,i+1) // end of the new array
+      teams = [...a,...b]
+    }
+  } // End of reorder the list
+
+  // Get the cards on the dealer platter
+  var deck = dealer.get_shoveled();
+
+
+}
+
+
 /** Collects all the cards onto the dealer paddle and brings it all to my dealing position. */
-function get_shuffle_deck(e) { log('get_shuffle_deck()', e)
-  var r = get_team_angle()
+function get_shuffle_all_cards(e,team) { log('get_shuffle_all_cards()', e)
+  var r = get_team_angle(team)
 
   // If our team has no zone
-  if(r == null) { r = 0; var v = [0,0] }
+  if(r == null) { r = 0; var v = [0,0]; }
 
   // Otherwise, use a nice dealer spot for our team
-  else var vd = rotate_vector([x1-60, y1-37], r)
-  
-  // Card location
-  var vc = rotate_vector([x1-61, y1-48],r)
+  else { var v = rotate_vector([x1-60, y1-48], r )}
 
-  dealer.set_xyrs(vd[0],vd[1], r);
-  game.shuffle(cards, vc[0], vc[1], r, r, false);
+  // Set the dealer paddle and collect the cards on top of it
+  dealer.set_xyrs(v[0],v[1], r);
+  game.shuffle(cards, v[0], v[1], r, r, false);
   game.set_image_indices(cards, 0);
 
-
-
-} game.add_key_function('BackspaceDown', get_shuffle_deck);
+} game.add_key_function('BackspaceDown', get_shuffle_all_cards);
 
 function new_game() { 
-  console.log('\n------- NEW GAME: '+ VGT.html.setups.value +' -------\n\n');
+  console.log('\n------- NEW GAME: '+ VGT.html.select_setups.value +' -------\n\n');
 
-
+  get_shuffle_all_cards(undefined, 0)
 
 } // End of new_game()
 

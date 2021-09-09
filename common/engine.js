@@ -61,22 +61,25 @@ class _Html {
   constructor() {
     
     // Handles
-    this.gameboard = document.getElementById('gameboard');
-    this.loader    = document.getElementById('loader');
-    this.volume    = document.getElementById('volume');
-    this.controls  = document.getElementById('controls');
-    this.messages  = document.getElementById('messages');
-    this.setups    = document.getElementById('setups');
-    this.rules     = document.getElementById('rules');
+    this.div_gameboard = document.getElementById('gameboard');
+    this.div_loader    = document.getElementById('loader');
+    this.div_controls  = document.getElementById('controls');
+    this.ul_messages   = document.getElementById('messages');
+    this.input_volume  = document.getElementById('volume');
+    this.select_setups = document.getElementById('setups');
+    this.button_rules  = document.getElementById('rules');
+    this.button_new    = document.getElementById('new');
+    this.button_save   = document.getElementById('save');
+    this.button_load   = document.getElementById('load');
   
   } // End of constructor
 
   // Quick functions
-  hide_controls()    {this.controls.hidden = true;}
-  show_controls()    {this.controls.hidden = false;}
-  toggle_controls()  {this.controls.hidden = !this.controls.hidden;}
-  controls_visible() {return !this.controls.hidden}
-  controls_hidden()  {return  this.controls.hidden}
+  hide_controls()    {this.div_controls.hidden = true;}
+  show_controls()    {this.div_controls.hidden = false;}
+  toggle_controls()  {this.div_controls.hidden = !this.div_controls.hidden;}
+  controls_visible() {return !this.div_controls.hidden}
+  controls_hidden()  {return  this.div_controls.hidden}
 
   /**
    * Updates the chat box with the supplied name and message.
@@ -84,7 +87,7 @@ class _Html {
   chat(name, message) { log('Html.chat()', name, message);
 
     // messages div object
-    var m = VGT.html.messages;
+    var m = VGT.html.ul_messages;
 
     // append a <li> object to it
     var li = document.createElement("li");
@@ -348,7 +351,7 @@ class _Net {
   }
 
   // Server relayed a z command [id,z,id,z,id,z,...]
-  on_z(data) { if(!this.ready) return; log('NETR_z', data);
+  on_z(data) { if(!this.ready) return; log('NETR_z', data.length);
 
     // Set the z locally
     for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1]);
@@ -407,7 +410,7 @@ class _Net {
     this.process_queues(true); // immediate
 
     // Now (delayed, so pieces can snap to their starting locations) hide the loader page so the user can interact
-    VGT.html.loader.hidden = true;
+    VGT.html.div_loader.hidden = true;
 
     // Reset the fade-in ticker
     VGT.tabletop._t0_fade_in = Date.now();
@@ -522,7 +525,7 @@ class _Pixi {
     });
 
     // Add the canvas that Pixi automatically created for you to the HTML document
-    VGT.html.gameboard.appendChild(this.app.view);
+    VGT.html.div_gameboard.appendChild(this.app.view);
 
     // Aliases
     this.loader      = PIXI.Loader.shared,
@@ -711,7 +714,7 @@ class _Pixi {
     log('progress: loaded', resource.url, loader.progress, '%');
 
       // Update the loader progress in the html
-      VGT.html.loader.innerHTML = '<h1>Loaded: ' + loader.progress.toFixed(0) + '%</h1><br>' + resource.url;
+      VGT.html.div_loader.innerHTML = '<h1>Loaded: ' + loader.progress.toFixed(0) + '%</h1><br>' + resource.url;
   }
 
   /** Called every 1/60 of a second (roughly).
@@ -1766,7 +1769,7 @@ class _Interaction {
 
   // When someone changes the setups pull-down
   onchange_setups(e) {
-    var v = VGT.html.setups.value;
+    var v = VGT.html.select_setups.value;
     console.log('onchange_setups()', v);
     save_cookie('setups.value', v);
   }
@@ -1774,15 +1777,15 @@ class _Interaction {
   // When the volume changes.
   onchange_volume(e) {
 
-    var v = parseInt(VGT.html.volume.value)*0.01*1.0;
+    var v = parseInt(VGT.html.input_volume.value)*0.01*1.0;
     
-    log('onchange_volume()', VGT.html.volume.value, v);
+    log('onchange_volume()', VGT.html.input_volume.value, v);
     
     // Change the master volume
     Howler.volume(v);
     
     // Remember the value
-    save_cookie('volume',       VGT.html.volume.value);
+    save_cookie('volume',       VGT.html.input_volume.value);
   } // end of onchange_volume()
 
   /** Called when someone hits enter in the chat box.
@@ -1929,7 +1932,7 @@ class _Sounds {
     if(percent == 100) {
     
       // Load the sound settings.
-      VGT.html.volume.value = load_cookie('volume');
+      VGT.html.input_volume.value = load_cookie('volume');
       
       // Send em.
       VGT.interaction.onchange_volume();
@@ -2425,9 +2428,13 @@ class _Thing {
   // Whether the supplied table coordinates are contained within the object
   contains(x,y) { 
 
-    // Transform table coordinates to local coordinates
+    // Transform table coordinates to local coordinates relative to the anchor point
     var v = this.xy_tabletop_to_local(x,y); 
-    
+
+    // Shift v by the anchor point's distance from 0.5, 0.5
+    v.x -= (0.5-this.settings.anchor.x)*this.width;
+    v.y -= (0.5-this.settings.anchor.y)*this.height;
+
     // Inner circle: minimum of width and height
     if(this.settings.shape == 'circle_inner') {    
       var r = 0.5*Math.min(this.width, this.height);
@@ -2555,6 +2562,9 @@ class _Thing {
     // Add the selection box
     var w = this.width;
     var h = this.height;
+    var x0 = (0.5-this.settings.anchor.x)*w; // Shift v by the anchor point's distance from 0.5, 0.5
+    var y0 = (0.5-this.settings.anchor.y)*h;
+    
     if(this.settings.shape == 'circle' || this.settings.shape == 'circle_inner') var r = Math.min(w,h)*0.5;
     else if(this.settings.shape == 'circle_outer')                               var r = Math.max(w,h)*0.5; 
 
@@ -2575,31 +2585,31 @@ class _Thing {
     // Drawing a circle
     if(['circle', 'circle_outer', 'circle_inner'].includes(this.settings.shape)) {
       this.graphics.lineStyle(t1, c1);
-      this.graphics.drawCircle(0, 0, r);
+      this.graphics.drawCircle(x0, y0, r);
       this.graphics.lineStyle(t1, 0xFFFFFF, aa);
-      this.graphics.drawCircle(0, 0, r);
+      this.graphics.drawCircle(x0, y0, r);
       this.graphics.lineStyle(t2, c2, a);
-      this.graphics.drawCircle(0, 0, r);
+      this.graphics.drawCircle(x0, y0, r);
     }
 
     // Drawing an ellipse
     else if(this.settings.shape == 'ellipse') {
       this.graphics.lineStyle(t1, c1);
-      this.graphics.drawEllipse(0, 0, this.width*0.5, this.height*0.5);
+      this.graphics.drawEllipse(x0, y0, this.width*0.5, this.height*0.5);
       this.graphics.lineStyle(t1, 0xFFFFFF, aa);
-      this.graphics.drawEllipse(0, 0, this.width*0.5, this.height*0.5);
+      this.graphics.drawEllipse(x0, y0, this.width*0.5, this.height*0.5);
       this.graphics.lineStyle(t2, c2, a);
-      this.graphics.drawEllipse(0, 0, this.width*0.5, this.height*0.5);
+      this.graphics.drawEllipse(x0, y0, this.width*0.5, this.height*0.5);
     }
 
     // Drawing a rectangle
     else { 
       this.graphics.lineStyle(t1, c1);
-      this.graphics.drawRect(-w*0.5, -h*0.5, w, h);
+      this.graphics.drawRect(x0-w*0.5, y0-h*0.5, w, h);
       this.graphics.lineStyle(t1, 0xFFFFFF, aa);
-      this.graphics.drawRect(-w*0.5, -h*0.5, w, h);
+      this.graphics.drawRect(x0-w*0.5, y0-h*0.5, w, h);
       this.graphics.lineStyle(t2, c2, a);
-      this.graphics.drawRect(-w*0.5, -h*0.5, w, h);
+      this.graphics.drawRect(x0-w*0.5, y0-h*0.5, w, h);
     }
 
     // Render this to a sprite for nicer-looking images
@@ -2679,9 +2689,10 @@ class _Thing {
 
   } // End of unselect()
 
-  // Selects all the pieces on this piece
-  shovel_select(team) {
-
+  /** Returns a list of shoveled pieces */
+  get_shoveled() {
+    var shoveled = [];
+    
     // If it's a "shovel" piece and we're selecting, select all the pieces in its hitbox also
     if(this.settings.shovel && this.settings.shovel.length) {
       
@@ -2695,14 +2706,23 @@ class _Thing {
           // If this piece contains the current values of this piece (and it's higher), select it
           // NOTE: there is a delay between setting z and it arriving. This tests the VALUE, not TARGET
           if( this.contains(piece.x.value, piece.y.value)
-          && piece.is_higher_than(this) ) piece.select(team);
+          && piece.is_higher_than(this) ) shoveled.push(piece);
         
         } // End of loop over pieces in group
       
       } // End of loop over shovel groups
     
     } // End of "is shovel"
-  
+
+    return shoveled;
+  } // End of get_shoveled
+
+  // Selects all the pieces on this piece
+  shovel_select(team) {
+
+    var shoveled = this.get_shoveled();
+    for(var n in shoveled) shoveled[n].select(team);
+    
   } // End of shovel_select()
 
  
@@ -3127,6 +3147,9 @@ class _Thing {
   // Written right after a 10mg THC capsule kicked in. I'm a lightweight, everyone relax.
   // I will update this if I change anything in this function.
   is_selectable_by_me() {
+
+    // Post-THC addition: if it's my nameplate, I can always grab it.
+    if(VGT.clients && VGT.clients.me && this == VGT.clients.me.nameplate) return true;
 
     // First make sure it's not in a forbidden teamzone
     // Overlapping teamzones should share allowed teams
@@ -4113,14 +4136,14 @@ class _Game {
         var o = document.createElement("option");
         o.value = this.settings.setups[k];
         o.text  = this.settings.setups[k];
-        VGT.html.setups.appendChild(o);
+        VGT.html.select_setups.appendChild(o);
     }
     // Set the last known setups
     var c = load_cookie('setups.value');
-    if(c != '') VGT.html.setups.value = c;
+    if(c != '') VGT.html.select_setups.value = c;
 
     // If we have no rules, hide the button
-    if(this.settings.rules == null) VGT.html.rules.style.visibility='hidden';
+    if(this.settings.rules == null) VGT.html.button_rules.style.visibility='hidden';
 
     // Start the slow housekeeping
     setInterval(this._housekeeping.bind(this), this.settings.t_housekeeping);
@@ -4180,10 +4203,21 @@ class _Game {
 
   /** Gets the team index from the name. Returns -1 for "not in list" */
   get_team_index(name) {return Object.keys(this.settings.teams).indexOf(name);  }
+
+  /** Gets the client's team index for them. */
   get_my_team_index()  {
     if(VGT.clients && VGT.clients.me) return VGT.clients.me.team
     else                              return 0;
   }
+  /** Gets a sorted list of participating team indices. */
+  get_participating_team_indices() {
+    var teams = [];
+    for(var n in VGT.clients.all) 
+      if(!teams.includes(VGT.clients.all[n].team)) teams.push(VGT.clients.all[n].team);
+    teams.sort();
+    return teams;
+  }
+
 
   /** Gets the color from the index */
   get_team_color(n)   {return this.settings.teams[Object.keys(this.settings.teams)[n]]; }
@@ -4543,11 +4577,12 @@ class _Game {
   reset() {for(var n in VGT.things.all) VGT.things.all[n].reset(); }
 
   /** Releases all things with the supplied client id. */
-  client_release(id_client, force, do_not_update_q_out) { log('client_release()', id_client, VGT.things.held[id_client]);
+  client_release(id_client, force, do_not_update_q_out) { 
     
     // If we have a held list for this client id
     if(VGT.things.held[id_client]) {
-      
+      log('client_release()', id_client, VGT.things.held[id_client].length);
+
       // Remember the previously held pieces so they know what to do with the snap etc
       this._releasing = {...VGT.things.held[id_client]};
       

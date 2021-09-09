@@ -524,7 +524,7 @@ P.trading_house = game.add_piece(settings, 'tradinghouse');
 //////////////////////////////////// NEW GAME SETUP
 
 function new_game() { 
-  console.log('\n------- NEW GAME: '+ VGT.html.setups.value +' -------\n\n');
+  console.log('\n------- NEW GAME: '+ VGT.html.select_setups.value +' -------\n\n');
 
   // game.load_state_from_server() uses "promises", meaning it takes some time before
   // the state is downloaded and set up. As such, we do a basic load_state_from_server
@@ -532,9 +532,9 @@ function new_game() {
   // each setup.
   
   // Setup for 5 players
-  if(VGT.html.setups.value == '5 Players') game.load_state_from_server('setups/setup-5.txt', setup_5);
-  if(VGT.html.setups.value == '4 Players') game.load_state_from_server('setups/setup-4.txt', setup_4);
-  if(VGT.html.setups.value == '3 Players') game.load_state_from_server('setups/setup-3.txt', setup_3);
+  if(VGT.html.select_setups.value == '5 Players') game.load_state_from_server('setups/setup-5.txt', setup_5);
+  if(VGT.html.select_setups.value == '4 Players') game.load_state_from_server('setups/setup-4.txt', setup_4);
+  if(VGT.html.select_setups.value == '3 Players') game.load_state_from_server('setups/setup-3.txt', setup_3);
 
 
   
