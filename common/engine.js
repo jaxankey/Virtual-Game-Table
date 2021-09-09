@@ -1214,13 +1214,12 @@ class _Interaction {
     // Using the surface and objects with the built-in hit test is rough, because it
     // does it for every mouse move, etc. Also, I can't seem to get the button number
     // this way in PixiJS 6.
-    //VGT.pixi.surface.interactive = true;
-    //VGT.pixi.surface.on('pointerdown', this.surface_pointerdown);
     VGT.pixi.app.view.onpointerdown = this.onpointerdown.bind(this);
     VGT.pixi.app.view.onpointermove = this.onpointermove.bind(this);
     VGT.pixi.app.view.onpointerup   = this.onpointerup  .bind(this);
     VGT.pixi.app.view.onpointerout  = this.onpointerup  .bind(this);
     VGT.pixi.app.view.onwheel       = this.onwheel      .bind(this);
+    VGT.pixi.app.view.ondblclick    = this.ondblclick   .bind(this);
   }
 
   // Count the selected items
@@ -1334,28 +1333,9 @@ class _Interaction {
     // Get the list of things we're shuffling
     var shuffling = Object.values(VGT.things.selected[VGT.clients.me.team]);
 
-    // Shuffle z; doing this here helps with the visual popping
-    shuffling = VGT.game.shuffle_z(shuffling);
+    // Start the shuffle
+    VGT.game.shuffle(shuffling, this.xm_tabletop, this.ym_tabletop, VGT.clients.me.hand.r.value, undefined, true);
 
-    // Send out the cards
-    VGT.game.sneeze(shuffling, this.xm_tabletop, this.ym_tabletop, 1, 0.2, undefined, 1); 
-
-    // Start the finish shuffle (cancel any existing one)
-    clearTimeout(this.timer_shuffling);
-    this.timer_shuffling = setTimeout(this.finish_shuffle, 500, e, shuffling, this.xm_tabletop, this.ym_tabletop, true);
-  }
-
-  // Called a bit after the shuffle animation; actually shuffles and collects cards at the specified coordinates
-  finish_shuffle(e, shuffling, x, y, center_on_top) { console.log('finish_shuffle()', shuffling.length);
-
-    // Last mouse move tabletop coordinates
-    var r = VGT.clients.me.hand.r.value;       
-
-    // Re-send these to the top in case the server has sent an update in between
-    for(var n in shuffling) shuffling[n].send_to_top();
-
-    // If we're not holding shift, collect them too
-    if(!e.shiftKey) VGT.game.collect(shuffling, x, y, r, r, undefined, undefined, center_on_top, true)
   }
 
   // Draws the pieces to the hand and starts the animation
@@ -1567,6 +1547,11 @@ class _Interaction {
       }
     }
   } // End of onpointerdown
+
+  // Double click
+  ondblclick(e) { console.log('ondblclick()', e);
+    e.preventDefault();
+  }
 
   // Pointer has moved around.
   onpointermove(e) { //log('onpointermove()', e.button);
@@ -1834,11 +1819,7 @@ class _Interaction {
     
     log('onresize_window()');
   }
-  
 
-
-
-  // 
 } // End of _Interaction
 
 
@@ -2583,9 +2564,9 @@ class _Thing {
     var aa = 0.4;            // Lightener alpha
     var c2 = 0xFFFFFF;
     var a  = 0.7;
-    if(get_luma_ox(c1) > 0.9) {
+    if(get_luma_ox(c1) > 0.8) {
       c2 = 0x000000;
-      a  = 0.4;
+      a  = 0.1;
     }
 
     // Clear whatever is there
@@ -4088,7 +4069,7 @@ class _Game {
     rules: null,        // path (e.g. 'rules.pdf') to rules for this game
     undos: 500,         // Number of undos to remember (each 0.5 seconds minimum)
 
-    background_color : 0xf9ecec, // Tabletop background color
+    background_color : 0xEEE7E2, // Tabletop background color
 
     // Available teams for clients and their colors.
     teams : {
@@ -4180,6 +4161,17 @@ class _Game {
    */
   add_teamzone(settings) { log('add_teamzone()', settings);
     return new VGT.TeamZone(settings);
+  }
+
+  /**
+   * Connects the supplied key string (e.g. 'ShiftBackspaceDown'; see browser console when hitting keys for these names)
+   * to the supplied function f
+   * @param {String} keys  Key string (or list of strings) to bind to the function
+   * @param {function}  f  Function; first argument must be the key event.
+   */
+  add_key_function(keys, f) { 
+    if(typeof keys == 'string') keys = [keys];
+    for(var n in keys) VGT.interaction.key_functions[keys[n]] = f; 
   }
 
   /** Gets the team name from the list index. */
@@ -4582,6 +4574,46 @@ class _Game {
 
     // Return the list ordered by z target
     return shuffled;
+  }
+
+  /**
+   * Starts the shuffling animation; cards will later be collected to x,y,r,r_stack using collect()
+   * Function f will be called after the last step.
+   * @param {array} things  List of things to shuffle
+   * @param {float} x       x-coordinate to eventually collect them to
+   * @param {float} y       y-coordinate to eventually colelct them to
+   * @param {float} r       rotation of the pieces when collected
+   * @param {float} r_stack rotation of the stack when collected; undefined means match r
+   * @param {float} center_on_top whether to center the stack by the top card
+   * @param {function} f    (optional) function to call after shuffling
+   */
+  shuffle(things, x, y, r, r_stack, center_on_top, f) { log('start_shuffle()', things.length);
+    if(r_stack == undefined) r_stack = r;  
+
+    // Shuffle z; doing this here helps with the visual popping
+    things = VGT.game.shuffle_z(things);
+
+    // Send out the cards
+    this.sneeze(things, x, y, 1, 0.2, undefined, 1); 
+
+    // Start the finish shuffle (cancel any existing one)
+    clearTimeout(this._timer_shuffling);
+    this._timer_shuffling = setTimeout(this._finish_shuffle.bind(this), 500, things, x, y, r, r_stack, center_on_top, f);
+  }
+
+  // Called a bit after the shuffle animation; actually shuffles and collects cards at the specified coordinates
+  _finish_shuffle(shuffling, x, y, r, r_stack, center_on_top, f) { log('finish_shuffle()', shuffling.length);
+
+    // Re-send these to the top in case the server has sent an update in between
+    for(var n in shuffling) shuffling[n].send_to_top();
+
+    log('HAY', x, y, r, r_stack)
+
+    // Collect them
+    this.collect(shuffling, x, y, r, r_stack, undefined, undefined, center_on_top, true)
+
+    // Call the function
+    if(f) f();
   }
 
   // Sets the image index for the supplied list or object of things

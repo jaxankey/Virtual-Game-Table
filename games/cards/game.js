@@ -16,9 +16,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//////////////////////////
-// Resource lists       //
-//////////////////////////
+
+
+
+
+/////////////////////////////////////// RESOURCES
 
 // Master list of all images. This is needed for the preloader to work.
 VGT.images = {
@@ -53,16 +55,38 @@ for(var m in suits) for(var n in values) {
   VGT.images.paths[values[n]+suits[m]+'p'] = 'cards/'+values[n]+suits[m]+'p.png'
 }
 
+
+
+
+
+///////////////////////////////////////// GAME
+
 // Create the Game instance (also stores itself in VGT.game)
 game = new VGT.Game({
   name             : 'Cards',        // Game name
   nameplate_xyrs   : [0, 100, 0, 1], // Spawn point for new nameplates
+  teams : {                          // Available teams and colors
+    Observer : 0xFFFFFF,
+    Red      : 0xFF2A2A,
+    Orange   : 0xFF6600,
+    Yellow   : 0xFFE84B,
+    Green    : 0x118855,
+    Blue     : 0x5599FF,
+    Violet   : 0xD62CFF,
+    Gray     : 0x808080,
+    Brown    : 0x883300,
+    Manager  : 0x333333
+  },
 });
 
 
-/////////////////////////////// CARDS
+
+
+
+/////////////////////////////////////// PIECES
+
 var settings = {
-  layer:  1,            // Layer of the piece
+  layer:  2,            // Layer of the piece
   groups: ['cards'],    // Groups to which this piece belongs
   expand_Nx  :  13,     // When expanding, how many to have in each row
   expand_dx  :  37,     // Offset in x-direction when expanding
@@ -77,6 +101,11 @@ for(var m in suits) for(var n in values) cards.push(game.add_piece(settings, ['b
 cards.push(game.add_piece(settings, ['back', 'sj'], ['sj', 'sjp']))
 cards.push(game.add_piece(settings, ['back', 'bj'], ['bj', 'bjp']))
 
+// Paddle
+settings.layer  = 1
+settings.shovel = ['cards']
+var dealer = game.add_piece(settings, 'dealer');
+
 
 
 
@@ -84,8 +113,8 @@ cards.push(game.add_piece(settings, ['back', 'bj'], ['bj', 'bjp']))
 ////////////////////////////// TEAM ZONES
 
 // Geometry specification
-var y1 = 400 // Distance from center to inner edge
-var y2 = 700 // Distance from center to outer edge
+var y1 = 500 // Distance from center to inner edge
+var y2 = 800 // Distance from center to outer edge
 var N  = Object.keys(game.settings.teams).length - 2; // Number of playing teams (not observer or manager)
 
 // Derived quantities
@@ -115,9 +144,52 @@ for(var n=0; n<N; n++) {
 
 
 
-//////////////////////////////////// NEW GAME SETUP
+//////////////////////////////////// FUNCTIONALITY
+
+/**
+ * Gets the team angle (degrees) for the team index n
+ * @param {int} n team index to use; undefined means "my team index"
+ */
+function get_team_angle(n) {
+
+  // Default is my team index
+  if(n == undefined) n = game.get_my_team_index()
+
+  // Total number of players
+  var N  = Object.keys(game.settings.teams).length - 2
+
+  // If my team index is not 1 to N, return null
+  if(n < 1 || n > N) return null
+
+  // Return the angle
+  return 360*(n-1)/N
+}
+
+/** Collects all the cards onto the dealer paddle and brings it all to my dealing position. */
+function get_shuffle_deck(e) { log('get_shuffle_deck()', e)
+  var r = get_team_angle()
+
+  // If our team has no zone
+  if(r == null) { r = 0; var v = [0,0] }
+
+  // Otherwise, use a nice dealer spot for our team
+  else var vd = rotate_vector([x1-60, y1-37], r)
+  
+  // Card location
+  var vc = rotate_vector([x1-61, y1-48],r)
+
+  dealer.set_xyrs(vd[0],vd[1], r);
+  game.shuffle(cards, vc[0], vc[1], r, r, false);
+  game.set_image_indices(cards, 0);
+
+
+
+} game.add_key_function('BackspaceDown', get_shuffle_deck);
 
 function new_game() { 
   console.log('\n------- NEW GAME: '+ VGT.html.setups.value +' -------\n\n');
+
+
+
 } // End of new_game()
 
