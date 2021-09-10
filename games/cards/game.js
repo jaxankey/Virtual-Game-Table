@@ -105,6 +105,7 @@ cards.push(game.add_piece(settings, ['back', 'bj'], ['bj', 'bjp']))
 settings.layer  = 1
 settings.shovel = ['cards']
 settings.anchor = {x:0.485, y:0.413}
+settings.x = -1.8
 var dealer = game.add_piece(settings, 'dealer');
 
 
@@ -150,7 +151,7 @@ for(var n=0; n<N; n++) {
 
 
 /**
- * Gets the team angle (degrees) for the team index n
+ * Gets the team angle (degrees) for the team index n = 1 to 8, with null for non-participating teams
  * @param {int} n team index to use; undefined means "my team index"
  */
 function get_team_angle(n) {
@@ -182,7 +183,10 @@ function deal_card_to_team(n) {
 
 
 
-function deal_to_all(e) { log('deal_to_all()', e)
+function deal_to_all(e) { log('deal_to_all()', e) 
+  
+  // Remember the last send coordinates
+  if(this.last_vs == undefined) this.last_vs = {}
 
   // Get a sorted list of participating team indices
   var teams   = game.get_participating_team_indices()
@@ -201,9 +205,24 @@ function deal_to_all(e) { log('deal_to_all()', e)
   } // End of reorder the list
 
   // Get the cards on the dealer platter
-  var deck = dealer.get_shoveled();
+  var deck = dealer.get_shoveled()
+  deck = game.sort_by_z_value(deck, true) 
 
+  // Loop over the teams in order from the person to our left
+  // sending a card to each
+  var r, p, v, team;
+  for(var n in teams) { team = teams[n]
+    
+    // Get the team angle and piece
+    r = get_team_angle(team)
+    p = deck[n]
 
+    // Get the coordinates to send it to and send it
+    v = rotate_vector([
+      (Math.random()-0.5)*p.width*2,
+      (Math.random()-0.5)*p.width + y1-80], r);
+    p.send_to_top().set_xyrs(v[0],v[1],r);
+  }
 }
 
 
@@ -219,7 +238,7 @@ function get_shuffle_all_cards(e,team) { log('get_shuffle_all_cards()', e)
 
   // Set the dealer paddle and collect the cards on top of it
   dealer.set_xyrs(v[0],v[1], r);
-  game.shuffle(cards, v[0], v[1], r, r, false);
+  game.start_shuffle(cards, v[0], v[1], r, r, false);
   game.set_image_indices(cards, 0);
 
 } game.add_key_function('BackspaceDown', get_shuffle_all_cards);

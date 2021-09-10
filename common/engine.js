@@ -1337,7 +1337,7 @@ class _Interaction {
     var shuffling = Object.values(VGT.things.selected[VGT.clients.me.team]);
 
     // Start the shuffle
-    VGT.game.shuffle(shuffling, this.xm_tabletop, this.ym_tabletop, VGT.clients.me.hand.r.value, undefined, true);
+    VGT.game.start_shuffle(shuffling, this.xm_tabletop, this.ym_tabletop, VGT.clients.me.hand.r.value, undefined, true);
 
   }
 
@@ -2884,6 +2884,8 @@ class _Thing {
     
     } // End of _z_target update loop
   
+    return this;
+
   } // End of set_z_target
 
   // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
@@ -2925,9 +2927,11 @@ class _Thing {
     
     // If it exists, send it to the top of the parent's list.
     if(parent) this.set_z_target(parent.children.length-1);
+
+    return this;
   }
 
-  send_to_bottom() {this.set_z_target(0);}
+  send_to_bottom() {this.set_z_target(0); return this;}
 
   /**
    * Fills the container with all the sprites. This can be overloaded for more complex
@@ -4622,14 +4626,14 @@ class _Game {
    * @param {float} center_on_top whether to center the stack by the top card
    * @param {function} f    (optional) function to call after shuffling
    */
-  shuffle(things, x, y, r, r_stack, center_on_top, f) { log('start_shuffle()', things.length);
+  start_shuffle(things, x, y, r, r_stack, center_on_top, f) { log('start_shuffle()', things.length);
     if(r_stack == undefined) r_stack = r;  
 
     // Shuffle z; doing this here helps with the visual popping
     things = VGT.game.shuffle_z(things);
 
     // Send out the cards
-    this.sneeze(things, x, y, 1, 0.2, undefined, 1); 
+    this.sneeze(things, x, y, 1, 0.1, undefined, 1); 
 
     // Start the finish shuffle (cancel any existing one)
     clearTimeout(this._timer_shuffling);
