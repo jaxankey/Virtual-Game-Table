@@ -1252,14 +1252,14 @@ class _Interaction {
     log('VGT.interaction.increment_selected_images()', e);
 
     // Increment all the images
-    VGT.game.increment_images(VGT.things.selected[VGT.clients.me.team])
+    VGT.game.increment_image_indices(VGT.things.selected[VGT.clients.me.team])
   }
 
   decrement_selected_images(e) {
     log('VGT.interaction.decrement_selected_images()', e);
 
     // Increment all the images
-    VGT.game.decrement_images(VGT.things.selected[VGT.clients.me.team])
+    VGT.game.decrement_image_indices(VGT.things.selected[VGT.clients.me.team])
   }
 
   zero_selected_images(e) {
@@ -1377,7 +1377,8 @@ class _Interaction {
     
     // team index
     var team = VGT.clients.me.team; 
-    
+    if(!VGT.things.selected[team]) return
+
     // Last mouse move tabletop coordinates
     var x = this.xm_tabletop;       
     var y = this.ym_tabletop;
@@ -1398,7 +1399,8 @@ class _Interaction {
 
     // team index
     var team = VGT.clients.me.team; 
-    
+    if(!VGT.things.selected[team]) return
+
     // Last mouse move tabletop coordinates
     var x = this.xm_tabletop;       
     var y = this.ym_tabletop;       
@@ -1416,7 +1418,8 @@ class _Interaction {
 
     // team index
     var team = VGT.clients.me.team; 
-    
+    if(!VGT.things.selected[team]) return
+
     // Get the unsorted pieces list
     var pieces = Object.values(VGT.things.selected[team]);
 
@@ -1569,6 +1572,9 @@ class _Interaction {
     this.xm_tabletop = v.x;
     this.ym_tabletop = v.y;
     this.rm_tabletop = VGT.tabletop.r.value;
+
+    // And for the user
+    VGT.game.mouse = {x:v.x, y:v.y, r:this.rm_tabletop}
     
     var hand = null;
     var dragging_table = false;
@@ -3113,22 +3119,22 @@ class _Thing {
   get_image_index() {return this._n;}
   
   // Increment the image by n (1 if not supplied)
-  increment_image(n) {
+  increment_image_index(n) {
     if(n==undefined) n = 1;
-    //log('_Piece.increment_image()', this.id, this._n+n);
+    //log('_Piece.increment_image_index()', this.id, this._n+n);
     this.set_image_index(this._n+1);
   }
 
   // Decrements the image by n (1 if not supplied)
-  decrement_image(n) {
+  decrement_image_index(n) {
     if(n==undefined) n=1;
-    this.increment_image(-n);
+    this.increment_image_index(-n);
   }
 
   // Increment the image if we've passed a certain amount of time
-  increment_image_delayed() {
+  increment_image_index_delayed() {
     if(Date.now() - this.t_last_image > this.t_image_delay)
-      this.increment_image();
+      this.increment_image_index();
   }
 
   // Randomizes the shown image
@@ -3226,7 +3232,7 @@ class _Thing {
    * @param {boolean} do_not_reset_R        if true, do not reset the auxiliary rotation thing.R when setting r.
    */
   set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) { 
-    if(this.type=='NamePlate') log('set_xyrs()', x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R)
+    //if(this.type=='NamePlate') log('NamePlate.set_xyrs()', x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R)
 
     // Now for each supplied coordinate, update and send
     if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}
@@ -4149,6 +4155,9 @@ class _Game {
     // If we have no rules, hide the button
     if(this.settings.rules == null) VGT.html.button_rules.style.visibility='hidden';
 
+    // Mouse position
+    this.mouse = {x:0, y:0, r:0};
+
     // Start the slow housekeeping
     setInterval(this._housekeeping.bind(this), this.settings.t_housekeeping);
 
@@ -4196,7 +4205,7 @@ class _Game {
    * @param {String} keys  Key string (or list of strings) to bind to the function
    * @param {function}  f  Function; first argument must be the key event.
    */
-  add_key_function(keys, f) { 
+  bind_key(keys, f) { 
     if(typeof keys == 'string') keys = [keys];
     for(var n in keys) VGT.interaction.key_functions[keys[n]] = f; 
   }
@@ -4659,14 +4668,14 @@ class _Game {
   set_image_indices(things, n) { for(var k in things) things[k].set_image_index(n); }
 
   /** Increments the selected images by the given amount (undefined = 1) */
-  increment_images(things, n) {
-    for(var id_thing in things) things[id_thing].increment_image(n);
+  increment_image_indices(things, n) {
+    for(var id_thing in things) things[id_thing].increment_image_index(n);
   }
 
   /** Decrements the selected images by the given amount (undefined = 1) */
-  decrement_images(things, n) {
+  decrement_image_indices(things, n) {
     if(n==undefined) n=1;
-    this.increment_images(things, -n);
+    this.increment_image_indices(things, -n);
   }
 
   /** Randomizes the image indices for the list or object of things. */

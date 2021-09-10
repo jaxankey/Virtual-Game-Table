@@ -123,6 +123,7 @@ var N  = Object.keys(game.settings.teams).length - 2; // Number of playing teams
 var s  = Math.tan(Math.PI/N) // slope of edge lines
 var x1 = y1*s
 var x2 = y2*s
+var play_radius = Math.sqrt(x2*x2+y2*y2)
 
 // Create the team zones
 var v1, v2, v3, v4
@@ -169,20 +170,36 @@ function get_team_angle(n) {
   return 360*(n-1)/N
 }
 
-
-
-// Sends a card to the specified team index
-function deal_card_to_team(n) {
-
-  // Get the team angle
-  var a = get_team_angle(n);
+// Deals one card to the table coordinates x,y, optionally face up.
+// You can also optionally specify the depth from which to deal.
+function deal_one_to_xy(x,y,face_up,depth) {
+    
+    // Get the cards on the dealer platter
+    var deck = dealer.get_shoveled()
+    deck = game.sort_by_z_value(deck, true) 
   
-
-
+    // Get the card
+    var p = deck[depth ? depth : 0]
+    if(!p) return
+  
+    // Get the angle of the card based on region
+    var a  = Math.atan2(y,x)*180.0/Math.PI;   // Raw angle
+    var ar = Math.round(a/45)*45 + 270 + 360; // Snapped angle plus some spin
+    log('HAY', a, ar)
+    
+    // Get the coordinates to send it to and send it
+    p.send_to_top().set_xyrs(x,y,ar);
+  
+    // If shiftKey we are dealing up
+    if(face_up) p.increment_image_index();
 }
 
+// Sends one to the mouse coordinates
+function deal_one_to_mouse(e) { deal_one_to_xy(game.mouse.x, game.mouse.y, e.shiftKey); }
 
-
+/**
+ * Deals a card to everyone. e.shiftKey makes it face up.
+ */
 function deal_to_all(e) { log('deal_to_all()', e) 
   
   // Remember the last send coordinates
@@ -204,30 +221,43 @@ function deal_to_all(e) { log('deal_to_all()', e)
     }
   } // End of reorder the list
 
-  // Get the cards on the dealer platter
-  var deck = dealer.get_shoveled()
-  deck = game.sort_by_z_value(deck, true) 
-
   // Loop over the teams in order from the person to our left
   // sending a card to each
-  var r, p, v, team;
-  for(var n in teams) { team = teams[n]
+  var r, v
+  for(var n in teams) { 
     
     // Get the team angle and piece
-    r = get_team_angle(team)
-    p = deck[n]
+    r = get_team_angle(teams[n])
+
+    log('HAY', n, teams[n], r, )
 
     // Get the coordinates to send it to and send it
     v = rotate_vector([
-      (Math.random()-0.5)*p.width*2,
-      (Math.random()-0.5)*p.width + y1-80], r);
-    p.send_to_top().set_xyrs(v[0],v[1],r);
+      (Math.random()-0.5)*cards[0].width*2,
+      (Math.random()-0.5)*cards[0].width + y1-80], r);
+    
+    // Send it to this xy value
+    deal_one_to_xy(v[0],v[1], e ? e.shiftKey : undefined, n);
   }
 }
 
 
-/** Collects all the cards onto the dealer paddle and brings it all to my dealing position. */
-function get_shuffle_all_cards(e,team) { log('get_shuffle_all_cards()', e)
+/** 
+ * Collects all the cards onto the dealer paddle and brings it all to my dealing position.
+ * If all_cards is false or not specified, it will only collect those cards within the play area.
+ */
+function get_shuffle_cards(e,team,all_cards) { log('get_shuffle_all_cards()', e)
+  if(all_cards) var cs = cards
+  else {
+    var cs = []
+    var c
+    for(var n in cards) { 
+      c = cards[n]
+      if(c.x.value*c.x.value+c.y.value*c.y.value <= play_radius*play_radius) cs.push(c)
+    }
+  }
+
+  // Get the team angle
   var r = get_team_angle(team)
 
   // If our team has no zone
@@ -238,10 +268,11 @@ function get_shuffle_all_cards(e,team) { log('get_shuffle_all_cards()', e)
 
   // Set the dealer paddle and collect the cards on top of it
   dealer.set_xyrs(v[0],v[1], r);
-  game.start_shuffle(cards, v[0], v[1], r, r, false);
-  game.set_image_indices(cards, 0);
+  game.start_shuffle(cs, v[0], v[1], r, r, false);
+  game.set_image_indices(cs, 0);
+} 
 
-} game.add_key_function('BackspaceDown', get_shuffle_all_cards);
+
 
 function new_game() { 
   console.log('\n------- NEW GAME: '+ VGT.html.select_setups.value +' -------\n\n');
@@ -250,3 +281,9 @@ function new_game() {
 
 } // End of new_game()
 
+
+
+//////////////////////////////////////// KEY BINDINGS
+game.bind_key('BackspaceDown', get_shuffle_cards);
+game.bind_key(['KeyLDown', 'ShiftKeyLDown'], deal_to_all);
+game.bind_key(['KeyODown', 'ShiftKeyODown'], deal_one_to_mouse);
