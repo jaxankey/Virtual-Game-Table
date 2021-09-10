@@ -246,7 +246,7 @@ function deal_to_all(e) { log('deal_to_all()', e)
  * Collects all the cards onto the dealer paddle and brings it all to my dealing position.
  * If all_cards is false or not specified, it will only collect those cards within the play area.
  */
-function get_shuffle_cards(e,team,all_cards) { log('get_shuffle_all_cards()', e)
+function get_shuffle_cards(e,team,all_cards) { log('get_shuffle_cards()', e)
   if(all_cards) var cs = cards
   else {
     var cs = []
@@ -277,7 +277,7 @@ function get_shuffle_cards(e,team,all_cards) { log('get_shuffle_all_cards()', e)
 function new_game() { 
   console.log('\n------- NEW GAME: '+ VGT.html.select_setups.value +' -------\n\n');
 
-  get_shuffle_all_cards(undefined, 0)
+  get_shuffle_cards(undefined, 0, true)
 
 } // End of new_game()
 
