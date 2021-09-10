@@ -366,16 +366,12 @@ io.on('connection', function(socket) {
   }
   socket.on('chat', function(data) {delay_function(on_chat, data)});
 
-  // Player says something. data = [player_index, key, interrupt]
-  function on_say(data) {
-    fun.log_date('NETR_say_'+String(socket.id), data);
-    
-    // Relay it to everyone else
-    broadcast('say', data);
+  // Someone kills everyone's undos
+  function on_kill_undos(data) { 
+    fun.log_date('NETR_kill_undos');
+    delay_send(io, 'kill_undos');
   }
-  socket.on('say', function(data) {delay_function(on_say, data)});
-
-
+  socket.on('kill_undos', function(data) {delay_function(on_kill_undos, data)});
 
   // Client has sent a list of z moves of the form [id,z,id,z,id,z,...]
   function on_z(data) { fun.log_date('NETR_z_'+String(socket.id), data.length/2); 

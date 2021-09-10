@@ -465,16 +465,23 @@ class _Net {
   
   } // End of on_chat
 
+  /** Someone kills our undos. Important for tantrums. */
+  on_kill_undos(data) {if(!VGT.net.ready) return;
+    VGT.game._undos.length = 0;
+    VGT.game._redos.length = 0;
+  }
+
   /** Define what server messages to expect, and how to handle them. */
   setup_listeners() {
   
-    this.io.on('z',        this.on_z       .bind(this));
-    this.io.on('q',        this.on_q       .bind(this));
-    this.io.on('state',    this.on_state   .bind(this));
-    this.io.on('clients',  this.on_clients .bind(this));
-    this.io.on('yabooted', this.on_yabooted.bind(this));
-    this.io.on('say',      this.on_say     .bind(this)); 
-    this.io.on('chat',     this.on_chat    .bind(this));
+    this.io.on('z',          this.on_z       .bind(this));
+    this.io.on('q',          this.on_q       .bind(this));
+    this.io.on('state',      this.on_state   .bind(this));
+    this.io.on('clients',    this.on_clients .bind(this));
+    this.io.on('yabooted',   this.on_yabooted.bind(this));
+    this.io.on('say',        this.on_say     .bind(this)); 
+    this.io.on('chat',       this.on_chat    .bind(this));
+    this.io.on('kill_undos', this.on_kill_undos.bind(this));
   
   } // End of setup_listeners()
 
@@ -1095,6 +1102,8 @@ class _Interaction {
       increment_selected_images: this.increment_selected_images.bind(this),
       decrement_selected_images: this.decrement_selected_images.bind(this),
       zero_selected_images     : this.zero_selected_images.bind(this),
+
+      tantrum : this.tantrum.bind(this),
     }
 
     // Dictionary of functions for each key
@@ -1201,6 +1210,9 @@ class _Interaction {
       PeriodDown:       this.actions.increment_selected_images,
       CommaDown:        this.actions.decrement_selected_images,
       ShiftSpaceDown:   this.actions.zero_selected_images,
+
+      // Tantrum
+      ShiftEndDown: this.actions.tantrum,
     }
 
     // Event listeners
@@ -1223,6 +1235,28 @@ class _Interaction {
     VGT.pixi.app.view.onpointerout  = this.onpointerup  .bind(this);
     VGT.pixi.app.view.onwheel       = this.onwheel      .bind(this);
     VGT.pixi.app.view.ondblclick    = this.ondblclick   .bind(this);
+  }
+
+  // Tantrum
+  tantrum(e) {
+
+    // loop over all pieces and send them in random directions
+    var p, u1, u2, x, y, r;
+    for (var n in VGT.things.all) { p = VGT.things.all[n];
+
+      // Get the starting random
+      u1 = Math.random();
+      u2 = Math.random();
+      
+      // Get it into a gaussian distribution
+      x = Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2)*1000.0
+      y = Math.sqrt(-2*Math.log(u1))*Math.sin(2*Math.PI*u2)*1000.0
+      r = Math.random()*5000-2500;
+      p.set_xyrs(p.x.value+x,p.y.value+y,r);
+    }
+
+    // Kill everyone's undos
+    VGT.net.io.emit('kill_undos');
   }
 
   // Count the selected items
@@ -4274,6 +4308,13 @@ class _Game {
   /** Restores an undo */
   undo() {
 
+    // When we do a redo, we set block_next_undo = false, so 
+    // the noticed changed state doesn't trigger one / remove the other redos
+    if(this.block_next_undo) {
+      this.block_next_undo = false;
+      return;
+    }
+
     // First make sure we have a list
     if(!this._undos) this._undos = [];
 
@@ -4312,6 +4353,7 @@ class _Game {
 
     // Restore the top of the undos to make them match
     this.set_state(JSON.parse(this._undos[0]));
+    this.block_next_undo; // So the redo doesn't become an undo / reset the process.
 
     log('redo()', this._undos.length, 'undos, ', this._redos.length, 'redos');
   }
