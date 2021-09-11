@@ -54,15 +54,26 @@
       margin: 0.4em;
     }
 
-    input, button, select, ul{
-      color: #777;
-      border: solid #777 0.05em;
+    .flex_grow {flex-grow: 1;}
+
+    input, button, select, ul {
+      color: #444;
+      border: solid #444 0.05em;
       padding: 0.2em;
     }
+    button:hover {
+      background-color: rgba(187, 70, 70, 0.1);
+    }
+    button:active {
+      background-color: rgba(187, 70, 70, 1);
+      color: white;
+    }
+
     input:focus, select:focus {
       color: black;
     }
     
+
     /* Loading indicator */
     #loader {
       position: absolute;
@@ -83,12 +94,13 @@
       position: absolute;
       left: 1em;
       top:  1em;
-      width: 20em;
       box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
     }
-      #new    {margin: 0}
-      #setups {margin-left: 0;}
-      #save   {margin-left: 0;}
+      #new    {}
+      #setups {}
+      #rules  {margin-left: 0.4em;}
+      #save   {margin-left: 0.4em;}
+      #load   {margin-left: 0.4em;}
       #volume {
         flex-grow: 1;
         padding: 0;
@@ -96,8 +108,8 @@
       }
 
 
-      .name { width: 7em; flex-grow: 1; }
-      .othername { border:0; pointer-events: none; flex-grow: 1; }
+      .name { width: 10em; }
+      .othername { width: 10em; border:0; pointer-events: none; }
 
     #chat {
       display: flex;
@@ -107,6 +119,9 @@
         overflow-y: auto; 
         height: 20em;
         margin-bottom: 0.4em;
+      }
+      #chat-box {
+        color: rgba(187, 70, 70, 0.5);
       }
 
   </style>
@@ -133,11 +148,9 @@
         
         <div class='row_left'>
           <button id='new'  onclick="new_game();">Setup</button>
-          <select id="setups" onchange="VGT.interaction.onchange_setups();"><option value='test'>Testy</option></select>
+          <select id="setups" onchange="VGT.interaction.onchange_setups();"></select>
           <button id="rules" onclick="VGT.game.open_rules();">Rules</button>
-        </div>
-
-        <div class='row_left'>
+        
           <button id='save' onclick="VGT.game.save_state();">Save</button>
           <button id='load' onclick="VGT.game.load_state_from_file();">Load</button>
         </div>
