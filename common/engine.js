@@ -409,6 +409,9 @@ class _Net {
     //this.q_hands_in      = server_state['hands'];
     this.process_queues(true); // immediate
 
+    // Make sure all the hands are initially faded out
+    for(var n in VGT.hands.all) VGT.hands.all[n].t_last_image = VGT.hands.all[n].t_last_move = 0;
+
     // Now (delayed, so pieces can snap to their starting locations) hide the loader page so the user can interact
     VGT.html.div_loader.hidden = true;
 
@@ -467,8 +470,8 @@ class _Net {
 
   /** Someone kills our undos. Important for tantrums. */
   on_kill_undos(data) {if(!VGT.net.ready) return;
-    VGT.game._undos.length = 0;
-    VGT.game._redos.length = 0;
+    if(VGT.game._undos) VGT.game._undos.length = 0;
+    if(VGT.game._redos) VGT.game._redos.length = 0;
   }
 
   /** Define what server messages to expect, and how to handle them. */
@@ -1242,15 +1245,15 @@ class _Interaction {
 
     // loop over all pieces and send them in random directions
     var p, u1, u2, x, y, r;
-    for (var n in VGT.things.all) { p = VGT.things.all[n];
-
+    for (var n in VGT.pieces.all) { p = VGT.pieces.all[n];
+     
       // Get the starting random
       u1 = Math.random();
       u2 = Math.random();
       
       // Get it into a gaussian distribution
-      x = Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2)*1000.0
-      y = Math.sqrt(-2*Math.log(u1))*Math.sin(2*Math.PI*u2)*1000.0
+      x = Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2)*400/VGT.tabletop.s.target;
+      y = Math.sqrt(-2*Math.log(u1))*Math.sin(2*Math.PI*u2)*400/VGT.tabletop.s.target;
       r = Math.random()*5000-2500;
       p.set_xyrs(p.x.value+x,p.y.value+y,r);
     }
@@ -3281,6 +3284,8 @@ class _Thing {
 
     // Dummy function overloaded by sub-classes, e.g., NamePlate
     this.after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R);
+
+    return this
   }
 
   // Called after set_xyrs(); dummy function to overload
@@ -4185,6 +4190,9 @@ class _Game {
     // Set the last known setups
     var c = load_cookie('setups.value');
     if(c != '') VGT.html.select_setups.value = c;
+
+    // Make sure it was in the list!
+    if(VGT.html.select_setups.value == '') VGT.html.select_setups.selectedIndex = 0;
 
     // If we have no rules, hide the button
     if(this.settings.rules == null) VGT.html.button_rules.style.visibility='hidden';

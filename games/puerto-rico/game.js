@@ -569,7 +569,7 @@ function setup_5() {
   reset_buildings();
 
   // Tiles face up to start
-  VGT.game.set_texture_indices(P.tiles, 1);
+  VGT.game.set_image_indices(P.tiles, 1);
 
   // Special indigos and corns
   var b;
@@ -593,7 +593,7 @@ function setup_5() {
 
   // Rest of pieces
   P.x = tiles.slice(6); 
-  VGT.game.set_texture_indices(P.x, 0);
+  VGT.game.set_image_indices(P.x, 0);
   n = 7; VGT.game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
 }
 
@@ -604,7 +604,7 @@ function setup_4() {
   reset_buildings();
 
   // Tiles face up to start
-  VGT.game.set_texture_indices(P.tiles, 1);
+  VGT.game.set_image_indices(P.tiles, 1);
 
   // Special indigos and corns
   var b;
@@ -628,7 +628,7 @@ function setup_4() {
 
   // Rest of pieces
   P.x = tiles.slice(5); 
-  VGT.game.set_texture_indices(P.x, 0);
+  VGT.game.set_image_indices(P.x, 0);
   n = 6; VGT.game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
 }
 
@@ -639,7 +639,7 @@ function setup_3() {
   reset_buildings();
 
   // Tiles face up to start
-  VGT.game.set_texture_indices(P.tiles, 1);
+  VGT.game.set_image_indices(P.tiles, 1);
 
   // Special indigos and corns
   var b;
@@ -661,6 +661,6 @@ function setup_3() {
 
   // Rest of pieces
   P.x = tiles.slice(4); 
-  VGT.game.set_texture_indices(P.x, 0);
+  VGT.game.set_image_indices(P.x, 0);
   n = 5; VGT.game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
 }

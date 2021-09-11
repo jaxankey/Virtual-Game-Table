@@ -63,9 +63,10 @@ for(var m in suits) for(var n in values) {
 
 // Create the Game instance (also stores itself in VGT.game)
 game = new VGT.Game({
-  name             : 'Cards',        // Game name
-  nameplate_xyrs   : [0, 100, 0, 1], // Spawn point for new nameplates
-  teams : {                          // Available teams and colors
+  name             : 'Cards',          // Game name
+  nameplate_xyrs   : [0, 100, 0, 1],   // Spawn point for new nameplates
+  setups : ['All Cards', 'No Jokers'], // Setup options
+  teams  : {                           // Available teams and colors
     Observer : 0xFFFFFF,
     Red      : 0xFF2A2A,
     Orange   : 0xFF6600,
@@ -247,7 +248,13 @@ function deal_to_all(e) { log('deal_to_all()', e)
  * If all_cards is false or not specified, it will only collect those cards within the play area.
  */
 function get_shuffle_cards(e,team,all_cards) { log('get_shuffle_cards()', e)
-  if(all_cards) var cs = cards
+  
+  if(all_cards == true) var cs = cards
+
+  // If it's a list itself, use that.
+  else if(typeof all_cards == 'object') var cs = all_cards
+
+  // undefined or false means just those cards in the play area
   else {
     var cs = []
     var c
@@ -277,7 +284,18 @@ function get_shuffle_cards(e,team,all_cards) { log('get_shuffle_cards()', e)
 function new_game() { 
   console.log('\n------- NEW GAME: '+ VGT.html.select_setups.value +' -------\n\n');
 
-  get_shuffle_cards(undefined, 0, true)
+  // All cards
+  if(VGT.html.select_setups.selectedIndex == 0) get_shuffle_cards(undefined, 0, true)
+  
+  // No Jokers
+  else {
+    // Get all but jokers
+    get_shuffle_cards(undefined, 0, cards.slice(0,52))
+
+    // Send the jokers away
+    cards[52].set_xyrs(y1*2, 0, Math.random()*1000).set_image_index(1)
+    cards[53].set_xyrs(y1*2, 0, Math.random()*1000).set_image_index(1)
+  }
 
 } // End of new_game()
 
