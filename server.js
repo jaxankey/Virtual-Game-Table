@@ -214,7 +214,7 @@ var last_id     = 1;  // Last assigned id; incremented with each client
 // Names for new players
 var pre_names = ['William T.', 'Billy D.', 'Johnny', 'Susan B.', 'Karen', 'Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Prof.', 'M.', 'Mme.', 'Mlle.']
 
-var first_names = ['Pants', 'Silly', 'Fancy', 'Dirt', 'Goofy',
+var first_names = ['Pants', 'Silly', 'Fancy', 'Dirt', 'Goofy', 'Hella',
                    'Trash', 'No', 'Awful', 'Nono', 'Juicy'];
 var last_names  = ['tastic', 'cakes', 'pants', 'face', 'juice', 
                    'bag', 'hole', 'friends', 'skillet', 'person', 'billy',
