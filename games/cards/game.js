@@ -282,10 +282,10 @@ function get_shuffle_cards(e,team,all_cards) { log('get_shuffle_cards()', e)
 
 
 function new_game() { 
-  console.log('\n------- NEW GAME: '+ VGT.html.select_setups.value +' -------\n\n');
+  console.log('\n------- NEW GAME: '+ game.html.select_setups.value +' -------\n\n');
 
   // All cards
-  if(VGT.html.select_setups.selectedIndex == 0) get_shuffle_cards(undefined, 0, true)
+  if(game.html.select_setups.selectedIndex == 0) get_shuffle_cards(undefined, 0, true)
   
   // No Jokers
   else {

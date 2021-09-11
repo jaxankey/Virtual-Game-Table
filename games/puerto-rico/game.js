@@ -104,6 +104,7 @@ game = new VGT.Game({
   name           : 'Puerto Rico',
   setups         : ['3 Players', '4 Players', '5 Players'],
   nameplate_xyrs : [0,480,0,1],
+  rules          : 'rules.pdf', 
 });
 
 // My pieces object
@@ -153,7 +154,7 @@ var settings = {
   snaps:[ // List of snap specification objects
     
     { // Small buildings grid 
-      type: VGT.SnapGrid,          // class used to create this snap
+      type: game.SnapGrid,          // class used to create this snap
       groups: ['small_buildings'], // list of snap groups
       x0: -695,     // Origin of grid, x-coordinate
       y0: -482,     // Origin of grid, y-coordinate                   
@@ -166,7 +167,7 @@ var settings = {
     }, 
 
     { // Large buildings grid 
-      type: VGT.SnapGrid,          // class used to create this snap
+      type: game.SnapGrid,          // class used to create this snap
       groups: ['large_buildings'], // list of snap groups
       x0: -695,     // Origin of grid, x-coordinate
       y0: -409,     // Origin of grid, y-coordinate                   
@@ -179,7 +180,7 @@ var settings = {
     }, 
 
     { // First column of tiles
-      type: VGT.SnapGrid,          // class used to create this snap
+      type: game.SnapGrid,          // class used to create this snap
       groups: ['tiles'], // list of snap groups
       x0: -571,     // Origin of grid, x-coordinate
       y0: 154,      // Origin of grid, y-coordinate                   
@@ -192,7 +193,7 @@ var settings = {
     }, 
 
     { // Second column of tiles
-      type: VGT.SnapGrid,          // class used to create this snap
+      type: game.SnapGrid,          // class used to create this snap
       groups: ['tiles'], // list of snap groups
       x0: -409,     // Origin of grid, x-coordinate
       y0: 82,      // Origin of grid, y-coordinate                   
@@ -205,7 +206,7 @@ var settings = {
     }, 
 
     { // Third column of tiles
-      type: VGT.SnapGrid,          // class used to create this snap
+      type: game.SnapGrid,          // class used to create this snap
       groups: ['tiles'], // list of snap groups
       x0: -246,     // Origin of grid, x-coordinate
       y0: 134,      // Origin of grid, y-coordinate                   
@@ -218,7 +219,7 @@ var settings = {
     }, 
 
     { // Fourth column of tiles
-      type: VGT.SnapGrid,          // class used to create this snap
+      type: game.SnapGrid,          // class used to create this snap
       groups: ['tiles'], // list of snap groups
       x0: -84,     // Origin of grid, x-coordinate
       y0: 212,      // Origin of grid, y-coordinate                   
@@ -231,7 +232,7 @@ var settings = {
     }, 
 
     { // Fifth "column" of tiles
-      type: VGT.SnapGrid,          // class used to create this snap
+      type: game.SnapGrid,          // class used to create this snap
       groups: ['tiles'], // list of snap groups
       x0: 78,    // Origin of grid, x-coordinate
       y0: 287,   // Origin of grid, y-coordinate                   
@@ -253,7 +254,7 @@ P.player_boards = game.add_pieces(5, settings);
 ////////////////////////////////// SMALL BUILDINGS
 
 // Snap grid just for placing pieces during setup. Doesn't snap anything
-var grid_small_buildings = new VGT.SnapGrid({
+var grid_small_buildings = new game.SnapGrid({
   groups: [], // list of snap groups (no snaps)
   x0: -215, // Origin of grid, x-coordinate
   y0: -320,   // Origin of grid, y-coordinate                   
@@ -277,7 +278,7 @@ var settings = {
   // List of snap specification objects
   snaps:[ 
     { // Worker dot
-      type: VGT.SnapCirle, // class used to create this snap
+      type: game.SnapCirle, // class used to create this snap
       groups: ['colonists'], // list of snap groups
       x0: -72,     // Center, x-coordinate
       y0: 16,      // Center, y-coordinate                   
@@ -305,7 +306,7 @@ P.sugar_plants_small  = game.add_pieces(2, settings, 'build-sugar-small');
 
 // 2 spaces
 settings.snaps.push({ // Second worker dot
-    type: VGT.SnapCirle,   // class used to create this snap
+    type: game.SnapCirle,   // class used to create this snap
     groups: ['colonists'], // list of snap groups
     x0: -13,               // Center, x-coordinate
     y0: 16,                // Center, y-coordinate                   
@@ -314,7 +315,7 @@ P.coffee_plants_large  = game.add_pieces(2, settings, 'build-coffee');
 
 // 3 spaces
 settings.snaps.push({ // Second worker dot
-  type: VGT.SnapCirle,   // class used to create this snap
+  type: game.SnapCirle,   // class used to create this snap
   groups: ['colonists'], // list of snap groups
   x0: 47,               // Center, x-coordinate
   y0: 16,                // Center, y-coordinate                   
@@ -340,7 +341,7 @@ var settings = {
   // List of snap specification objects
   snaps:[ 
     { // Worker dot
-      type: VGT.SnapCirle, // class used to create this snap
+      type: game.SnapCirle, // class used to create this snap
       groups: ['colonists'], // list of snap groups
       x0: -72,     // Center, x-coordinate
       y0: 93,      // Center, y-coordinate                   
@@ -378,7 +379,7 @@ var settings = {
   // List of snap specification objects
   snaps:[ 
     { // Worker dot
-      type: VGT.SnapCirle, // class used to create this snap
+      type: game.SnapCirle, // class used to create this snap
       groups: ['colonists'], // list of snap groups
       x0: -27,     // Center, x-coordinate
       y0: 22,      // Center, y-coordinate                   
@@ -524,7 +525,7 @@ P.trading_house = game.add_piece(settings, 'tradinghouse');
 //////////////////////////////////// NEW GAME SETUP
 
 function new_game() { 
-  console.log('\n------- NEW GAME: '+ VGT.html.select_setups.value +' -------\n\n');
+  console.log('\n------- NEW GAME: '+ game.html.select_setups.value +' -------\n\n');
 
   // game.load_state_from_server() uses "promises", meaning it takes some time before
   // the state is downloaded and set up. As such, we do a basic load_state_from_server
@@ -532,9 +533,9 @@ function new_game() {
   // each setup.
   
   // Setup for 5 players
-  if(VGT.html.select_setups.value == '5 Players') game.load_state_from_server('setups/setup-5.txt', setup_5);
-  if(VGT.html.select_setups.value == '4 Players') game.load_state_from_server('setups/setup-4.txt', setup_4);
-  if(VGT.html.select_setups.value == '3 Players') game.load_state_from_server('setups/setup-3.txt', setup_3);
+  if(game.html.select_setups.value == '5 Players') game.load_state_from_server('setups/setup-5.txt', setup_5);
+  if(game.html.select_setups.value == '4 Players') game.load_state_from_server('setups/setup-4.txt', setup_4);
+  if(game.html.select_setups.value == '3 Players') game.load_state_from_server('setups/setup-3.txt', setup_3);
 
 
   
@@ -542,24 +543,24 @@ function new_game() {
 } // End of new_game()
 
 function reset_buildings() {
-  VGT.game.collect(P.indigo_plants_small, ...grid_small_buildings.get_grid_xy(0,0), 0, 0);
-  VGT.game.collect(P.sugar_plants_small , ...grid_small_buildings.get_grid_xy(0,1), 0, 0);
-  VGT.game.collect(P.markets_small      , ...grid_small_buildings.get_grid_xy(0,2), 0, 0);
-  VGT.game.collect(P.haciendas          , ...grid_small_buildings.get_grid_xy(0,3), 0, 0);
-  VGT.game.collect(P.construction_huts  , ...grid_small_buildings.get_grid_xy(0,4), 0, 0);
-  VGT.game.collect(P.warehouses_small   , ...grid_small_buildings.get_grid_xy(0,5), 0, 0);
-  VGT.game.collect(P.indigo_plants_large, ...grid_small_buildings.get_grid_xy(1,0), 0, 0);
-  VGT.game.collect(P.sugar_plants_large , ...grid_small_buildings.get_grid_xy(1,1), 0, 0);
-  VGT.game.collect(P.hospices           , ...grid_small_buildings.get_grid_xy(1,2), 0, 0);
-  VGT.game.collect(P.offices            , ...grid_small_buildings.get_grid_xy(1,3), 0, 0);
-  VGT.game.collect(P.markets_large      , ...grid_small_buildings.get_grid_xy(1,4), 0, 0);
-  VGT.game.collect(P.warehouses_large   , ...grid_small_buildings.get_grid_xy(1,5), 0, 0);
-  VGT.game.collect(P.tobacco_plants     , ...grid_small_buildings.get_grid_xy(2,0), 0, 0);
-  VGT.game.collect(P.coffee_plants_large, ...grid_small_buildings.get_grid_xy(2,1), 0, 0);
-  VGT.game.collect(P.factories          , ...grid_small_buildings.get_grid_xy(2,2), 0, 0);
-  VGT.game.collect(P.universities       , ...grid_small_buildings.get_grid_xy(2,3), 0, 0);
-  VGT.game.collect(P.harbors            , ...grid_small_buildings.get_grid_xy(2,4), 0, 0);
-  VGT.game.collect(P.wharfs             , ...grid_small_buildings.get_grid_xy(2,5), 0, 0);
+  game.collect(P.indigo_plants_small, ...grid_small_buildings.get_grid_xy(0,0), 0, 0);
+  game.collect(P.sugar_plants_small , ...grid_small_buildings.get_grid_xy(0,1), 0, 0);
+  game.collect(P.markets_small      , ...grid_small_buildings.get_grid_xy(0,2), 0, 0);
+  game.collect(P.haciendas          , ...grid_small_buildings.get_grid_xy(0,3), 0, 0);
+  game.collect(P.construction_huts  , ...grid_small_buildings.get_grid_xy(0,4), 0, 0);
+  game.collect(P.warehouses_small   , ...grid_small_buildings.get_grid_xy(0,5), 0, 0);
+  game.collect(P.indigo_plants_large, ...grid_small_buildings.get_grid_xy(1,0), 0, 0);
+  game.collect(P.sugar_plants_large , ...grid_small_buildings.get_grid_xy(1,1), 0, 0);
+  game.collect(P.hospices           , ...grid_small_buildings.get_grid_xy(1,2), 0, 0);
+  game.collect(P.offices            , ...grid_small_buildings.get_grid_xy(1,3), 0, 0);
+  game.collect(P.markets_large      , ...grid_small_buildings.get_grid_xy(1,4), 0, 0);
+  game.collect(P.warehouses_large   , ...grid_small_buildings.get_grid_xy(1,5), 0, 0);
+  game.collect(P.tobacco_plants     , ...grid_small_buildings.get_grid_xy(2,0), 0, 0);
+  game.collect(P.coffee_plants_large, ...grid_small_buildings.get_grid_xy(2,1), 0, 0);
+  game.collect(P.factories          , ...grid_small_buildings.get_grid_xy(2,2), 0, 0);
+  game.collect(P.universities       , ...grid_small_buildings.get_grid_xy(2,3), 0, 0);
+  game.collect(P.harbors            , ...grid_small_buildings.get_grid_xy(2,4), 0, 0);
+  game.collect(P.wharfs             , ...grid_small_buildings.get_grid_xy(2,5), 0, 0);
 }
 
 // Setup function for 5 teams.
@@ -569,7 +570,7 @@ function setup_5() {
   reset_buildings();
 
   // Tiles face up to start
-  VGT.game.set_image_indices(P.tiles, 1);
+  game.set_image_indices(P.tiles, 1);
 
   // Special indigos and corns
   var b;
@@ -585,16 +586,16 @@ function setup_5() {
 
   // Assemble remaining tiles, shuffle,
   var tiles = [...corns, ...indigos, ...P.tiles_sugar, ...P.tiles_coffee, ...P.tiles_tobacco];
-  tiles = VGT.game.shuffle_z(tiles);
+  tiles = game.shuffle_z(tiles);
   
   // Put out the 6 & quarries
   for(var n=0; n<6; n++) tiles[n].set_xyrs(-267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); 
-  VGT.game.collect(P.tiles_quarry, -267,-490, 0, 0);
+  game.collect(P.tiles_quarry, -267,-490, 0, 0);
 
   // Rest of pieces
   P.x = tiles.slice(6); 
-  VGT.game.set_image_indices(P.x, 0);
-  n = 7; VGT.game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
+  game.set_image_indices(P.x, 0);
+  n = 7; game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
 }
 
 // Setup function for 5 teams.
@@ -604,7 +605,7 @@ function setup_4() {
   reset_buildings();
 
   // Tiles face up to start
-  VGT.game.set_image_indices(P.tiles, 1);
+  game.set_image_indices(P.tiles, 1);
 
   // Special indigos and corns
   var b;
@@ -620,16 +621,16 @@ function setup_4() {
 
   // Assemble remaining tiles, shuffle,
   var tiles = [...corns, ...indigos, ...P.tiles_sugar, ...P.tiles_coffee, ...P.tiles_tobacco];
-  tiles = VGT.game.shuffle_z(tiles);
+  tiles = game.shuffle_z(tiles);
   
   // Put out the 6 & quarries
   for(var n=0; n<5; n++) tiles[n].set_xyrs(-267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); 
-  VGT.game.collect(P.tiles_quarry, -267,-490, 0, 0);
+  game.collect(P.tiles_quarry, -267,-490, 0, 0);
 
   // Rest of pieces
   P.x = tiles.slice(5); 
-  VGT.game.set_image_indices(P.x, 0);
-  n = 6; VGT.game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
+  game.set_image_indices(P.x, 0);
+  n = 6; game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
 }
 
 // Setup function for 3 teams.
@@ -639,7 +640,7 @@ function setup_3() {
   reset_buildings();
 
   // Tiles face up to start
-  VGT.game.set_image_indices(P.tiles, 1);
+  game.set_image_indices(P.tiles, 1);
 
   // Special indigos and corns
   var b;
@@ -653,14 +654,14 @@ function setup_3() {
 
   // Assemble remaining tiles, shuffle,
   var tiles = [...corns, ...indigos, ...P.tiles_sugar, ...P.tiles_coffee, ...P.tiles_tobacco];
-  tiles = VGT.game.shuffle_z(tiles);
+  tiles = game.shuffle_z(tiles);
   
   // Put out the 6 & quarries
   for(var n=0; n<4; n++) tiles[n].set_xyrs(-267+1.02*(n+1)*tiles[n].width*tiles[n].s.target,-490, 0); 
-  VGT.game.collect(P.tiles_quarry, -267,-490, 0, 0);
+  game.collect(P.tiles_quarry, -267,-490, 0, 0);
 
   // Rest of pieces
   P.x = tiles.slice(4); 
-  VGT.game.set_image_indices(P.x, 0);
-  n = 5; VGT.game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
+  game.set_image_indices(P.x, 0);
+  n = 5; game.collect(P.x, -267+1.02*n*tiles[0].width*tiles[0].s.target,-490, 0, 0);
 }

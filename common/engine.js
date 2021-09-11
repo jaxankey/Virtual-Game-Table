@@ -107,6 +107,7 @@ class _Html {
     clients_table.innerHTML = '';
 
     // Loop over the supplied clients
+    var row, rows = [];
     for(var id in VGT.net.clients) {
       var c = VGT.net.clients[id];
       log('  ', c.id, c.name, c.team);
@@ -119,15 +120,16 @@ class _Html {
         save_cookie('team', team);
       }
 
-      // Create the row for this client, as long as it's not me.
-      if(id != VGT.net.id) var row = clients_table.insertRow(-1);
-      else             var row = clients_table.insertRow(0);
-      var cell_name = row.insertCell(0);
-      var cell_team = row.insertCell(1);
+      // Create the row for this client
+      row = document.createElement('div'); row.classList.add('row_left');
 
-      // If it's VGT.net.me, the name should be editable, otherwise, not
-      if(id == VGT.net.id) cell_name.innerHTML = '<input id="name" onchange="VGT.interaction.onchange_name(event)" value="'+name+'" />';
-      else                 cell_name.innerHTML = '<input class="othername" readonly value="'+name+'" />';
+      // If it's me, put it at the top of this list, otherwise push
+      if(id == VGT.net.id) rows.splice(0,0,row);
+      else                 rows.push(row);
+
+      // If it's me, make it an editable name box
+      if(id == VGT.net.id) row.innerHTML = '<input id="name" class="name" onchange="VGT.interaction.onchange_name(event)" value="'+name+'" />';
+      else                 row.innerHTML = '<input class="othername" readonly value="'+name+'" />';
 
       // Now create the team selector
       var s = document.createElement("select");
@@ -167,9 +169,12 @@ class _Html {
       else                         s.style.color='white';
       
       // Finally, append it to the team cell
-      cell_team.appendChild(s);
+      row.appendChild(s);
       
     } // End of loop over clients
+
+    // Now add the rows in order
+    for(var n in rows) clients_table.append(rows[n]);
 
   } // End of rebuild_client_table()
 
@@ -1016,7 +1021,7 @@ class _Tabletop {
 
   /**
    * Saves the current view as a cookie with the specified key name
-   * @param {String} key String identifier for the view
+   * @param {string} key String identifier for the view
    */
   save_view(key) {
     save_cookie(key, [this.x.target, this.y.target, this.r.target, this.s.target]);
@@ -1024,7 +1029,7 @@ class _Tabletop {
 
   /**
    * Loads the view cookie with the specified key
-   * @param {String} key String identifier for the view
+   * @param {string} key String identifier for the view
    * @param {boolean} immediate Do this immediately
    * @returns 
    */
@@ -1255,7 +1260,7 @@ class _Interaction {
       x = Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2)*400/VGT.tabletop.s.target;
       y = Math.sqrt(-2*Math.log(u1))*Math.sin(2*Math.PI*u2)*400/VGT.tabletop.s.target;
       r = Math.random()*5000-2500;
-      p.set_xyrs(p.x.value+x,p.y.value+y,r);
+      p.set_xyrs(p.x.value+x,p.y.value+y,r).randomize_image_index();
     }
 
     // Kill everyone's undos
@@ -2821,7 +2826,7 @@ class _Thing {
 
   /**
    * Import the data sent from the server for this piece
-   * @param {Object} d Data packet for this piece
+   * @param {object} d Data packet for this piece
    */
   process_q_data(d, immediate) { 
 
@@ -4195,11 +4200,17 @@ class _Game {
     if(VGT.html.select_setups.value == '') VGT.html.select_setups.selectedIndex = 0;
 
     // If we have no rules, hide the button
-    if(this.settings.rules == null) VGT.html.button_rules.style.visibility='hidden';
+    if(!this.settings.rules) VGT.html.button_rules.style.visibility='hidden';
+    log('HAY', this.settings.rules)
 
-    // Mouse position
+    // FOR THE USER
     this.mouse = {x:0, y:0, r:0};
-
+    this.html  = VGT.html;
+    this.table = VGT.tabletop;
+    this.pixi  = VGT.pixi;
+    this.SnapGrid   = VGT.SnapGrid;
+    this.SnapCircle = VGT.SnapCircle;
+    
     // Start the slow housekeeping
     setInterval(this._housekeeping.bind(this), this.settings.t_housekeeping);
 
@@ -4209,9 +4220,9 @@ class _Game {
 
   /**
    * Creates and returns a new piece according to the specified settings
-   * @param {Object} settings       Piece specifications
-   * @param {String} images         Optional images list (overwrites settings.images)
-   * @param {String} images_private Optional images that we see when it's in our team zone. Must match the structure of images!
+   * @param {object} settings       Piece specifications
+   * @param {string} images         Optional images list (overwrites settings.images)
+   * @param {string} images_private Optional images that we see when it's in our team zone. Must match the structure of images!
    * @returns _Piece
    */
   add_piece(settings, images, images_private) {
@@ -4223,9 +4234,9 @@ class _Game {
   /**
    * Creates and returns a list of new, identical pieces according to the specified settings.
    * @param {int} count             Number of copies to make 
-   * @param {Object} settings       Pieces specifications
-   * @param {String} images         Optional images list (overwrites settings.images)
-   * @param {String} images_private Optional images that we see when it's in our team zone. Must match the structure of images!
+   * @param {object} settings       Pieces specifications
+   * @param {string} images         Optional images list (overwrites settings.images)
+   * @param {string} images_private Optional images that we see when it's in our team zone. Must match the structure of images!
    */
   add_pieces(count, settings, images, images_private) { log('add_pieces()', count, settings, images);
     var pieces = [];
@@ -4234,8 +4245,20 @@ class _Game {
   }
   
   /**
+   * Creates and returns a VGT.SnapGrid object with the specified settings
+   * @param {object} settings 
+   */
+  add_snap_grid(settings) { return new VGT.SnapGrid(settings); }
+
+  /**
+   * Creates and returns a VGT.SnapCircle object with the specified settings
+   * @param {object} settings 
+   */
+  add_snap_circle(settings) { return new VGT.SnapCircle(settings); }
+
+  /**
    * Adds a teamzone with the specified settings
-   * @param {Object} settings 
+   * @param {object} settings 
    */
   add_teamzone(settings) { log('add_teamzone()', settings);
     return new VGT.TeamZone(settings);
@@ -4244,7 +4267,7 @@ class _Game {
   /**
    * Connects the supplied key string (e.g. 'ShiftBackspaceDown'; see browser console when hitting keys for these names)
    * to the supplied function f
-   * @param {String} keys  Key string (or list of strings) to bind to the function
+   * @param {string} keys  Key string (or list of strings) to bind to the function
    * @param {function}  f  Function; first argument must be the key event.
    */
   bind_key(keys, f) { 
@@ -4396,7 +4419,7 @@ class _Game {
 
   /**
    * Sets the state according to the specified object.
-   * @param {Object} state 
+   * @param {object} state 
    * @param {function} after function to call when done (optional); argument is the state
    */
   set_state(state, after) {

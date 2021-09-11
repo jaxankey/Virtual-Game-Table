@@ -1,8 +1,8 @@
 <!--
 /**
- * This file is part of the Wholesale Alien Slaughter II distribution 
+ * This file is part of the Virtual Game Table distribution 
  * (https://github.com/jaxankey/WASII).
- * Copyright (c) 2015-2019 Jack Childress (Sankey).
+ * Copyright (c) 2015-2021 Jack Childress (Sankey).
  * 
  * This program is free software: you can redistribute it and/or modify  
  * it under the terms of the GNU General Public License as published by  
@@ -17,140 +17,97 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 -->
-<!doctype html>
-<html>
-<head>
-  
+<html><head>
   <meta charset="utf-8">
-  <title>Game Table</title>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Game</title>
+  <meta name="description" content="Virtual Game Table">
+  <meta name="author"      content="Jack C. Sankey">
+
   <style>
 
-    /* No padding or margins on anything by default */
-    * {padding: 0; margin: 0;
-       font-family: Arial, Helvetica, sans-serif;
+    * {
+      padding: 0;
+      margin : 0;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 1em;
+      font-weight: normal;
+      color: black;
+      background-color: white;
     }
 
     body {
-      position:absolute;
-      left:0;
-      right:0;
-      top:0;
-      bottom:0;
+      height: 100%;
+      overflow: hidden;
+      background-color: gray;
     }
 
-    /* Inputs buttons, etc font */
-    input, select, button {
-      background-color:white;
-      color: black;
-      border: solid black 1px;
+    h1 {
+      font-size: 1.5em;
+      color: rgb(187, 70, 70)
+    }
+
+    .row_left {
+      display: flex;
+      flex-direction: row;
+      margin: 0.4em;
+    }
+
+    input, button, select, ul{
+      color: #777;
+      border: solid #777 0.05em;
       padding: 0.2em;
-      display: inline-block;
-      font-size: medium;
-      margin: 4px 2px;
-      cursor: pointer;
     }
-    .othername, #name, #setups {
-      width: 7em;
+    input:focus, select:focus {
+      color: black;
     }
-    .othername {
-      border: solid white 1px;
-    }
-    input {
-      height: 1.2em;
-    }
-    button {
-      height: 1.69em;
-    }
-    select {
-      width: 9em;
-    }
-
-    /* Game Setup */
-    #controls {
-      font-family: Arial, Helvetica, sans-serif;
-      position: absolute;
-      top:    20px;
-      left:   20px;
-      width: 19em;
-      background-color: #ffffff;
-      opacity: 0.97;
-      color: rgb(0, 0, 0);
-      z-index: 50;
-      box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
-      visibility: visible;
-    }
-
-    #setup {
-      width: 20em;
-      padding-left: 0.5em;
-      padding-bottom: 0.5em;
-      padding-right: 0.5em;
-      padding-top: 0.5em;
-      border: none;
-      z-index: 50;
-    }
-
-    #chat {
-      z-index:0;
-      width: 18em;
-      border: none;
-      padding-left: 0.5em;
-      padding-bottom: 0.4em;
-      padding-top: 0.3em;
-    }
-    #chat-box {
-      width: 17.05em;
-    }
-    #messages { 
-      list-style-type: none; 
-      margin: 0; 
-      padding: 0; 
-      margin-left: 0.1em;
-      width: 17.45em;
-      scroll-behavior: smooth;
-      border: solid black 1px;}
-    #messages li { padding: 0.3em; }
-    #messages li:nth-child(odd) { background: rgb(240, 240, 240); }
-
+    
     /* Loading indicator */
     #loader {
-      font-family: Arial, Helvetica, sans-serif;
-      padding-left: 0.4em;
       position: absolute;
       top:    0;
       right:  0;
       bottom: 0;
       left:   0;
       background-color: #000000;
-      opacity: 1;
       color: white;
       z-index: 100;
     }
 
-    
-    #gameboard {
-      position:absolute;
-      left:0;
-      top:0;
-      z-index: 1;
-      cursor: crosshair; 
+
+
+    #controls {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      left: 1em;
+      top:  1em;
+      width: 20em;
+      box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
     }
+      #new    {margin: 0}
+      #setups {margin-left: 0;}
+      #save   {margin-left: 0;}
+      #volume {
+        flex-grow: 1;
+        padding: 0;
+        margin-left: 0.4em;
+      }
 
-    td {
-      padding-top: 0.0em;
-      padding-bottom: 0.0em;
+
+      .name { width: 7em; flex-grow: 1; }
+      .othername { border:0; pointer-events: none; flex-grow: 1; }
+
+    #chat {
+      display: flex;
+      flex-direction: column;
     }
-
-    h1 {
-      padding-left: 0.12em;
-      font-size: 1.3em;
-      font-weight:lighter;
-      color: rgb(187, 70, 70)
-    }
-
-    
-
+      #messages {
+        overflow-y: auto; 
+        height: 20em;
+        margin-bottom: 0.4em;
+      }
 
   </style>
 
@@ -158,52 +115,50 @@
 
 </head>
 
-<body id="body" style='background-color: #112720;'>
+<body id="body">
+  
+  <!-- Holds the canvas etc. -->
   <div id="gameboard"></div>
   
   <div id="enclosure">
   
     <div id="controls">
       
+
+
       <div id="setup">
         
-        <h1>Game <button id="rules" onclick="VGT.game.open_rules();">Rules</button></h1>
         
-        <table>
-          <tr><td>
-            <select id="setups" onchange="VGT.interaction.onchange_setups();">
-            </select>
-            <button id='new'  onclick="new_game();">New</button>
-            <button id='save' onclick="VGT.game.save_state();">Save</button>
-            <button id='load' onclick="VGT.game.load_state_from_file();">Load</button>
-          </td></tr>
-        </table>
+        <div class='row_left'><h1>Game</h1></div>
+        
+        <div class='row_left'>
+          <button id='new'  onclick="new_game();">Setup</button>
+          <select id="setups" onchange="VGT.interaction.onchange_setups();"><option value='test'>Testy</option></select>
+          <button id="rules" onclick="VGT.game.open_rules();">Rules</button>
+        </div>
 
-        <table>
-          <tr><td><input class='othername' value="Volume:" style="width: 3.5em"/></td><td><input type="range" min="0" max="100" value="25"  class="slider" id="volume" onchange="interaction.onchange_volume();"></td></tr>
-        </table>
-        
-        <br>
+        <div class='row_left'>
+          <button id='save' onclick="VGT.game.save_state();">Save</button>
+          <button id='load' onclick="VGT.game.load_state_from_file();">Load</button>
+        </div>
 
-        <h1>People</h1>
-        <table id='clients'></table>
-        
+        <div class='row_left'>
+          Volume: </td><td><input type="range" min="0" max="100" value="25"  class="slider" id="volume" onchange="interaction.onchange_volume();">
+        </div>
+      
       </div>
 
-      <div id="chat">
-        <table>
-          <tr>
-            <td>
-              <!-- where chat messages will appear -->
-              <ul id="messages" style="overflow-y: auto; height:200px"></ul>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <input id="chat-box" tabindex="2" onchange="VGT.interaction.onchat()" value="Type your chat messages here..." style='color: rgb(187, 70, 70);' onfocus="this.value=''; this.style='color: black';"/>
-            </td>
-          </tr>
-        </table>
+
+      <div class='row_left'><h1>People</h1></div>
+      
+      <div id='clients'></div>
+
+
+  
+        <!-- where chat messages will appear -->
+      <div id='chat' class='row_left'>
+        <ul id="messages"></ul>
+        <input id="chat-box" tabindex="2" onchange="VGT.interaction.onchat()" value="Type your chat messages here..." onfocus="this.value='';"/>
       </div>
 
       

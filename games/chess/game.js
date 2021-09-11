@@ -114,7 +114,7 @@ var b_king    = game.add_piece(    settings, 'king')
 //////////////////////////////////// NEW GAME SETUP
 
 function new_game() { 
-  console.log('\n------- NEW GAME: '+ VGT.html.select_setups.value +' -------\n\n');
+  console.log('\n------- NEW GAME: '+ game.html.select_setups.value +' -------\n\n');
 
   game.load_state_from_server('setup-standard.txt')
 
