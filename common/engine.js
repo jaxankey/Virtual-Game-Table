@@ -132,7 +132,7 @@ class _Html {
       else                 row.innerHTML = '<input class="othername" readonly value="'+name+'" />';
 
       // Now create the team selector
-      var s = document.createElement("select"); s.classList.add('flex_grow');
+      var s = document.createElement("select"); s.classList.add('team_name');
       s.id  = String(id); 
       s.onchange = VGT.interaction.onchange_team;
 

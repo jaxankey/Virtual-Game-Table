@@ -20,7 +20,7 @@
 // see also reset_game();
 var state = {
   slots  : 32,              // Maximum number of clients
-  max_name_length: 20,      // Maximum number of characters in each player's name
+  max_name_length: 25,      // Maximum number of characters in each player's name
   clients    : {},              // List of client data
   pieces     : {},              // List of piece properties
   nameplates : {},              // List of nameplate properties
@@ -212,11 +212,13 @@ var sockets     = {}; // Socket objects, sorted by id
 var last_id     = 1;  // Last assigned id; incremented with each client
 
 // Names for new players
-var first_names = ['pants', 'n00b', '1337', 'dirt', 
-                   'trash', 'no', 'terrible', 'nono', 'hill'];
-var last_names  = ['tastic', 'cakes', 'pants', 'face', 'n00b', 'juice', 
-                   'bag', 'hole', 'friend', 'skillet', 'person', 'billy',
-                  'chunks'];
+var pre_names = ['William T.', 'Billy D.', 'Johnny', 'Susan B.', 'Karen', 'Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Prof.', 'M.', 'Mme.', 'Mlle.']
+
+var first_names = ['Pants', 'Silly', 'Fancy', 'Dirt', 'Goofy',
+                   'Trash', 'No', 'Awful', 'Nono', 'Juicy'];
+var last_names  = ['tastic', 'cakes', 'pants', 'face', 'juice', 
+                   'bag', 'hole', 'friends', 'skillet', 'person', 'billy',
+                  'chunks', 'dirt', 'mouth'];
 
 // Sends the game state to the specified client id
 function send_state(id) {
@@ -261,7 +263,7 @@ io.on('connection', function(socket) {
   // Add a new client to the list
   state.clients[socket.id] = {
     'id'     : socket.id, 
-    'name'   : fun.random_array_element(first_names)+fun.random_array_element(last_names),
+    'name'   : fun.random_array_element(pre_names) + ' ' + fun.random_array_element(first_names)+fun.random_array_element(last_names),
     'team'   : 0,
   };
   fun.log_date('CLIENT', socket.id, 'CONNECTED');
@@ -298,6 +300,9 @@ io.on('connection', function(socket) {
 
     // Limit the name length
     for(var k in clients) clients[k].name = clients[k].name.substr(0,state.max_name_length);
+
+    // Make sure there's something
+    if(!clients[k].name.length) clients[k].name = fun.random_array_element(pre_names) + ' ' + fun.random_array_element(first_names)+fun.random_array_element(last_names)
 
     // Update the clients list
     if(clients) state.clients = clients;
