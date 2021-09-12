@@ -2371,8 +2371,16 @@ class _Thing {
       ts:-1,
       ih:-1,
     }
-    // Update numbers. If these are bigger than those from the server, it means we have sent updates since that server packet.
-    this._Nx = this._Ny = this._Nr = this._Ns = this._Nts = this._Nih = 0;
+    this._N = {
+      x:0,
+      y:0,
+      r:0,
+      R:0,
+      s:0,
+      n:0,
+      ts:0,
+      ih:0,
+    }
     
     // Create a container for the stack of sprites
     this.container = new PIXI.Container();
@@ -2830,8 +2838,8 @@ class _Thing {
     // If the immediate flag is true
     if(immediate) q_out[id]['now'] = true;
 
-    // Remember the index that will be attached to this on the next process_qs
-    this.last_nqs[qkey] = VGT.net.nq+1;
+    // Increment the last-known update number for this attribute
+    this._N[qkey]++;
     return this;
   }
 
@@ -2841,6 +2849,7 @@ class _Thing {
    */
   process_q_data(d, immediate) { 
 
+    // JACK: UPDATE DOCS
     // We do not want to let the server change anything about the pieces we're holding, 
     // UNLESS it's overriding our hold status, for example, when someone else grabbed it first. 
     // As such, we should update the hold status first!
@@ -2865,7 +2874,7 @@ class _Thing {
     // update the holder id if necessary. The server's job is to ensure that it relays the correct holder always.
     // ALSO we should ensure that, if it's either someone else's packet, or it's ours and we 
     // have not since queued a newer packet updating the hold status
-    if( d['ih']   != undefined // If there is a client id for the hold (resolved already at server)
+    if( d['ih'] != undefined // If there is a client id for the hold (resolved already at server)
     && ( d['ih.i'] != VGT.net.id || d['ih.n'] >= this.last_nqs['ih'] ) ) this.hold(d.ih, true, true); // client_id, force, do_not_update_q_out
 
     // Now update the different attributes only if we're not holding it (our hold supercedes everything)
@@ -2873,13 +2882,13 @@ class _Thing {
       if(d['now'] != undefined) immediate = d['now'];
       
       // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update          immediate, do_not_update_q_out, do_not_reset_R
-      if(d['x']  != undefined && (d['x.i']  != VGT.net.id || d['x.n']  >= this.last_nqs['x'] )) this.set_x(d.x, immediate, true);
-      if(d['y']  != undefined && (d['y.i']  != VGT.net.id || d['y.n']  >= this.last_nqs['y'] )) this.set_y(d.y, immediate, true);
-      if(d['r']  != undefined && (d['r.i']  != VGT.net.id || d['r.n']  >= this.last_nqs['r'] )) this.set_r(d.r, immediate, true, true);
-      if(d['s']  != undefined && (d['s.i']  != VGT.net.id || d['s.n']  >= this.last_nqs['s'] )) this.set_s(d.s, immediate, true);
-      if(d['R']  != undefined && (d['R.i']  != VGT.net.id || d['R.n']  >= this.last_nqs['R'] )) this.set_R(d.R, immediate, true);
-      if(d['n']  != undefined && (d['n.i']  != VGT.net.id || d['n.n']  >= this.last_nqs['n'] )) this.set_image_index(d.n, true);
-      if(d['ts'] != undefined && (d['ts.i'] != VGT.net.id || d['ts.n'] >= this.last_nqs['ts'])) this.select  (d.ts, true);
+      if(d['x']  != undefined && d['Nx']  > this._N['x'] ) { this.set_x(d.x, immediate, true);       this._N['x']  = d['Nx' ]; }
+      if(d['y']  != undefined && d['Ny']  > this._N['y'] ) { this.set_y(d.y, immediate, true);       this._N['y']  = d['Ny' ]; }
+      if(d['r']  != undefined && d['Nz']  > this._N['z'] ) { this.set_r(d.r, immediate, true, true); this._N['r']  = d['Nr' ]; }
+      if(d['s']  != undefined && d['Ns']  > this._N['s'] ) { this.set_s(d.s, immediate, true);       this._N['s']  = d['Ns' ]; }
+      if(d['R']  != undefined && d['NR']  > this._N['R'] ) { this.set_R(d.R, immediate, true);       this._N['R']  = d['NR' ]; }
+      if(d['n']  != undefined && d['Nn']  > this._N['n'] ) { this.set_image_index(d.n, true);        this._N['n']  = d['Nn' ]; }
+      if(d['ts'] != undefined && d['Nts'] > this._N['ts']) { this.select(d.ts, true);                this._N['ts'] = d['Nts']; }
 
     } // End of we are not holding this.
   }
