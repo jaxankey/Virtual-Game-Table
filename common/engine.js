@@ -380,8 +380,8 @@ class _Net {
   } // end of on_q
 
   /** First thing to come back after 'hallo' is the full game state. */
-  on_state(data) { if(!this.ready) return; log('NETR_state', data);
-      
+  on_state(data) { log('NETR_state', data);
+
     // Get our client id and the server state
     var id           = data[0];
     var server_state = data[1];
@@ -424,12 +424,16 @@ class _Net {
     VGT.tabletop._t0_fade_in = Date.now();
 
     // Say hello
-    VGT.html.chat('Server', 'Welcome, '+ VGT.net.clients[VGT.net.id].name + '!')
+    VGT.html.chat('Server', 'Welcome, '+ this.clients[VGT.net.id].name + '!')
+
+    // Ready to receive all the other packets now!
+    VGT.net.ready = true; 
+    delete this._connecting_to_server;
 
   } // End of on_state
 
   /** Someone sends the client table data. */
-  on_clients(data) { if(!VGT.net.ready) return; log('NETR_clients', data);
+  on_clients(data) { if(!this.ready) return; log('NETR_clients', data);
 
     // Update the state
     this.clients = data;
@@ -497,6 +501,14 @@ class _Net {
    * Connect to the server (don't do this until Pixi is ready)
    */
   connect_to_server() {
+
+    // If we're already trying to connect, poop out.
+    if(this._connecting_to_server) return;
+
+    // Remember we're now trying to connect so housekeeping doesn't keep trying until we succeed.
+    // Set to false on state
+    this._connecting_to_server = true;
+
     log('connect_to_server()', this);
   
     // Get name to send to server with hallo.
@@ -507,9 +519,6 @@ class _Net {
     // Ask for the game state.
     log(    'NETS_hallo', [name, team]);
     this.io.emit('hallo', [name, team]);
-  
-    // Ready to receive packets now!
-    VGT.net.ready = true; 
   }
 
 } // End of _Net
@@ -2332,7 +2341,7 @@ class _Thing {
     this.tint = 0xFFFFFF;
 
     // Targeted location and geometry. Current locations are in the container.x, container.y, container.rotation, and container.scale.x
-    this.x = new _Animated(this.settings.x);
+    this.x = new _Animated(this.settings.x); 
     this.y = new _Animated(this.settings.y);
     this.r = new _Animated(this.settings.r); 
     this.R = new _Animated(0);         
@@ -2362,6 +2371,8 @@ class _Thing {
       ts:-1,
       ih:-1,
     }
+    // Update numbers. If these are bigger than those from the server, it means we have sent updates since that server packet.
+    this._Nx = this._Ny = this._Nr = this._Ns = this._Nts = this._Nih = 0;
     
     // Create a container for the stack of sprites
     this.container = new PIXI.Container();
@@ -2862,17 +2873,22 @@ class _Thing {
       if(d['now'] != undefined) immediate = d['now'];
       
       // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update          immediate, do_not_update_q_out, do_not_reset_R
-      if(d['x']  != undefined && (d['x.i']  != VGT.net.id || d['x.n']  >= this.last_nqs['x'] )) this.set_xyrs(d.x, undefined, undefined, undefined, immediate, true, true);
-      if(d['y']  != undefined && (d['y.i']  != VGT.net.id || d['y.n']  >= this.last_nqs['y'] )) this.set_xyrs(undefined, d.y, undefined, undefined, immediate, true, true);
-      if(d['r']  != undefined && (d['r.i']  != VGT.net.id || d['r.n']  >= this.last_nqs['r'] )) this.set_xyrs(undefined, undefined, d.r, undefined, immediate, true, true);
-      if(d['s']  != undefined && (d['s.i']  != VGT.net.id || d['s.n']  >= this.last_nqs['s'] )) this.set_xyrs(undefined, undefined, undefined, d.s, immediate, true, true);
-      if(d['R']  != undefined && (d['R.i']  != VGT.net.id || d['R.n']  >= this.last_nqs['R'] )) this.set_R   (d.R,                                  immediate, true);
+      if(d['x']  != undefined && (d['x.i']  != VGT.net.id || d['x.n']  >= this.last_nqs['x'] )) this.set_x(d.x, immediate, true);
+      if(d['y']  != undefined && (d['y.i']  != VGT.net.id || d['y.n']  >= this.last_nqs['y'] )) this.set_y(d.y, immediate, true);
+      if(d['r']  != undefined && (d['r.i']  != VGT.net.id || d['r.n']  >= this.last_nqs['r'] )) this.set_r(d.r, immediate, true, true);
+      if(d['s']  != undefined && (d['s.i']  != VGT.net.id || d['s.n']  >= this.last_nqs['s'] )) this.set_s(d.s, immediate, true);
+      if(d['R']  != undefined && (d['R.i']  != VGT.net.id || d['R.n']  >= this.last_nqs['R'] )) this.set_R(d.R, immediate, true);
       if(d['n']  != undefined && (d['n.i']  != VGT.net.id || d['n.n']  >= this.last_nqs['n'] )) this.set_image_index(d.n, true);
       if(d['ts'] != undefined && (d['ts.i'] != VGT.net.id || d['ts.n'] >= this.last_nqs['ts'])) this.select  (d.ts, true);
 
     } // End of we are not holding this.
   }
 
+  set_x(x, immediate, do_not_update_q_out)                 { this.set_xyrs(x,undefined,undefined,undefined, immediate, do_not_update_q_out) }
+  set_y(y, immediate, do_not_update_q_out)                 { this.set_xyrs(undefined,y,undefined,undefined, immediate, do_not_update_q_out) }
+  set_r(r, immediate, do_not_update_q_out, do_not_reset_R) { this.set_xyrs(undefined,undefined,r,undefined, immediate, do_not_update_q_out, do_not_reset_R) }
+  set_s(s, immediate, do_not_update_q_out)                 { this.set_xyrs(undefined,undefined,undefined,s, immediate, do_not_update_q_out) }
+  
   // Returns the z-order index (pieces with lower index are behind this one)
   get_z_value() {
 

@@ -459,8 +459,12 @@ io.on('connection', function(socket) {
       // Loop over attributes and transfer or defer to state, depending on who is holding the piece
       for(k in q[id]) {
         
-        // Immediate flag to relay, not store in the server
+        // Flag to send along with everything to make sure the end users know to update things immediately
         if(k == 'now') continue;
+
+        // Make sure there is an update number for this property
+        // This is tracked by the server to remove ambiguity about the order of things.
+        if(state_list[id]['N'+k] == undefined) state_list[id]['N'+k] = 1;
 
         // If it is valid to update the server state for this piece
         if(update_server_piece) {
@@ -469,6 +473,9 @@ io.on('connection', function(socket) {
           state_list[id][k]      = q[id][k];
           state_list[id][k+'.i'] = q[id][k+'.i'] = socket.id;
           state_list[id][k+'.n'] = q[id][k+'.n'] = nq;
+          
+          // Increment the update number for this property
+          state_list[id]['N'+k]++;
         }
         
         // Otherwise overwrite the q entry
@@ -478,6 +485,10 @@ io.on('connection', function(socket) {
           q[id][k+'.i'] = state_list[id][k+'.i'];
           q[id][k+'.n'] = state_list[id][k+'.i'];
         }
+
+        // In any case, always update the outbound packet with the update number
+        q[id]['N'+k] = state_list[id]['N'+k];
+
       } // end of corrective loop over attributes
     } // end of loop over pieces
   }
@@ -502,8 +513,8 @@ io.on('connection', function(socket) {
       for(var k in q_hands[id]) state.hands[id][k] = q_hands[id][k];
     }
 
+    // Can't broadcast (leads to unsync)
     delay_send(io, 'q', [socket.id, nq, q_pieces, q_hands, q_nameplates]);
-    //broadcast('q', [socket.id, q_pieces, q_hands]); // Leads to unsync
   }
   socket.on('q', function(data) {delay_function(on_q, data)});
 
@@ -534,18 +545,11 @@ function send_full_update() {
    
   // Send the queue if any sockets exist.
   if(Object.keys(sockets).length) {
-    fun.log_date('send_full_update()', Object.keys(sockets).length, 'sockets');
-   
-    // Create a similar object to state.pieces, but without the unneeded information
-    data = { ...state.pieces };
-    for(id in data) { 
-      delete data[id]['z.i']; 
-      delete data[id]['z.n']; 
-      delete data[id]['l.i'];
-      delete data[id]['l.n'];
-    }
-    fun.log_date( '  ', Object.keys(data).length, 'pieces');
-    delay_send(io, 'q', [0, 0, data, {}]);
+    fun.log_date('send_full_update()', Object.keys(sockets).length, 'sockets', Object.keys(state.pieces).length, 'pieces');
+    
+    // including hands not needed, including nameplates leads to confusion on reloads with any net delay.
+    // JACK: the other instance of 'q' sending involves a 'now'?
+    delay_send(io, 'q', [0, 0, state.pieces, {}, {}]); 
   }
 
   // Start the next full update
