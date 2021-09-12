@@ -25,8 +25,8 @@ var state = {
   pieces     : {},              // List of piece properties
   nameplates : {},              // List of nameplate properties
   hands      : {},              // List of hand properties
-  t_simulated_lag : 0,      // Simulated lag when routing packets.
-  t_full_update   : 4000,   // How often to send a full update
+  t_simulated_lag : 1000,      // Simulated lag when routing packets.
+  t_full_update   : 1000,   // How often to send a full update
 }; 
 
 // State keys that should not be set by clients with server commands (/set)
@@ -197,7 +197,7 @@ function delay_function(handler, data) {
  */
 function delay_send(socket, key, data) {
   if(socket) {
-    if(state.t_simulated_lag) setTimeout(function(){socket.emit(key,data)}, t_simulated_lag);
+    if(state.t_simulated_lag) setTimeout(function(){socket.emit(key,data)}, state.t_simulated_lag);
     else                                            socket.emit(key,data);
   }
 }
@@ -483,7 +483,7 @@ io.on('connection', function(socket) {
   }
 
   // Client has sent a q of changes
-  function on_q(data) { fun.log_date('NETR_q_'+String(socket.id), 'nq =', data[0], 'with', Object.keys(data[1]).length, 'Pieces', Object.keys(data[2]).length, 'Hands', Object.keys(data[3]).length, 'Nameplates');
+  function on_q(data) { fun.log_date('NETR_q_'+data.length);
     var nq           = data[0];
     var q_pieces     = data[1];
     var q_hands      = data[2];
