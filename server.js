@@ -440,7 +440,7 @@ io.on('connection', function(socket) {
    * @param {Object} state_list Associated state object, e.g. state.pieces
    */
   function handle_q_in(q, state_list, nq) {
-    var k, update_server_piece; // Flag to reuse below
+    var k, update_server_state; // Flag to reuse below
 
     // Loop over the incoming pieces q by id.
     for(var id in q) { 
@@ -454,14 +454,14 @@ io.on('connection', function(socket) {
         delete state_list[id]['ih'];
         delete state_list[id]['ih.i'];
         delete state_list[id]['ih.n'];
-      }
+      } // End of missing holder cleanup
 
       // If no one is hold it (0 or undefined) OR the holder is this client, set a flag to update the server state for this piece
       // Otherwise, we update the incoming q state with that of the server
-      update_server_piece = !state_list[id]['ih'] || state_list[id]['ih'] == socket.id;    
+      update_server_state = !state_list[id]['ih'] || state_list[id]['ih'] == socket.id;    
 
-      // Loop over attributes and transfer or defer to state, depending on who is holding the piece
-      // Input queue (q) should never carry 'N' data
+      // Loop over attributes and transfer to or from the server state, depending on who is holding the piece
+      // Note the input queue (q) should never carry 'N' data
       for(k in q[id]) {
         if(k[0] == 'N') throw 'WHUT??'
         
@@ -473,7 +473,7 @@ io.on('connection', function(socket) {
         if(state_list[id]['N'+k] == undefined) state_list[id]['N'+k] = 1;
 
         // If it is valid to update the server state for this piece
-        if(update_server_piece) {
+        if(update_server_state) {
 
           // Update the state with the value, last setter, and last setter nq.
           state_list[id][k]      = q[id][k];

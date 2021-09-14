@@ -296,7 +296,6 @@ class _Net {
 
       // Visually update the hand's position (x,y,r,s), image (n), and mousedown table coordinates (vd) if it's not our hand
       if(p && p.id_client != VGT.net.id) { 
-        //if(c.x != undefined) _l('q_in_hand', c['Nx'], p._N['x']);
 
         // Replacement process_q_data for hands; could move this to an overload function...
         
@@ -2849,7 +2848,6 @@ class _Thing {
     this._N[qkey]++;
     this._T[qkey] = Date.now();
 
-    //if(qkey == 'x') _l('q_out', id, qkey, this._N[qkey])
     return this;
   }
 
@@ -2915,7 +2913,7 @@ class _Thing {
     
     // We only set the packet data if it exists, and if it's not too old;
     // or we're forcing
-    if(d[k] != undefined && (d[Nk] > this._N[k] || Date.now()-this._T[k] > 2000)) { 
+    if(d[k] != undefined && (d[Nk] >= this._N[k] || Date.now()-this._T[k] > 2000)) { 
       // Set the value
       if      (k=='x')  this.set_x(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
       else if (k=='y')  this.set_y(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
