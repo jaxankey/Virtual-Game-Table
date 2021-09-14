@@ -2378,7 +2378,7 @@ class _Thing {
       ts:-1,
       ih:-1,
     }
-    this._N = {
+    this._N = { // Last packet number for each attribute
       x:-1,
       y:-1,
       r:-1,
@@ -2388,6 +2388,7 @@ class _Thing {
       ts:-1,
       ih:-1,
     }
+    this._T = {...this._N} // last time each attribute was updated
     
     // Create a container for the stack of sprites
     this.container = new PIXI.Container();
@@ -2846,6 +2847,7 @@ class _Thing {
 
     // Increment the last-known update number for this attribute
     this._N[qkey]++;
+    this._T[qkey] = Date.now();
 
     //if(qkey == 'x') _l('q_out', id, qkey, this._N[qkey])
     return this;
@@ -2860,40 +2862,38 @@ class _Thing {
     // If we're overriding immediate
     if(immediate != undefined) d['now'] = immediate;
 
-    // JACK: UPDATE DOCS
-    // We do not want to let the server change anything about the pieces we're holding, 
-    // UNLESS it's overriding our hold status, for example, when someone else grabbed it first. 
+    // Show the nameplates if they have a 'now' attached to them.
+    if(this.type=='NamePlate' && d['now']) this.show();
+
+    // We do not want to let the server change anything about the pieces we're legally holding, 
+    // UNLESS it's overriding our hold status, for example, when someone else grabbed it first and our packets crossed paths. 
     // As such, we should update the hold status first!
     //
     // If two clients grab the same piece at nearly the same time, 
-    //   - Their packets (sender net ids ih.i = 1 and 2, say) will reach the server at nearly the same time. 
-    //   - The server will update the hold status of the piece based on the first-arriving packet (ih.i=ih=1, say).
-    //     The second-arriving packet (ih.i=ih=2) should be corrected (ih.i=2, ih.i=1 or ih.i=ih=undefined) 
-    //     to have the first person holding it (or no information) before re-broadcast
+    //   - Their packets will reach the server at nearly the same time. 
+    //   - The server will update the hold status of the piece based on the first-arriving packet.
+    //     The second-arriving packet's data should be corrected to have the first person holding it (or no information) before re-broadcast
     //       During this round-trip time, the second person will be able to move the piece around until the first packet arrives.
-    //         This packet will have ih=ih.i=1 the holder should be switched to the first player.
+    //         This packet will have ih=1 the holder should be switched to the first player.
     //   - The second packet, with the corrected (or absent) change of who is holding will arrive next.
-    //         This packet will have ih=1 or undefined and ih.i=2 or undefined
+    //         This packet will have ih=1 or undefined
     //
     
     // All attributes have 
     //   - their value, e.g. 'ih' for the id of the holder
-    //   - the id of the sender, e.g. 'ih.i' for the holder sender
-    //   - the sender's incrementing packet index, e.g. 'ih.n'
-
+    //   - The server's packet number, e.g., 'Nih' that increments with each server update (even if unsuccessful)
+    
     // Before deciding what to do with the other attributes, we need to
-    // update the holder id if necessary. The server's job is to ensure that it relays the correct holder always.
-    // ALSO we should ensure that, if it's either someone else's packet, or it's ours and we 
-    // have not since queued a newer packet updating the hold status
+    // update the holder id. The server's job is to ensure that it relays the correct holder always.
+    // ALSO we should ensure that we have not since queued out a newer packet updating the hold status
     // Updates the holder regardless of who is holding it
     
-    // Also decide if we're overriding because it's been awhile, in case packet loss caused a stuck unsync (N's mismatched)
-    var force = Date.now() - this.t_last_move > 3000;
-    this.set_packet('ih', d, force);
+    // There are some "bad network" scenarios when the N's for each attribute are stuck at a higher value than that of the server's packet
+    // Eventually, we should defer to the server. 
+    this.set_packet('ih', d);
 
-    // Now update the different attributes only if we're not holding it (our hold supercedes everything),
-    // and it's not out of date
-    if(this.id_client_hold != VGT.net.id) this.set_packets(['x','y','r','s','R','n','ts'], d, force);
+    // Now update the different attributes only if we're not holding it (our hold supercedes everything)
+    if(this.id_client_hold != VGT.net.id) this.set_packets(['x','y','r','s','R','n','ts'], d);
   }
 
   set_x(x, immediate, do_not_update_q_out)                 { this.set_xyrs(x,undefined,undefined,undefined, immediate, do_not_update_q_out) }
@@ -2910,12 +2910,12 @@ class _Thing {
    * @param {boolean} do_not_update_q_out whether to update the outbound q
    * @param {boolean} do_not_reset_R whether to reset the aux rotation R
    */
-  set_packet(k, d, force) {
+  set_packet(k, d) {
     var Nk = 'N'+k;
     
     // We only set the packet data if it exists, and if it's not too old;
     // or we're forcing
-    if(d[k] != undefined && (d[Nk] > this._N[k] || force)) { 
+    if(d[k] != undefined && (d[Nk] > this._N[k] || Date.now()-this._T[k] > 2000)) { 
       // Set the value
       if      (k=='x')  this.set_x(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
       else if (k=='y')  this.set_y(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
@@ -2927,8 +2927,9 @@ class _Thing {
       else if (k=='ih') this.hold(d[k], true, true);            // id_client, force, do_not_update_q_out
       else return this;
 
-      // Remember the packet number
-      this._N[k]  = d[Nk]; 
+      // Remember the packet number and the time that this happened
+      this._N[k] = d[Nk];
+      this._T[k] = Date.now();
     }
     return this;
   } // End of set_packet()
@@ -3337,8 +3338,7 @@ class _Thing {
    * @param {boolean} do_not_reset_R        if true, do not reset the auxiliary rotation thing.R when setting r.
    */
   set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) { 
-    //if(this.type=='NamePlate') log('NamePlate.set_xyrs()', x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R)
-
+    
     // Now for each supplied coordinate, update and send
     if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}
     if(y!=undefined && y != this.y.target) {this.y.set(y,immediate); this.update_q_out('y', 'y', do_not_update_q_out);}
@@ -3909,15 +3909,12 @@ class _NamePlate extends _Thing {
   }
 
   // NAMEPLATE: No z-setting or q for this; that's only for pieces
-  // JACK: Could have the z requests by thing ID? Unfortunately things are not well-ordered
   set_z_target() {};
 
   // Called after set_xyrs(); here we just save our location with a cookie
   after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) {
     
-    // Make sure it's showing (doing this here avoids weird snapping when reloading the page)
-    this.show();
-
+    // JACK: This happens many times for one xyrs call.
     // If it's associated with my hand, save it
     if(this.hand && this.hand.id_client == VGT.clients.me.id_client) 
       save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target,this.s.target]);
