@@ -75,6 +75,8 @@
     /* Loading indicator */
     #loader {
       position: absolute;
+      display: flex;
+      flex-direction: column;
       top:    0;
       right:  0;
       bottom: 0;
@@ -83,7 +85,20 @@
       color: white;
       z-index: 100;
     }
-
+      #progress {
+        margin-top: 2em;
+        font-size: 2em;
+        text-align: center;
+        vertical-align: center;
+        background-color: transparent;
+        color: white;
+      }
+      #progress_path {
+        text-align: center;
+        vertical-align: center;
+        background-color: transparent;
+        color: white;
+      }
 
 
     #controls {
@@ -179,7 +194,7 @@
       
     </div>
 
-    <div id="loader"></div>
+    <div id="loader"><div id="progress">Loading...</div><div id="progress_path"></div></div>
 
     
   </div>

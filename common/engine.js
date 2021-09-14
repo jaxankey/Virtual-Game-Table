@@ -52,6 +52,9 @@ CURRENTLY
 
 */
 
+// Troubleshooting logger
+function _l() {log('   _l', ...arguments)}
+
 // Holds the user name space
 var VGT = {};
 
@@ -270,7 +273,7 @@ class _Net {
   
 
 
-    //// NAMEPLATES
+    //// NAMEPLATES (No z-processing)
     for(var id_nameplate in this.q_nameplates_in) { 
       c = this.q_nameplates_in[id_nameplate]; // incoming changes for this thing
       p = VGT.nameplates.all[id_nameplate];   // the actual piece object
@@ -285,18 +288,23 @@ class _Net {
     this.q_nameplates_in = {}; 
   
 
+
     // Loop over the hands in the input queue
     for(var id_hand in this.q_hands_in) {
       c = this.q_hands_in[id_hand]; // Incoming changes
       p = VGT.hands.all[id_hand];   // Actual hand
 
       // Visually update the hand's position (x,y,r,s), image (n), and mousedown table coordinates (vd) if it's not our hand
-      if(p && p.id_client != VGT.net.id){
-      
-        // Undefined quantities do nothing to these functions
-        p        .set_xyrs(c.x, c.y, c.r, undefined, immediate, true);
-        p.polygon.set_xyrs(c.x, c.y, c.r, undefined, immediate, true); 
-        p.set_image_index(c.n, true);
+      if(p && p.id_client != VGT.net.id) { 
+        //if(c.x != undefined) _l('q_in_hand', c['Nx'], p._N['x']);
+
+        // Replacement process_q_data for hands; could move this to an overload function...
+        
+        // If we're overriding the server's immediate
+        if(immediate != undefined) c['now'] = true;
+        
+        // Force-set the position etc (we will never be holding or send others' hand info)
+        p.set_packets(['x','y','r','n'], c);
         
         // vd should be null or [x,y] for the down click coordinates
         if(c.vd != undefined) p.vd = c.vd;
@@ -364,7 +372,8 @@ class _Net {
 
   /** We receive a queue of piece information from the server. */
   on_q(data) { if(!this.ready) return; log('NETR_q_'+String(data[0]), data[1], data);
-  
+    //if(data[0] == 0) _l('Server')
+
     // Unpack
     var id_client    = data[0];
     var nq           = data[1];
@@ -418,7 +427,7 @@ class _Net {
     for(var n in VGT.hands.all) VGT.hands.all[n].t_last_image = VGT.hands.all[n].t_last_move = 0;
 
     // Now (delayed, so pieces can snap to their starting locations) hide the loader page so the user can interact
-    VGT.html.div_loader.hidden = true;
+    VGT.html.div_loader.style.visibility = 'hidden';
 
     // Reset the fade-in ticker
     VGT.tabletop._t0_fade_in = Date.now();
@@ -494,6 +503,8 @@ class _Net {
     this.io.on('say',        this.on_say     .bind(this)); 
     this.io.on('chat',       this.on_chat    .bind(this));
     this.io.on('kill_undos', this.on_kill_undos.bind(this));
+
+    //this.io.onAny((e, ...args) => {_l(e, args)});
   
   } // End of setup_listeners()
 
@@ -504,11 +515,8 @@ class _Net {
 
     // If we're already trying to connect, poop out.
     if(this._connecting_to_server) return;
-
-    // Remember we're now trying to connect so housekeeping doesn't keep trying until we succeed.
-    // Set to false on state
-    this._connecting_to_server = true;
-
+    this._connecting_to_server = true; // Prevent housekeeping from connecting repeatedly
+    
     log('connect_to_server()', this);
   
     // Get name to send to server with hallo.
@@ -520,7 +528,6 @@ class _Net {
     log(    'NETS_hallo', [name, team]);
     this.io.emit('hallo', [name, team]);
   }
-
 } // End of _Net
 VGT.net = new _Net();
 
@@ -738,7 +745,7 @@ class _Pixi {
     log('progress: loaded', resource.url, loader.progress, '%');
 
       // Update the loader progress in the html
-      VGT.html.div_loader.innerHTML = '<h1>Loaded: ' + loader.progress.toFixed(0) + '%</h1><br>' + resource.url;
+      VGT.html.div_loader.innerHTML = '<div id="progress">Loaded: ' + loader.progress.toFixed(0) + '%</div><div id="progress_path">' + resource.url + '</div>';
   }
 
   /** Called every 1/60 of a second (roughly).
@@ -2372,14 +2379,14 @@ class _Thing {
       ih:-1,
     }
     this._N = {
-      x:0,
-      y:0,
-      r:0,
-      R:0,
-      s:0,
-      n:0,
-      ts:0,
-      ih:0,
+      x:-1,
+      y:-1,
+      r:-1,
+      R:-1,
+      s:-1,
+      n:-1,
+      ts:-1,
+      ih:-1,
     }
     
     // Create a container for the stack of sprites
@@ -2796,7 +2803,6 @@ class _Thing {
 
   /* Sends data associated with key (this[key]) to the associated VGT.net.q_pieces_out[this.id_thing][qkey]. */
   update_q_out(key, qkey, only_if_exists, immediate) { 
-    //log('Thing.update_q_out()', key, qkey, only_if_exists);
     
     // If qkey is not supplied, use the key
     if(qkey == undefined) qkey = key;
@@ -2830,16 +2836,18 @@ class _Thing {
     // Update the attribute
 
     // Update the q depending on the kind of data it is.
-    if(['x','y','r','R','s'].includes(qkey)) q_out[id][qkey] = this[key].target;
-    else if(qkey == 'z')                     q_out[id][qkey] = this.get_z_value();
-    else if(qkey == 'l')                     q_out[id][qkey] = Math.round(this.settings.layer);
-    else                                     q_out[id][qkey] = this[key];
+    if(['x','y','r','R','s'].includes(qkey)) q_out[id][qkey] = this[key].target;                // Animated quanties
+    else if(qkey == 'z')                     q_out[id][qkey] = this.get_z_value();              // z-value request
+    else if(qkey == 'l')                     q_out[id][qkey] = Math.round(this.settings.layer); // layer request
+    else                                     q_out[id][qkey] = this[key];                       // Something else like _n
 
     // If the immediate flag is true
     if(immediate) q_out[id]['now'] = true;
 
     // Increment the last-known update number for this attribute
     this._N[qkey]++;
+
+    //if(qkey == 'x') _l('q_out', id, qkey, this._N[qkey])
     return this;
   }
 
@@ -2848,6 +2856,9 @@ class _Thing {
    * @param {object} d Data packet for this piece
    */
   process_q_data(d, immediate) { 
+
+    // If we're overriding immediate
+    if(immediate != undefined) d['now'] = immediate;
 
     // JACK: UPDATE DOCS
     // We do not want to let the server change anything about the pieces we're holding, 
@@ -2874,30 +2885,57 @@ class _Thing {
     // update the holder id if necessary. The server's job is to ensure that it relays the correct holder always.
     // ALSO we should ensure that, if it's either someone else's packet, or it's ours and we 
     // have not since queued a newer packet updating the hold status
-    if( d['ih'] != undefined // If there is a client id for the hold (resolved already at server)
-    && ( d['ih.i'] != VGT.net.id || d['ih.n'] >= this.last_nqs['ih'] ) ) this.hold(d.ih, true, true); // client_id, force, do_not_update_q_out
+    // Updates the holder regardless of who is holding it
+    
+    // Also decide if we're overriding because it's been awhile, in case packet loss caused a stuck unsync (N's mismatched)
+    var force = Date.now() - this.t_last_move > 3000;
+    this.set_packet('ih', d, force);
 
-    // Now update the different attributes only if we're not holding it (our hold supercedes everything)
-    if(this.id_client_hold != VGT.net.id) {
-      if(d['now'] != undefined) immediate = d['now'];
-      
-      // Only update the attribute if the updater is NOT us, or it IS us AND there is an nq AND we haven't sent a more recent update          immediate, do_not_update_q_out, do_not_reset_R
-      if(d['x']  != undefined && d['Nx']  > this._N['x'] ) { this.set_x(d.x, immediate, true);       this._N['x']  = d['Nx' ]; }
-      if(d['y']  != undefined && d['Ny']  > this._N['y'] ) { this.set_y(d.y, immediate, true);       this._N['y']  = d['Ny' ]; }
-      if(d['r']  != undefined && d['Nz']  > this._N['z'] ) { this.set_r(d.r, immediate, true, true); this._N['r']  = d['Nr' ]; }
-      if(d['s']  != undefined && d['Ns']  > this._N['s'] ) { this.set_s(d.s, immediate, true);       this._N['s']  = d['Ns' ]; }
-      if(d['R']  != undefined && d['NR']  > this._N['R'] ) { this.set_R(d.R, immediate, true);       this._N['R']  = d['NR' ]; }
-      if(d['n']  != undefined && d['Nn']  > this._N['n'] ) { this.set_image_index(d.n, true);        this._N['n']  = d['Nn' ]; }
-      if(d['ts'] != undefined && d['Nts'] > this._N['ts']) { this.select(d.ts, true);                this._N['ts'] = d['Nts']; }
-
-    } // End of we are not holding this.
+    // Now update the different attributes only if we're not holding it (our hold supercedes everything),
+    // and it's not out of date
+    if(this.id_client_hold != VGT.net.id) this.set_packets(['x','y','r','s','R','n','ts'], d, force);
   }
 
   set_x(x, immediate, do_not_update_q_out)                 { this.set_xyrs(x,undefined,undefined,undefined, immediate, do_not_update_q_out) }
   set_y(y, immediate, do_not_update_q_out)                 { this.set_xyrs(undefined,y,undefined,undefined, immediate, do_not_update_q_out) }
   set_r(r, immediate, do_not_update_q_out, do_not_reset_R) { this.set_xyrs(undefined,undefined,r,undefined, immediate, do_not_update_q_out, do_not_reset_R) }
   set_s(s, immediate, do_not_update_q_out)                 { this.set_xyrs(undefined,undefined,undefined,s, immediate, do_not_update_q_out) }
+  set_R(R, immediate, do_not_update_q_out)                 { this.R.set(R,immediate); this.update_q_out('R','R', do_not_update_q_out); }
   
+  /**
+   * 
+   * @param {string} k Key, either 'ih', 'x', 'y', 'r', 's', 'R', 'n', 'ts'
+   * @param {object} d Data packet, containing at least d[key], d['N'+k]
+   * @param {boolean} immediate Whether to apply the change immediately
+   * @param {boolean} do_not_update_q_out whether to update the outbound q
+   * @param {boolean} do_not_reset_R whether to reset the aux rotation R
+   */
+  set_packet(k, d, force) {
+    var Nk = 'N'+k;
+    
+    // We only set the packet data if it exists, and if it's not too old;
+    // or we're forcing
+    if(d[k] != undefined && (d[Nk] > this._N[k] || force)) { 
+      // Set the value
+      if      (k=='x')  this.set_x(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
+      else if (k=='y')  this.set_y(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
+      else if (k=='r')  this.set_r(d[k], d['now'], true, true); // value, immediate, do_not_update_q_out, do_not_reset_R
+      else if (k=='s')  this.set_s(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
+      else if (k=='R')  this.set_R(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
+      else if (k=='n')  this.set_image_index(d[k], true);       // index, do_not_update_q_out
+      else if (k=='ts') this.select(d[k], true);                // id_team, do_not_update_q_out
+      else if (k=='ih') this.hold(d[k], true, true);            // id_client, force, do_not_update_q_out
+      else return this;
+
+      // Remember the packet number
+      this._N[k]  = d[Nk]; 
+    }
+    return this;
+  } // End of set_packet()
+
+  /** Sets all the supplied packet keys with this.set_packet. */
+  set_packets(ks, d, force) { for(var n in ks) this.set_packet(ks[n],d,force); }
+
   // Returns the z-order index (pieces with lower index are behind this one)
   get_z_value() {
 
@@ -3344,11 +3382,6 @@ class _Thing {
     this.set_xyrs(v.x,v.y,r,s,immediate,do_not_update_q_out,do_not_reset_R);
   }
 
-  // Sets the auxiliary rotation
-  set_R(R, immediate, do_not_update_q_out) {
-    this.R.set(R,immediate);
-    this.update_q_out('R','R', do_not_update_q_out);
-  }
 
   // Returns an object with the lowest snap score from this.settings.groups with the score and targets {score, x, y, r, s}
   get_best_snap_relationship() { 
@@ -4328,6 +4361,9 @@ class _Game {
     if(VGT.clients && VGT.clients.me) return VGT.clients.me.color;
     else                              return 0;
   }
+
+  /** Returns the selected list for the specified team */
+  get_selected(team) { return VGT.things.selected[team]; }
 
   /** Adds an undo level if something has changed */
   save_undo() {

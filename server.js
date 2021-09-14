@@ -21,12 +21,12 @@
 var state = {
   slots  : 32,              // Maximum number of clients
   max_name_length: 25,      // Maximum number of characters in each player's name
-  clients    : {},              // List of client data
-  pieces     : {},              // List of piece properties
-  nameplates : {},              // List of nameplate properties
-  hands      : {},              // List of hand properties
-  t_simulated_lag : 1000,      // Simulated lag when routing packets.
-  t_full_update   : 1000,   // How often to send a full update
+  clients    : {},          // List of client data
+  pieces     : {},          // List of piece properties
+  nameplates : {},          // List of nameplate properties
+  hands      : {},          // List of hand properties
+  t_simulated_lag : 0,      // Simulated lag when routing packets. Be careful with this; this asynchronous nature causes some confusion.
+  t_full_update   : 3000,   // How often to send a full update
 }; 
 
 // State keys that should not be set by clients with server commands (/set)
@@ -197,8 +197,12 @@ function delay_function(handler, data) {
  */
 function delay_send(socket, key, data) {
   if(socket) {
-    if(state.t_simulated_lag) setTimeout(function(){socket.emit(key,data)}, state.t_simulated_lag);
-    else                                            socket.emit(key,data);
+    // Note we do the stringify-parse to create a COPY of the object, so when it sends, it sends the data
+    // as it is in this moment.
+    if(state.t_simulated_lag) setTimeout(function(){
+      socket.emit(key, JSON.parse(JSON.stringify(data)))}, state.t_simulated_lag);
+    else                                            
+      socket.emit(key, data);
   }
 }
 
@@ -444,9 +448,9 @@ io.on('connection', function(socket) {
       // Make sure we have a place to hold the data in the global list
       if(!state_list[id]) state_list[id] = {};
 
-      // First make sure the holder exists in the current socket list
-      if( state_list[id]['ih'] // If there is a holder id provided
-      && !Object.keys(sockets).includes(String(state_list[id]['ih'])) ) {
+      // If there is a left over holder id from a non-existent client, kill it.
+      if( state_list[id]['ih'] // If there is a holder id
+      && !Object.keys(sockets).includes(String(state_list[id]['ih'])) ) { // And that client is gone
         delete state_list[id]['ih'];
         delete state_list[id]['ih.i'];
         delete state_list[id]['ih.n'];
@@ -457,11 +461,13 @@ io.on('connection', function(socket) {
       update_server_piece = !state_list[id]['ih'] || state_list[id]['ih'] == socket.id;    
 
       // Loop over attributes and transfer or defer to state, depending on who is holding the piece
+      // Input queue (q) should never carry 'N' data
       for(k in q[id]) {
+        if(k[0] == 'N') throw 'WHUT??'
         
         // Flag to send along with everything to make sure the end users know to update things immediately
-        if(k == 'now') continue;
-
+        if(k == 'now') continue; // On to the next key
+        
         // Make sure there is an update number for this property
         // This is tracked by the server to remove ambiguity about the order of things.
         if(state_list[id]['N'+k] == undefined) state_list[id]['N'+k] = 1;
@@ -473,9 +479,6 @@ io.on('connection', function(socket) {
           state_list[id][k]      = q[id][k];
           state_list[id][k+'.i'] = q[id][k+'.i'] = socket.id;
           state_list[id][k+'.n'] = q[id][k+'.n'] = nq;
-          
-          // Increment the update number for this property
-          state_list[id]['N'+k]++;
         }
         
         // Otherwise overwrite the q entry
@@ -485,6 +488,11 @@ io.on('connection', function(socket) {
           q[id][k+'.i'] = state_list[id][k+'.i'];
           q[id][k+'.n'] = state_list[id][k+'.i'];
         }
+
+        // Increment the update number for this property, even if we rejected the change
+        // This helps prevent a stuck out-of-state situation where one client has a higher 
+        // estimated update number than the server.
+        state_list[id]['N'+k]++;
 
         // In any case, always update the outbound packet with the update number
         q[id]['N'+k] = state_list[id]['N'+k];
@@ -503,15 +511,16 @@ io.on('connection', function(socket) {
 
     // Handle the piece-like q's
     handle_q_in(q_pieces,     state.pieces,     nq);
+    handle_q_in(q_hands,      state.hands,      nq);
     handle_q_in(q_nameplates, state.nameplates, nq);
     
     // Loop over the hands q. Simpler because no one grabs them...
-    for(var id in q_hands) {
+    /*for(var id in q_hands) {
 
       // Store the supplied properties
       if(!state.hands[id]) state.hands[id] = {};
       for(var k in q_hands[id]) state.hands[id][k] = q_hands[id][k];
-    }
+    }*/
 
     // Can't broadcast (leads to unsync)
     delay_send(io, 'q', [socket.id, nq, q_pieces, q_hands, q_nameplates]);
@@ -548,8 +557,8 @@ function send_full_update() {
     fun.log_date('send_full_update()', Object.keys(sockets).length, 'sockets', Object.keys(state.pieces).length, 'pieces');
     
     // including hands not needed, including nameplates leads to confusion on reloads with any net delay.
-    // JACK: the other instance of 'q' sending involves a 'now'?
-    delay_send(io, 'q', [0, 0, state.pieces, {}, {}]); 
+    // We make copies in case we're doing a delay send, so the state doesn't change!
+    delay_send(io, 'q', [0, 0, state.pieces, state.hands, state.nameplates]); 
   }
 
   // Start the next full update
