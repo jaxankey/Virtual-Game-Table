@@ -1713,10 +1713,8 @@ class _Interaction {
     } // End of 'button down'
     
     // Move my hand and polygon, but only if we're not dragging the table
-    if(!dragging_table && VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand
-      hand        .set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, 1.0/VGT.tabletop.s.value, true);
-      hand.polygon.set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, undefined,                true);
-    }
+    if(!dragging_table && VGT.clients && VGT.clients.me && VGT.clients.me.hand)
+      VGT.clients.me.hand.set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, 1.0/VGT.tabletop.s.value, true);
 
   } // End of onpointermove
 
@@ -3998,6 +3996,10 @@ class _Hand extends _Thing {
 
   /** Sets t_last_move to the current time to show the hand. */
   ping() {this.t_last_move = Date.now();}
+
+  after_set_xyrs(x,y,r,s,immediate) {
+    this.polygon.set_xyrs(x, y, r, undefined, immediate);
+  }
 
   /** Other animations associate with the hand. */
   animate_other(delta) { 
