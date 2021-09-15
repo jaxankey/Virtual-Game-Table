@@ -2883,8 +2883,12 @@ class _Thing {
     var Nk = 'N'+k;
     
     // We only set the packet data if it exists, and if it's not too old;
-    // or we're forcing
-    if(d[k] != undefined && (d[Nk] >= this._N[k] || Date.now()-this._T[k] > 2000)) { 
+    // or if it's been awhile since the parameter changed,
+    // or if someone else is holding it (supercedes any _N stuff we might have incremented)
+    if(d[k] != undefined && (
+          (d[Nk] >= this._N[k] || Date.now()-this._T[k] > 2000)
+          || this.id_client_hold && this.id_client_hold != VGT.clients.me.id_client)
+    ) { 
       // Set the value
       if      (k=='x')  this.set_x(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
       else if (k=='y')  this.set_y(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
