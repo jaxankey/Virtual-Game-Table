@@ -1606,7 +1606,7 @@ class _Interaction {
         hand.update_q_out('vd'); 
 
         // Remember the originally selected items if we're holding shift
-        if(e.shiftKey) hand.originally_selected = Object.values(VGT.things.selected[VGT.clients.me.team]);
+        if(e.shiftKey) hand._originally_selected = Object.values(VGT.things.selected[VGT.clients.me.team]);
       }
     }
   } // End of onpointerdown
@@ -3965,6 +3965,10 @@ class _Hand extends _Thing {
     this.nameplate.hand = this;
     this.nameplate.hide(); // New Hands need to be hidden. The other thing that hides them is free_all_hands()
 
+    // For selection rectangle dynamics
+    this._originally_selected = [];
+    this._newly_selected = {}; // indexed by key
+
     // Set the initial scale
     VGT.hands.set_scale(1.0/VGT.tabletop.s.value);
   }
@@ -4030,9 +4034,18 @@ class _Hand extends _Thing {
         // Loop over the pieces and select those that are in it.
         var p;
         for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
-          if(p.is_selectable_by_me() && poly.contains(p.x.value, p.y.value)) p.select(VGT.clients.me.team);
-          else if(!this.originally_selected || this.originally_selected 
-              &&  !this.originally_selected.includes(p)) p.unselect();
+          if(p.is_selectable_by_me() && poly.contains(p.x.value, p.y.value)) {
+            p.select(VGT.clients.me.team);
+            this._newly_selected[p.id_piece] = true;
+            _l(Object.keys(this._newly_selected));
+          }
+          
+          // JACK This logic needs fixing. There should be a list of my originally selected pieces, and a list of newly selected pieces. 
+          // It will need to be in the newly selected pieces in order to unselect
+          else if(Object.keys(this._newly_selected).includes(String(p.id_piece)) && !this._originally_selected.includes(p)) {
+            p.unselect();
+            delete this._newly_selected[p.id_piece];
+          }
         }  
       } // End of reduced frame rate
     } // End of if(vd)
