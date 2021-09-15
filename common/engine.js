@@ -56,7 +56,17 @@ CURRENTLY
 function _l() {log('   _l', ...arguments)}
 
 // Holds the user name space
-var VGT = {};
+var VGT = {
+  add_script(path) {
+    var s = document.createElement('script')
+    s.type = 'text/javascript'
+    s.src  = path
+    document.body.appendChild(s);
+  },
+
+  // Overload me
+  game_is_ready() {},
+};
 
 // Object for interacting with the html page.
 class _Html {
@@ -67,6 +77,9 @@ class _Html {
     this.div_gameboard = document.getElementById('gameboard');
     this.div_loader    = document.getElementById('loader');
     this.div_controls  = document.getElementById('controls');
+    this.div_special   = document.getElementById('special');
+    this.div_special_title = document.getElementById('special_title');
+    this.div_special_controls = document.getElementById('special_controls');
     this.ul_messages   = document.getElementById('messages');
     this.input_volume  = document.getElementById('volume');
     this.select_setups = document.getElementById('setups');
@@ -421,6 +434,9 @@ class _Net {
     // Ready to receive all the other packets now!
     VGT.net.ready = true; 
     delete this._connecting_to_server;
+
+    // Call the user-defined game ready function
+    VGT.game_is_ready();
 
   } // End of on_state
 
@@ -1249,6 +1265,9 @@ class _Interaction {
     var p, u1, u2, x, y, r;
     for (var n in VGT.pieces.all) { p = VGT.pieces.all[n];
      
+      // If it's hidden don't bother
+      if(p.is_hidden()) continue;
+
       // Get the starting random
       u1 = Math.random();
       u2 = Math.random();
@@ -2679,9 +2698,11 @@ class _Thing {
     
     // If team is not specified (used by process_queues()), there is no change, or
     // it is being held by someone who is not on the same team, do nothing.
-    if(team == undefined || team == this.team_select 
+    if(team == undefined 
+    || team == this.team_select 
     || this.id_client_hold && VGT.clients.all[this.id_client_hold] 
-       && VGT.clients.all[this.id_client_hold].team != team) return;
+       && VGT.clients.all[this.id_client_hold].team != team
+    || this.is_hidden()) return;
 
     // If team is -1, unselect it and poop out
     if(team < 0) return this.unselect(do_not_update_q_out);
@@ -3233,6 +3254,27 @@ class _Thing {
   is_showing(){ return  this.container.visible; }
   is_visible(){ return  this.container.visible; }
 
+  // Returns true if it's ok for the team (index) to select this thing.
+  is_selectable_by_team(team) {
+    
+    // First make sure it's not in a forbidden teamzone
+    // Overlapping teamzones should share allowed teams
+    var a = VGT.teamzones.get_allowed_teams_at_tabletop_xy(this.x.value, this.y.value);
+    
+    // If it's not okay for everyone to grab and I'm not on the list, return false
+    if(a.teams_grab != null && !a.teams_grab.includes(team)) return false
+
+    // Everyone can select this thing. Sounds good.
+    if(this.settings.teams == true) return true;
+    
+    // Otherwise it could be a list of team names.
+    if(this.settings.teams) return this.settings.teams.includes(VGT.game.get_team_name(team));
+
+    // Otherwise, false or null or something.
+    return false;
+
+  }
+
   // Written right after a 10mg THC capsule kicked in. I'm a lightweight, everyone relax.
   // I will update this if I change anything in this function.
   is_selectable_by_me() {
@@ -3240,21 +3282,8 @@ class _Thing {
     // Post-THC addition: if it's my nameplate, I can always grab it.
     if(VGT.clients && VGT.clients.me && this == VGT.clients.me.nameplate) return true;
 
-    // First make sure it's not in a forbidden teamzone
-    // Overlapping teamzones should share allowed teams
-    var a = VGT.teamzones.get_allowed_teams_at_tabletop_xy(this.x.value, this.y.value);
-    
-    // If it's not okay for everyone to grab and I'm not on the list, return false
-    if(a.teams_grab != null && !a.teams_grab.includes(VGT.clients.me.team)) return false
-
-    // Everyone can select this thing. Sounds good.
-    if(this.settings.teams == true) return true;
-    
-    // Otherwise it could be a list of team names.
-    if(this.settings.teams) return this.settings.teams.includes(VGT.game.get_team_name(VGT.clients.me.team));
-
-    // Otherwise, false or null or something.
-    return false;
+    // Check for my team
+    return this.is_selectable_by_team(VGT.clients.me.team);
   }
 
   // Whether this is in my 'seeing' team zone
@@ -3707,11 +3736,13 @@ VGT.Polygons = _Polygons;
 class _TeamZone extends _Polygon {
 
   default_settings = {
-    teams_grab:      [0,9],     // List of teams (indices) that can grab the pieces; null means everyone
-    teams_see:        null,     // List of teams (indices) that can see the secret images; null means "match teams_grab"
-    
-    color_fill:       null,     // Hex color (e.g. 0x123456) of the fill; null means "automatic" (the color of the first team in the list)
-    color_line:       null,     // Hex color (e.g. 0x123456) of the line; null means "match fill"
+    groups:           null,   // List of piece groups that this affects; null means all groups
+
+    teams_grab:      [0,9],   // List of teams (indices) that can grab the pieces; null means everyone
+    teams_see:        null,   // List of teams (indices) that can see the secret images; null means "match teams_grab"
+
+    color_fill:       null,   // Hex color (e.g. 0x123456) of the fill; null means "automatic" (the color of the first team in the list)
+    color_line:       null,   // Hex color (e.g. 0x123456) of the line; null means "match fill"
 
     alpha_fill:           1,  // Opacity of the fill for other teams
     alpha_line:         0.5,  // Opacity of the line for other teams
@@ -3755,9 +3786,6 @@ class _TeamZone extends _Polygon {
     if(this.settings.alpha_line_grab == null) this.settings.alpha_line_grab = this.settings.alpha_line;
     if(this.settings.alpha_fill_see == null) this.settings.alpha_fill_see = this.settings.alpha_fill_grab;
     if(this.settings.alpha_line_see == null) this.settings.alpha_line_see = this.settings.alpha_line_grab;
-    
-    // These will be drawn once we rebuild the client list, so we know our colors etc.
-    //this.redraw();
   }
 
   // Clear and redraw the whole thing
@@ -4260,6 +4288,25 @@ class _Game {
 
     // Start the fast housekeeping for z-stuff
     setInterval(this._housekeeping_z.bind(this), this.settings.t_housekeeping_z);
+  }
+
+  // Sets the title of the special area and reveals it
+  set_special_title(text) {
+    VGT.html.div_special.style.display = 'block';
+    VGT.html.div_special_title.innerText = text;
+  }
+
+  // Sets the special control area's html and reveals the special section and shows it
+  set_special_html(html) {
+    VGT.html.div_special.style.display = 'block';
+    VGT.html.div_special.controls.innerHTML = html;
+  }
+
+  // Adds html to the special controls section and shows it
+  add_special_html(html) {
+    VGT.html.div_special.style.display = 'block';
+    var a = VGT.html.div_special_controls;
+    a.innerHTML = a.innerHTML + html;
   }
 
   /**

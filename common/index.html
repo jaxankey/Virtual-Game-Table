@@ -157,25 +157,32 @@
       <div id="setup">
         
         
-        <div class='row_left'><h1>Game</h1></div>
+        <div class='row_left'><h1>Setup</h1></div>
         
         <div class='row_left'>
-          <button id='new'  onclick="new_game();">Setup</button>
+          <button id='new'    onclick="new_game();">New Game:</button>
           <select id="setups" onchange="VGT.interaction.onchange_setups();"></select>
-          <button id="rules" onclick="VGT.game.open_rules();">Rules</button>
+          <button id="rules"  onclick="VGT.game.open_rules();">Rules</button>
         
           <button id='save' onclick="VGT.game.save_state();">Save</button>
           <button id='load' onclick="VGT.game.load_state_from_file();">Load</button>
         </div>
 
+        
         <div class='row_left'>
           Volume: </td><td><input type="range" min="0" max="100" value="25"  class="slider" id="volume" onchange="interaction.onchange_volume();">
+        </div> 
+
+        <div id='special' style='display:none'>
+          <div class='row_left' style='margin-top: 1em;'><h1 id='special_title'>Game Controls</h1></div>
+          <div id='special_controls' class='row_left'></div>
         </div>
+        
+        
       
       </div>
 
-
-      <div class='row_left'><h1>People</h1></div>
+      <div class='row_left' style='margin-top: 1em;'><h1>People</h1></div>
       
       <div id='clients'></div>
 

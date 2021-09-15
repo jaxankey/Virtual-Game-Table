@@ -142,29 +142,26 @@ function html_encode(s) {
 ///////////////////
 
 // External Scripts
-app.get('/external_scripts/pixi.js', function(request, response) {
-  response.sendFile(root_directory + '/external_scripts/' + pixi_version); } );
+app.get('/external_scripts/pixi.js', function(q, a) {
+  a.sendFile(root_directory + '/external_scripts/' + pixi_version); } );
 
-app.get('/socket.io.js', function(request, response) {
-  response.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js'); } );
+app.get('/socket.io.js', function(q, a) {
+  a.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js'); } );
 
-app.get('/socket.io.js.map', function(request, response) {
-  response.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js.map'); } );
+app.get('/socket.io.js.map', function(q, a) {
+  a.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js.map'); } );
   
-app.get('/external_scripts/jquery.js', function(request, response) {
-  response.sendFile(root_directory + '/external_scripts/' + jquery_version); } );
+app.get('/external_scripts/jquery.js', function(q, a) {
+  a.sendFile(root_directory + '/external_scripts/' + jquery_version); } );
 
-app.get('/external_scripts/howler.js', function(request, response) {
-  response.sendFile(root_directory + '/external_scripts/' + howler_version); } );
-  
-app.get('/',          function(request, response) {send_file(response, 'index.html')    ;} );
-app.get('/:f',        function(request, response) {send_file(response, request.params.f);} );
+app.get('/external_scripts/howler.js', function(q, a) {
+  a.sendFile(root_directory + '/external_scripts/' + howler_version); } );
 
-app.get('/:z/:i',       function(request, response) {send_file(response, request.params.z+'/'+request.params.i                                          );} );
-app.get('/:z/:d/:i',    function(request, response) {send_file(response, request.params.z+'/'+request.params.d+'/'+request.params.i                     );} );
-app.get('/:z/:a/:b/:c', function(request, response) {send_file(response, request.params.z+'/'+request.params.a+'/'+request.params.b+'/'+request.params.c);} );
-app.get('/common/avatars/:i', function(request, response) {send_file(response, 'common/avatars/' +request.params.i);} );
-app.get('/private/avatars/:i',function(request, response) {send_file(response, 'private/avatars/'+request.params.i);} );
+app.get('/',            function(q, a) {send_file(a, 'index.html')    ;} );
+app.get('/:a',          function(q, a) {send_file(a, q.params.a);} );
+app.get('/:z/:i',       function(q, a) {send_file(a, q.params.z+'/'+q.params.i                                          );} );
+app.get('/:z/:d/:i',    function(q, a) {send_file(a, q.params.z+'/'+q.params.d+'/'+q.params.i                     );} );
+app.get('/:z/:a/:b/:c', function(q, a) {send_file(a, q.params.z+'/'+q.params.a+'/'+q.params.b+'/'+q.params.c);} );
 
 
 

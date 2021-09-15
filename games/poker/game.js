@@ -18,8 +18,6 @@
 
 
 
-
-
 /////////////////////////////////////// RESOURCES
 
 // Master list of all images. This is needed for the preloader to work.
@@ -144,14 +142,20 @@ for(var n=0; n<N; n++) {
 }
 
 // Bat
+settings.y = -100
 bat = game.add_piece(settings, 'bat')
 
 // Paddle
+settings.y = 0
 settings.layer  = 1
 settings.shovel = ['cards']
 settings.anchor = {x:0.485, y:0.413}
 settings.x = -1.8
 var dealer = game.add_piece(settings, 'dealer');
+
+
+
+
 
 ////////////////////////////// TEAM ZONES
 
@@ -165,13 +169,23 @@ var x1 = y1*s
 var x2 = y2*s
 var play_radius = Math.sqrt(x2*x2+y2*y2)
 
-// Create the team zones
+// Create the team zones and polygons
+var vs_inner = []
+var vs_outer = []
 var v1, v2, v3, v4
 for(var n=0; n<N; n++) {
   v1 = rotate_vector([ x1,y1], n*360/N)
   v2 = rotate_vector([ x2,y2], n*360/N)
   v3 = rotate_vector([-x2,y2], n*360/N)
   v4 = rotate_vector([-x1,y1], n*360/N)
+
+  // Add to the polygon lists
+  vs_inner.push(v1[0])
+  vs_inner.push(v1[1])
+  vs_outer.push(v2[0])
+  vs_outer.push(v2[1])
+
+  // Add the teamzone
   var tz = game.add_teamzone({
     layer      : 0,
     vertices   : [[v1[0],v1[1]], [v2[0],v2[1]], [v3[0],v3[1]], [v4[0],v4[1]]],
@@ -185,16 +199,19 @@ for(var n=0; n<N; n++) {
   })
 }
 
+// Add the polygons that will help define the play area
+var polygon_inner = new PIXI.Polygon(vs_inner)
+var polygon_outer = new PIXI.Polygon(vs_outer)
+
+
+
 
 
 //////////////////////////////////// FUNCTIONALITY
 
+// Gets the team angle (degrees) for the team index n = 1 to 8, with null for non-participating teams
+// @param {int} n team index to use; undefined means "my team index"
 
-
-/**
- * Gets the team angle (degrees) for the team index n = 1 to 8, with null for non-participating teams
- * @param {int} n team index to use; undefined means "my team index"
- */
 function get_team_angle(n) {
 
   // Default is my team index
@@ -237,9 +254,7 @@ function deal_one_to_xy(x,y,face_up,depth) {
 // Sends one to the mouse coordinates
 function deal_one_to_mouse(e) { deal_one_to_xy(game.mouse.x, game.mouse.y, e.shiftKey); }
 
-/**
- * Deals a card to everyone. e.shiftKey makes it face up.
- */
+// Deals a card to everyone. e.shiftKey makes it face up.
 function deal_to_all(e) { log('deal_to_all()', e) 
   
   // Remember the last send coordinates
@@ -282,11 +297,9 @@ function deal_to_all(e) { log('deal_to_all()', e)
 }
 
 
-/** 
- * Collects all the cards onto the dealer paddle and brings it all to my dealing position.
- * If all_cards is false or not specified, it will only collect those cards within the play area.
- */
-function get_shuffle_cards(e,team,all_cards) { log('get_shuffle_cards()', e)
+// Collects all the cards onto the dealer paddle and brings it all to my dealing position.
+// If all_cards is false or not specified, it will only collect those cards within the play area.
+function get_shuffle_deck(e,team,all_cards) { log('get_shuffle_deck()', e)
   
   if(all_cards == true) var cs = cards
 
@@ -296,11 +309,7 @@ function get_shuffle_cards(e,team,all_cards) { log('get_shuffle_cards()', e)
   // undefined or false means just those cards in the play area
   else {
     var cs = []
-    var c
-    for(var n in cards) { 
-      c = cards[n]
-      if(c.x.value*c.x.value+c.y.value*c.y.value <= play_radius*play_radius) cs.push(c)
-    }
+    for(var n in cards) if(polygon_outer.contains(cards[n].x.value, cards[n].y.value)) cs.push(cards[n])
   }
 
   // Get the team angle
@@ -324,12 +333,12 @@ function new_game() {
   console.log('\n------- NEW GAME: '+ game.html.select_setups.value +' -------\n\n');
 
   // All cards
-  if(game.html.select_setups.selectedIndex == 0) get_shuffle_cards(undefined, 0, true)
+  if(game.html.select_setups.selectedIndex == 0) get_shuffle_deck(undefined, 0, true)
   
   // No Jokers
   else {
     // Get all but jokers
-    get_shuffle_cards(undefined, 0, cards.slice(0,52))
+    get_shuffle_deck(undefined, 0, cards.slice(0,52))
 
     // Send the jokers away
     cards[52].set_xyrs(y1*2, 0, Math.random()*1000).set_image_index(1)
@@ -340,7 +349,16 @@ function new_game() {
 
 
 
+
+
 //////////////////////////////////////// KEY BINDINGS
-game.bind_key('BackspaceDown', get_shuffle_cards);
-game.bind_key(['KeyLDown', 'ShiftKeyLDown'], deal_to_all);
-game.bind_key(['KeyODown', 'ShiftKeyODown'], deal_one_to_mouse);
+game.bind_key('BackspaceDown', get_shuffle_deck)
+game.bind_key(['KeyLDown', 'ShiftKeyLDown'], deal_to_all)
+game.bind_key(['KeyODown', 'ShiftKeyODown'], deal_one_to_mouse)
+
+
+
+
+//////////////////////////////////////// ADDITIONAL GUI
+game.set_special_title('Poker Controls')
+game.add_special_html('<button onclick="get_shuffle_deck()">Get / Shuffle Deck</button>')
