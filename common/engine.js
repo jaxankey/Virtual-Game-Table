@@ -18,7 +18,7 @@
 /* 
 METHODOLOGY
 1. Whenever certain attributes (e.g. position, image index) of our local Things are updated, 
-   the changes are added to (or updated in) an outbound queue.
+   the changes are added to (or updated in) an outbound queue, e.g. q_pieces_out.
 
 2. All incoming packets from the server to us are similarly queued into an inbound queue.
 
@@ -27,15 +27,15 @@ METHODOLOGY
 
 4. The server adds all such updates to a master list, then relays each incoming queue packet to everyone.
    This includes returning it to the sender, to avoid lag-induced desync; the latest server state is sent to EVERYONE
-   as it's updated.
+   as it's updated. The server also reconciles who is holding it, and if someone not holding tries something,
+   the server instead overwrites that incoming data with the server state and re-sends it.
 
 5. Upon receiving updated pieces, clients will NOT update those pieces they are holding, because that's interferes with 
-   their local reality (they have control!). The exception to this rule is if someone else says they're holding it.
-   If two people grab the same piece, the server enforces that the first one holds it.
+   their local responsive reality (they have control!). The exception to this rule is if the server says someone else is 
+   holding it. If two people grab the same piece, the server enforces that the first one holds it.
    There is a guaranteed update sent when pieces are released, so it cannot get too out of sync.
 
-6. Clients only update each piece attribute if either the sender is NOT us, 
-   or if it IS us AND we haven't sent a more recent update. (Each outbound packet also has a packet index (nq) that increments.)
+6. Clients only update each piece attribute if we haven't seen or sent a more recent update (this is the _N[key] business) 
 
 7. On connection, the server sends all the latest information in one big packet, like a big queue update.
 
@@ -209,9 +209,6 @@ class _Net {
     this.q_nameplates_in = {};
     this.q_z_in          = []; // Ordered list of z-operations to implement
     
-    // Last sent q packet number
-    this.nq = 0;  
-
     // Defines all the functions for what to do with incoming packets.
     this.setup_listeners();
 
@@ -326,9 +323,8 @@ class _Net {
     || Object.keys(this.q_nameplates_out).length) {
 
       // Send the outbound information and clear it.
-      this.nq++;
-      log(    'NETS_q_'+String(VGT.net.id), this.nq, Object.keys(this.q_pieces_out).length, Object.keys(this.q_hands_out).length, Object.keys(this.q_nameplates_out).length);
-      this.io.emit('q', [this.nq, this.q_pieces_out, this.q_hands_out, this.q_nameplates_out]);
+      log(    'NETS_q_'+String(VGT.net.id), Object.keys(this.q_pieces_out).length, Object.keys(this.q_hands_out).length, Object.keys(this.q_nameplates_out).length);
+      this.io.emit('q', [this.q_pieces_out, this.q_hands_out, this.q_nameplates_out]);
       this.q_pieces_out     = {};
       this.q_hands_out      = {};
       this.q_nameplates_out = {};
@@ -344,7 +340,7 @@ class _Net {
   }
 
   // Transfers information from q_source to q_target, with id_client
-  transfer_to_q_in(q_source, q_target, id_client, nq) { //log('transfer_to_q_in', q_source, q_target, id_client, nq)
+  transfer_to_q_in(q_source, q_target) { //log('transfer_to_q_in', q_source, q_target)
 
     // Loop over pieces in source queue
     for(var id in q_source) {
@@ -354,11 +350,7 @@ class _Net {
         
       // Update each attribute
       for(var k in q_source[id]) q_target[id][k] = q_source[id][k]; 
-
-      // Keep track of who is requesting the change and their q packet number
-      q_target[id]['id_client_sender'] = id_client;
-      q_target[id]['nq']               = nq;
-        
+ 
     } // End of loop over things in q_pieces
   }
 
@@ -370,20 +362,12 @@ class _Net {
   }
 
   /** We receive a queue of piece information from the server. */
-  on_q(data) { if(!this.ready) return; log('NETR_q_'+String(data[0]), data[1], data);
-    //if(data[0] == 0) _l('Server')
-
-    // Unpack
-    var id_client    = data[0];
-    var nq           = data[1];
-    var q_pieces     = data[2];
-    var q_hands      = data[3];
-    var q_nameplates = data[4];  
+  on_q(data) { if(!this.ready) return; log('NETR_q', data);
 
     // Update the q's
-    this.transfer_to_q_in(q_pieces,     this.q_pieces_in,     id_client, nq);
-    this.transfer_to_q_in(q_hands,      this.q_hands_in,      id_client, nq);
-    this.transfer_to_q_in(q_nameplates, this.q_nameplates_in, id_client, nq);
+    this.transfer_to_q_in(data[0], this.q_pieces_in);
+    this.transfer_to_q_in(data[1], this.q_hands_in);
+    this.transfer_to_q_in(data[2], this.q_nameplates_in);
   
   } // end of on_q
 
@@ -503,8 +487,6 @@ class _Net {
     this.io.on('chat',       this.on_chat    .bind(this));
     this.io.on('kill_undos', this.on_kill_undos.bind(this));
 
-    //this.io.onAny((e, ...args) => {_l(e, args)});
-  
   } // End of setup_listeners()
 
   /**
@@ -2365,17 +2347,8 @@ class _Thing {
     // image parameters
     this._n = 0;             // Current image index
 
-    // List of the q_out indices (nq's), indexed by key,
-    // e.g., this.last_nqs['ts'] will be q_out index of the last update
-    this.last_nqs = {
-      x:-1,
-      y:-1,
-      r:-1,
-      s:-1,
-      ts:-1,
-      ih:-1,
-    }
-    this._N = { // Last packet number for each attribute
+    // List of best guess for the server's packet numbers for each attribute
+    this._N = { 
       x:-1,
       y:-1,
       r:-1,
@@ -4037,7 +4010,6 @@ class _Hand extends _Thing {
           if(p.is_selectable_by_me() && poly.contains(p.x.value, p.y.value)) {
             p.select(VGT.clients.me.team);
             this._newly_selected[p.id_piece] = true;
-            _l(Object.keys(this._newly_selected));
           }
           
           // JACK This logic needs fixing. There should be a list of my originally selected pieces, and a list of newly selected pieces. 

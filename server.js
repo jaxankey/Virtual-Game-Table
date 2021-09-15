@@ -439,7 +439,7 @@ io.on('connection', function(socket) {
    * @param {Object} q          Incoming q object, e.g. q_pieces
    * @param {Object} state_list Associated state object, e.g. state.pieces
    */
-  function handle_q_in(q, state_list, nq) {
+  function handle_q_in(q, state_list) {
     var k, update_server_state; // Flag to reuse below
 
     // Loop over the incoming pieces q by id.
@@ -452,8 +452,7 @@ io.on('connection', function(socket) {
       if( state_list[id]['ih'] // If there is a holder id
       && !Object.keys(sockets).includes(String(state_list[id]['ih'])) ) { // And that client is gone
         delete state_list[id]['ih'];
-        delete state_list[id]['ih.i'];
-        delete state_list[id]['ih.n'];
+        delete state_list[id]['Nih'];
       } // End of missing holder cleanup
 
       // If no one is hold it (0 or undefined) OR the holder is this client, set a flag to update the server state for this piece
@@ -473,21 +472,10 @@ io.on('connection', function(socket) {
         if(state_list[id]['N'+k] == undefined) state_list[id]['N'+k] = 1;
 
         // If it is valid to update the server state for this piece
-        if(update_server_state) {
-
-          // Update the state with the value, last setter, and last setter nq.
-          state_list[id][k]      = q[id][k];
-          state_list[id][k+'.i'] = q[id][k+'.i'] = socket.id;
-          state_list[id][k+'.n'] = q[id][k+'.n'] = nq;
-        }
+        if(update_server_state) state_list[id][k]      = q[id][k];
         
         // Otherwise overwrite the q entry
-        else {
-          // Defer to the state's value, last setter, and last setter's nq
-          q[id][k]      = state_list[id][k];
-          q[id][k+'.i'] = state_list[id][k+'.i'];
-          q[id][k+'.n'] = state_list[id][k+'.i'];
-        }
+        else q[id][k] = state_list[id][k];
 
         // Increment the update number for this property, even if we rejected the change
         // This helps prevent a stuck out-of-state situation where one client has a higher 
@@ -503,27 +491,17 @@ io.on('connection', function(socket) {
 
   // Client has sent a q of changes
   function on_q(data) { fun.log_date('NETR_q_'+data.length);
-    var nq           = data[0];
-    var q_pieces     = data[1];
-    var q_hands      = data[2];
-    var q_nameplates = data[3];
-    var k;
-
-    // Handle the piece-like q's
-    handle_q_in(q_pieces,     state.pieces,     nq);
-    handle_q_in(q_hands,      state.hands,      nq);
-    handle_q_in(q_nameplates, state.nameplates, nq);
+    var q_pieces     = data[0];
+    var q_hands      = data[1];
+    var q_nameplates = data[2];
     
-    // Loop over the hands q. Simpler because no one grabs them...
-    /*for(var id in q_hands) {
-
-      // Store the supplied properties
-      if(!state.hands[id]) state.hands[id] = {};
-      for(var k in q_hands[id]) state.hands[id][k] = q_hands[id][k];
-    }*/
-
+    // Handle the piece-like q's
+    handle_q_in(q_pieces,     state.pieces);
+    handle_q_in(q_hands,      state.hands);
+    handle_q_in(q_nameplates, state.nameplates);
+    
     // Can't broadcast (leads to unsync)
-    delay_send(io, 'q', [socket.id, nq, q_pieces, q_hands, q_nameplates]);
+    delay_send(io, 'q', [q_pieces, q_hands, q_nameplates]);
   }
   socket.on('q', function(data) {delay_function(on_q, data)});
 
@@ -559,7 +537,7 @@ function send_full_update() {
     // including hands not needed, including nameplates leads to confusion on reloads with any net delay.
     // We make copies in case we're doing a delay send, so the state doesn't change!
     // Hands vanish and we don't want them to keep pulsing.
-    delay_send(io, 'q', [0, 0, state.pieces, {}, state.nameplates]); 
+    delay_send(io, 'q', [state.pieces, {}, state.nameplates]); 
   }
 
   // Start the next full update
