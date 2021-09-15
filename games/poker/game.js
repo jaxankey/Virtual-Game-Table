@@ -119,6 +119,8 @@ cards.push(game.add_piece(settings, ['back', 'bj'], ['bj', 'bjp']))
 // Chips
 settings.groups = ['chips']
 settings.expand_dy = 37
+settings.worth_prefix = '$'
+settings.worth_decimals = 2
 
 // Loop over players
 chips = []; 
@@ -130,15 +132,15 @@ for(var n=0; n<N; n++) {
     
     // Chip stacks
     chips[n] = [] 
-    chips[n][0] = game.add_pieces(5, settings, 'black')
-    chips[n][1] = game.add_pieces(5, settings, 'blue')
-    chips[n][2] = game.add_pieces(5, settings, 'red')
-    chips[n][3] = game.add_pieces(5, settings, 'red')
-    chips[n][4] = game.add_pieces(5, settings, 'white')
-    chips[n][5] = game.add_pieces(5, settings, 'white')
-    chips[n][6] = game.add_pieces(5, settings, 'white')
-    chips[n][7] = game.add_pieces(5, settings, 'white')
-    chips[n][8] = game.add_pieces(5, settings, 'white')
+    chips[n][0] = game.add_pieces(5, {...settings, worth:1,    worth_prefix:'$'}, 'black')
+    chips[n][1] = game.add_pieces(5, {...settings, worth:0.25, worth_prefix:'$'}, 'blue')
+    chips[n][2] = game.add_pieces(5, {...settings, worth:0.1,  worth_prefix:'$'}, 'red')
+    chips[n][3] = game.add_pieces(5, {...settings, worth:0.1,  worth_prefix:'$'}, 'red')
+    chips[n][4] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$'}, 'white')
+    chips[n][5] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$'}, 'white')
+    chips[n][6] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$'}, 'white')
+    chips[n][7] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$'}, 'white')
+    chips[n][8] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$'}, 'white')
 }
 
 // Bat
@@ -189,12 +191,12 @@ for(var n=0; n<N; n++) {
   var tz = game.add_teamzone({
     layer      : 0,
     vertices   : [[v1[0],v1[1]], [v2[0],v2[1]], [v3[0],v3[1]], [v4[0],v4[1]]],
-    teams_grab : [n+1,N+1],
-    teams_see  : [n+1],
-    width_line : 0,
-    color_line : game.settings.background_color, // blurs the edges a bit
+    groups_see  : ['cards'],
+    teams_see   : [n+1],
+    width_line : 12,
     alpha_fill : 0.5,
-    alpha_line : 0.5,
+    alpha_line : 0.0,
+    alpha_line_see : 1,
     render_graphics : false,
   })
 }
@@ -345,6 +347,9 @@ function new_game() {
     cards[53].set_xyrs(y1*2, 0, Math.random()*1000).set_image_index(1)
   }
 
+  // 
+
+
 } // End of new_game()
 
 
@@ -360,5 +365,5 @@ game.bind_key(['KeyODown', 'ShiftKeyODown'], deal_one_to_mouse)
 
 
 //////////////////////////////////////// ADDITIONAL GUI
-game.set_special_title('Poker Controls')
+game.set_special_title('Poker')
 game.add_special_html('<button onclick="get_shuffle_deck()">Get / Shuffle Deck</button>')

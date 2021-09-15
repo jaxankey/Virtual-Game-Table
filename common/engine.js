@@ -102,12 +102,16 @@ class _Html {
    */
   chat(name, message) { log('Html.chat()', name, message);
 
+    var e = document.createElement('div');
+    e.innerText = name;    name = e.innerHTML;
+    e.innerText = message; message = e.innerHTML;
+
     // messages div object
     var m = VGT.html.ul_messages;
 
     // append a <li> object to it
     var li = document.createElement("li");
-    li.insertAdjacentHTML('beforeend', '<b>' + name + ':</b> ' + message)
+    li.innerHTML = '<b>' + name + ':</b> ' + unescape(message);
     m.append(li);
 
     // scroll to the bottom of the history
@@ -481,7 +485,7 @@ class _Net {
     else        var name = html_encode(this.clients[id].name);
     
     // Update the interface
-    VGT.html.chat(name, message);
+    VGT.html.chat(unescape(name), unescape(message));
   
   } // End of on_chat
 
@@ -1285,9 +1289,24 @@ class _Interaction {
 
   // Count the selected items
   count_selected(e) {
+
+    // Get the count object [pieces, worths]
     var c = VGT.game.count(VGT.things.selected[VGT.clients.me.team]);
     log('count_selected()', c);
-    VGT.net.io.emit('chat', '('+String(c.count)+' pieces worth '+String(c.worth)+')');
+
+    if(Object.keys(c.worths).length) {
+      var message = '('+String(c.count)+' items worth '
+      var s;
+      for(var k in c.worths) {
+        s = k.split('|'); // prefix|suffix
+        if(s.length < 2) s.append('');
+        message = message + s[0]+c.worths[k][0].toFixed(c.worths[k][1])+s[1]+', '
+      }
+    }
+    else var message = '('+String(c.count)+' items  '
+    
+    
+    VGT.net.io.emit('chat', message.slice(0,message.length-2)+')');
   }
 
   // Loads the view associated with the pressed key
@@ -1356,7 +1375,7 @@ class _Interaction {
         if(container.thing.contains(x,y)) {
          
           // If our team is allowed to control this thing, return it
-          if(container.thing.settings.teams == true || container.thing.settings.teams.includes(VGT.game.get_team_name(VGT.clients.me.team))) return container.thing;
+          if(container.thing.is_grabbable_by_me()) return container.thing;
           
           // Otherwise, return null so we don't get access to pieces below pieces (not intuitive)
           else return null
@@ -1565,7 +1584,7 @@ class _Interaction {
     var thing = this.find_thing_at(v.x,v.y);
 
     // If it's not null, handle this
-    if(thing != null && thing.is_selectable_by_me()) {
+    if(thing != null && thing.is_grabbable_by_me()) {
       
       // Get the coordinates on the thing
       var a = thing.xy_tabletop_to_local(v.x, v.y); log('     on piece:', a);
@@ -1858,12 +1877,12 @@ class _Interaction {
 
     // Get the chat text and clear it
     var chat_box = document.getElementById('chat-box')
-    var message  = html_encode(chat_box.value);
+    var message  = chat_box.value;
     chat_box.value = '';
 
     // Send a chat.
     log(   'NETS_chat', message);
-    VGT.net.io.emit('chat', message);
+    VGT.net.io.emit('chat', escape(message));
   } // end of onchat()
 
   
@@ -2279,12 +2298,15 @@ class _Thing {
     tint             : null,          // Tint to apply upon creation
     type             : null,          // User-defined types of thing, stored in this.settings.type. Could be "card" or 32, e.g.
     sets             : [],            // List of other sets (e.g. VGT.pieces, VGT.hands) to which this thing can belong
-    teams            : true,          // List of team names that can control this piece. Setting true means 'all of them', false or [] means 'none'.
+    teams            : null,          // List of team indices that can control this piece. Setting null means 'all of them', [] means 'none'.
     r_step           : 45,            // How many degrees to rotate when taking a rotation step.
     rotate_with_view : false,         // Whether the piece should retain its orientation with respect to the screen when rotating the view / table
     text             : false,         // Whether to include a text layer 
     anchor           : {x:0.5,y:0.5}, // Anchor point for the graphic
     worth            : 0,             // For counting.
+    worth_prefix     : '',            // Prefix on the worth
+    worth_suffix     : '',            // Suffix on the worth
+    worth_decimals   : undefined,     // How many decimals precision when displaying
 
     // Geometry
     shape  : 'rectangle',      // Hitbox shape; could be 'rectangle' or 'circle' or 'circle_outer' currently. See this.contains();
@@ -2696,13 +2718,13 @@ class _Thing {
    */
   select(team, do_not_update_q_out) { //log('thing.select()', this.id_thing, team, do_not_update_q_out, this.team_select, this.id_client_hold);
     
-    // If team is not specified (used by process_queues()), there is no change, or
-    // it is being held by someone who is not on the same team, do nothing.
-    if(team == undefined 
-    || team == this.team_select 
-    || this.id_client_hold && VGT.clients.all[this.id_client_hold] 
-       && VGT.clients.all[this.id_client_hold].team != team
-    || this.is_hidden()) return;
+    // If no action is required, poop out.
+    if(team == undefined                                           // If team is not specified (used by process_queues())
+    || team == this.team_select                                    // It is already selected by this team
+    || this.id_client_hold && VGT.clients.all[this.id_client_hold] // Someone from another team is holding it
+       && VGT.clients.all[this.id_client_hold].team != team        // ...
+    || this.is_hidden())                                           // It's disabled
+      return;
 
     // If team is -1, unselect it and poop out
     if(team < 0) return this.unselect(do_not_update_q_out);
@@ -3254,46 +3276,55 @@ class _Thing {
   is_showing(){ return  this.container.visible; }
   is_visible(){ return  this.container.visible; }
 
-  // Returns true if it's ok for the team (index) to select this thing.
-  is_selectable_by_team(team) {
+  // Returns true if it's ok for the team (index) to grab this thing.
+  is_grabbable_by_team(team) { 
     
-    // First make sure it's not in a forbidden teamzone
-    // Overlapping teamzones should share allowed teams
-    var a = VGT.teamzones.get_allowed_teams_at_tabletop_xy(this.x.value, this.y.value);
+    // First make sure the team zones don't preclude grabbing
+    var tz;
+    for(var n in VGT.teamzones.all) { tz = VGT.teamzones.all[n] 
+      
+      // If this teamzone is relevant and precludes grabbing, poop out
+      if(tz.has_grab_influence_over(this) && !tz.settings.teams_grab.includes(team)) return false 
+    }
+    // No objections from any team zones
     
-    // If it's not okay for everyone to grab and I'm not on the list, return false
-    if(a.teams_grab != null && !a.teams_grab.includes(team)) return false
-
-    // Everyone can select this thing. Sounds good.
-    if(this.settings.teams == true) return true;
+    // Everyone can select this thing anywhere
+    if(this.settings.teams == null) return true;
     
-    // Otherwise it could be a list of team names.
-    if(this.settings.teams) return this.settings.teams.includes(VGT.game.get_team_name(team));
+    // Otherwise it could be a list of team numbers
+    if(this.settings.teams) return this.settings.teams.includes(team);
 
     // Otherwise, false or null or something.
     return false;
-
   }
 
-  // Written right after a 10mg THC capsule kicked in. I'm a lightweight, everyone relax.
-  // I will update this if I change anything in this function.
-  is_selectable_by_me() {
+  // If this pieces is allowed to be grabbed by me.
+  is_grabbable_by_me() {
 
-    // Post-THC addition: if it's my nameplate, I can always grab it.
+    // If it's my nameplate, I can always grab it.
     if(VGT.clients && VGT.clients.me && this == VGT.clients.me.nameplate) return true;
 
     // Check for my team
-    return this.is_selectable_by_team(VGT.clients.me.team);
+    return this.is_grabbable_by_team(VGT.clients.me.team);
   }
 
   // Whether this is in my 'seeing' team zone
   should_use_private_images() {
+
     // If we don't have a team, should not use private images
     if(!VGT.clients || !VGT.clients.me) return false
 
-    var s = VGT.teamzones.get_allowed_teams_at_tabletop_xy(this.x.value, this.y.value);
-    if(s.teams_see == null) return false;
-    return(s.teams_see.includes(VGT.clients.me.team));
+    // Loop over the teamzones, looking for one that allows us to see private
+    var tz;
+    for(var n in VGT.teamzones.all) { tz = VGT.teamzones.all[n];
+      
+      // If this teamzone has see influence and allows private images
+      if(tz.has_see_influence_over(this) 
+      && tz.settings.teams_see.includes(VGT.clients.me.team)) return true
+    }
+
+    // None found!
+    return false
   }
 
   // Returns true if this thing is in a higher layer or higher index than the supplied thing
@@ -3666,9 +3697,10 @@ class _Polygon extends _Thing {
   }
 
   // Returns true if the supplied tabletop coordinates are within this polygon
-  contains_tabletop_xy(x,y) {
-    return this.get_polygon().contains(x,y);
-  }
+  contains_tabletop_xy(x,y) { return this.get_polygon().contains(x,y); }
+
+  // Whether this contains the 
+  contains_thing(thing) { return this.contains_tabletop_xy(thing.x.value, thing.y.value); }
 
   // Animate the vertices
   animate_other(delta) {
@@ -3736,9 +3768,10 @@ VGT.Polygons = _Polygons;
 class _TeamZone extends _Polygon {
 
   default_settings = {
-    groups:           null,   // List of piece groups that this affects; null means all groups
+    groups_grab:      null,   // List of piece groups whose grab behavior is influenced by this; null means all groups
+    groups_see:       null,   // List of piece groups whose see behavior is influenced by this; null means "match groups_grab"
 
-    teams_grab:      [0,9],   // List of teams (indices) that can grab the pieces; null means everyone
+    teams_grab:       null,   // List of teams (indices) that can grab the pieces; null means everyone
     teams_see:        null,   // List of teams (indices) that can see the secret images; null means "match teams_grab"
 
     color_fill:       null,   // Hex color (e.g. 0x123456) of the fill; null means "automatic" (the color of the first team in the list)
@@ -3769,24 +3802,53 @@ class _TeamZone extends _Polygon {
       if(settings[k] != undefined) this.settings[k] = settings[k];
       else                         this.settings[k] = this.default_settings[k];
 
+    // Deal with group nulls
+    if(this.settings.groups_see == null) this.settings.groups_see = this.settings.groups_grab;
+
     // Deal with nulls (convert to a list [0,1,2,3...])
     if(this.settings.teams_grab == null) this.settings.teams_grab = [...Object.keys(VGT.game.settings.teams).keys()];
     if(this.settings.teams_see  == null) this.settings.teams_see  = [...this.settings.teams_grab];
 
+    // Get the default color
+    var default_color = 0xAAAAAA;
+    if     (this.settings.teams_grab.length == 1) default_color = game.get_team_color(this.settings.teams_grab[0]);
+    else if(this.settings.teams_see .length == 1) default_color = game.get_team_color(this.settings.teams_see [0]);
+      
     // If we overrode the color, then the first color in the list, then the first team color
-    if(this.settings.color_fill == null)
-      if(this.settings.teams_grab) this.settings.color_fill = game.get_team_color(this.settings.teams_grab[0]);
-      else this.settings.color_fill = game.get_team_color(0);
-
-    // Get the line automatic color
-    if(this.settings.color_line == null) this.settings.color_line = this.settings.color_fill;
+    if(this.settings.color_fill == null) this.settings.color_fill = default_color;
+    if(this.settings.color_line == null) this.settings.color_line = default_color;
 
     // Opacities
     if(this.settings.alpha_fill_grab == null) this.settings.alpha_fill_grab = this.settings.alpha_fill;
     if(this.settings.alpha_line_grab == null) this.settings.alpha_line_grab = this.settings.alpha_line;
-    if(this.settings.alpha_fill_see == null) this.settings.alpha_fill_see = this.settings.alpha_fill_grab;
-    if(this.settings.alpha_line_see == null) this.settings.alpha_line_see = this.settings.alpha_line_grab;
+    if(this.settings.alpha_fill_see  == null) this.settings.alpha_fill_see  = this.settings.alpha_fill_grab;
+    if(this.settings.alpha_line_see  == null) this.settings.alpha_line_see  = this.settings.alpha_line_grab;
   }
+
+  // Whether this teamzone has any influence over the supplied thing, using the specified groups
+  _has_influence_over(thing, groups) {
+
+    // First make sure it's contained within this zone
+    if(!this.contains_thing(thing)) return false;
+
+    // I guess the thing is in this teamzone
+
+    // Null means all groups
+    if(!groups) return true;
+
+    // Otherwise it's a list, so loop over it and return true if we find one.
+    for(var n in groups) 
+      if(thing.settings.groups.includes(groups[n])) return true;
+
+    // Nothing found
+    return false
+  }
+
+  // Whether this teamzone has grab influence over the supplied thing
+  has_grab_influence_over(thing) {return this._has_influence_over(thing, this.settings.groups_grab)}
+
+  // Whether this teamzone has see influence over the supplied thing
+  has_see_influence_over(thing) {return this._has_influence_over(thing, this.settings.groups_see)}
 
   // Clear and redraw the whole thing
   redraw() {
@@ -3817,7 +3879,12 @@ class _TeamZone extends _Polygon {
     for(var n in this.vertices) ps.push(new PIXI.Point(this.vertices[n][0].value, this.vertices[n][1].value)); // Possible memory leak
     
     // Render the fill zone
-    this.graphics.lineStyle(this.settings.width_line, this.settings.color_line, alpha_line);
+    _l(this.settings);
+    this.graphics.lineStyle({
+      width: this.settings.width_line, 
+      color: this.settings.color_line, 
+      alpha: alpha_line,
+      alignment: 0});
     this.graphics.beginFill(this.settings.color_fill, alpha_fill);
     this.graphics.drawPolygon(ps);
     this.graphics.endFill();
@@ -4039,7 +4106,7 @@ class _Hand extends _Thing {
         // Loop over the pieces and select those that are in it.
         var p;
         for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
-          if(p.is_selectable_by_me() && poly.contains(p.x.value, p.y.value)) {
+          if(p.is_grabbable_by_me() && poly.contains(p.x.value, p.y.value)) {
             p.select(VGT.clients.me.team);
             this._newly_selected[p.id_piece] = true;
           }
@@ -4283,6 +4350,9 @@ class _Game {
     this.SnapGrid   = VGT.SnapGrid;
     this.SnapCircle = VGT.SnapCircle;
     
+    // Fix the width of the chat box according to the current GUI.
+    VGT.html.ul_messages.style.width = VGT.html.ul_messages.offsetWidth;
+
     // Start the slow housekeeping
     setInterval(this._housekeeping.bind(this), this.settings.t_housekeeping);
 
@@ -4647,13 +4717,26 @@ class _Game {
 
   // Returns {count:, worth: } of the supplied list or object of pieces
   count(things) {
-    var worth = 0;
+    var worths = {};
+    var key;
     var count = 0;
     for(var k in things) {
-      worth += things[k].settings.worth;
-      count += 1;
+
+      // We try to make a unique key for each type of prefix/suffix
+      key = things[k].settings.worth_prefix + '|' + things[k].settings.worth_suffix;
+
+      // Make sure we have an initial value
+      if(worths[key] == undefined) worths[key] = [0, things[k].settings.worth_decimals];
+
+      // Increment
+      worths[key][0] += things[k].settings.worth;
+      count          += 1;
     }
-    return {count: count, worth: worth}
+
+    // Remove all zeros
+    for(var k in worths) if(worths[k][0]==0) delete worths[k];
+
+    return {count: count, worths: worths}
   }
 
   // Collect things into a tidy stack

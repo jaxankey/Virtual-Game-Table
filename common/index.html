@@ -110,7 +110,7 @@
       box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
     }
       #new    {}
-      #setups {margin-left: -0.05em;}
+      #setups {margin-left: -0.07em; flex-grow:1;}
       #rules  {margin-left: 0.4em;}
       #save   {margin-left: 0.4em;}
       #load   {margin-left: 0.4em;}
@@ -132,7 +132,12 @@
         overflow-y: auto; 
         height: 20em;
         margin-bottom: 0.4em;
+        word-wrap: break-word;
+        scroll-behavior: smooth;
       }
+      #messages li:nth-child(even) { background-color: rgba(187, 70, 70, 0.1) }
+      li {padding: 0.3em;}
+      b  {background-color: transparent; font-weight: bold;}
       #chat-box {
         color: rgba(187, 70, 70, 0.5);
       }
@@ -160,7 +165,7 @@
         <div class='row_left'><h1>Setup</h1></div>
         
         <div class='row_left'>
-          <button id='new'    onclick="new_game();">New Game:</button>
+          <button id='new'    onclick="new_game();">Reset:</button>
           <select id="setups" onchange="VGT.interaction.onchange_setups();"></select>
           <button id="rules"  onclick="VGT.game.open_rules();">Rules</button>
         

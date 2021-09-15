@@ -322,6 +322,9 @@ io.on('connection', function(socket) {
 
   // received a chat message
   function on_chat(message) {
+    // Truncate
+    if(message.length > 1000) message = message.slice(0,1000);
+    
     fun.log_date(socket.id, 'Received-chat:', socket.id, state.clients[socket.id].name, message);
 
     // If the message starts with "/" it's a server command
@@ -363,6 +366,7 @@ io.on('connection', function(socket) {
         // Send the current settings.
         s = 'OPTIONS:';
         for(var key in state) if(!state_keys_no_set.includes(key)) s = s + '\n' + key + ' ' + state[key];
+
         delay_send(socket, 'chat', [socket.id,s]);
       }
     } // end of "message starts with /"

@@ -463,9 +463,11 @@ var settings = {
 }; // end of settings
 
 // Create pieces
+settings.worth_suffix = ' DB'
 settings.worth = 1; P.doubloon1s = game.add_pieces(46, settings, 'doubloon-1');
 settings.worth = 5; P.doubloon5s = game.add_pieces( 8, settings, 'doubloon-5');
 
+settings.worth_suffix = ' VP'
 settings.x = -400;
 settings.worth = 1; P.vp1s = game.add_pieces(32, settings, ['victory-1', 'victory-back'])
 settings.worth = 5; P.vp5s = game.add_pieces(18, settings, ['victory-5', 'victory-back'])
