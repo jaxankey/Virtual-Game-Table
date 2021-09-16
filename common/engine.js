@@ -3095,7 +3095,7 @@ class _Thing {
   /** Sets the text and redraws */
   set_text(text, style, background_color) {
     // Default style
-    var style_default = {fontFamily : 'Arial', fontSize: 48, fill : 0x000000, align : 'center', wordWrap: 10}
+    var style_default = {fontFamily : 'Arial', fontSize: 48, fill : 0x000000, align : 'center', wordWrap: true, wordWrapWidth: 300}
     style = {...style_default, ...style}
 
     // Set the text
@@ -3945,7 +3945,6 @@ class _NamePlate extends _Thing {
       save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target,this.s.target]);
   }
 } // End of NamePlate
-//VGT.NamePlate = _NamePlate;
 
 class _NamePlates {
   
