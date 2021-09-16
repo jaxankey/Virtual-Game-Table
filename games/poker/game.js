@@ -367,3 +367,4 @@ game.bind_key(['KeyODown', 'ShiftKeyODown'], deal_one_to_mouse)
 //////////////////////////////////////// ADDITIONAL GUI
 game.set_special_title('Poker')
 game.add_special_html('<button onclick="get_shuffle_deck()">Get / Shuffle Deck</button>')
+game.add_special_html('<button onclick="deal_to_all(this)" style="margin-left:0.2em">Deal</button>')
