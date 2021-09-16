@@ -20,7 +20,6 @@
 
 // After poker loads and connects to the server, make some tweaks to it
 VGT.game_is_ready = function() {
-    for(var n in bars) bars[n].hide()
     for(var n in chips) for(var m in chips[n]) for(var k in chips[n][m]) chips[n][m][k].hide()
     game.set_special_title('Cards')
 }
@@ -40,5 +39,8 @@ function new_game() {
     cards[52].set_xyrs(y1*2, 0, Math.random()*1000).set_image_index(1)
     cards[53].set_xyrs(y1*2, 0, Math.random()*1000).set_image_index(1)
   }
+  
+  // Distribute the bars
+  distribute_bars()
 
 } // End of new_game()

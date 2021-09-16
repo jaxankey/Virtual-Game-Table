@@ -1291,22 +1291,7 @@ class _Interaction {
   count_selected(e) {
 
     // Get the count object [pieces, worths]
-    var c = VGT.game.count(VGT.things.selected[VGT.clients.me.team]);
-    log('count_selected()', c);
-
-    if(Object.keys(c.worths).length) {
-      var message = '('+String(c.count)+' items worth '
-      var s;
-      for(var k in c.worths) {
-        s = k.split('|'); // prefix|suffix
-        if(s.length < 2) s.append('');
-        message = message + s[0]+c.worths[k][0].toFixed(c.worths[k][1])+s[1]+', '
-      }
-    }
-    else var message = '('+String(c.count)+' items  '
-    
-    
-    VGT.net.io.emit('chat', message.slice(0,message.length-2)+')');
+    VGT.game.count(VGT.things.selected[VGT.clients.me.team], true);
   }
 
   // Loads the view associated with the pressed key
@@ -1328,64 +1313,25 @@ class _Interaction {
   increment_selected_images(e) {
     log('VGT.interaction.increment_selected_images()', e);
 
-    // Increment all the images
-    VGT.game.increment_image_indices(VGT.things.selected[VGT.clients.me.team])
+    // Now do the incrementing
+    VGT.game.increment_image_indices(VGT.game.get_selected(undefined, true));
   }
 
   decrement_selected_images(e) {
     log('VGT.interaction.decrement_selected_images()', e);
 
     // Increment all the images
-    VGT.game.decrement_image_indices(VGT.things.selected[VGT.clients.me.team])
+    VGT.game.decrement_image_indices(VGT.game.get_selected(undefined, true));
   }
 
   zero_selected_images(e) {
     log('VGT.interaction.zero_selected_images()', e);
 
     // Set all images to 0
-    VGT.game.set_image_indices(VGT.things.selected[VGT.clients.me.team], 0);
+    VGT.game.set_image_indices(VGT.game.get_selected(undefined, true), 0);
   }
 
-  /**
-   * Find the topmost thing at the specified tabletop location x,y, or return null
-   * The thing must be within the non-special layers.
-   * @param {number} x // tabletop x-coordinate
-   * @param {number} y // tabletop y-coordinate
-   * @returns 
-   */
-  find_thing_at(x,y) {
-
-    // Get the full list of appropriate layers
-    var layers = [...VGT.tabletop.layers];
-    layers.push(VGT.tabletop.layer_nameplates);
-
-    // Loop over the layers from top to bottom
-    var layer, container;
-    for(var n=layers.length-1; n>=0; n--) {
-      layer = layers[n];
-      if(!layer) continue;
-      
-      // Loop over the things in this layer from top to bottom.
-      for(var m=layer.children.length-1; m>=0; m--) {
-
-        // container of thing
-        container = layer.children[m]; 
-       
-        // Get the scaled bounds and test
-        if(container.thing.contains(x,y)) {
-         
-          // If our team is allowed to control this thing, return it
-          if(container.thing.is_grabbable_by_me()) return container.thing;
-          
-          // Otherwise, return null so we don't get access to pieces below pieces (not intuitive)
-          else return null
-        }
-      } // End of things in layer loop
-
-    } // End of all layers loop
-    return null;
-  }
-
+  
   // Undo / redo
   undo_redo(e) {
     if(e.shiftKey) VGT.game.redo();
@@ -1554,6 +1500,7 @@ class _Interaction {
 
   // Pointer touches the underlying surface.
   onpointerdown(e) {
+    e.preventDefault();
     this.last_pointerdown = e;
 
     // Get the tabletop coordinates
@@ -1573,6 +1520,13 @@ class _Interaction {
     this.tabletop_xd = -VGT.tabletop.container.pivot.x;
     this.tabletop_yd = -VGT.tabletop.container.pivot.y;
 
+    // Check for non-standard mouse buttons
+    if(!([0,2].includes(e.button))) {
+      if(VGT.game._pointerdown_functions[e.button]) VGT.game._pointerdown_functions[e.button](e);
+      return
+    }
+    // The rest is for right and left clicks
+
     // Holding, so close fist
     var hand=null;
     if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand; hand.close(); }
@@ -1581,7 +1535,7 @@ class _Interaction {
     log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd);
 
     // Find a thing under the pointer if there is one.
-    var thing = this.find_thing_at(v.x,v.y);
+    var thing = VGT.game.get_top_thing_at(v.x,v.y);
 
     // If it's not null, handle this
     if(thing != null && thing.is_grabbable_by_me()) {
@@ -1594,7 +1548,7 @@ class _Interaction {
 
       // If we're not holding shift and it's not already a thing we've selected, 
       // unselect everything.
-      if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.game.team_unselect(VGT.clients.me.team);
+      if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.game.unselect(VGT.clients.me.team);
       
       // If we're holding shift and it's already selected, and we're not deselect
       if(e.shiftKey && thing.team_select == VGT.clients.me.team) thing.unselect()
@@ -1616,7 +1570,7 @@ class _Interaction {
     else {
      
       // If we're clicking the tabletop without shift, unselect everything
-      if(!e.shiftKey) VGT.game.team_unselect(VGT.clients.me.team);
+      if(!e.shiftKey) VGT.game.unselect(VGT.clients.me.team);
 
       // If we're going to start dragging the rectangle, send the table coordinates of the click
       if(e.button == 2 && hand) { 
@@ -1629,11 +1583,14 @@ class _Interaction {
         if(e.shiftKey) hand._originally_selected = Object.values(VGT.things.selected[VGT.clients.me.team]);
       }
     }
+
   } // End of onpointerdown
 
   // Double click
   ondblclick(e) { console.log('ondblclick()', e);
     e.preventDefault();
+
+    this.increment_selected_images(e);
   }
 
   // Pointer has moved around.
@@ -1653,7 +1610,7 @@ class _Interaction {
     // And for the user
     VGT.game.mouse = {x:v.x, y:v.y, r:this.rm_tabletop}
     
-    var hand = null;
+    // Whether we are dragging the table
     var dragging_table = false;
     
     // Only do stuff if the mouse is down
@@ -4350,6 +4307,9 @@ class _Game {
     this.SnapGrid   = VGT.SnapGrid;
     this.SnapCircle = VGT.SnapCircle;
     
+    // Other functions to call for mouse buttons
+    this._pointerdown_functions = {};
+
     // Fix the width of the chat box according to the current GUI.
     VGT.html.ul_messages.style.width = VGT.html.ul_messages.offsetWidth;
 
@@ -4436,6 +4396,57 @@ class _Game {
     for(var n in keys) VGT.interaction.key_functions[keys[n]] = f; 
   }
 
+  /**
+   * Binds the supplied mouse button to the supplied function
+   * @param {int or list} buttons 
+   * @param {function} f 
+   */
+  bind_pointerdown_button(buttons, f) {
+    if(typeof keys == 'number') buttons = [buttons];
+    for(var n in buttons) this._pointerdown_functions[buttons[n]] = f;
+  }
+
+  /**
+   * Find the topmost thing at the specified tabletop location x,y, or return null
+   * The thing must be within the non-special layers.
+   * @param {number} x // tabletop x-coordinate
+   * @param {number} y // tabletop y-coordinate
+   * @returns 
+   */
+   get_top_thing_at(x,y) {
+
+    // Get the full list of appropriate layers
+    var layers = [...VGT.tabletop.layers];
+    layers.push(VGT.tabletop.layer_nameplates);
+
+    // Loop over the layers from top to bottom
+    var layer, container;
+    for(var n=layers.length-1; n>=0; n--) {
+      layer = layers[n];
+      if(!layer) continue;
+      
+      // Loop over the things in this layer from top to bottom.
+      for(var m=layer.children.length-1; m>=0; m--) {
+
+        // container of thing
+        container = layer.children[m]; 
+       
+        // Get the scaled bounds and test
+        if(container.thing.contains(x,y)) {
+         
+          // If our team is allowed to control this thing, return it
+          if(container.thing.is_grabbable_by_me()) return container.thing;
+          
+          // Otherwise, return null so we don't get access to pieces below pieces (not intuitive)
+          else return null
+        }
+      } // End of things in layer loop
+
+    } // End of all layers loop
+    return null;
+  }
+
+
   /** Gets the team name from the list index. */
   get_team_name(n)   {return Object.keys(this.settings.teams)[n];}
   get_my_team_name() {return this.get_team_name(this.get_my_team_index());}
@@ -4456,7 +4467,8 @@ class _Game {
     teams.sort();
     return teams;
   }
-
+  /** Returns true if the specified team index is participating. */
+  team_is_participating(team) { return this.get_participating_team_indices().includes(team); }
 
   /** Gets the color from the index */
   get_team_color(n)   {return this.settings.teams[Object.keys(this.settings.teams)[n]]; }
@@ -4465,8 +4477,27 @@ class _Game {
     else                              return 0;
   }
 
-  /** Returns the selected list for the specified team */
-  get_selected(team) { return VGT.things.selected[team]; }
+  /** Returns the selected list for the specified team. If under_mouse is true,
+   * and no selection exists, returns a list containing the piece (if any) under the mouse.
+  */
+  get_selected(team, under_mouse) { 
+
+    // If the team is undefined, use mine
+    if(team == undefined) team = this.get_my_team_index();
+
+    // Get the things to adjust
+    var things = VGT.things.selected[team];
+    if(!things) things = {};
+    
+    // If there is nothing, use what's under the mouse
+    if(!Object.keys(things).length && under_mouse) {
+      var p = VGT.game.get_top_thing_at(VGT.game.mouse.x, VGT.game.mouse.y);
+      if(!p) return {};
+      things = [p];
+    }
+    
+    return things;
+  }
 
   /** Adds an undo level if something has changed */
   save_undo() {
@@ -4716,7 +4747,7 @@ class _Game {
   ///////////////////////////////////// PIECE MANIPULATIONS
 
   // Returns {count:, worth: } of the supplied list or object of pieces
-  count(things) {
+  count(things, send_chat) {
     var worths = {};
     var key;
     var count = 0;
@@ -4735,6 +4766,22 @@ class _Game {
 
     // Remove all zeros
     for(var k in worths) if(worths[k][0]==0) delete worths[k];
+
+    if(send_chat) {
+
+      if(Object.keys(worths).length) {
+        var message = '('+String(count)+' items worth '
+        var s;
+        for(var k in worths) {
+          s = k.split('|'); // prefix|suffix
+          if(s.length < 2) s.append('');
+          message = message + s[0]+worths[k][0].toFixed(worths[k][1])+s[1]+', '
+        }
+      }
+      else var message = '('+String(count)+' items  '
+      
+      VGT.net.io.emit('chat', message.slice(0,message.length-2)+')');
+    }
 
     return {count: count, worths: worths}
   }
@@ -4787,7 +4834,6 @@ class _Game {
       // Set it
       p.set_xyrs(x+v.x,y+v.y,v.r);
     }
-
   }
 
   // Expand these into a grid
@@ -5130,10 +5176,19 @@ class _Game {
       VGT.things.selected[VGT.clients.all[id_client].team][k].hold(id_client, force, do_not_update_q_out);
   }
 
+  select(things, team) { log('VGT.game.select()', things.length, team);
+    
+    // If no team, use our team
+    if(team == undefined) team = VGT.clients.me.team;
+
+    // Select everything
+    for(var k in things) things[k].select(team);
+  }
+
   /**
    * unselect all things for this team.
    */
-  team_unselect(team) { log('VGT.game.team_unselect()', team);
+  unselect(team) { log('VGT.game.unselect()', team);
 
     // If no team, use our team
     if(team == undefined) team = VGT.clients.me.team;

@@ -55,10 +55,51 @@
     }
 
     input, button, select, ul {
+      /* position: relative;    /* used only for tool-tip stuff */
+      /* display: inline-block; /* used only for tool-tip stuff */
       color: #444;
       border: solid #444 0.05em;
       padding: 0.2em;
+      margin-left:  0.01em; /* Fudge to make things align :( */
+      margin-right: 0.01em; /* Fudge to make things align :( */
     }
+    button, input {padding-left: 0.3em; padding-right: 0.3em;}
+    /* button:hover:after {
+      content: attr(title);
+      position: absolute;
+      left: -0.05em;
+      bottom: 100%;
+      border: solid #444 0.067em;
+      max-width: 20em;
+      overflow-wrap: normal;
+      color: rgba(187, 70, 70, 0.9);
+      background-color: white;
+      padding: 0.2em;
+      z-index: 100;
+      opacity: 0;
+      -webkit-transition: opacity 0.4s;
+      transition: opacity 0.4s;   
+    }
+    button:hover:after {opacity: 1} */
+
+    /* smooth / responsive tooltip 
+    button:after, select:after {
+        content: attr(title);
+        position: absolute;
+        opacity: 0;
+        background-color: rgb(187,70,70);
+        color: white;
+        -webkit-transition: opacity 0.4s ease-in-out;
+        transition: opacity 0.4s ease-in-out;
+        z-index: 100;
+        word-wrap:unset;
+        width: auto;
+    }
+    button:hover:after, select:hover:after {
+        opacity: 1;
+    } */
+
+
     button:hover {
       background-color: rgba(187, 70, 70, 0.1);
     }
@@ -114,13 +155,14 @@
       #rules  {margin-left: 0.4em;}
       #save   {margin-left: 0.4em;}
       #load   {margin-left: 0.4em;}
+      #volume_container {display: none;}
       #volume {
         flex-grow: 1;
         padding: 0;
         margin-left: 0.4em;
       }
 
-      .team_name {flex-grow: 1; margin-left:-0.07em;}
+      .team_name {flex-grow: 1; margin-left:-0.05em;}
       .name { width: 10em; }
       .othername { width: 10em; border:0; pointer-events: none; }
 
@@ -165,17 +207,31 @@
         <div class='row_left'><h1>Setup</h1></div>
         
         <div class='row_left'>
-          <button id='new'    onclick="new_game();">Reset:</button>
-          <select id="setups" onchange="VGT.interaction.onchange_setups();"></select>
-          <button id="rules"  onclick="VGT.game.open_rules();">Rules</button>
+          <button id='new'    
+                  title='Resets everything according to the selected game mode.' 
+                  onclick="new_game();">Setup:</button>
+                  
+          <select id="setups" 
+                  title='Game mode' 
+                  onchange="VGT.interaction.onchange_setups();"></select>
+          
+          <button id="rules"  
+                  title='Rules document'
+                  onclick="VGT.game.open_rules();">Rules</button>
         
-          <button id='save' onclick="VGT.game.save_state();">Save</button>
-          <button id='load' onclick="VGT.game.load_state_from_file();">Load</button>
+          <button id='save' 
+                  title='Saves the current setup to a file'
+                  onclick="VGT.game.save_state();">Save</button>
+          <button id='load' 
+                  title='Loads a setup from a file'
+                  onclick="VGT.game.load_state_from_file();">Load</button>
         </div>
 
         
-        <div class='row_left'>
-          Volume: </td><td><input type="range" min="0" max="100" value="25"  class="slider" id="volume" onchange="interaction.onchange_volume();">
+        <div id='volume_container' class='row_left'>
+          Volume: </td><td><input 
+            title='Audio volume (if there are any sounds)'
+            type="range" min="0" max="100" value="25"  class="slider" id="volume" onchange="interaction.onchange_volume();">
         </div> 
 
         <div id='special' style='display:none'>
