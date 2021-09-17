@@ -103,15 +103,27 @@ class _Html {
   controls_visible() {return !this.div_controls.hidden}
   controls_hidden()  {return  this.div_controls.hidden}
 
+
+  string_to_html(s) {
+    var e = document.createElement('div');
+    e.innerText = s;
+    return e.innerHTML;
+  }
+
+  html_to_string(s) {
+    var e = document.createElement('div');
+    e.innerHTML = s;
+    return e.innerText;
+  }
+
   /**
    * Updates the chat box with the supplied name and message.
    */
   chat(name, message) { log('Html.chat()', name, message);
 
-    var e = document.createElement('div');
-    e.innerText = name;    name = e.innerHTML;
-    e.innerText = message; message = e.innerHTML;
-
+    name = this.string_to_html(name);
+    message = this.string_to_html(message);
+    
     // messages div object
     var m = VGT.html.ul_messages;
 
@@ -540,7 +552,9 @@ class _Net {
     log('connect_to_server()', this);
   
     // Get name to send to server with hallo.
-    var name = load_cookie('name'); 
+    var name = VGT.html.html_to_string(load_cookie('name'));
+    
+
     var team = parseInt(load_cookie('team'));
     if(isNaN(team)) team = 0;
 
@@ -1942,8 +1956,8 @@ class _Sounds {
     this.n=0;
     this._load(specs);
     
-    // Unhide the volume slider
-    if(this.length) VGT.html.div_volume_container.style.display = 'block'; // show it
+    // Hide the volume slider if no sounds loaded
+    if(this.length==0) VGT.html.div_volume_container.style.display = 'none'; 
   }
 
   // Function to recursively count the sounds in a group

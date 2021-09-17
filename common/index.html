@@ -155,7 +155,7 @@
       #rules  {margin-left: 0.4em;}
       #save   {margin-left: 0.4em;}
       #load   {margin-left: 0.4em;}
-      #volume_container {display: none;}
+      #volume_container {}
       #volume {
         flex-grow: 1;
         padding: 0;
@@ -229,7 +229,7 @@
 
         
         <div id='volume_container' class='row_left'>
-          Volume: </td><td><input 
+          Volume: <input 
             title='Audio volume (if there are any sounds)'
             type="range" min="0" max="100" value="25"  class="slider" id="volume" onchange="VGT.interaction.onchange_volume();">
         </div> 
