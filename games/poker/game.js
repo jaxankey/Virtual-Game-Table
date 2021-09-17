@@ -451,7 +451,7 @@ function new_game() {
   else {
 
     // Get all but jokers
-    get_shuffle_deck(undefined, 0, cards.slice(0,52))
+    get_shuffle_deck(undefined, game.get_my_team_index(), cards.slice(0,52))
 
     // Send the jokers away
     cards[52].set_xyrs(y1*2, 0, Math.random()*1000).set_image_index(1)
