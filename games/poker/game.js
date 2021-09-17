@@ -390,7 +390,7 @@ function fold(n) { log('fold()', n)
 
   // Pile em up
   var a = get_team_angle(n+1)
-  var v = rotate_vector([0,y1-100], a)
+  var v = rotate_vector([0,y1-120], a)
   game.pile(my_cards, v[0], v[1], 50)
   game.set_image_indices(my_cards, 0)
 
