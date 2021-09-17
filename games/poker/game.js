@@ -317,7 +317,7 @@ function deal_to_all(e) { log('deal_to_all()', e)
 
 // Collects all the cards onto the dealer paddle and brings it all to my dealing position.
 // If all_cards is false or not specified, it will only collect those cards within the play area.
-function get_shuffle_deck(e,team,all_cards) { log('get_shuffle_deck()', e)
+function get_shuffle_deck(e,team,all_cards) { log('get_shuffle_deck()', e, team, all_cards)
   
   if(all_cards == true) var cs = cards
 
@@ -445,7 +445,7 @@ function new_game() {
   console.log('\n------- NEW GAME: '+ game.html.select_setups.value +' -------\n\n');
 
   // All cards
-  if(game.html.select_setups.selectedIndex == 0) get_shuffle_deck(undefined, 0, true)
+  if(game.html.select_setups.selectedIndex == 0) get_shuffle_deck(undefined, game.get_my_team_index(), true)
   
   // No Jokers
   else {
