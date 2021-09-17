@@ -82,7 +82,7 @@ for(var m in suits) for(var n in values) {
 
 // Create the Game instance (also stores itself in VGT.game)
 game = new VGT.Game({
-  name             : 'Cards',          // Game name
+  name             : 'Poker',          // Game name
   nameplate_xyrs   : [0, 100, 0, 1],   // Spawn point for new nameplates
   setups : ['All Cards', 'No Jokers'], // Setup options
   teams  : {                           // Available teams and colors
