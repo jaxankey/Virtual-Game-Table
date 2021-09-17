@@ -378,6 +378,7 @@ function collect_pot() {
 // Folds from bar number n
 function fold(n) { log('fold()', n) 
   if(typeof n != 'number') n = VGT.game.get_my_team_index()-1;
+  if(n < 0 || n > 7) return;
   
   // Get all the cards in our zone
   var dealer_cards = dealer.get_shoveled()
