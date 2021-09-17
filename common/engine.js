@@ -117,7 +117,7 @@ class _Html {
     for(var i=0; i<cs.length; i++) {
 
         // split by "=" sign
-        s = cs[i].split('=');
+        var s = cs[i].split('=');
 
         // strip white space
         while (s[0].charAt(0)==' ') s[0] = s[0].substring(1);
