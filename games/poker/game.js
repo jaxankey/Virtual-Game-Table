@@ -393,6 +393,9 @@ function fold(n) { log('fold()', n)
   var v = rotate_vector([0,y1-100], a)
   game.pile(my_cards, v[0], v[1], 50)
   game.set_image_indices(my_cards, 0)
+
+  // Kill the in/out
+  bars[n].set_image_index(0)
 }
 function fold_with_noise(n) {
   fold(n)
