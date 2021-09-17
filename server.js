@@ -495,6 +495,7 @@ io.on('connection', function(socket) {
     var q_pieces     = data[0];
     var q_hands      = data[1];
     var q_nameplates = data[2];
+    var q_sounds     = data[3];
     
     // Handle the piece-like q's
     handle_q_in(q_pieces,     state.pieces);
@@ -503,6 +504,7 @@ io.on('connection', function(socket) {
     
     // Can't broadcast (leads to unsync)
     delay_send(io, 'q', [q_pieces, q_hands, q_nameplates]);
+    if(q_sounds.length) broadcast('sounds', q_sounds);
   }
   socket.on('q', function(data) {delay_function(on_q, data)});
 

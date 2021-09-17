@@ -20,6 +20,14 @@
 
 /////////////////////////////////////// RESOURCES
 
+// Master list of all sounds. 
+VGT.sounds = {
+  
+    // Simple sounds 
+    'fold' : ['sounds/death.ogg', 0.5],
+
+} // End of sounds
+
 // Master list of all images. This is needed for the preloader to work.
 VGT.images = {
 
@@ -384,6 +392,9 @@ function fold(n) { log('fold()', n)
   var v = rotate_vector([0,y1-100], a)
   game.pile(my_cards, v[0], v[1], 50)
   game.set_image_indices(my_cards, 0)
+
+  // Play the sound
+  game.sounds.play('fold')
 }
 
 // Sends whatever's under the mouse to the pot
@@ -455,8 +466,6 @@ function new_game() {
       game.collect(chips[team-1][n], v[0], v[1], a, a)
     }
   }
-
-
 } // End of new_game()
 
 

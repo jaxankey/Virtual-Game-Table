@@ -57,6 +57,7 @@ function _l() {log('   _l', ...arguments)}
 
 // Holds the user name space
 var VGT = {
+
   add_script(path) {
     var s = document.createElement('script')
     s.type = 'text/javascript'
@@ -66,6 +67,10 @@ var VGT = {
 
   // Overload me
   game_is_ready() {},
+
+  // Resources
+  sounds: {},
+  images: {},
 };
 
 // Object for interacting with the html page.
@@ -77,6 +82,7 @@ class _Html {
     this.div_gameboard = document.getElementById('gameboard');
     this.div_loader    = document.getElementById('loader');
     this.div_controls  = document.getElementById('controls');
+    this.div_volume_container = document.getElementById('volume_container')
     this.div_special   = document.getElementById('special');
     this.div_special_title = document.getElementById('special_title');
     this.div_special_controls = document.getElementById('special_controls');
@@ -218,12 +224,14 @@ class _Net {
     this.q_pieces_out     = {};
     this.q_hands_out      = {}; 
     this.q_nameplates_out = {}; 
+    this.q_sounds_out     = []; // List of sound play info
     this.q_z_out          = []; // Ordered list of requested z-operations
     
     // Queue of inbound information for the next housekeeping.
     this.q_pieces_in     = {}; 
     this.q_hands_in      = {};
     this.q_nameplates_in = {};
+    this.q_sounds_in     = []; // List of sound play info
     this.q_z_in          = []; // Ordered list of z-operations to implement
     
     // Defines all the functions for what to do with incoming packets.
@@ -241,6 +249,10 @@ class _Net {
 
     // object, indexed by layer, of lists of piece datas having z-order to set
     var zs = {}; 
+
+    //// SOUNDS
+    for(var n in this.q_sounds_in) VGT.game.sounds.play(...this.q_sounds_in[n], true);
+    this.q_sounds_in.length=0;
 
     //// PIECES
     for(var id_piece in this.q_pieces_in) { 
@@ -337,14 +349,16 @@ class _Net {
     // Send the outbound information
     if(Object.keys(this.q_pieces_out    ).length 
     || Object.keys(this.q_hands_out     ).length
-    || Object.keys(this.q_nameplates_out).length) {
+    || Object.keys(this.q_nameplates_out).length
+    || this.q_sounds_out.length) {
 
       // Send the outbound information and clear it.
-      log(    'NETS_q_'+String(VGT.net.id), Object.keys(this.q_pieces_out).length, Object.keys(this.q_hands_out).length, Object.keys(this.q_nameplates_out).length);
-      this.io.emit('q', [this.q_pieces_out, this.q_hands_out, this.q_nameplates_out]);
+      log(    'NETS_q_'+String(VGT.net.id), Object.keys(this.q_pieces_out).length, Object.keys(this.q_hands_out).length, Object.keys(this.q_nameplates_out).length, this.q_sounds_out);
+      this.io.emit('q', [this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out]);
       this.q_pieces_out     = {};
       this.q_hands_out      = {};
       this.q_nameplates_out = {};
+      this.q_sounds_out.length = 0;
     }
   } // End of process_queues()
 
@@ -385,8 +399,12 @@ class _Net {
     this.transfer_to_q_in(data[0], this.q_pieces_in);
     this.transfer_to_q_in(data[1], this.q_hands_in);
     this.transfer_to_q_in(data[2], this.q_nameplates_in);
-  
+    
   } // end of on_q
+
+  on_sounds(data) { if(!this.ready) return; log('NETR_sounds', data);
+    for(var n in data) this.q_sounds_in.push(data[n]);
+  }
 
   /** First thing to come back after 'hallo' is the full game state. */
   on_state(data) { log('NETR_state', data);
@@ -500,6 +518,7 @@ class _Net {
   
     this.io.on('z',          this.on_z       .bind(this));
     this.io.on('q',          this.on_q       .bind(this));
+    this.io.on('sounds',     this.on_sounds  .bind(this));
     this.io.on('state',      this.on_state   .bind(this));
     this.io.on('clients',    this.on_clients .bind(this));
     this.io.on('yabooted',   this.on_yabooted.bind(this));
@@ -1922,6 +1941,9 @@ class _Sounds {
     // Loop over all the specs, loading one sound per path
     this.n=0;
     this._load(specs);
+    
+    // Unhide the volume slider
+    if(this.length) VGT.html.div_volume_container.style.display = 'block'; // show it
   }
 
   // Function to recursively count the sounds in a group
@@ -1978,7 +2000,7 @@ class _Sounds {
   } // End of onprogress()
 
   // Play a sound by spec path. Returns [key, id]
-  play(path, x, y, rate) {
+  play(path, x, y, rate, do_not_update_q_out) {
 
     // Split the key by '/'
     var keys = path.split('/');
@@ -1995,6 +2017,10 @@ class _Sounds {
 
     // Play it and return [key,id]
     var id = this.sounds[key].play(x,y,rate);
+
+    // Tell everyone
+    if(!do_not_update_q_out) VGT.net.q_sounds_out.push([path,x,y,rate]);
+    
     return [key,id];
   }
 
@@ -4266,6 +4292,7 @@ class _Game {
     // How long to wait in between housekeepings.
     t_housekeeping   : 100, // For moving pieces around (already locally responsive)
     t_housekeeping_z : 10,  // For asking the server's permission to change z-values (needs to be ~immediate but not spam the server with individual requests)
+
   }
 
   constructor(settings) {
@@ -4311,6 +4338,9 @@ class _Game {
 
     // Fix the width of the chat box according to the current GUI.
     VGT.html.ul_messages.style.width = VGT.html.ul_messages.offsetWidth;
+
+    // Load the sounds
+    this.sounds = new _Sounds(VGT.sounds)
 
     // Start the slow housekeeping
     setInterval(this._housekeeping.bind(this), this.settings.t_housekeeping);
