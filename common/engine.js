@@ -103,6 +103,50 @@ class _Html {
   controls_visible() {return !this.div_controls.hidden}
   controls_hidden()  {return  this.div_controls.hidden}
 
+  // Returns the cookie value or undefined
+  load_cookie(key) { 
+    key = encodeURIComponent(key);
+    
+    // get a list of the cookie elements
+    var cs = document.cookie.split(';');
+
+    // Default is empty string
+    var value = '';
+
+    // Loop over elements to find the key
+    for(var i=0; i<cs.length; i++) {
+
+        // split by "=" sign
+        s = cs[i].split('=');
+
+        // strip white space
+        while (s[0].charAt(0)==' ') s[0] = s[0].substring(1);
+
+        // If it's our key
+        if(s[0] == VGT.game.settings.name+'_'+key) {
+            value = decodeURIComponent(s[1]);
+            break;
+        };
+    }
+
+    return value;
+  }
+
+  // Saves a cookie
+  save_cookie(key, value, expire_days) { 
+    if(expire_days==undefined) expire_days=28;
+
+    // Get rid of weird key characters
+    key   = encodeURIComponent(key);
+    value = encodeURIComponent(value);
+
+    // get the expiration date
+    var d = new Date();
+    d.setTime(d.getTime() + (expire_days*24*60*60*1000));
+    
+    // now write the cookie string
+    document.cookie = VGT.game.settings.name+'_'+key + '=' + value + '; expires=' + d.toUTCString() + '; SameSite=Lax';
+  }
 
   string_to_html(s) {
     var e = document.createElement('div');
@@ -154,8 +198,8 @@ class _Html {
       var name = html_encode(c.name);
       var team = html_encode(c.team);
       if(id == VGT.net.id) {
-        save_cookie('name', name);
-        save_cookie('team', team);
+        VGT.html.save_cookie('name', name);
+        VGT.html.save_cookie('team', team);
       }
 
       // Create the row for this client
@@ -469,6 +513,9 @@ class _Net {
     VGT.net.ready = true; 
     delete this._connecting_to_server;
 
+    // Set the tab title
+    document.title = VGT.game.settings.name;
+    
     // Call the user-defined game ready function
     VGT.game_is_ready();
 
@@ -552,10 +599,10 @@ class _Net {
     log('connect_to_server()', this);
   
     // Get name to send to server with hallo.
-    var name = VGT.html.html_to_string(load_cookie('name'));
+    var name = VGT.html.html_to_string(VGT.html.load_cookie('name'));
     
 
-    var team = parseInt(load_cookie('team'));
+    var team = parseInt(VGT.html.load_cookie('team'));
     if(isNaN(team)) team = 0;
 
     // Ask for the game state.
@@ -1074,7 +1121,7 @@ class _Tabletop {
    * @param {string} key String identifier for the view
    */
   save_view(key) {
-    save_cookie(key, [this.x.target, this.y.target, this.r.target, this.s.target]);
+    VGT.html.save_cookie(key, [this.x.target, this.y.target, this.r.target, this.s.target]);
   }
 
   /**
@@ -1084,7 +1131,7 @@ class _Tabletop {
    * @returns 
    */
   load_view(key, immediate) {
-    var c = load_cookie(key);
+    var c = VGT.html.load_cookie(key);
     if(c == '') this.set_xyrs(0,0,0,1);
     else { 
       // Get [x,y,r,s]
@@ -1816,7 +1863,7 @@ class _Interaction {
     log('onchange_team()', e.target.id, e.target.selectedIndex, e.target.value);
 
     // Remember the team
-    if(String(VGT.net.id) == e.target.id) save_cookie('team', e.target.value);
+    if(String(VGT.net.id) == e.target.id) VGT.html.save_cookie('team', e.target.value);
 
     // Update the clients list and send to server
     VGT.net.clients[e.target.id].team = e.target.selectedIndex;
@@ -1830,7 +1877,7 @@ class _Interaction {
     log('onchange_name()', e.target.id, e.target.value);
 
     // Remember my own name, but not others
-    if(String(VGT.net.id) == e.target.id) save_cookie('name', e.target.value);
+    if(String(VGT.net.id) == e.target.id) VGT.html.save_cookie('name', e.target.value);
 
     // Update the clients list
     VGT.net.clients[VGT.net.id].name = e.target.value;
@@ -1842,7 +1889,7 @@ class _Interaction {
   onchange_setups(e) {
     var v = VGT.html.select_setups.value;
     console.log('onchange_setups()', v);
-    save_cookie('setups.value', v);
+    VGT.html.save_cookie('setups.value', v);
   }
 
   // When the volume changes.
@@ -1856,7 +1903,7 @@ class _Interaction {
     Howler.volume(v);
     
     // Remember the value
-    save_cookie('volume',       VGT.html.input_volume.value);
+    VGT.html.save_cookie('volume',       VGT.html.input_volume.value);
   } // end of onchange_volume()
 
   /** Called when someone hits enter in the chat box.
@@ -2006,7 +2053,7 @@ class _Sounds {
     if(percent == 100) {
     
       // Load the sound settings.
-      VGT.html.input_volume.value = load_cookie('volume');
+      VGT.html.input_volume.value = VGT.html.load_cookie('volume');
       
       // Send em.
       VGT.interaction.onchange_volume();
@@ -3876,7 +3923,6 @@ class _TeamZone extends _Polygon {
     for(var n in this.vertices) ps.push(new PIXI.Point(this.vertices[n][0].value, this.vertices[n][1].value)); // Possible memory leak
     
     // Render the fill zone
-    _l(this.settings);
     this.graphics.lineStyle({
       width: this.settings.width_line, 
       color: this.settings.color_line, 
@@ -3982,7 +4028,7 @@ class _NamePlate extends _Thing {
     // JACK: This happens many times for one xyrs call.
     // If it's associated with my hand, save it
     if(this.hand && this.hand.id_client == VGT.clients.me.id_client) 
-      save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target,this.s.target]);
+      VGT.html.save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target,this.s.target]);
   }
 } // End of NamePlate
 
@@ -4237,7 +4283,7 @@ class _Clients {
     this.me.hand.set_xyrs(undefined, undefined, VGT.tabletop.r.target);
 
     // Load my last nameplate position (everyone else does this), set it, and send to everyone.
-    var s = load_cookie('my_nameplate_xyrs');
+    var s = VGT.html.load_cookie('my_nameplate_xyrs');
 
     // With a cookie, we use the cookie value
     if(s != "") var xyrs = eval('['+s+']');
@@ -4314,6 +4360,9 @@ class _Game {
     // Store the settings, starting with defaults then overrides.
     this.settings = {...this.default_settings, ...settings};
 
+    // Special override the name, for cookies etc
+    if(VGT.game_name) this.settings.name = VGT.game_name; 
+
     // Create the big objects that depend on game stuff.
     VGT.game        = this;
     VGT.pixi        = new _Pixi();
@@ -4329,7 +4378,7 @@ class _Game {
         VGT.html.select_setups.appendChild(o);
     }
     // Set the last known setups
-    var c = load_cookie('setups.value');
+    var c = VGT.html.load_cookie('setups.value');
     if(c != '') VGT.html.select_setups.value = c;
 
     // Make sure it was in the list!
@@ -4347,9 +4396,6 @@ class _Game {
     this.SnapGrid   = VGT.SnapGrid;
     this.SnapCircle = VGT.SnapCircle;
     
-    // Set the game title
-    document.title = this.settings.name;
-
     // Other functions to call for mouse buttons
     this._pointerdown_functions = {};
 

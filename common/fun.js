@@ -310,52 +310,7 @@ function fader_linear(t0, duration) {
 }
 exports.fader_linear = fader_linear;
 
-// Returns the cookie value or undefined
-function load_cookie(key) { 
-  key = encodeURIComponent(key);
-  
-  // get a list of the cookie elements
-  var cs = document.cookie.split(';');
 
-  // Default is empty string
-  var value = '';
-
-  // Loop over elements to find the key
-  for(var i=0; i<cs.length; i++) {
-
-      // split by "=" sign
-      s = cs[i].split('=');
-
-      // strip white space
-      while (s[0].charAt(0)==' ') s[0] = s[0].substring(1);
-
-      // If it's our key
-      if(s[0] == 'Sankey_Flashcards_'+key) {
-          value = decodeURIComponent(s[1]);
-          break;
-      };
-  }
-
-  return value;
-}
-exports.load_cookie = load_cookie;
-
-// Saves a cookie
-function save_cookie(key, value, expire_days) { 
-  if(expire_days==undefined) expire_days=28;
-
-  // Get rid of weird key characters
-  key   = encodeURIComponent(key);
-  value = encodeURIComponent(value);
-
-  // get the expiration date
-  var d = new Date();
-  d.setTime(d.getTime() + (expire_days*24*60*60*1000));
-  
-  // now write the cookie string
-  document.cookie = "Sankey_Flashcards_"+key + '=' + value + '; expires=' + d.toUTCString() + '; SameSite=Lax';
-}
-exports.save_cookie = save_cookie;
 
 // Limits the vector length to l
 function limit_vector_length(x,y,l) {

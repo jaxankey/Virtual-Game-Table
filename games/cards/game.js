@@ -20,5 +20,6 @@
 // (much harder for this engine to go the other way).
 // We also have to load them in sequence like this because the script isn't 
 // actually executed right away.
+VGT.game_name = 'Cards'
 VGT.add_script('/games/poker/game.js')
 VGT.add_script('/games/cards/cards.js')

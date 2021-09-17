@@ -22,6 +22,7 @@
 VGT.game_is_ready = function() {
     for(var n in chips) for(var m in chips[n]) for(var k in chips[n][m]) chips[n][m][k].hide()
     game.set_special_title('Cards')
+    document.getElementById('button_pot').style.display = 'none'
 }
 
 function new_game() { 
