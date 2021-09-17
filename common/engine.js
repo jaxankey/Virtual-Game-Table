@@ -4347,6 +4347,9 @@ class _Game {
     this.SnapGrid   = VGT.SnapGrid;
     this.SnapCircle = VGT.SnapCircle;
     
+    // Set the game title
+    document.title = this.settings.name;
+
     // Other functions to call for mouse buttons
     this._pointerdown_functions = {};
 
