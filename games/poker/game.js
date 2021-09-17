@@ -392,10 +392,12 @@ function fold(n) { log('fold()', n)
   var v = rotate_vector([0,y1-100], a)
   game.pile(my_cards, v[0], v[1], 50)
   game.set_image_indices(my_cards, 0)
-
-  // Play the sound
+}
+function fold_with_noise(n) {
+  fold(n)
   game.sounds.play('fold')
 }
+
 
 // Sends whatever's under the mouse to the pot
 function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
@@ -475,7 +477,8 @@ function new_game() {
 //////////////////////////////////////// KEY BINDINGS
 game.bind_key('BackspaceDown', get_shuffle_deck)
 game.bind_key('ShiftBackspaceDown', collect_pot)
-game.bind_key(['EndDown', 'DeleteDown'], fold)
+game.bind_key('EndDown', fold)
+game.bind_key('DeleteDown', fold_with_noise)
 game.bind_key(['KeyLDown', 'ShiftKeyLDown'], deal_to_all)
 game.bind_key(['KeyODown', 'ShiftKeyODown'], deal_one_to_mouse)
 game.bind_key(['KeyBDown', 'KeyTDown'], toss);
