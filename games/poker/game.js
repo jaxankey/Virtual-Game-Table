@@ -24,7 +24,8 @@
 VGT.sounds = {
   
     // Simple sounds 
-    'fold' : ['sounds/death.ogg', 0.5],
+    'fold'    : ['sounds/contra-death.ogg', 0.5],
+    'tantrum' : ['sounds/mario-death.ogg',  0.5],
 
 } // End of sounds
 
