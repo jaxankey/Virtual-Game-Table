@@ -41,11 +41,10 @@ var state_keys_no_set = [
 
 
 // Versions included in external_scripts
-jquery_version    = 'jquery-3.5.1.min.js';
 pixi_version      = 'pixi.min.js';
 howler_version    = 'howler.min.js';
 
-// requirements
+// Requirements to be installed by npm
 var fs   = require('fs');                     // file system stuff
 var app  = require('express')();              // routing handler
 var http = require('http').createServer(app); // listening
@@ -141,27 +140,18 @@ function html_encode(s) {
 // FILE REQUESTS //
 ///////////////////
 
-// External Scripts
-app.get('/external_scripts/pixi.js', function(q, a) {
-  a.sendFile(root_directory + '/external_scripts/' + pixi_version); } );
+// Required engine scripts
+app.get('/pixi.js',          function(q, a) { a.sendFile(root_directory + '/external_scripts/' + pixi_version); } );
+app.get('/howler.js',        function(q, a) { a.sendFile(root_directory + '/external_scripts/' + howler_version); } );
+app.get('/socket.io.js',     function(q, a) { a.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js'); } );
+app.get('/socket.io.js.map', function(q, a) { a.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js.map'); } );
 
-app.get('/socket.io.js', function(q, a) {
-  a.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js'); } );
-
-app.get('/socket.io.js.map', function(q, a) {
-  a.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js.map'); } );
-  
-app.get('/external_scripts/jquery.js', function(q, a) {
-  a.sendFile(root_directory + '/external_scripts/' + jquery_version); } );
-
-app.get('/external_scripts/howler.js', function(q, a) {
-  a.sendFile(root_directory + '/external_scripts/' + howler_version); } );
-
-app.get('/',            function(q, a) {send_file(a, 'index.html')    ;} );
-app.get('/:a',          function(q, a) {send_file(a, q.params.a);} );
-app.get('/:z/:i',       function(q, a) {send_file(a, q.params.z+'/'+q.params.i                                          );} );
-app.get('/:z/:d/:i',    function(q, a) {send_file(a, q.params.z+'/'+q.params.d+'/'+q.params.i                     );} );
-app.get('/:z/:a/:b/:c', function(q, a) {send_file(a, q.params.z+'/'+q.params.a+'/'+q.params.b+'/'+q.params.c);} );
+// General files, following the above search order (private/game/, games/game/, common/)
+app.get('/',                 function(q, a) { send_file(a, 'index.html'                                           );} );
+app.get('/:a',               function(q, a) { send_file(a, q.params.a                                             );} );
+app.get('/:a/:b',            function(q, a) { send_file(a, q.params.a+'/'+q.params.b                              );} );
+app.get('/:a/:b/:c',         function(q, a) { send_file(a, q.params.a+'/'+q.params.b+'/'+q.params.c               );} );
+app.get('/:a/:b/:c/:d',      function(q, a) { send_file(a, q.params.a+'/'+q.params.b+'/'+q.params.c+'/'+q.params.d);} );
 
 
 
@@ -213,7 +203,9 @@ var sockets     = {}; // Socket objects, sorted by id
 var last_id     = 1;  // Last assigned id; incremented with each client
 
 // Names for new players
-var pre_names = ['James T.', 'Billy D.', 'Johnny', 'Susan B.', 'Karen', 'Claudia', 'Beatrice Q.', 'Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Prof.', 'M.', 'Mme.', 'Mlle.']
+var pre_names = ['James T.', 'Billy D.', 'Johnny', 'Susan B.', 
+                 'Karen', 'Claudia', 'Beatrice Q.', 'Mr.', 'Ms.', 
+                 'Mrs.', 'Dr.', 'Prof.', 'M.', 'Mme.', 'Mlle.']
 
 var first_names = ['Pants', 'Silly', 'Fancy', 'Dirt', 'Goofy', 'Hella',
                    'Trash', 'No', 'Awful', 'Nono', 'Juicy'];
