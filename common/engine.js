@@ -5031,7 +5031,7 @@ class _Game {
     things = VGT.game.shuffle_z(things);
 
     // Send out the cards
-    this.sneeze(things, x, y, 1, 0.1, undefined, 1); 
+    this.pile(things, x, y, 30); 
 
     // Start the finish shuffle (cancel any existing one)
     clearTimeout(this._timer_shuffling);
