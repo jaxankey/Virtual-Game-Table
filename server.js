@@ -16,10 +16,9 @@
  */
 
 
-// Everything about the current game state that can be sent in a data packet
-// see also reset_game();
+// Everything about the current game state
 var state = {
-  slots  : 32,              // Maximum number of clients
+  slots      : 32,          // Maximum number of clients
   max_name_length: 25,      // Maximum number of characters in each player's name
   clients    : {},          // List of client data
   pieces     : {},          // List of piece properties
@@ -36,9 +35,12 @@ var state_keys_no_set = [
   'nameplates',
   'hands',
   'slots',
+  'max_name_length',
 ];
 
 
+
+///////////////////////////////////////////////// EXTERNAL LIBRARIES
 
 // Versions included in external_scripts
 pixi_version      = 'pixi.min.js';
@@ -51,18 +53,6 @@ var http = require('http').createServer(app); // listening
 var io   = require('socket.io')(http);        // fast input/output
 var fun  = require('./common/fun');           // My common functions
 
-// Set the initial state without messing up the clients
-function reset_game() {
-  fun.log_date('Resetting game...');
-
-  // Reset the key components
-  state.pieces = {};
-  state.hands  = {};
-
-  // Now send all the clients this info
-  for(id in state.clients) send_state(id);
-}
-reset_game();
 
 
 // port upon which the server listens
@@ -129,10 +119,7 @@ function send_file(response, path) {
   if(full_path) response.sendFile(full_path);
 }
 
-function html_encode(s) {
-  // Thanks Stack Exchange.
-  return s.replace(/[\u00A0-\u9999<>\&]/gim, function(i) {return '&#'+i.charCodeAt(0)+';';});
-}
+
 
 
 
@@ -325,11 +312,8 @@ io.on('connection', function(socket) {
       // Split it by space
       var s = message.split(' ');
 
-      // Reset to defaults
-      if(s[0] == '/reset') reset_game();
-
-      // Boot client by name
-      else if(s[0] == '/boot') {
+      // Special commands
+      if(s[0] == '/boot') {
 
         // Find the client by name and boot them
         for(var id in state.clients) if(state.clients[id].name == s[1]) {
@@ -364,7 +348,7 @@ io.on('connection', function(socket) {
     } // end of "message starts with /"
 
     // Send a normal chat
-    else delay_send(io, 'chat', [socket.id,html_encode(message)]);
+    else delay_send(io, 'chat', [socket.id, message]);
   }
   socket.on('chat', function(data) {delay_function(on_chat, data)});
 
