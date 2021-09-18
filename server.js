@@ -130,8 +130,8 @@ function send_file(response, path) {
 // Required engine scripts
 app.get('/pixi.js',          function(q, a) { a.sendFile(root_directory + '/external_scripts/' + pixi_version); } );
 app.get('/howler.js',        function(q, a) { a.sendFile(root_directory + '/external_scripts/' + howler_version); } );
-app.get('/socket.io.js',     function(q, a) { a.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js'); } );
-app.get('/socket.io.js.map', function(q, a) { a.sendFile(root_directory + '/node_modules/socket.io-client/dist/socket.io.js.map'); } );
+app.get('/socket.io.js',     function(q, a) { a.sendFile(root_directory + '/node_modules/socket.io/client-dist/socket.io.js'); } );
+app.get('/socket.io.js.map', function(q, a) { a.sendFile(root_directory + '/node_modules/socket.io/client-dist/socket.io.js.map'); } );
 
 // General files, following the above search order (private/game/, games/game/, common/)
 app.get('/',                 function(q, a) { send_file(a, 'index.html'                                           );} );
@@ -190,15 +190,15 @@ var sockets     = {}; // Socket objects, sorted by id
 var last_id     = 1;  // Last assigned id; incremented with each client
 
 // Names for new players
-var pre_names = ['James T.', 'Billy D.', 'Johnny', 'Susan B.', 
-                 'Karen', 'Claudia', 'Beatrice Q.', 'Mr.', 'Ms.', 
-                 'Mrs.', 'Dr.', 'Prof.', 'M.', 'Mme.', 'Mlle.']
+var first_names = ['James T.', 'Billy D.', 'Johnny', 'Susan B.', 
+                   'Karen', 'Claudia', 'Beatrice Q.', 'Mr.', 'Ms.', 
+                   'Mrs.', 'Dr.', 'Prof.', 'M.', 'Mme.', 'Mlle.']
 
-var first_names = ['Pants', 'Silly', 'Fancy', 'Dirt', 'Goofy', 'Hella',
-                   'Trash', 'No', 'Awful', 'Nono', 'Juicy'];
-var last_names  = ['tastic', 'cakes', 'pants', 'face', 'juice', 
-                   'bag', 'hole', 'friends', 'skillet', 'billy',
-                  'chunks', 'dirt', 'mouth'];
+var last_names_1 = ['Pants', 'Silly', 'Fancy', 'Dirt', 'Goofy', 'Hella',
+                     'Trash', 'No', 'Awful', 'Nono', 'Juicy', 'Gnasty'];
+var last_names_2  = ['tastic', 'cakes', 'pants', 'face', 'juice', 
+                     'bag', 'hole', 'friends', 'skillet', 'billy',
+                     'chunks', 'dirt', 'mouth'];
 
 // Sends the game state to the specified client id
 function send_state(id) {
@@ -243,7 +243,7 @@ io.on('connection', function(socket) {
   // Add a new client to the list
   state.clients[socket.id] = {
     'id'     : socket.id, 
-    'name'   : fun.random_array_element(pre_names) + ' ' + fun.random_array_element(first_names)+fun.random_array_element(last_names),
+    'name'   : fun.random_array_element(first_names) + ' ' + fun.random_array_element(last_names_1)+fun.random_array_element(last_names_2),
     'team'   : 0,
   };
   fun.log_date('CLIENT', socket.id, 'CONNECTED');
@@ -282,7 +282,7 @@ io.on('connection', function(socket) {
     for(var k in clients) clients[k].name = clients[k].name.substr(0,state.max_name_length);
 
     // Make sure there's something
-    if(!clients[k].name.length) clients[k].name = fun.random_array_element(pre_names) + ' ' + fun.random_array_element(first_names)+fun.random_array_element(last_names)
+    if(!clients[k].name.length) clients[k].name = fun.random_array_element(first_names) + ' ' + fun.random_array_element(last_names_1)+fun.random_array_element(last_names_2)
 
     // Update the clients list
     if(clients) state.clients = clients;
