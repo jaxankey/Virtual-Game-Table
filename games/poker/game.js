@@ -101,7 +101,7 @@ game = new VGT.Game({
 });
 
 // Number of playing teams (not observer or manager)
-var N = Object.keys(game.settings.teams).length - 2; 
+var N = Object.keys(game.settings.teams).length - 2
 
 
 
@@ -162,7 +162,7 @@ bat = game.add_piece(settings, 'bat')
 settings.y = 0
 settings.layer  = 1
 settings.shovel = ['cards']
-settings.anchor = {x:0.485, y:0.413}
+settings.anchor = {x:0.5, y:0.425}
 settings.x = -1.8
 var dealer = game.add_piece(settings, 'dealer');
 
@@ -251,7 +251,7 @@ function get_team_angle(team) {
 function deal_one_to_xy(x,y,face_up,depth) {
     
     // Get the cards on the dealer platter
-    var deck = dealer.get_shoveled()
+    var deck = dealer.get_shoveled(true)
     deck = game.sort_by_z_value(deck, true) 
   
     // Get the card
@@ -267,7 +267,8 @@ function deal_one_to_xy(x,y,face_up,depth) {
     p.send_to_top().set_xyrs(x,y,ar);
   
     // If shiftKey we are dealing up
-    if(face_up) p.increment_image_index();
+    if(face_up) p.set_image_index(1);
+    else        p.set_image_index(0);
 }
 
 // Sends one to the mouse coordinates
@@ -469,7 +470,7 @@ function new_game() {
 
     // Loop over the stacks for this team
     for(var n in chips[team-1]) { 
-      var v = rotate_vector([y2-55, (4-n)*55], a)
+      var v = rotate_vector([y2-43, (4-n)*57], a)
       game.collect(chips[team-1][n], v[0], v[1], a, a)
     }
   }

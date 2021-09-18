@@ -2822,9 +2822,9 @@ class _Thing {
 
   } // End of unselect()
 
-  /** Returns a list of shoveled pieces */
-  get_shoveled() {
-    var shoveled = [];
+  // Returns a list of shoveled pieces. Specifying target=true will use the piece target coordinates, rather than its value. 
+  get_shoveled(target) {
+    var shoveled = [], x, y;
     
     // If it's a "shovel" piece and we're selecting, select all the pieces in its hitbox also
     if(this.settings.shovel && this.settings.shovel.length) {
@@ -2836,10 +2836,13 @@ class _Thing {
         // Loop over the pieces in this group
         for(var m in VGT.pieces[group])   { piece = VGT.pieces[group][m];
           
+          // Target vs value
+          if(target) { x = piece.x.target; y = piece.y.target; }
+          else       { x = piece.x.value;  y = piece.y.value;  }
+
           // If this piece contains the current values of this piece (and it's higher), select it
           // NOTE: there is a delay between setting z and it arriving. This tests the VALUE, not TARGET
-          if( this.contains(piece.x.value, piece.y.value)
-          && piece.is_higher_than(this) ) shoveled.push(piece);
+          if( this.contains(x,y) && piece.is_higher_than(this) ) shoveled.push(piece);
         
         } // End of loop over pieces in group
       
