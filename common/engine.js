@@ -53,10 +53,14 @@ CURRENTLY
 */
 
 // Troubleshooting logger
-function _l() {log('   _l', ...arguments)}
+function _l() { log('   _l', ...arguments) }
 
 // Holds the user name space
 var VGT = {
+  
+  // Setting the log level
+  log_level: 1,
+  log() { if(this.log_level) log(...arguments); },
 
   add_script(path) {
     var s = document.createElement('script')
@@ -164,7 +168,7 @@ class _Html {
   /**
    * Updates the chat box with the supplied name and message.
    */
-  chat(name, message) { log('Html.chat()', name, message);
+  chat(name, message) { VGT.log('Html.chat()', name, message);
 
     name = this.string_to_html(name);
     message = this.string_to_html(message);
@@ -183,7 +187,7 @@ class _Html {
 
   // Updates the client information in the GUI
   rebuild_client_table() {
-    log('Html.rebuild_client_table()');
+    VGT.log('Html.rebuild_client_table()');
 
     // Clear out the clients table
     var clients_table = document.getElementById('clients');
@@ -193,7 +197,7 @@ class _Html {
     var row, rows = [];
     for(var id in VGT.net.clients) {
       var c = VGT.net.clients[id];
-      log('  ', c.id, c.name, c.team);
+      VGT.log('  ', c.id, c.name, c.team);
 
       // Get the "safe" name & team
       var name = html_encode(c.name);
@@ -410,7 +414,7 @@ class _Net {
     || this.q_sounds_out.length) {
 
       // Send the outbound information and clear it.
-      log(    'NETS_q_'+String(VGT.net.id), Object.keys(this.q_pieces_out).length, Object.keys(this.q_hands_out).length, Object.keys(this.q_nameplates_out).length, this.q_sounds_out);
+      VGT.log(    'NETS_q_'+String(VGT.net.id), Object.keys(this.q_pieces_out).length, Object.keys(this.q_hands_out).length, Object.keys(this.q_nameplates_out).length, this.q_sounds_out);
       this.io.emit('q', [this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out]);
       this.q_pieces_out     = {};
       this.q_hands_out      = {};
@@ -428,7 +432,7 @@ class _Net {
   }
 
   // Transfers information from q_source to q_target, with id_client
-  transfer_to_q_in(q_source, q_target) { //log('transfer_to_q_in', q_source, q_target)
+  transfer_to_q_in(q_source, q_target) { //VGT.log('transfer_to_q_in', q_source, q_target)
 
     // Loop over pieces in source queue
     for(var id in q_source) {
@@ -443,14 +447,14 @@ class _Net {
   }
 
   // Server relayed a z command [id,z,id,z,id,z,...]
-  on_z(data) { if(!this.ready) return; log('NETR_z', data.length);
+  on_z(data) { if(!this.ready) return; VGT.log('NETR_z', data.length);
 
     // Set the z locally
     for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1]);
   }
 
   /** We receive a queue of piece information from the server. */
-  on_q(data) { if(!this.ready) return; log('NETR_q', data);
+  on_q(data) { if(!this.ready) return; VGT.log('NETR_q', data);
 
     // Update the q's
     this.transfer_to_q_in(data[0], this.q_pieces_in);
@@ -459,12 +463,12 @@ class _Net {
     
   } // end of on_q
 
-  on_sounds(data) { if(!this.ready) return; log('NETR_sounds', data);
+  on_sounds(data) { if(!this.ready) return; VGT.log('NETR_sounds', data);
     for(var n in data) this.q_sounds_in.push(data[n]);
   }
 
   /** First thing to come back after 'hallo' is the full game state. */
-  on_state(data) { log('NETR_state', data);
+  on_state(data) { VGT.log('NETR_state', data);
 
     // Get our client id and the server state
     var id           = data[0];
@@ -473,7 +477,7 @@ class _Net {
     // If there are no or too few pieces on the server, initialize / create entries the server's state with layer and z data
     // This should only actually happen if the server has NO pieces, and we're just creating our z-data for it.
     if(Object.keys(data[1].pieces).length < VGT.pieces.all.length) {
-      log('  NETR_state: Mismatched number of pieces; sending layer and z info...');
+      VGT.log('  NETR_state: Mismatched number of pieces; sending layer and z info...');
       var p;
       for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
         p.update_q_out('z');
@@ -523,7 +527,7 @@ class _Net {
   } // End of on_state
 
   /** Someone sends the client table data. */
-  on_clients(data) { if(!this.ready) return; log('NETR_clients', data);
+  on_clients(data) { if(!this.ready) return; VGT.log('NETR_clients', data);
 
     // Update the state
     this.clients = data;
@@ -535,14 +539,14 @@ class _Net {
 
   /** Server boots you. */
   on_yabooted() {
-    log('NETR_yabooted');
+    VGT.log('NETR_yabooted');
     document.body.innerHTML = 'Booted. Reload page to rejoin.'
     document.body.style.color = 0xFFFFFF;
   } // End of on_yabooted
 
   /** Someone plays a sync'd sound */
   on_say(data) { if(!VGT.net.ready) return;
-    log('NETR_say', data);
+    VGT.log('NETR_say', data);
 
     // Say it
     //clients[data[0]].say(data[1], data[2], data[3]);
@@ -553,7 +557,7 @@ class _Net {
       
     var id = data[0];
     var message = data[1];
-    log('NETR_chat', id, message);
+    VGT.log('NETR_chat', id, message);
 
     // Safe-ify the message
     message = html_encode(message);
@@ -597,7 +601,7 @@ class _Net {
     if(this._connecting_to_server) return;
     this._connecting_to_server = true; // Prevent housekeeping from connecting repeatedly
     
-    log('connect_to_server()', this);
+    VGT.log('connect_to_server()', this);
   
     // Get name to send to server with hallo.
     var name = VGT.html.html_to_string(VGT.html.load_cookie('name'));
@@ -607,7 +611,7 @@ class _Net {
     if(isNaN(team)) team = 0;
 
     // Ask for the game state.
-    log(    'NETS_hallo', [name, team]);
+    VGT.log(    'NETS_hallo', [name, team]);
     this.io.emit('hallo', [name, team]);
   }
 } // End of _Net
@@ -689,7 +693,7 @@ class _Pixi {
 
   /** Internally called when pixi is ready. Actually initializes / adds the thing to the layer etc. */
   _add_thing(thing) {
-    log('   _add_thing()', thing.id_thing, 'to layer', thing.settings.layer);
+    VGT.log('   _add_thing()', thing.id_thing, 'to layer', thing.settings.layer);
 
     // Do the pixi initialization
     thing._initialize_pixi();
@@ -802,7 +806,7 @@ class _Pixi {
   }
 
   loader_oncomplete(e) {
-    log('loader_oncomplete()', e);
+    VGT.log('loader_oncomplete()', e);
 
     // Now that we have all the resources, dump the thing queue into pixi.
     while(this.queue.length) this._add_thing(this.queue.shift())
@@ -814,7 +818,7 @@ class _Pixi {
     VGT.interaction.onresize_window();
 
     // Start the game loop
-    log('Starting game loop...');
+    VGT.log('Starting game loop...');
     VGT.pixi.app.ticker.add(delta => VGT.pixi.game_loop(delta)); 
   }
 
@@ -824,7 +828,7 @@ class _Pixi {
    * @param {*} resource // resource that was just loaded
    */
   loader_onprogress(loader, resource) {
-    log('progress: loaded', resource.url, loader.progress, '%');
+    VGT.log('progress: loaded', resource.url, loader.progress, '%');
 
       // Update the loader progress in the html
       VGT.html.div_loader.innerHTML = '<div id="progress">Loaded: ' + loader.progress.toFixed(0) + '%</div><div id="progress_path">' + resource.url + '</div>';
@@ -1377,7 +1381,7 @@ class _Interaction {
 
   // Loads the view associated with the pressed key
   load_view(e) {
-    log('load_view()', e.code);
+    VGT.log('load_view()', e.code);
 
     // Load the cookie
     VGT.tabletop.load_view('view'+e.code);
@@ -1385,28 +1389,28 @@ class _Interaction {
 
   // Saves the view associated with the pressed key
   save_view(e) {
-    log('save_view()', e.code);
+    VGT.log('save_view()', e.code);
 
     // Save the cookie
     VGT.tabletop.save_view('view'+e.code);
   }
 
   increment_selected_images(e) {
-    log('VGT.interaction.increment_selected_images()', e);
+    VGT.log('VGT.interaction.increment_selected_images()', e);
 
     // Now do the incrementing
     VGT.game.increment_image_indices(VGT.game.get_selected(undefined, true));
   }
 
   decrement_selected_images(e) {
-    log('VGT.interaction.decrement_selected_images()', e);
+    VGT.log('VGT.interaction.decrement_selected_images()', e);
 
     // Increment all the images
     VGT.game.decrement_image_indices(VGT.game.get_selected(undefined, true));
   }
 
   zero_selected_images(e) {
-    log('VGT.interaction.zero_selected_images()', e);
+    VGT.log('VGT.interaction.zero_selected_images()', e);
 
     // Set all images to 0
     VGT.game.set_image_indices(VGT.game.get_selected(undefined, true), 0);
@@ -1446,7 +1450,7 @@ class _Interaction {
   }
 
   // Draws the pieces to the hand and starts the animation
-  start_roll(e) { log('start_roll()');
+  start_roll(e) { VGT.log('start_roll()');
 
     // Ignore subsequent keys
     if(this.rolling) return;
@@ -1518,7 +1522,7 @@ class _Interaction {
   }
 
   align_distribute_selected(e) {
-    console.log('align_distribute_selected()', e.key);
+    VGT.log('align_distribute_selected()', e.key);
 
     // team index
     var team = VGT.clients.me.team; 
@@ -1613,7 +1617,7 @@ class _Interaction {
     if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand; hand.close(); }
 
     // Find the top thing under the pointer
-    log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd);
+    VGT.log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd);
 
     // Find a thing under the pointer if there is one.
     var thing = VGT.game.get_top_thing_at(v.x,v.y);
@@ -1622,7 +1626,7 @@ class _Interaction {
     if(thing != null && thing.is_grabbable_by_me()) {
       
       // Get the coordinates on the thing
-      var a = thing.xy_tabletop_to_local(v.x, v.y); log('     on piece:', a);
+      var a = thing.xy_tabletop_to_local(v.x, v.y); VGT.log('     on piece:', a);
 
       // The piece we click is the snap leader
       thing.is_snap_leader = true;
@@ -1668,14 +1672,14 @@ class _Interaction {
   } // End of onpointerdown
 
   // Double click
-  ondblclick(e) { console.log('ondblclick()', e);
+  ondblclick(e) { VGT.log('ondblclick()', e);
     e.preventDefault();
 
     this.increment_selected_images(e);
   }
 
   // Pointer has moved around.
-  onpointermove(e) { //log('onpointermove()', e.button);
+  onpointermove(e) { //VGT.log('onpointermove()', e.button);
     this.last_pointermove_e = e;
     
     // Get the tabletop coordinates
@@ -1776,7 +1780,7 @@ class _Interaction {
 
   } // End of onpointermove
 
-  onpointerup(e) { log('onpointerup()', e.button);
+  onpointerup(e) { VGT.log('onpointerup()', e.button);
 
     // Make one last mousemove to make sure the things are where we let go of them.
     this.onpointermove(e);
@@ -1813,7 +1817,7 @@ class _Interaction {
     }
   }
   
-  onwheel(e) {log('_Interaction.onwheel()', e);
+  onwheel(e) {VGT.log('_Interaction.onwheel()', e);
 
     // If shift is down, rotate
     if(e.shiftKey) {
@@ -1855,41 +1859,41 @@ class _Interaction {
     else                  code = code + 'Down';
 
     // Log it
-    log('onkey()', code, e.repeat);
+    VGT.log('onkey()', code, e.repeat);
     if(this.key_functions[code]) this.key_functions[code](e);
 
   } // End of onkey()
 
   onchange_team(e) {
-    log('onchange_team()', e.target.id, e.target.selectedIndex, e.target.value);
+    VGT.log('onchange_team()', e.target.id, e.target.selectedIndex, e.target.value);
 
     // Remember the team
     if(String(VGT.net.id) == e.target.id) VGT.html.save_cookie('team', e.target.value);
 
     // Update the clients list and send to server
     VGT.net.clients[e.target.id].team = e.target.selectedIndex;
-    log(   'NETS_clients', VGT.net.clients);
+    VGT.log(   'NETS_clients', VGT.net.clients);
     VGT.net.io.emit('clients', VGT.net.clients);
 
   } // End of onchange_team()
 
   // When we change our name
   onchange_name(e) {
-    log('onchange_name()', e.target.id, e.target.value);
+    VGT.log('onchange_name()', e.target.id, e.target.value);
 
     // Remember my own name, but not others
     if(String(VGT.net.id) == e.target.id) VGT.html.save_cookie('name', e.target.value);
 
     // Update the clients list
     VGT.net.clients[VGT.net.id].name = e.target.value;
-    log(   'NETS_clients', VGT.net.clients);
+    VGT.log(   'NETS_clients', VGT.net.clients);
     VGT.net.io.emit('clients', VGT.net.clients);
   } // End of onchange_name()
 
   // When someone changes the setups pull-down
   onchange_setups(e) {
     var v = VGT.html.select_setups.value;
-    console.log('onchange_setups()', v);
+    VGT.log('onchange_setups()', v);
     VGT.html.save_cookie('setups.value', v);
   }
 
@@ -1898,7 +1902,7 @@ class _Interaction {
 
     var v = parseInt(VGT.html.input_volume.value)*0.01*1.0;
     
-    log('onchange_volume()', VGT.html.input_volume.value, v);
+    VGT.log('onchange_volume()', VGT.html.input_volume.value, v);
     
     // Change the master volume
     Howler.volume(v);
@@ -1911,7 +1915,7 @@ class _Interaction {
    *  Sends a chat message to everyone else.
    */
   onchat() {
-    log('onchat()');
+    VGT.log('onchat()');
 
     // Get the chat text and clear it
     var chat_box = document.getElementById('chat-box')
@@ -1919,7 +1923,7 @@ class _Interaction {
     chat_box.value = '';
 
     // Send a chat.
-    log(   'NETS_chat', message);
+    VGT.log(   'NETS_chat', message);
     VGT.net.io.emit('chat', escape(message));
   } // end of onchat()
 
@@ -1935,11 +1939,11 @@ class _Interaction {
     VGT.pixi.surface.scale.y = window.innerHeight;
 
     // Shift the center to the center of the view
-    log('  ', VGT.tabletop.container.x, window.innerWidth*0.5);
+    VGT.log('  ', VGT.tabletop.container.x, window.innerWidth*0.5);
     VGT.tabletop.container.x += -VGT.tabletop.container.x+window.innerWidth*0.5;
     VGT.tabletop.container.y += -VGT.tabletop.container.y+window.innerHeight*0.5;
     
-    log('onresize_window()');
+    VGT.log('onresize_window()');
   }
 
 } // End of _Interaction
@@ -1988,7 +1992,7 @@ class _Sounds {
   // Paths should be an object with sound options, e.g.
   // {'key':['/path/to/sound',volume], 'key2': ...}
   constructor(specs) {
-    log('SoundLibrary constructor()', specs);
+    VGT.log('SoundLibrary constructor()', specs);
 
     // keep an eye on specs
     this.specs  = specs;
@@ -2048,7 +2052,7 @@ class _Sounds {
 
   // Function called when a Howl has finished loading
   _onprogress(key, specs, percent) {
-    log('SoundLibrary loaded', key, specs, percent);
+    VGT.log('SoundLibrary loaded', key, specs, percent);
 
     // If we hit 100%, load the volume slider
     if(percent == 100) {
@@ -2486,7 +2490,7 @@ class _Thing {
 
 
   // Called once when pixi resources are loaded.
-  _initialize_pixi() { log('_initialize_pixi', this.id_thing);
+  _initialize_pixi() { VGT.log('_initialize_pixi', this.id_thing);
   
     // Keep a list of image lists for reference, one image list for each layer. 
     this.textures = [];
@@ -2605,7 +2609,7 @@ class _Thing {
   /**
    * Sets the controller id. 0 means no one is in control (server).
    */
-  hold(id_client, force, do_not_update_q_out) { // log('thing.hold()', this.id_thing, id_client, force, this.id_client_hold);
+  hold(id_client, force, do_not_update_q_out) { // VGT.log('thing.hold()', this.id_thing, id_client, force, this.id_client_hold);
 
     // If the id is undefined (used by process_queues), there is no change, 
     // or it is already being held by any valid client (and no force), do nothing.
@@ -2645,7 +2649,7 @@ class _Thing {
   /**
    * Uncontrols a thing.
    */
-  release(id_client, force, do_not_update_q_out) { //log('thing.release()', this.id_thing, id_client, force, do_not_update_q_out, this.id_client_hold);
+  release(id_client, force, do_not_update_q_out) { //VGT.log('thing.release()', this.id_thing, id_client, force, do_not_update_q_out, this.id_client_hold);
 
     // If we're already not holding
     // or there is a valid holder that is different from the requestor (and we aren't overriding this)
@@ -2761,7 +2765,7 @@ class _Thing {
    * @param {boolean} do_not_update_q_out whether to tell the server
    * @returns 
    */
-  select(team, do_not_update_q_out) { //log('thing.select()', this.id_thing, team, do_not_update_q_out, this.team_select, this.id_client_hold);
+  select(team, do_not_update_q_out) { //VGT.log('thing.select()', this.id_thing, team, do_not_update_q_out, this.team_select, this.id_client_hold);
     
     // If no action is required, poop out.
     if(team == undefined                                           // If team is not specified (used by process_queues())
@@ -2799,7 +2803,7 @@ class _Thing {
   /**
    * Unselects thing. This will not unselect anything held by someone else.
    */
-  unselect(do_not_update_q_out) { //log('thing.unselect()', this.id_thing, this.selected_id);
+  unselect(do_not_update_q_out) { //VGT.log('thing.unselect()', this.id_thing, this.selected_id);
 
     // If we're already unselected, or it is held by someone do nothing
     if(this.team_select < 0 || this.id_client_hold) return;
@@ -3274,7 +3278,7 @@ class _Thing {
 
     // Remember the index we're on for cycling purposes
     this._n = n_valid;
-    //log('_Piece.set_image_index()', this._n, do_not_update_q_out);
+    //VGT.log('_Piece.set_image_index()', this._n, do_not_update_q_out);
 
     // If we're supposed to send an update, make sure there is an entry in the queue
     this.update_q_out('_n', 'n', do_not_update_q_out);
@@ -3291,7 +3295,7 @@ class _Thing {
   // Increment the image by n (1 if not supplied)
   increment_image_index(n) {
     if(n==undefined) n = 1;
-    //log('_Piece.increment_image_index()', this.id, this._n+n);
+    //VGT.log('_Piece.increment_image_index()', this.id, this._n+n);
     this.set_image_index(this._n+1);
   }
 
@@ -3481,7 +3485,7 @@ class _Thing {
         if(relationship && (!best || relationship.score < best.score)) best = relationship;
       }
     }
-    log('get_best_snap_relationship()', best);
+    VGT.log('get_best_snap_relationship()', best);
     return best;
   }
 
@@ -3493,7 +3497,7 @@ class _Thing {
     
     // Don't do anything until it's been initialized / added to pixi.
     if(!this.ready) {return;}
-    //if(VGT.pixi.N_loop == 1 && this.id_thing > 2) log('N_loop ==',VGT.pixi.N_loop,':', this.vr, this);
+    //if(VGT.pixi.N_loop == 1 && this.id_thing > 2) VGT.log('N_loop ==',VGT.pixi.N_loop,':', this.vr, this);
 
     this.x.animate(delta);
     this.y.animate(delta);
@@ -4235,7 +4239,7 @@ class _Clients {
 
   /** CLIENTS Rebuilds the client list and GUI based on VGT.net.clients. */
   rebuild() {
-    log('VGT.clients.rebuild()');
+    VGT.log('VGT.clients.rebuild()');
 
     // Clear out the list
     this.all = {};
@@ -4245,7 +4249,7 @@ class _Clients {
 
     // Loop over the client list
     for (var k in VGT.net.clients) {var c = VGT.net.clients[k];
-      log('  client', c.id, c.name, c.team, VGT.game.settings.teams[c.team]);
+      VGT.log('  client', c.id, c.name, c.team, VGT.game.settings.teams[c.team]);
     
       // Store everything for this client.
       this.all[c.id] = {
@@ -4299,7 +4303,7 @@ class _Clients {
     for(var n in xyrs) if(typeof xyrs[n] != 'number') xyrs[n] = 1;
 
     // Set the position with a snap and don't tell anyone yet
-    log('Setting my nameplate xyrs to', xyrs[0], xyrs[1], xyrs[2], xyrs[3]);
+    VGT.log('Setting my nameplate xyrs to', xyrs[0], xyrs[1], xyrs[2], xyrs[3]);
     this.me.nameplate.set_xyrs(xyrs[0], xyrs[1], xyrs[2], xyrs[3], true, true); // immediate, do_not_update_q_out
 
     // Manually force the q update for MY nameplate in case the target matches the cookie value, and make it snap immediately for everyone else
@@ -4390,8 +4394,7 @@ class _Game {
 
     // If we have no rules, hide the button
     if(!this.settings.rules) VGT.html.button_rules.style.visibility='hidden';
-    log('HAY', this.settings.rules)
-
+    
     // FOR THE USER
     this.mouse = {x:0, y:0, r:0};
     this.html  = VGT.html;
@@ -4455,7 +4458,7 @@ class _Game {
    * @param {string} images         Optional images list (overwrites settings.images)
    * @param {string} images_private Optional images that we see when it's in our team zone. Must match the structure of images!
    */
-  add_pieces(count, settings, images, images_private) { log('add_pieces()', count, settings, images);
+  add_pieces(count, settings, images, images_private) { VGT.log('add_pieces()', count, settings, images);
     var pieces = [];
     for(var n=0; n<count; n++) pieces.push(this.add_piece(settings, images, images_private));
     return pieces;
@@ -4477,7 +4480,7 @@ class _Game {
    * Adds a teamzone with the specified settings
    * @param {object} settings 
    */
-  add_teamzone(settings) { log('add_teamzone()', settings);
+  add_teamzone(settings) { VGT.log('add_teamzone()', settings);
     return new VGT.TeamZone(settings);
   }
 
@@ -4623,7 +4626,7 @@ class _Game {
       // Prevent another undo for awhile
       this._t_last_save_undo = Date.now();
 
-      log('save_undo()', this._undos.length, '(zero redos)');
+      VGT.log('save_undo()', this._undos.length, '(zero redos)');
     }
   }
 
@@ -4658,7 +4661,7 @@ class _Game {
     // Set the state to the most recent undo
     this.set_state(JSON.parse(this._undos[0]));
 
-    log('undo()', this._undos.length, 'undos, ', this._redos.length, 'redos');
+    VGT.log('undo()', this._undos.length, 'undos, ', this._redos.length, 'redos');
   }
 
   /** Undoes an undo */
@@ -4677,7 +4680,7 @@ class _Game {
     this.set_state(JSON.parse(this._undos[0]));
     this.block_next_undo; // So the redo doesn't become an undo / reset the process.
 
-    log('redo()', this._undos.length, 'undos, ', this._redos.length, 'redos');
+    VGT.log('redo()', this._undos.length, 'undos, ', this._redos.length, 'redos');
   }
 
   /** Returns an object for the current state of pieces etc. */
@@ -4933,7 +4936,7 @@ class _Game {
   }
 
   // Expand these into a grid
-  expand(things, x, y, r, r_stack, sort) { log('expand()', things.length, x, y, r, sort);
+  expand(things, x, y, r, r_stack, sort) { VGT.log('expand()', things.length, x, y, r, sort);
     
     // If we're supposed to sort by z; this sends the request for z sorting,
     // but delayed by the server's response to actually do it.
@@ -4986,7 +4989,7 @@ class _Game {
     
     // If we have a held list for this client id
     if(VGT.things.held[id_client]) {
-      log('client_release()', id_client, VGT.things.held[id_client].length);
+      VGT.log('client_release()', id_client, VGT.things.held[id_client].length);
 
       // Remember the previously held pieces so they know what to do with the snap etc
       this._releasing = {...VGT.things.held[id_client]};
@@ -5027,7 +5030,7 @@ class _Game {
    * @param {float} center_on_top whether to center the stack by the top card
    * @param {function} f    (optional) function to call after shuffling
    */
-  start_shuffle(things, x, y, r, r_stack, center_on_top, f) { log('start_shuffle()', things.length);
+  start_shuffle(things, x, y, r, r_stack, center_on_top, f) { VGT.log('start_shuffle()', things.length);
     if(r_stack == undefined) r_stack = r;  
 
     // Shuffle z; doing this here helps with the visual popping
@@ -5042,12 +5045,10 @@ class _Game {
   }
 
   // Called a bit after the shuffle animation; actually shuffles and collects cards at the specified coordinates
-  _finish_shuffle(shuffling, x, y, r, r_stack, center_on_top, f) { log('finish_shuffle()', shuffling.length);
+  _finish_shuffle(shuffling, x, y, r, r_stack, center_on_top, f) { VGT.log('finish_shuffle()', shuffling.length);
 
     // Re-send these to the top in case the server has sent an update in between
     for(var n in shuffling) shuffling[n].send_to_top();
-
-    log('HAY', x, y, r, r_stack)
 
     // Collect them
     this.collect(shuffling, x, y, r, r_stack, undefined, undefined, center_on_top, true)
@@ -5204,7 +5205,7 @@ class _Game {
 
       // Attach its z-value for easy sorting; this will lead to duplicate z-values
       if(things[n]._z_target == undefined) {
-        log("WEIRD: No z-target on piece", things.id_piece);
+        VGT.log("WEIRD: No z-target on piece", things.id_piece);
         things[n]._z_target = things[n].get_z_value();
       } 
 
@@ -5265,14 +5266,14 @@ class _Game {
    * Sets up the drag for all selected things for this team
    * @param {int} team 
    */
-  hold_selected(id_client, force, do_not_update_q_out) { log('VGT.game.hold_selected()', id_client, force);
+  hold_selected(id_client, force, do_not_update_q_out) { VGT.log('VGT.game.hold_selected()', id_client, force);
 
     // Loop over the selected things and hold whatever isn't already held by someone else.
     for(var k in VGT.things.selected[VGT.clients.all[id_client].team]) 
       VGT.things.selected[VGT.clients.all[id_client].team][k].hold(id_client, force, do_not_update_q_out);
   }
 
-  select(things, team) { log('VGT.game.select()', things.length, team);
+  select(things, team) { VGT.log('VGT.game.select()', things.length, team);
     
     // If no team, use our team
     if(team == undefined) team = VGT.clients.me.team;
@@ -5284,7 +5285,7 @@ class _Game {
   /**
    * unselect all things for this team.
    */
-  unselect(team) { log('VGT.game.unselect()', team);
+  unselect(team) { VGT.log('VGT.game.unselect()', team);
 
     // If no team, use our team
     if(team == undefined) team = VGT.clients.me.team;

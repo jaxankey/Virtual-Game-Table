@@ -223,7 +223,7 @@ exports.finish_directory_path = finish_directory_path;
 
 // Formatted log
 var log = (function() {
-
+    
     // start time static variable
     var t0 = (Date.now()*0.001).toFixed(1);
 

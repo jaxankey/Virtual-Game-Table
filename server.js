@@ -129,6 +129,7 @@ function send_file(response, path) {
 
 // Required engine scripts
 app.get('/pixi.js',          function(q, a) { a.sendFile(root_directory + '/external_scripts/' + pixi_version); } );
+app.get('/pixi.min.js.map',  function(q, a) { a.sendFile(root_directory + '/external_scripts/' + pixi_version + '.map'); } );
 app.get('/howler.js',        function(q, a) { a.sendFile(root_directory + '/external_scripts/' + howler_version); } );
 app.get('/socket.io.js',     function(q, a) { a.sendFile(root_directory + '/node_modules/socket.io/client-dist/socket.io.js'); } );
 app.get('/socket.io.js.map', function(q, a) { a.sendFile(root_directory + '/node_modules/socket.io/client-dist/socket.io.js.map'); } );
