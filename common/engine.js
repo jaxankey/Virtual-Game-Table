@@ -63,6 +63,7 @@ var VGT = {
     s.type = 'text/javascript'
     s.src  = path
     document.body.appendChild(s);
+    return s;
   },
 
   // Overload me

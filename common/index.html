@@ -140,6 +140,19 @@
         color: white;
       }
 
+    #help {
+      position: absolute;
+      display: none; /*flex;*/
+      flex-direction: column;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-color: black;
+      z-index: 50;
+    }
+      #help_title {
+      }
 
     #controls {
       display: flex;
@@ -253,27 +266,22 @@
         <ul id="messages"></ul>
         <input id="chat-box" tabindex="2" onchange="VGT.interaction.onchat()" value="Type your chat messages here..." onfocus="this.value='';"/>
       </div>
+  
+    </div><!-- End of controls -->
 
-      
 
-
-      
-      
-    </div>
-
+    <div id="help"><div id="help_title">TEST</div></div>
     <div id="loader"><div id="progress">Loading...</div><div id="progress_path"></div></div>
 
     
-  </div>
+  </div><!-- End of enclosure -->
 
   
   <!-- External Scripts -->
-  <script src="/external_scripts/jquery-3.5.1.min.js"></script>
   <script src="/external_scripts/pixi.min.js"></script>
-  <script src="/external_scripts/pixi-filters.js"></script>
-  <script src="/socket.io.js"></script>
   <script src="/external_scripts/howler.min.js"></script>
-
+  <script src="/socket.io.js"></script>
+  
   <!-- My Scripts -->
   <script>exports = {};</script>
   <script src="fun.js"></script>
