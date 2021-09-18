@@ -1,7 +1,0 @@
-For some libraries, these are direct downloads, no fuss. For others, I had to do a 
-
-npm install ...
-
-from within a temporary directory; this creates the node_packages folder with the package contents inside. These package contents generally contain a "main" js and js.map file that can be dragged into here.
-
-For the server stuff, the node_packages stuff needs to remain. For the browser stuff, just the js file in here will suffice.
