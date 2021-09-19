@@ -68,6 +68,8 @@ game.add_pieces(12, {layer:1}, ['checker_black', 'king_black'])
 function new_game() { game.load_state_from_server('setup-standard.txt') }
 ```
 
+Basically, if you can get piece images, you can make a game.
+
 ## Here to Help
 Feel free to pester me if something isn't clear. I will likely be slow to respond, but I believe in this project and will gladly update the comments in the code or help out within reason.
 
