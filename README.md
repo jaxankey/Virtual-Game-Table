@@ -19,7 +19,7 @@ You can do most things with the mouse and "shift" button, but it is *well* worth
 
 ## A Minimal Game
 
-To give a sense of how the engine works, here is the minimal code required to make the checkers game (see `games/minimal/game.js`):
+To give a sense of how the engine works, here is the minimal code required to make a basic checkers game (see `games/minimal/game.js`):
 
 ```javascript
 // Master list of all images. 
@@ -82,6 +82,8 @@ and some more complicated systems:
 
 Each of these games illustrate the functionalities of the main workhorse code in `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented. In particular, I would monkey with `minimal/game.js` first, since it's by far the simplest (see below)! Then check out `checkers`, `chess`, and (quite complex) `poker` or `puerto-rico`.
 
+## Known issues
+ * Firefox on Linux has horrible rendering speed that can grind to a halt, likely due to the webGL context being immediately lost for some reason, or the browser thinking things are not hardware accelerated. Recommend using chrome on Linux.
 
 ## Here to Help
 Feel free to pester me if something isn't clear. I will likely be a bit slow to respond, but I believe in this project and will gladly update the comments in the code or help out within reason.
