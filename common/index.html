@@ -46,6 +46,10 @@
       font-size: 1.5em;
       color: rgb(187, 70, 70)
     }
+    h2 {
+      font-size: 1.3em;
+      color: rgb(70,70,187)
+    }
 
     .row_left {
       display: flex;
@@ -63,41 +67,6 @@
       margin-right: 0.01em; /* Fudge to make things align :( */
     }
     button, input {padding-left: 0.3em; padding-right: 0.3em;}
-    /* button:hover:after {
-      content: attr(title);
-      position: absolute;
-      left: -0.05em;
-      bottom: 100%;
-      border: solid #444 0.067em;
-      max-width: 20em;
-      overflow-wrap: normal;
-      color: rgba(187, 70, 70, 0.9);
-      background-color: white;
-      padding: 0.2em;
-      z-index: 100;
-      opacity: 0;
-      -webkit-transition: opacity 0.4s;
-      transition: opacity 0.4s;   
-    }
-    button:hover:after {opacity: 1} */
-
-    /* smooth / responsive tooltip 
-    button:after, select:after {
-        content: attr(title);
-        position: absolute;
-        opacity: 0;
-        background-color: rgb(187,70,70);
-        color: white;
-        -webkit-transition: opacity 0.4s ease-in-out;
-        transition: opacity 0.4s ease-in-out;
-        z-index: 100;
-        word-wrap:unset;
-        width: auto;
-    }
-    button:hover:after, select:hover:after {
-        opacity: 1;
-    } */
-
 
     button:hover {
       background-color: rgba(187, 70, 70, 0.1);
@@ -142,17 +111,23 @@
 
     #help {
       position: absolute;
-      display: none; /*flex;*/
-      flex-direction: column;
+      display: flex;
+      flex-direction: row;
       top: 0;
       right: 0;
       bottom: 0;
       left: 0;
-      background-color: black;
+      padding: 2em;
+      background-color: white;
       z-index: 50;
+      overflow-x: auto;
     }
-      #help_title {
-      }
+    .center_fit {
+      max-width: 100%;
+            max-height: 100vh;
+            margin: auto;
+    }
+    
 
     #controls {
       display: flex;
@@ -270,7 +245,10 @@
     </div><!-- End of controls -->
 
 
-    <div id="help"><div id="help_title">TEST</div></div>
+    <div id="help">
+      <img src='images/shortcuts.png' class='center_fit' onpointerdown="document.getElementById('help').style.display='none'"">
+    </div><!-- End of help -->
+
     <div id="loader"><div id="progress">Loading...</div><div id="progress_path"></div></div>
 
     
