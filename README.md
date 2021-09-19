@@ -83,7 +83,7 @@ and some more complicated systems:
 Each of these games illustrate the functionalities of the main workhorse code in `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented. In particular, I would monkey with `minimal/game.js` first, since it's by far the simplest (see below)! Then check out `checkers`, `chess`, and (quite complex) `poker` or `puerto-rico`.
 
 ## Known issues
- * Firefox on Linux has horrible rendering speed that can grind to a halt, likely due to the webGL context being immediately lost for some reason, or the browser thinking things are not hardware accelerated. Recommend using chrome on Linux.
+ * Firefox on Linux has horrible rendering speed that can grind to a halt, likely due to the webGL context being immediately lost for some reason, or the browser thinking things are not hardware accelerated. Recommend using chrome on Linux. Firefox works great on Windows.
  * Looks distorted on phones, not that this is intended for phones (yet?)
 
 ## Here to Help
