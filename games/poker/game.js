@@ -112,7 +112,7 @@ var N = Object.keys(game.settings.teams).length - 2
 var settings = {
   layer:  2,            // Layer of the piece
   groups: ['cards'],    // Groups to which this piece belongs
-  expand_Nx  :  13,     // When expanding, how many to have in each row
+  expand_Nx  :  10,     // When expanding, how many to have in each row
   expand_dx  :  37,     // Offset in x-direction when expanding
   expand_dy  :  70,     // Offset in y-direction when expanding
   collect_dx :  0.15,    // x offset when collecting
@@ -382,6 +382,9 @@ function fold(n) { log('fold()', n)
   if(typeof n != 'number') n = VGT.game.get_my_team_index()-1;
   if(n < 0 || n > 7) return;
   
+  // Unselect everything
+  game.unselect()
+
   // Get all the cards in our zone
   var dealer_cards = dealer.get_shoveled()
   var my_cards = []
@@ -481,13 +484,13 @@ function new_game() {
 
 
 //////////////////////////////////////// KEY BINDINGS
-game.bind_key('BackspaceDown', get_shuffle_deck)
-game.bind_key('ShiftBackspaceDown', collect_pot)
-game.bind_key('EndDown', fold)
-game.bind_key('DeleteDown', fold_with_noise)
-game.bind_key(['KeyLDown', 'ShiftKeyLDown'], deal_to_all)
-game.bind_key(['KeyODown', 'ShiftKeyODown'], deal_one_to_mouse)
-game.bind_key(['KeyBDown', 'KeyTDown'], toss);
+game.bind_key('Backspace|Down', get_shuffle_deck)
+game.bind_key('Shift|Backspace|Down', collect_pot)
+game.bind_key('End|Down', fold)
+game.bind_key('Delete|Down', fold_with_noise)
+game.bind_key(['KeyL|Down', 'ShiftKeyL|Down'], deal_to_all)
+game.bind_key(['KeyO|Down', 'ShiftKeyO|Down'], deal_one_to_mouse)
+game.bind_key(['KeyB|Down', 'KeyT|Down'], toss);
 game.bind_pointerdown_button([1,3,4,5], toss);
 
 

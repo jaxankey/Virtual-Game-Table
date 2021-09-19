@@ -1172,158 +1172,70 @@ class _Tabletop {
 ////////////////////////
 // INTERACTION MANAGER
 class _Interaction {
-  
+
   constructor() {
     
     // Which mouse button is down
     this.button = -1;
 
-    // Shortcuts
-    this.actions = {
-      pan_left  : VGT.tabletop.pan_left.bind(VGT.tabletop),
-      pan_right : VGT.tabletop.pan_right.bind(VGT.tabletop),
-      pan_up    : VGT.tabletop.pan_up.bind(VGT.tabletop),
-      pan_down  : VGT.tabletop.pan_down.bind(VGT.tabletop),
-      
-      rotate_left  : VGT.tabletop.rotate_left.bind(VGT.tabletop),
-      rotate_right : VGT.tabletop.rotate_right.bind(VGT.tabletop),
-      
-      zoom_in  : VGT.tabletop.zoom_in.bind(VGT.tabletop),
-      zoom_out : VGT.tabletop.zoom_out.bind(VGT.tabletop),
-
-      rotate_selected_left      : VGT.tabletop.rotate_selected_left.bind(VGT.tabletop),
-      rotate_selected_right     : VGT.tabletop.rotate_selected_right.bind(VGT.tabletop),
-      rotate_selected_to_hand   : VGT.tabletop.rotate_selected_to_hand.bind(VGT.tabletop),
-      rotate_selected_to_table  : VGT.tabletop.rotate_selected_to_table.bind(VGT.tabletop),
-
-      collect_selected_to_mouse   : this.collect_selected_to_mouse.bind(this),
-      expand_selected_to_mouse    : this.expand_selected_to_mouse.bind(this),
-      start_shuffle_or_undo_redo  : this.start_shuffle_or_undo_redo.bind(this),
-      align_distribute_selected   : this.align_distribute_selected.bind(this),
-
-      start_roll                : this.start_roll.bind(this),
-      roll                      : this.roll.bind(this),
-
-      save_view : this.save_view.bind(this),
-      load_view : this.load_view.bind(this),
-
-      count_selected: this.count_selected.bind(this),
-
-      increment_selected_images: this.increment_selected_images.bind(this),
-      decrement_selected_images: this.decrement_selected_images.bind(this),
-      zero_selected_images     : this.zero_selected_images.bind(this),
-
-      tantrum : this.tantrum.bind(this),
-    }
-
     // Dictionary of functions for each key
-    this.key_functions = {
+    this._key_functions = {}
 
-      // Pan view
-      KeyADown:       this.actions.pan_left,
-      ArrowLeftDown:  this.actions.pan_left,
-      Numpad4Down:    this.actions.pan_left,
-      
-      KeyDDown:       this.actions.pan_right,
-      ArrowRightDown: this.actions.pan_right,
-      Numpad6Down:    this.actions.pan_right,
-      
-      KeyWDown:       this.actions.pan_up,
-      ArrowUpDown:    this.actions.pan_up,
-      Numpad8Down:    this.actions.pan_up,
+    // Other functions to call for mouse buttons
+    this._pointerdown_functions = {};
 
-      KeySDown:       this.actions.pan_down,
-      ArrowDownDown:  this.actions.pan_down,
-      Numpad5Down:    this.actions.pan_down,
-      Numpad2Down:    this.actions.pan_down,
+    ////////////// KEYS
 
-      // Rotate view
-      ShiftKeyQDown:      this.actions.rotate_left,
-      KeyQDown:           this.actions.rotate_left,
-      ShiftNumpad7Down:   this.actions.rotate_left,
-      Numpad7Down:        this.actions.rotate_left,
+    // Pan view
+    this.bind_key(['KeyA|Down', 'ArrowLeft|Down',  'Numpad4|Down'],                 VGT.tabletop.pan_left .bind(VGT.tabletop));
+    this.bind_key(['KeyD|Down', 'ArrowRight|Down', 'Numpad6|Down'],                 VGT.tabletop.pan_right.bind(VGT.tabletop));
+    this.bind_key(['KeyW|Down', 'ArrowUp|Down',    'Numpad8|Down'],                 VGT.tabletop.pan_up   .bind(VGT.tabletop));
+    this.bind_key(['KeyS|Down', 'ArrowDown|Down',  'Numpad5|Down', 'Numpad2|Down'], VGT.tabletop.pan_down .bind(VGT.tabletop));
 
-      ShiftKeyEDown:      this.actions.rotate_right,
-      KeyEDown:           this.actions.rotate_right,
-      ShiftNumpad9Down:   this.actions.rotate_right,
-      Numpad9Down:        this.actions.rotate_right,
+    // Rotate view
+    this.bind_key(['KeyQ|Down', 'Numpad7|Down'], VGT.tabletop.rotate_left .bind(VGT.tabletop));
+    this.bind_key(['KeyE|Down', 'Numpad9|Down'], VGT.tabletop.rotate_right.bind(VGT.tabletop));
 
-      // Rotate selected pieces
-      ShiftKeyADown:      this.actions.rotate_selected_left,
-      ShiftArrowLeftDown: this.actions.rotate_selected_left,
-      ShiftNumpad4Down:   this.actions.rotate_selected_left,
+    // Zoom
+    this.bind_key(['Equal|Down', 'NumpadAdd|Down'],      VGT.tabletop.zoom_in .bind(VGT.tabletop));
+    this.bind_key(['Minus|Down', 'NumpadSubtract|Down'], VGT.tabletop.zoom_out.bind(VGT.tabletop));
 
-      ShiftKeyWDown:      this.actions.rotate_selected_to_table,
-      ShiftArrowUpDown:   this.actions.rotate_selected_to_table,
-      ShiftNumpad8Down:   this.actions.rotate_selected_to_table,
-      
-      ShiftKeyDDown:      this.actions.rotate_selected_right,
-      ShiftArrowRightDown:this.actions.rotate_selected_right,
-      ShiftNumpad6Down:   this.actions.rotate_selected_right,
-      
-      ShiftKeySDown:      this.actions.rotate_selected_to_hand,
-      ShiftArrowDownDown: this.actions.rotate_selected_to_hand,
-      ShiftNumpad5Down:   this.actions.rotate_selected_to_hand,
+    // Save/Load views
+    this.bind_key([
+      'Backquote|Down', 
+      'Digit1|Down', 'Digit2|Down', 'Digit3|Down', 'Digit4|Down',
+      'Digit5|Down', 'Digit6|Down', 'Digit7|Down', 'Digit8|Down',
+      'Digit9|Down', 'Digit0|Down'], this.load_view.bind(this));
+    this.bind_key([
+      'Shift|Digit1|Down', 'Shift|Digit2|Down', 'Shift|Digit3|Down', 'Shift|Digit4|Down',
+      'Shift|Digit5|Down', 'Shift|Digit6|Down', 'Shift|Digit7|Down', 'Shift|Digit8|Down',
+      'Shift|Digit9|Down', 'Shift|Digit0|Down'], this.save_view.bind(this));
 
-      // Align / distribute selected pieces
-      KeyHDown:           this.actions.align_distribute_selected,
-      KeyVDown:           this.actions.align_distribute_selected,
-      ShiftKeyHDown:      this.actions.align_distribute_selected,
-      ShiftKeyVDown:      this.actions.align_distribute_selected,
+    // Rotate selected pieces
+    this.bind_key(['Shift|KeyA|Down', 'Shift|ArrowLeft|Down',  'Shift|Numpad4|Down'], VGT.tabletop.rotate_selected_left    .bind(VGT.tabletop));
+    this.bind_key(['Shift|KeyD|Down', 'Shift|ArrowRight|Down', 'Shift|Numpad6|Down'], VGT.tabletop.rotate_selected_right   .bind(VGT.tabletop));
+    this.bind_key(['Shift|KeyW|Down', 'Shift|ArrowUp|Down',    'Shift|Numpad8|Down'], VGT.tabletop.rotate_selected_to_table.bind(VGT.tabletop));
+    this.bind_key(['Shift|KeyS|Down', 'Shift|ArrowDown|Down',  'Shift|Numpad5|Down', 'Shift|Numpad2|Down'], VGT.tabletop.rotate_selected_to_hand .bind(VGT.tabletop));
+    
+    // Align / distribute selected pieces
+    this.bind_key(['KeyH|Down', 'KeyV|Down', 'Shift|KeyH|Down', 'Shift|KeyV|Down'], this.align_distribute_selected.bind(this));
 
+    // Collect, expand, shuffle
+    this.bind_key(['KeyC|Down', 'Shift|KeyC|Down'], this.collect_selected_to_mouse .bind(this));
+    this.bind_key(['KeyX|Down', 'Shift|KeyX|Down'], this. expand_selected_to_mouse .bind(this));
+    this.bind_key(['KeyZ|Down', 'Shift|KeyZ|Down'], this.start_shuffle_or_undo_redo.bind(this));
+    this.bind_key(['KeyR|Down'], this.start_roll.bind(this));
+    this.bind_key(['KeyR|Up'],   this.roll.bind(this));
 
-      // Zoom
-      EqualDown:          this.actions.zoom_in,
-      NumpadAddDown:      this.actions.zoom_in,
-      MinusDown:          this.actions.zoom_out,
-      NumpadSubtractDown: this.actions.zoom_out,
+    // Count
+    this.bind_key(['Enter|Down', 'NumpadEnter|Down'], this.count_selected.bind(this));
 
-      // Load / save views
-      BackquoteDown: this.actions.load_view,
-      Digit1Down: this.actions.load_view,
-      Digit2Down: this.actions.load_view,
-      Digit3Down: this.actions.load_view,
-      Digit4Down: this.actions.load_view,
-      Digit5Down: this.actions.load_view,
-      Digit6Down: this.actions.load_view,
-      Digit7Down: this.actions.load_view,
-      Digit8Down: this.actions.load_view,
-      Digit9Down: this.actions.load_view,
-      Digit0Down: this.actions.load_view,
-      ShiftDigit1Down: this.actions.save_view,
-      ShiftDigit2Down: this.actions.save_view,
-      ShiftDigit3Down: this.actions.save_view,
-      ShiftDigit4Down: this.actions.save_view,
-      ShiftDigit5Down: this.actions.save_view,
-      ShiftDigit6Down: this.actions.save_view,
-      ShiftDigit7Down: this.actions.save_view,
-      ShiftDigit8Down: this.actions.save_view,
-      ShiftDigit9Down: this.actions.save_view,
-      ShiftDigit0Down: this.actions.save_view,
-      
-      // Collect, expand, shuffle
-      KeyCDown:      this.actions.collect_selected_to_mouse,
-      ShiftKeyCDown: this.actions.collect_selected_to_mouse,
-      KeyXDown:      this.actions.expand_selected_to_mouse,
-      ShiftKeyXDown: this.actions.expand_selected_to_mouse,
-      KeyZDown:      this.actions.start_shuffle_or_undo_redo,
-      ShiftKeyZDown: this.actions.start_shuffle_or_undo_redo,
-      KeyRDown:      this.actions.start_roll,
-      KeyRUp:        this.actions.roll,
+    // Cycle images
+    this.bind_key(['Space|Down',       'Period|Down'], this.increment_selected_images.bind(this));
+    this.bind_key(['Shift|Space|Down', 'Comma|Down'],  this.decrement_selected_images.bind(this));
 
-      // Count pieces
-      EnterDown:       this.actions.count_selected,
-      NumpadEnterDown: this.actions.count_selected,
-
-      // Cycle images
-      SpaceDown:        this.actions.increment_selected_images,
-      PeriodDown:       this.actions.increment_selected_images,
-      CommaDown:        this.actions.decrement_selected_images,
-      ShiftSpaceDown:   this.actions.zero_selected_images,
-
-      // Tantrum
-      ShiftEndDown: this.actions.tantrum,
-    }
+    // Tantrum
+    this.bind_key(['Shift|End|Down'], this.tantrum.bind(this));
 
     // Event listeners
     document.addEventListener('contextmenu', e => {e.preventDefault();}); 
@@ -1346,6 +1258,28 @@ class _Interaction {
     VGT.pixi.app.view.onwheel       = this.onwheel      .bind(this);
     VGT.pixi.app.view.ondblclick    = this.ondblclick   .bind(this);
   }
+
+  /**
+   * Connects the supplied key string (e.g. 'ShiftBackspaceDown'; see browser console when hitting keys for these names)
+   * to the supplied function f
+   * @param {string} keys  Key string (or list of strings) to bind to the function
+   * @param {function}  f  Function; first argument must be the key event.
+   */
+  bind_key(keys, f) { 
+    if(typeof keys == 'string') keys = [keys];
+    for(var n in keys) this._key_functions[keys[n]] = f; 
+  }
+
+  /**
+   * Binds the supplied mouse button to the supplied function
+   * @param {int or list} buttons 
+   * @param {function} f 
+   */
+  bind_pointerdown_button(buttons, f) {
+    if(typeof keys == 'number') buttons = [buttons];
+    for(var n in buttons) this._pointerdown_functions[buttons[n]] = f;
+  }
+  
 
   // Tantrum
   tantrum(e) {
@@ -1607,7 +1541,7 @@ class _Interaction {
 
     // Check for non-standard mouse buttons
     if(!([0,2].includes(e.button))) {
-      if(VGT.game._pointerdown_functions[e.button]) VGT.game._pointerdown_functions[e.button](e);
+      if(VGT.interaction._pointerdown_functions[e.button]) VGT.interaction._pointerdown_functions[e.button](e);
       return
     }
     // The rest is for right and left clicks
@@ -1819,16 +1753,19 @@ class _Interaction {
   
   onwheel(e) {VGT.log('_Interaction.onwheel()', e);
 
+    if(this._t_last_wheel && Date.now()-this._t_last_wheel < 100) return
+    this._t_last_wheel = Date.now();
+
     // If shift is down, rotate
     if(e.shiftKey) {
-      if(e.deltaY > 0) this.actions.rotate_left();
-      else             this.actions.rotate_right();
+      if(e.deltaY > 0) VGT.tabletop.rotate_left();
+      else             VGT.tabletop.rotate_right();
     }
      
     // Otherwise, zoom
     else {
-      if(e.deltaY > 0) this.actions.zoom_out();
-      else             this.actions.zoom_in();
+      if(e.deltaY > 0) VGT.tabletop.zoom_out();
+      else             VGT.tabletop.zoom_in();
     }
 
   }
@@ -1854,13 +1791,13 @@ class _Interaction {
     
     // If the function exists, call it with the event
     var code = e.code;
-    if(e.shiftKey && code.substring(0,5)!='Shift') code = 'Shift'+code;
-    if(e.type == 'keyup') code = code + 'Up';
-    else                  code = code + 'Down';
+    if(e.shiftKey && code.substring(0,5)!='Shift') code = 'Shift|'+code;
+    if(e.type == 'keyup') code = code + '|Up';
+    else                  code = code + '|Down';
 
     // Log it
     VGT.log('onkey()', code, e.repeat);
-    if(this.key_functions[code]) this.key_functions[code](e);
+    if(this._key_functions[code]) this._key_functions[code](e);
 
   } // End of onkey()
 
@@ -4403,9 +4340,6 @@ class _Game {
     this.SnapGrid   = VGT.SnapGrid;
     this.SnapCircle = VGT.SnapCircle;
     
-    // Other functions to call for mouse buttons
-    this._pointerdown_functions = {};
-
     // Fix the width of the chat box according to the current GUI.
     VGT.html.ul_messages.style.width = VGT.html.ul_messages.offsetWidth;
 
@@ -4490,20 +4424,14 @@ class _Game {
    * @param {string} keys  Key string (or list of strings) to bind to the function
    * @param {function}  f  Function; first argument must be the key event.
    */
-  bind_key(keys, f) { 
-    if(typeof keys == 'string') keys = [keys];
-    for(var n in keys) VGT.interaction.key_functions[keys[n]] = f; 
-  }
+  bind_key(keys, f) { VGT.interaction.bind_key(keys, f); }
 
   /**
    * Binds the supplied mouse button to the supplied function
    * @param {int or list} buttons 
    * @param {function} f 
    */
-  bind_pointerdown_button(buttons, f) {
-    if(typeof keys == 'number') buttons = [buttons];
-    for(var n in buttons) this._pointerdown_functions[buttons[n]] = f;
-  }
+  bind_pointerdown_button(buttons, f) { VGT.interaction.bind_pointerdown_button(buttons, f); }
 
   /**
    * Find the topmost thing at the specified tabletop location x,y, or return null
