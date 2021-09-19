@@ -84,6 +84,7 @@ Each of these games illustrate the functionalities of the main workhorse code in
 
 ## Known issues
  * Firefox on Linux has horrible rendering speed that can grind to a halt, likely due to the webGL context being immediately lost for some reason, or the browser thinking things are not hardware accelerated. Recommend using chrome on Linux.
+ * Looks distorted on phones, not that this is intended for phones (yet?)
 
 ## Here to Help
 Feel free to pester me if something isn't clear. I will likely be a bit slow to respond, but I believe in this project and will gladly update the comments in the code or help out within reason.
