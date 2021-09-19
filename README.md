@@ -11,7 +11,7 @@ Linux
  
 Windows
  1. Install [Node.js](https://nodejs.org/): Download the appropriate windows installer and run it.
- 2. Run `start-server-windows.bat` and optionally type the game name and port when prompted.
+ 2. Double-click `start-server-windows.bat` and optionally type the game name and port when prompted.
  
 You can also launch a server directly with a command similar to `node server.js cards 37777`. A successfully booted server should declare something like `listening on port 37777` after initializing. At this point, you can test the server by opening a few browser windows side-by-side and typing in the address `localhost:37777`. Things moving around in one window should also move around in the other. Push a few buttons, click a few things, see what happens. 
 
