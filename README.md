@@ -1,6 +1,6 @@
 # Virtual Game Table v3
 
-Virtual Game Table is a browser-based online boardgame table simulator.
+Browser-based online board game simulator.
 
 ## Setting up a server
 
