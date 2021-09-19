@@ -28,11 +28,22 @@ The games I have coded thus far include some basics:
 and some more complicated systems:
  * `puerto-rico`: Puerto Rico (can't publish images, but you can find / scan them)
 
-Coming eventually:
+Roadmap:
+ * Help page with keyboard controls. For now:
+   * pan with `W` `A` `S` `D` 
+   * rotate with `Q` `E` 
+   * rotate pieces with `Shift`-`W` `A` `S` `D`
+   * collect pieces with `C`
+   * expand pieces with `X` (sort with `Shift`-`X`)
+   * shuffle with `Z`
+   * roll (like dice) with `R`
+   * Save view with `Shift`-`1` to `9`, load view with `1` to `9`
+   * Throw a tantrum with `Shift`-`End`
+   * Poker: hover over buttons for hotkeys, and use `B` or `T` to bet/toss things into the pot
  * `arkham-horror`: Arkham Horror base set (can't publish images, but you can find / scan them)
  * `pandemic`: Pandemic base set plus some other stuff.
  * Go: Stones and a board
- * Chess clock
+ * Chess clock object for timed games
 
 Each of these games illustrate the functionalities of the main workhorse code in `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented. In particular, I would monkey with `minimal/game.js` first, since it's by far the simplest (see below)! Then check out `checkers`, `chess`, and (quite complex) `poker` or `puerto-rico`.
 
@@ -68,10 +79,10 @@ game.add_pieces(12, {layer:1}, ['checker_black', 'king_black'])
 function new_game() { game.load_state_from_server('setup-standard.txt') }
 ```
 
-Basically, if you can get piece images, you can make a game.
+Even for the more complicated games (poker, e.g.), making the images usually takes more time than writing the code.
 
 ## Here to Help
-Feel free to pester me if something isn't clear. I will likely be slow to respond, but I believe in this project and will gladly update the comments in the code or help out within reason.
+Feel free to pester me if something isn't clear. I will likely be a bit slow to respond, but I believe in this project and will gladly update the comments in the code or help out within reason.
 
 Things I will _never_ do:
  * Hard-code any rules or anti-cheat measures. You will _always_ be able to look at your oponent's hidden pieces or move them around when they are taking a poo. 
