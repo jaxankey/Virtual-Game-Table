@@ -34,7 +34,7 @@ Coming eventually:
  * Go: Stones and a board
  * Chess clock
 
-Each of these games illustrate the functionalities of the main workhorse code in `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented. In particular, I would monkey with `minimal/game.js` first, since it's by far the simplest! Then check out `checkers`, `chess`, and (quite complex) `poker` or `puerto-rico`.
+Each of these games illustrate the functionalities of the main workhorse code in `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented. In particular, I would monkey with `minimal/game.js` first, since it's by far the simplest (see below)! Then check out `checkers`, `chess`, and (quite complex) `poker` or `puerto-rico`.
 
 ## A Minimal Game
 
