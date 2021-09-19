@@ -36,6 +36,38 @@ Coming eventually:
 
 Each of these games illustrate the functionalities of the main workhorse code in `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented. In particular, I would monkey with `minimal/game.js` first, since it's by far the simplest! Then check out `checkers`, `chess`, and (quite complex) `poker` or `puerto-rico`.
 
+## A Minimal Game
+
+To give a sense of how the engine works, here is the minimal code required to make the checkers game (see `games/minimal/game.js`):
+
+```javascript
+// Master list of all images. 
+VGT.images = { paths: {
+  hand          : 'images/hands/hand.png',             // Required for player hands
+  fist          : 'images/hands/fist.png',             // Required for player hands
+  board         : 'images/checkers/board.png',         // Checkered board
+  checker_black : 'images/checkers/checker_black.png', // Black checker
+  king_black    : 'images/checkers/king_black.png',    // Black king
+  checker_red   : 'images/checkers/checker_red.png',   // Red checker
+  king_red      : 'images/checkers/king_red.png',      // Red king
+}}
+
+// Create the Game instance
+var game  = new VGT.Game();
+
+// Add the game board to layer 0, and allow only the manager to move it
+game.add_piece({layer:0, teams:['Manager']}, 'board');
+
+// Add some checkers with a king symbol on the "back side" to layer 1
+game.add_pieces(12, {layer:1}, ['checker_red',   'king_red'  ])
+game.add_pieces(12, {layer:1}, ['checker_black', 'king_black'])
+
+// Define the function that is called when someone clicks the "new game" button.
+// The file 'setup-standard.txt' was created by manually setting things up in the
+// browser and pushing the 'save' button
+function new_game() { game.load_state_from_server('setup-standard.txt') }
+```
+
 ## Here to Help
 Feel free to pester me if something isn't clear. I will likely be slow to respond, but I believe in this project and will gladly update the comments in the code or help out within reason.
 
