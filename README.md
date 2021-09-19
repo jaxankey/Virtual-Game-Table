@@ -62,7 +62,7 @@ game.add_piece({layer:0, teams:['Manager']}, 'board');
 game.add_pieces(12, {layer:1}, ['checker_red',   'king_red'  ])
 game.add_pieces(12, {layer:1}, ['checker_black', 'king_black'])
 
-// Define the function that is called when someone clicks the "new game" button.
+// Define the function that is called when someone clicks the 'new game' button.
 // The file 'setup-standard.txt' was created by manually setting things up in the
 // browser and pushing the 'save' button
 function new_game() { game.load_state_from_server('setup-standard.txt') }
