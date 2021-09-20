@@ -129,6 +129,7 @@ class _Html {
 
   // Fading elements out
   fade_element_out(e) {
+    _l('FUCK!', e)
     e.ontransitionend = function() {this.style.display = 'none';}
     e.style.opacity = 0;
   }
@@ -539,9 +540,7 @@ class _Net {
     for(var n in VGT.hands.all) VGT.hands.all[n].t_last_image = VGT.hands.all[n].t_last_move = 0;
 
     // Now (delayed, so pieces can snap to their starting locations) hide the loader page so the user can interact
-    VGT.html.div_loader.style.visibility = 'hidden';
-    // If the user is new, show the help
-    if(VGT.html.load_cookie('saw_help') == '') VGT.html.show_help();
+    VGT.html.fade_element_out(VGT.html.div_loader);
 
     // Reset the fade-in ticker
     VGT.tabletop._t0_fade_in = Date.now();
@@ -4388,6 +4387,8 @@ class _Game {
     // Start the slow housekeeping
     setInterval(this._housekeeping.bind(this), this.settings.t_housekeeping);
 
+    // If the user is new, show the help
+    if(VGT.html.load_cookie('saw_help') == '') VGT.html.show_help();
   }
 
   // Sets the title of the special area and reveals it
