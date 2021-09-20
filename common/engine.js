@@ -4359,7 +4359,7 @@ class _Game {
 
     // How long to wait in between housekeepings.
     t_housekeeping   : 100, // For moving pieces around (already locally responsive)
-    t_housekeeping_z : 10,  // For asking the server's permission to change z-values (needs to be ~immediate but not spam the server with individual requests)
+    t_housekeeping_z : 50,  // For asking the server's permission to change z-values (needs to be ~immediate but not spam the server with individual requests)
 
   }
 
