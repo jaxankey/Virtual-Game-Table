@@ -91,6 +91,7 @@ class _Html {
     this.div_special   = document.getElementById('special');
     this.div_special_title = document.getElementById('special_title');
     this.div_special_controls = document.getElementById('special_controls');
+    this.div_help      = document.getElementById('help');
     this.ul_messages   = document.getElementById('messages');
     this.input_volume  = document.getElementById('volume');
     this.select_setups = document.getElementById('setups');
@@ -107,6 +108,37 @@ class _Html {
   toggle_controls()  {this.div_controls.hidden = !this.div_controls.hidden;}
   controls_visible() {return !this.div_controls.hidden}
   controls_hidden()  {return  this.div_controls.hidden}
+
+  // Shrink the help menu
+  shrink_help() {
+    this.div_help.style.right = '100%';
+    this.div_help.style.top   = '100%';
+    this.div_help.style.opacity = 0;
+  }
+  grow_help() {
+    this.div_help.style.right = '2em';
+    this.div_help.style.top   = '2em';
+    this.div_help.style.opacity = 1;
+  }
+
+  toggle_help() {
+    if(this.div_help.style.opacity == '1') this.shrink_help();
+    else                                   this.grow_help();
+  }
+
+  // Fading elements out
+  fade_element_out(e) {
+    e.ontransitionend = function() {this.style.display = 'none';}
+    e.style.opacity = 0;
+  }
+  
+  // Fading an element in
+  fade_element_in(e, display) {
+    e.ontransitionend = undefined;
+    if(!display) e.style.display = 'flex';
+    else         e.style.display = display;
+    e.style.opacity = 1;
+  }
 
   // Returns the cookie value or undefined
   load_cookie(key) { 
@@ -1176,7 +1208,7 @@ class _Interaction {
   constructor() {
     
     // Which mouse button is down
-    this.button = -1;
+    this.button = undefined;
 
     // Dictionary of functions for each key
     this._key_functions = {}
@@ -1633,7 +1665,7 @@ class _Interaction {
     var dragging_table = false;
     
     // Only do stuff if the mouse is down
-    if(this.button >= 0) {
+    if(this.button != undefined && this.button >= 0) {
       
       // If we have held stuff, move them around.
       if(VGT.things.held[VGT.net.id]) {
@@ -1908,6 +1940,9 @@ class _Sound {
   // Play the sound immediately
   play(x,y,rate) {
     
+    // If no click yet, can't play, so don't play
+    if(VGT.interaction.button == undefined) return
+
     // Start play and adjust for that instance
     var id = this.howl.play();
     
