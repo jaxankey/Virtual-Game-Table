@@ -889,6 +889,9 @@ class _Pixi {
     // Animate the table
     VGT.tabletop.animate(delta);
     
+    // Process z queues (we want this to be responsive)
+    VGT.net.process_q_z_out();
+
   } // End of game_loop
 
 } // End of _Pixi
@@ -4334,8 +4337,6 @@ class _Game {
 
     // How long to wait in between housekeepings.
     t_housekeeping   : 100, // For moving pieces around (already locally responsive)
-    t_housekeeping_z : 50,  // For asking the server's permission to change z-values (needs to be ~immediate but not spam the server with individual requests)
-
   }
 
   constructor(settings) {
@@ -4387,8 +4388,6 @@ class _Game {
     // Start the slow housekeeping
     setInterval(this._housekeeping.bind(this), this.settings.t_housekeeping);
 
-    // Start the fast housekeeping for z-stuff
-    setInterval(this._housekeeping_z.bind(this), this.settings.t_housekeeping_z);
   }
 
   // Sets the title of the special area and reveals it
@@ -5289,12 +5288,6 @@ class _Game {
 
 
   } // End of housekeeping.
-
-  // Function called very often to send the z-queues
-  _housekeeping_z(e) {
-    // Process z queues
-    VGT.net.process_q_z_out();
-  }
 
 } // End of Game
 VGT.Game = _Game;
