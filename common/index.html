@@ -116,8 +116,9 @@
       flex-direction: row;
       bottom: 2em;
       left: 2em;
-      top: 2em; 
-      right: 2em;
+      top: 100%; 
+      right: 100%;
+      opacity: 0;
       padding: 0;
       background-color: white;
       transition-property: all;
@@ -262,7 +263,7 @@
     </div><!-- End of controls -->
 
 
-    <div id="help" onpointerdown="VGT.html.shrink_help();">
+    <div id="help" onpointerdown="VGT.html.hide_help();">
       <img src='images/shortcuts.png' class='center_fit'>
     </div><!-- End of help -->
 

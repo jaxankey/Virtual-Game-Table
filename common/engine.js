@@ -110,20 +110,21 @@ class _Html {
   controls_hidden()  {return  this.div_controls.hidden}
 
   // Shrink the help menu
-  shrink_help() {
+  hide_help() {
     this.div_help.style.right = '100%';
     this.div_help.style.top   = '100%';
     this.div_help.style.opacity = 0;
+    this.save_cookie('saw_help', true);
   }
-  grow_help() {
+  show_help() {
     this.div_help.style.right = '2em';
     this.div_help.style.top   = '2em';
     this.div_help.style.opacity = 1;
   }
 
   toggle_help() {
-    if(this.div_help.style.opacity == '1') this.shrink_help();
-    else                                   this.grow_help();
+    if(this.div_help.style.opacity == '1') this.hide_help();
+    else                                   this.show_help();
   }
 
   // Fading elements out
@@ -539,6 +540,8 @@ class _Net {
 
     // Now (delayed, so pieces can snap to their starting locations) hide the loader page so the user can interact
     VGT.html.div_loader.style.visibility = 'hidden';
+    // If the user is new, show the help
+    if(VGT.html.load_cookie('saw_help') == '') VGT.html.show_help();
 
     // Reset the fade-in ticker
     VGT.tabletop._t0_fade_in = Date.now();
