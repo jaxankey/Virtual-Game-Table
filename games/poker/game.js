@@ -282,8 +282,7 @@ function deal_to_all(e) { log('deal_to_all()', e)
   var teams = []
   for(var n=0; n<N; n++) if(bars[n].get_image_index()) teams.push(n+1)
   var my_team = game.get_my_team_index()
-  _l('HAY', bars, teams);
-
+  
   // If I'm playing, reorder the list so that the player to my left is first
   if(my_team > 0 && my_team) {
     var i = teams.indexOf(my_team)
@@ -385,7 +384,7 @@ function fold(n) { log('fold()', n)
 
   // Pile center
   var a = get_team_angle(n+1)
-  var v = rotate_vector([0,y1-150], a)
+  var v = rotate_vector([0,y1-152], a)
   
   // Get all the cards in our zone
   var dealer_cards = dealer.get_shoveled()
@@ -395,7 +394,7 @@ function fold(n) { log('fold()', n)
     && !dealer_cards.includes(cards[i])) { p = cards[i];
       dv = get_random_location_disc(30)
       p.set_image_index(0)
-      p.set_xyrs(v[0]+dv.x,v[1]+dv.y, p.r.target + p.R.target + (Math.random()-0.5)*30 - 90)
+      p.set_xyrs(v[0]+dv.x,v[1]+dv.y, p.r.target + p.R.target + (Math.random()-0.5)*720*2)
     }
       
   // Kill the in/out
@@ -486,12 +485,12 @@ function new_game() {
 
   // Now the chips...
   for(var team=1; team<=N; team++) {
-    var a = get_team_angle(team); _l(team, a)
+    var a = get_team_angle(team)
     game.unselect(team)
 
     // Loop over the stacks for this team
     for(var n in chips[team-1]) { 
-      var v = rotate_vector([(4-n)*57, y2-43], a)
+      var v = rotate_vector([(n-4)*57, y2-43], a)
       game.collect(chips[team-1][n], v[0], v[1], a, a)
     }
   }

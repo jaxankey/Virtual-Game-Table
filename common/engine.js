@@ -139,7 +139,6 @@ class _Html {
     this.div_controls_button.style.opacity = 0;
   }
   toggle_controls() {
-    _l('HULLO', this.div_controls.style.opacity)
     if(this.div_controls.style.opacity == '1') this.hide_controls();
     else                                       this.show_controls();
   }
