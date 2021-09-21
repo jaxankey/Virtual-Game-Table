@@ -4858,7 +4858,7 @@ class _Game {
     if(send_chat) {
 
       if(Object.keys(worths).length) {
-        var message = '('+String(count)+' items worth '
+        var message = '('+String(count)+' items, '
         var s;
         for(var k in worths) {
           s = k.split('|'); // prefix|suffix
