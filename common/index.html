@@ -118,13 +118,15 @@
       flex-direction: row;
       bottom: 2em;
       left: 2em;
-      top: 100%; 
-      right: 100%;
+      top: 2em;
+      right: 2em;
       opacity: 0;
+      clip-path: inset(100% 100% -1em -1em);
       padding: 0;
       background-color: white;
       transition-property: all;
-      transition-duration: 1s;
+      transition-duration: 0.2s;
+      transition-timing-function: linear;
       z-index: 50;
       overflow-x: auto;
       box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
@@ -137,7 +139,7 @@
     img {
       background-color: transparent;
     }
-    #help_button {
+    #help_button, #controls_button {
       position: absolute;
       display: flex;
       flex-direction: row;
@@ -145,7 +147,15 @@
       left: 1em;
       background-color: white;
       z-index: 49;
+      transition-property: all;
+      transition-duration: 1s;
       box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
+    }
+    #controls_button {
+      bottom: unset;
+      top: 1em;
+      z-index: 39;
+      opacity: 0;
     }
 
     .close_button {
@@ -168,9 +178,11 @@
       left: 1em;
       top:  1em;
       transition-property: all;
-      transition-duration: 1s;
+      transition-duration: 0.2s;
+      transition-timing-function: linear;
       opacity: 1;
       box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
+      clip-path: inset(-1em -1em -1em -1em); /* for the shadow */
     }
       #new    {}
       #setups {margin-left: -0.07em; flex-grow:1;}
@@ -184,7 +196,7 @@
         margin-left: 0.4em;
       }
 
-      .team_name {flex-grow: 1; margin-left:-0.05em;}
+      .team_name {flex-grow: 1; margin-left:-0.07em;}
       .name { width: 12em; }
       .othername { width: 12em; border:0; pointer-events: none; }
 
@@ -219,9 +231,11 @@
   
   <div id="enclosure">
   
+    <div id="controls_button"><button style='border: none; width: 2em;' onpointerdown="VGT.html.show_controls();"><h1>+</h1></button></div>
+
     <div id="controls">
       
-      <!--<div class='close_button'><button style='border: none; width: 2em'>X</button></div>-->
+      <div class='close_button'><button style='border: none; width: 2em' onpointerdown='VGT.html.hide_controls();'>X</button></div>
 
       <div id="setup">
         
@@ -285,7 +299,7 @@
       <div class='close_button'><button style='border: none; width: 2em'>X</button></div>
     </div><!-- End of help -->
 
-    <div id="help_button" onpointerdown="VGT.html.toggle_help();"><button style='border: none; width: 2em;'><h1>?</h1></button></div>
+    <div id="help_button"><button style='border: none; width: 2em;' onpointerdown="VGT.html.toggle_help();"><h1>?</h1></button></div>
 
     <div id="loader"><div id="progress">Loading...</div><div id="progress_path"></div></div>
 

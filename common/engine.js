@@ -86,15 +86,23 @@ class _Html {
     // Handles
     this.div_gameboard = document.getElementById('gameboard');
     this.div_loader    = document.getElementById('loader');
-    this.div_controls  = document.getElementById('controls');
     this.div_volume_container = document.getElementById('volume_container')
     this.div_special   = document.getElementById('special');
     this.div_special_title = document.getElementById('special_title');
     this.div_special_controls = document.getElementById('special_controls');
-    this.div_help      = document.getElementById('help');
+    
+    this.div_controls_button = document.getElementById('controls_button');
+    this.div_controls        = document.getElementById('controls');
+    
+    this.div_help_button = document.getElementById('help_button')
+    this.div_help        = document.getElementById('help');
+    
     this.ul_messages   = document.getElementById('messages');
+    
     this.input_volume  = document.getElementById('volume');
+    
     this.select_setups = document.getElementById('setups');
+    
     this.button_rules  = document.getElementById('rules');
     this.button_new    = document.getElementById('new');
     this.button_save   = document.getElementById('save');
@@ -102,26 +110,18 @@ class _Html {
   
   } // End of constructor
 
-  // Quick functions
-  hide_controls()    {this.div_controls.hidden = true;}
-  show_controls()    {this.div_controls.hidden = false;}
-  toggle_controls()  {this.div_controls.hidden = !this.div_controls.hidden;}
-  controls_visible() {return !this.div_controls.hidden}
-  controls_hidden()  {return  this.div_controls.hidden}
-
   // Shrink the help menu
   hide_help() {
-    this.div_help.style.right = '100%';
-    this.div_help.style.top   = '100%';
+    this.div_help.style.clipPath = 'inset(100% 100% -1em -1em)'
     this.div_help.style.opacity = 0;
+    this.div_help_button.style.opacity = 1;
     this.save_cookie('saw_help', true);
   }
   show_help() {
-    this.div_help.style.right = '2em';
-    this.div_help.style.top   = '2em';
+    this.div_help.style.clipPath = 'inset(-1em -1em -1em -1em)'
     this.div_help.style.opacity = 1;
+    this.div_help_button.style.opacity = 0;
   }
-
   toggle_help() {
     if(this.div_help.style.opacity == '1') this.hide_help();
     else                                   this.show_help();
@@ -129,15 +129,19 @@ class _Html {
 
   // Hide controls etc
   hide_controls() {
-    this.div_controls.ontransitionend = () => {this.div_controls.style.display='none';}
-    this.div_controls.style.opacity = 0;
+    this.div_controls.style.opacity  = 0;
+    this.div_controls.style.clipPath ='inset(-1em 100% 100% -1em)';
+    this.div_controls_button.style.opacity = 1;
   }
   show_controls() {
-    this.div_controls.ontransitionend = () => {}
-    this.div_controls.style.display = '';
-    this.div_controls.style.transitionProperty = 'all';
-    this.div_controls.style.transitionDuration = '1s';
-    this.div_controls.style.opacity = 1;
+    this.div_controls.style.opacity  = 1;
+    this.div_controls.style.clipPath = 'inset(-1em -1em -1em -1em)';
+    this.div_controls_button.style.opacity = 0;
+  }
+  toggle_controls() {
+    _l('HULLO', this.div_controls.style.opacity)
+    if(this.div_controls.style.opacity == '1') this.hide_controls();
+    else                                       this.show_controls();
   }
 
   // Fading elements out
@@ -1235,6 +1239,10 @@ class _Interaction {
 
     ////////////// KEYS
 
+    // Controls and help
+    this.bind_key('Escape|Down', VGT.html.toggle_controls.bind(VGT.html));
+    this.bind_key('F1|Down',     VGT.html.toggle_help    .bind(VGT.html));
+
     // Pan view
     this.bind_key(['KeyA|Down', 'ArrowLeft|Down',  'Numpad4|Down'],                 VGT.tabletop.pan_left .bind(VGT.tabletop));
     this.bind_key(['KeyD|Down', 'ArrowRight|Down', 'Numpad6|Down'],                 VGT.tabletop.pan_right.bind(VGT.tabletop));
@@ -1822,9 +1830,6 @@ class _Interaction {
   // Whenever a key is pressed or released.
   onkey(e) {
     this.last_onkey = e;
-
-    // Special case for observers too: Escape toggles controls
-    if(e.code == 'Escape' && e.type == 'keydown') VGT.html.toggle_controls();
 
     // If we're not ready, not supposed to interact with the game,
     // toggling full screen (F11), or using an input, don't 
