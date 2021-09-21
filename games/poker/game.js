@@ -98,6 +98,7 @@ game = new VGT.Game({
     Brown    : 0x883300,
     Manager  : 0x333333
   },
+  default_zoom : 0.7,
 });
 
 // Number of playing teams (not observer or manager)

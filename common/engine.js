@@ -984,16 +984,19 @@ class _Animated {
 // Tabletop for simplifying pan and zoom (basically a fancy container)
 class _Tabletop {
 
-  constructor() {
+  default_settings = {
+    pan_step: 0.2, // Fraction of width or height when panning 1 step
+    r_step:    45, // Degrees for table rotation steps
+    s_step:   1.2, // Fraction for each zoom step.
+    s_max:    4,   // Largest zoom-in level
+    s_min:    0.1, // Max zoom-out
+    s_start:  1,   // Starting zoom level
+  }
 
-    this.settings = {
-      pan_step: 0.2, // Fraction of width or height when panning 1 step
-      r_step:    45, // Degrees for table rotation steps
-      s_step:   1.2, // Fraction for each zoom step.
-      s_max:    4, // Largest zoom-in level
-      s_min:    0.1, // Max zoom-out
-    }
+  constructor(settings) {
 
+    this.settings = {...this.default_settings, ...settings}
+    
     // Create the container to hold all the layers.
     this.container = new PIXI.Container();
     VGT.pixi.stage.addChild(this.container);
@@ -1002,7 +1005,7 @@ class _Tabletop {
     this.x = new _Animated(0);
     this.y = new _Animated(0);
     this.r = new _Animated(0);
-    this.s = new _Animated(1); 
+    this.s = new _Animated(this.settings.s_start); 
     
     // Load the last view immediately
     this.load_view('last', true);
@@ -1196,7 +1199,7 @@ class _Tabletop {
    */
   load_view(key, immediate) {
     var c = VGT.html.load_cookie(key);
-    if(c == '') this.set_xyrs(0,0,0,1);
+    if(c == '') this.set_xyrs(0,0,0,this.settings.s_start);
     else { 
       // Get [x,y,r,s]
       var v = eval('['+c+']');
@@ -4335,6 +4338,7 @@ class _Game {
     name: 'VGT',        // Game name
     rules: null,        // path (e.g. 'rules.pdf') to rules for this game
     undos: 500,         // Number of undos to remember (each 0.5 seconds minimum)
+    default_zoom: 1,    // Default zoom level for new users
 
     background_color : 0xEEE7E2, // Tabletop background color
 
@@ -4366,14 +4370,14 @@ class _Game {
     
     // Store the settings, starting with defaults then overrides.
     this.settings = {...this.default_settings, ...settings};
-
+    
     // Special override the name, for cookies etc
     if(VGT.game_name) this.settings.name = VGT.game_name; 
 
     // Create the big objects that depend on game stuff.
     VGT.game        = this;
     VGT.pixi        = new _Pixi();
-    VGT.tabletop    = new _Tabletop();
+    VGT.tabletop    = new _Tabletop({s_start: this.settings.default_zoom});
     VGT.interaction = new _Interaction();
     if(VGT.sound_list) VGT.sounds = new _Sounds(sound_list);
     
