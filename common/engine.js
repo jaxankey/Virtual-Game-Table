@@ -233,6 +233,9 @@ class _Html {
 
     // scroll to the bottom of the history
     m.scrollTop = m.scrollHeight;
+
+    // Show the controls
+    this.show_controls();
   }
 
   // Updates the client information in the GUI
@@ -312,6 +315,9 @@ class _Html {
 
     // Now add the rows in order
     for(var n in rows) clients_table.append(rows[n]);
+
+    // Show the controls
+    this.show_controls();
 
   } // End of rebuild_client_table()
 
