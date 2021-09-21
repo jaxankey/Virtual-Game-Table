@@ -206,7 +206,7 @@ for(var n=0; n<N; n++) {
     vertices   : [[v1[0],v1[1]], [v2[0],v2[1]], [v3[0],v3[1]], [v4[0],v4[1]]],
     groups_see  : ['cards'],
     teams_see   : [n+1],
-    alpha_fill : 0.5,
+    alpha_fill : 0.3,
     alpha_line : 0.0,
     
     width_line : 12,
