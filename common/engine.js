@@ -4035,7 +4035,8 @@ class _NamePlate extends _Thing {
     
     // JACK: This happens many times for one xyrs call.
     // If it's associated with my hand, save it
-    if(this.hand && this.hand.id_client == VGT.clients.me.id_client) 
+    if(this.hand)
+      if(this.hand.id_client == VGT.clients.me.id_client) 
       VGT.html.save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target,this.s.target]);
   }
 } // End of NamePlate
