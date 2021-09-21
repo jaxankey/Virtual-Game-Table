@@ -130,7 +130,7 @@ settings.groups = ['chips']
 settings.expand_dy = 37
 settings.worth_prefix = '$'
 settings.worth_decimals = 2
-settings.collect_dx = -2;
+settings.collect_dx =  2;
 settings.collect_dy = -2;
 
 // Loop over players
@@ -306,7 +306,7 @@ function deal_to_all(e) { log('deal_to_all()', e)
     // Get the coordinates to send it to and send it
     v = rotate_vector([
       (Math.random()-0.5)*cards[0].width*1.5,
-      (Math.random()-0.5)*cards[0].width*0.7 + y1-105], r);
+      (Math.random()-0.5)*cards[0].width*0.7 + y1-175], r);
     
     // Send it to this xy value
     deal_one_to_xy(v[0],v[1], e ? (e.shiftKey||e.button) : undefined, n);
@@ -484,13 +484,13 @@ function new_game() {
   distribute_bars()
 
   // Now the chips...
-  for(var team=1; team<=8; team++) {
-    var a = get_team_angle(team)
+  for(var team=1; team<=N; team++) {
+    var a = get_team_angle(team); _l(team, a)
     game.unselect(team)
 
     // Loop over the stacks for this team
     for(var n in chips[team-1]) { 
-      var v = rotate_vector([y2-43, (4-n)*57], a)
+      var v = rotate_vector([(4-n)*57, y2-43], a)
       game.collect(chips[team-1][n], v[0], v[1], a, a)
     }
   }
