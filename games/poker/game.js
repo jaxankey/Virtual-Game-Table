@@ -488,8 +488,8 @@ game.bind_key('Backspace|Down', get_shuffle_deck)
 game.bind_key('Shift|Backspace|Down', collect_pot)
 game.bind_key('End|Down', fold)
 game.bind_key('Delete|Down', fold_with_noise)
-game.bind_key(['KeyL|Down', 'ShiftKeyL|Down'], deal_to_all)
-game.bind_key(['KeyO|Down', 'ShiftKeyO|Down'], deal_one_to_mouse)
+game.bind_key(['KeyL|Down', 'Shift|KeyL|Down'], deal_to_all)
+game.bind_key(['KeyO|Down', 'Shift|KeyO|Down'], deal_one_to_mouse)
 game.bind_key(['KeyB|Down', 'KeyT|Down'], toss);
 game.bind_pointerdown_button([1,3,4,5], toss);
 
