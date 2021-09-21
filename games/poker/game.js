@@ -209,8 +209,8 @@ for(var n=0; n<N; n++) {
     alpha_line : 0.0,
     
     width_line : 12,
-    //color_line : 0xffffff,
-    alpha_line_see : 1,
+    color_line : 0xffffff,
+    alpha_line_see : 0.4,
     
     render_graphics : false,
   })
@@ -277,9 +277,6 @@ function deal_one_to_mouse(e) { deal_one_to_xy(game.mouse.x, game.mouse.y, e.shi
 // Deals a card to everyone. e.shiftKey makes it face up.
 function deal_to_all(e) { log('deal_to_all()', e) 
   
-  // Remember the last send coordinates
-  if(this.last_vs == undefined) this.last_vs = {}
-
   // Get a sorted list of participating team indices
   var teams = []
   for(var n=0; n<N; n++) if(bars[n].get_image_index()) teams.push(n+1)
@@ -308,8 +305,8 @@ function deal_to_all(e) { log('deal_to_all()', e)
 
     // Get the coordinates to send it to and send it
     v = rotate_vector([
-      (Math.random()-0.5)*cards[0].width*2,
-      (Math.random()-0.5)*cards[0].width + y1-80], r);
+      (Math.random()-0.5)*cards[0].width*1.5,
+      (Math.random()-0.5)*cards[0].width*0.7 + y1-105], r);
     
     // Send it to this xy value
     deal_one_to_xy(v[0],v[1], e ? (e.shiftKey||e.button) : undefined, n);
@@ -385,20 +382,21 @@ function fold(n) { log('fold()', n)
   // Unselect everything
   game.unselect()
 
+  // Pile center
+  var a = get_team_angle(n+1)
+  var v = rotate_vector([0,y1-150], a)
+  
   // Get all the cards in our zone
   var dealer_cards = dealer.get_shoveled()
-  var my_cards = []
+  var p, dv;
   for(var i in cards) 
     if(wedges[n].contains(cards[i].x.value, cards[i].y.value)
-    && !dealer_cards.includes(cards[i])) 
-      my_cards.push(cards[i])
-
-  // Pile em up
-  var a = get_team_angle(n+1)
-  var v = rotate_vector([0,y1-120], a)
-  game.pile(my_cards, v[0], v[1], 50)
-  game.set_image_indices(my_cards, 0)
-
+    && !dealer_cards.includes(cards[i])) { p = cards[i];
+      dv = get_random_location_disc(30)
+      p.set_image_index(0)
+      p.set_xyrs(v[0]+dv.x,v[1]+dv.y, p.r.target + p.R.target + (Math.random()-0.5)*30 - 90)
+    }
+      
   // Kill the in/out
   bars[n].set_image_index(0)
 }
@@ -415,16 +413,35 @@ function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
   var p = game.get_top_thing_at(game.mouse.x, game.mouse.y)
   if(!p) return
 
-  // Get the toss location
-  var v = rotate_vector([0,y1/3], get_team_angle())
-
   // If it's a bar, fold
   if(bars.includes(p)) fold(bars.indexOf(p));
 
   // Otherwise toss it to the top of the pile
   else {
-    p.send_to_top()
-    game.pile([p], v[0], v[1])
+    
+    // Get the toss location
+    var v = rotate_vector([0,y1/2.5], get_team_angle())
+
+    // Add noise
+    var dv = get_random_location_disc(p.width)
+    v[0] += dv.x;
+    v[1] += dv.y;
+
+    // If we have tossed something already, make sure this toss isn't too close
+    if(this.v_last != undefined) {
+      var dx = v[0]-this.v_last[0]
+      var dy = v[1]-this.v_last[1]
+      if(dx*dx+dy*dy < p.width*0.25) {
+        dv = rotate_vector([p.width*0.25,0], Math.random()*360)
+        v[0] += dv[0]
+        v[1] += dv[1]
+      }
+    }
+    // Remember this toss
+    this.v_last = v;
+
+    // Send it
+    p.send_to_top().set_xyrs(v[0],v[1],(Math.random()-0.5)*720)
   }
 }
 

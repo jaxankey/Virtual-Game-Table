@@ -375,6 +375,7 @@ exports.sort_objects_by_key = sort_objects_by_key;
 
 // Gets a vector {x: , y:, r:,} randomly positioned within a disc of specified radius, and rotated randomly on +/-180 degrees
 function get_random_location_disc(radius) {
+  
   // Get distance from origin
   var d = Math.random()*radius;
 
