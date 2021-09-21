@@ -127,6 +127,19 @@ class _Html {
     else                                   this.show_help();
   }
 
+  // Hide controls etc
+  hide_controls() {
+    this.div_controls.ontransitionend = () => {this.div_controls.style.display='none';}
+    this.div_controls.style.opacity = 0;
+  }
+  show_controls() {
+    this.div_controls.ontransitionend = () => {}
+    this.div_controls.style.display = '';
+    this.div_controls.style.transitionProperty = 'all';
+    this.div_controls.style.transitionDuration = '1s';
+    this.div_controls.style.opacity = 1;
+  }
+
   // Fading elements out
   fade_element_out(e) {
     e.ontransitionend = function() {this.style.display = 'none';}
