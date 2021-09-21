@@ -124,7 +124,7 @@
       padding: 0;
       background-color: white;
       transition-property: all;
-      transition-duration: 0.7s;
+      transition-duration: 1s;
       z-index: 50;
       overflow-x: auto;
       box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
@@ -147,12 +147,24 @@
       z-index: 49;
       box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
     }
+
+    .close_button {
+      position: absolute;
+      display: flex;
+      flex-direction: row;
+      top: 0.4em;
+      right: 0.4em;
+      background-color: white;
+      z-index: 49;
+      box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.1);
+    }
     
 
     #controls {
       display: flex;
       flex-direction: column;
       position: absolute;
+      z-index:40;
       left: 1em;
       top:  1em;
       box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
@@ -206,7 +218,7 @@
   
     <div id="controls">
       
-
+      <!--<div class='close_button'><button style='border: none; width: 2em'>X</button></div>-->
 
       <div id="setup">
         
@@ -267,6 +279,7 @@
 
     <div id="help" onpointerdown="VGT.html.hide_help();">
       <img src='images/shortcuts.png' class='center_fit'>
+      <div class='close_button'><button style='border: none; width: 2em'>X</button></div>
     </div><!-- End of help -->
 
     <div id="help_button" onpointerdown="VGT.html.toggle_help();"><button style='border: none; width: 2em;'><h1>?</h1></button></div>

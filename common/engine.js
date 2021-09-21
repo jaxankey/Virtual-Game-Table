@@ -129,7 +129,6 @@ class _Html {
 
   // Fading elements out
   fade_element_out(e) {
-    _l('FUCK!', e)
     e.ontransitionend = function() {this.style.display = 'none';}
     e.style.opacity = 0;
   }
