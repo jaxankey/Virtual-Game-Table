@@ -369,7 +369,7 @@ function collect_pot() {
   game.pile(pot, v[0], v[1], 30)
 
   // Count it
-  game.count(pot,true)
+  //game.count(pot,true)
 
   log('collect_pot()', pot.length, v, y1, get_team_angle(team))
 }
