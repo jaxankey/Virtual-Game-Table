@@ -5032,6 +5032,9 @@ class _Game {
     // Send out the cards
     this.pile(things, x, y, 30); 
 
+    // Process the q immediately so z doesn't arrive very soon.
+    VGT.net.process_queues();
+
     // Start the finish shuffle (cancel any existing one)
     clearTimeout(this._timer_shuffling);
     this._timer_shuffling = setTimeout(this._finish_shuffle.bind(this), 500, things, x, y, r, r_stack, center_on_top, f);
