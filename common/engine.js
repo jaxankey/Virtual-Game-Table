@@ -529,9 +529,13 @@ class _Net {
     var id           = data[0];
     var server_state = data[1];
     
+    // Get the enabled piece count
+    var count = 0;
+    for(var k in VGT.pieces.all) if(!VGT.pieces.all[k].is_disabled) count++;
+    
     // If there are no or too few pieces on the server, initialize / create entries the server's state with layer and z data
     // This should only actually happen if the server has NO pieces, and we're just creating our z-data for it.
-    if(Object.keys(data[1].pieces).length < VGT.pieces.all.length) {
+    if(Object.keys(data[1].pieces).length != count) {
       VGT.log('  NETR_state: Mismatched number of pieces; sending layer and z info...');
       var p;
       for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
@@ -2872,6 +2876,9 @@ class _Thing {
   /* Sends data associated with key (this[key]) to the associated VGT.net.q_pieces_out[this.id_thing][qkey]. */
   update_q_out(key, qkey, only_if_exists, immediate) { 
     
+    // If disabled, no net stuff
+    if(this.is_disabled) return;
+
     // If qkey is not supplied, use the key
     if(qkey == undefined) qkey = key;
 
@@ -2977,6 +2984,8 @@ class _Thing {
    * @param {boolean} do_not_reset_R whether to reset the aux rotation R
    */
   set_packet(k, d) {
+    if(this.is_disabled) return; 
+
     var Nk = 'N'+k;
     
     // We only set the packet data if it exists, and if it's not too old;
@@ -3022,7 +3031,8 @@ class _Thing {
   // This will do NOTHING locally, waiting instead for the server
   // to tell us what to do with it. Here we just send a z request to the server immediately.
   set_z_target(z) { 
-    
+    if(this.is_disabled) return
+
     // Add it to the quick q
     VGT.net.q_z_out.push(this.id_piece);
     VGT.net.q_z_out.push(z);
@@ -3102,7 +3112,7 @@ class _Thing {
     }
   }
 
-  send_to_top() {
+  send_to_top() { 
 
     // Get the parent of the container
     var parent = this.container.parent;
@@ -3191,6 +3201,7 @@ class _Thing {
 
   /** Sets the text and redraws */
   set_text(text, style, background_color) {
+
     // Default style
     var style_default = {fontFamily : 'Arial', fontSize: 48, fill : 0x000000, align : 'center', wordWrap: true, wordWrapWidth: 300}
     style = {...style_default, ...style}
@@ -3330,6 +3341,15 @@ class _Thing {
   is_showing(){ return  this.container.visible; }
   is_visible(){ return  this.container.visible; }
 
+  // Disable the thing all together (no net stuff)
+  disable() { this.hide(); this.is_disabled = true;      return this;}
+  enable()  { this.show(); this.is_disabled = undefined; return this;}
+  set_enabled(enabled) {
+    if(enabled) this.enable();
+    else        this.disable();
+    return this;
+  }
+
   // Returns true if it's ok for the team (index) to grab this thing.
   is_grabbable_by_team(team) { 
     
@@ -3424,7 +3444,7 @@ class _Thing {
    * @param {boolean} do_not_update_q_out   if true, do not send this information to the server (useful on server updates)
    * @param {boolean} do_not_reset_R        if true, do not reset the auxiliary rotation thing.R when setting r.
    */
-  set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) { 
+  set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) { if(this.is_disabled) return this;
     
     // Now for each supplied coordinate, update and send
     if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}

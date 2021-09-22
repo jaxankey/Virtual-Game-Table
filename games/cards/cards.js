@@ -18,12 +18,10 @@
 
 // ASSUMES POKER IS LOADED ALREADY (see game.js)
 
-// After poker loads and connects to the server, make some tweaks to it
-VGT.game_is_ready = function() {
-    for(var n in chips) for(var m in chips[n]) for(var k in chips[n][m]) chips[n][m][k].hide()
-    game.set_special_title('Cards')
-    document.getElementById('button_pot').style.display = 'none'
-}
+// After the poker script runs, disable the pieces we need to disable
+for(var n in chips) for(var m in chips[n]) for(var k in chips[n][m]) chips[n][m][k].disable()
+game.set_special_title('Cards')
+document.getElementById('button_pot').style.display = 'none'
 
 function new_game() { 
   console.log('\n------- NEW CARDS GAME: '+ game.html.select_setups.value +' -------\n\n')

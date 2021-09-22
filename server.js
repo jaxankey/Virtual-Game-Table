@@ -468,7 +468,7 @@ io.on('connection', function(socket) {
   }
 
   // Client has sent a q of changes
-  function on_q(data) { fun.log_date('NETR_q_'+data.length);
+  function on_q(data) { fun.log_date('NETR_q', Object.keys(data[0]).length, Object.keys(data[1]).length, Object.keys(data[2]).length);
     var q_pieces     = data[0];
     var q_hands      = data[1];
     var q_nameplates = data[2];
