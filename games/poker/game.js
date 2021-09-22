@@ -85,7 +85,7 @@ for(var m in suits) for(var n in values) {
 game = new VGT.Game({
   name             : 'Poker',          // Game name
   nameplate_xyrs   : [0, 100, 0, 1],   // Spawn point for new nameplates
-  setups : ['All Cards', 'No Jokers'], // Setup options
+  setups : ['No Jokers', 'All Cards'], // Setup options
   teams  : {                           // Available teams and colors
     Observer : 0xFFFFFF,
     Red      : 0xFF2A2A,
@@ -467,7 +467,7 @@ function new_game() {
   console.log('\n------- NEW GAME: '+ game.html.select_setups.value +' -------\n\n');
 
   // All cards
-  if(game.html.select_setups.selectedIndex == 0) get_shuffle_deck(undefined, game.get_my_team_index(), true)
+  if(game.html.select_setups.selectedIndex == 1) get_shuffle_deck(undefined, game.get_my_team_index(), true)
   
   // No Jokers
   else {
