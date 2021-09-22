@@ -31,6 +31,40 @@ function array_mean_std(a) {
 }
 exports.array_mean_std = array_mean_std;
 
+// Returns true if the two arrays share any common elements
+function arrays_have_common_element(a, b) {
+      
+  // Create an empty object
+  let obj = {};
+        
+      // Loop through the first array
+      for (let i = 0; i < a.length; i++) {
+            
+          // Check if element from first array
+          // already exist in object or not
+          if(!obj[a[i]]) {
+            
+              // If it doesn't exist assign the
+              // properties equals to the 
+              // elements in the array
+              const element = a[i];
+              obj[element] = true;
+          }
+      }
+        
+      // Loop through the second array
+      for (let j = 0; j < b.length ; j++) {
+        
+      // Check elements from second array exist
+      // in the created object or not
+      if(obj[b[j]]) {
+          return true;
+      }
+  }
+  return false;
+}
+exports.arrays_have_common_element = arrays_have_common_element;
+
 /**
  * Returns the key associated with the specified value in object.
  * @param {*} object 

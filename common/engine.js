@@ -2123,12 +2123,13 @@ class _SnapCircle {
 
   default_settings = {
     parent: undefined, // Parent Thing or Tabletop defining the coordinate system; undefined = tabletop
-    x0: 0,              // Snap x value target; undefined = no snap
-    y0: 0,              // Snap y value target; undefined = no snap
+    x0: 0,             // Snap x value target; undefined = no snap
+    y0: 0,             // Snap y value target; undefined = no snap
     r: undefined,      // Snap r value target; undefined = no snap
     s: undefined,      // Snap s value target; undefined = no snap
     radius: 50,        // Radius within which snapping occurs
     groups: [],        // List of group names (strings) other than 'all' to which this snap should be added in VGT.snaps upon creation
+    //max_occupancy: 1,  // Number of pieces that can occupy a snap. 0 or null = infinite
   }
 
   constructor(settings) {
@@ -2141,8 +2142,8 @@ class _SnapCircle {
   }
 
   // Returns a distance score (usually distance squared for speed reasons) between the thing target and the snap
-  get_relationship(thing) {
-
+  get_relationship(thing, do_not_check_occupancy) {
+    
     var v, x, y, r, parent = this.settings.parent;
 
     // If the parent is the piece or the parent is held, do nothing
@@ -2150,6 +2151,28 @@ class _SnapCircle {
     // to released pieces, because they're released one at a time. 
     // Could add 'things to avoid' list or something.
     if(parent == thing) return false;
+    
+    // First, if we have an occupancy, make sure it's below this number
+    /*if(this.settings.max_occupancy && !do_not_check_occupancy) {
+
+      // UPDATE: We should just use get_relationship with do_not_check_occupancy=true, 
+      // and use the 0 values to update the count. The below is old code for reference...
+      
+      // Loop over all the pieces and count those having exactly these coordinates
+      var occupancy = 0;
+      var p;
+      for(var n in VGT.things.all) { p = VGT.things.all[n];
+
+        // If this is in the right group, check it
+        if(p.id_thing == 200 && parent.id_thing == 41) _l(this.settings.x0-p.x.target)
+        if(this.settings.x0 == p.x.target && this.settings.y0 == p.y.target 
+        && arrays_have_common_element(this.settings.groups, p.settings.groups)) {
+          occupancy++;
+        }
+      }
+      
+    } // End of occupancy check*/
+
 
     // If the parent is the tabletop, use the tabletop coordinates
     else if(parent == undefined || parent == VGT.tabletop) {
