@@ -1300,8 +1300,8 @@ class _Interaction {
     this.bind_key(['Enter|Down', 'NumpadEnter|Down'], this.count_selected.bind(this));
 
     // Cycle images
-    this.bind_key(['Space|Down',       'Period|Down'], this.increment_selected_images.bind(this));
-    this.bind_key(['Shift|Space|Down', 'Comma|Down'],  this.decrement_selected_images.bind(this));
+    this.bind_key(['Space|Down', 'Period|Down', 'Shift|Space|Down'], this.increment_selected_images.bind(this));
+    this.bind_key(['Comma|Down'],                                    this.decrement_selected_images.bind(this));
 
     // Tantrum
     this.bind_key(['Shift|End|Down'], this.tantrum.bind(this));
@@ -1402,7 +1402,8 @@ class _Interaction {
     VGT.log('VGT.interaction.increment_selected_images()', e);
 
     // Now do the incrementing
-    VGT.game.increment_image_indices(VGT.game.get_selected(undefined, true));
+    if(e.shiftKey) VGT.game.      set_image_indices(VGT.game.get_selected(), 0) 
+    else           VGT.game.increment_image_indices(VGT.game.get_selected(undefined, true));
   }
 
   decrement_selected_images(e) {
