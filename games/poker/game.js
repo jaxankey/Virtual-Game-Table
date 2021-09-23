@@ -292,6 +292,9 @@ function deal_to_all(e) { log('deal_to_all()', e)
   // Unselect & bring them in!
   game.unselect_all_teams(pot)
   game.pile(pot, 0, 0, 90)
+  //
+  // Remove the last toss
+  toss.v_last = undefined;
 
   // Get a sorted list of participating team indices
   var teams = []
@@ -396,6 +399,9 @@ function collect_pot() {
   // Count it
   //game.count(pot,true)
 
+  // Remove the last toss so we don't have to avoid it.
+  toss.v_last = undefined;
+
   log('collect_pot()', pot.length, v, y1, get_team_angle(team))
 }
 
@@ -405,7 +411,7 @@ function fold(n) { log('fold()', n)
   if(n < 0 || n > 7) return;
   
   // Unselect everything I'm holding
-  game.unselect()
+  game.unselect(undefined, n)
 
   // Pile center
   var a = get_team_angle(n+1)
@@ -426,8 +432,8 @@ function fold(n) { log('fold()', n)
   bars[n].set_image_index(0)
 }
 function fold_with_noise(n) {
-  fold(n)
   game.sounds.play('fold')
+  fold(n)
 }
 
 
@@ -439,16 +445,20 @@ function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
   if(!p) return
 
   // If it's a bar, fold
-  if(bars.includes(p)) fold(bars.indexOf(p));
+  if(bars.includes(p)) {
+    if(e.shiftKey) fold_with_noise(bars.indexOf(p));
+    else           fold           (bars.indexOf(p));
+  }
 
-  // Otherwise toss it to the top of the pile
+  // Otherwise toss it to the top of the pile or back to me
   else {
     
     // Get the toss location
-    var v = rotate_vector([0,y1/2.5], get_team_angle())
+    if(polygon_inner.contains(p.x.value, p.y.value)) var v = rotate_vector([0,y1+150], get_team_angle())
+    else                                             var v = rotate_vector([0,y1/2.5], get_team_angle())
 
     // Add noise
-    var dv = get_random_location_disc(p.width)
+    var dv = get_random_location_disc(p.width*0.75)
     v[0] += dv.x;
     v[1] += dv.y;
 
@@ -532,7 +542,7 @@ game.bind_key('End|Down', fold)
 game.bind_key('Shift|End|Down', fold_with_noise)
 game.bind_key(['KeyL|Down', 'Shift|KeyL|Down'], deal_to_all)
 game.bind_key(['KeyO|Down', 'Shift|KeyO|Down'], deal_one_to_mouse)
-game.bind_key(['KeyB|Down', 'KeyT|Down'], toss);
+game.bind_key(['Shift|KeyB|Down', 'KeyB|Down', 'Shift|KeyT|Down', 'KeyT|Down'], toss);
 game.bind_pointerdown_button([1,3,4,5], toss);
 
 
