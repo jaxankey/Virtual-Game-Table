@@ -1442,7 +1442,7 @@ class _Interaction {
   start_shuffle(e) {
 
     // Nothing selected to shuffle
-    if(!VGT.things.selected[VGT.clients.me.team]) return;
+    if(VGT.things.selected[VGT.clients.me.team] == undefined) return;
     
     // Get the list of things we're shuffling
     var shuffling = Object.values(VGT.things.selected[VGT.clients.me.team]);
@@ -1463,8 +1463,8 @@ class _Interaction {
     this.xroll = this.xm_tabletop;
     this.yroll = this.ym_tabletop;
 
-    // Let us know that we're rolling
-    this._rolling = {...VGT.things.selected[VGT.clients.me.team]};
+    // Remember that we're rolling
+    this._rolling = VGT.game.get_selected();
   }
 
   // Throws the rolling pieces out (if any)
@@ -1498,9 +1498,7 @@ class _Interaction {
     var pieces = Object.values(VGT.things.selected[team]);
 
     // Do the collection
-    if(e.shiftKey || no_offsets) 
-      VGT.game.pile(pieces, x, y);
-      // VGT.game.collect(pieces, x, y, r, r, 0,         0,         true);
+    if(e.shiftKey || no_offsets) VGT.game.pile(pieces, x, y);
     else VGT.game.collect(pieces, x, y, r, r, undefined, undefined, true);
   }
 
@@ -2804,17 +2802,13 @@ class _Thing {
     // from other lists! (Do not send a network packet for this).
     if(this.team_select != -1) this.unselect(true); 
 
-    // Keep track of the selected team.
+    // Make sure there is an object to hold selected things for this id and select it.
+    if(VGT.things.selected[team] == undefined) VGT.things.selected[team] = {};
+    VGT.things.selected[team][this.id_thing] = this;
     this.team_select = team;
 
     // If we're supposed to send an update, make sure there is an entry in the queue
     this.update_q_out('team_select', 'ts', do_not_update_q_out);
-
-    // Make sure there is an object to hold selected things for this id
-    if(VGT.things.selected[team] == undefined) VGT.things.selected[team] = {};
-
-    // Select it
-    VGT.things.selected[team][this.id_thing] = this;
 
     // Draw selection graphics
     this.draw_select_graphics(team);
@@ -2831,8 +2825,7 @@ class _Thing {
     if(this.team_select < 0 || this.id_client_hold) return;
     
     // Remove it from the list
-    if(VGT.things.selected[this.team_select] &&
-       VGT.things.selected[this.team_select][this.id_thing])
+    if(VGT.things.selected[this.team_select] != undefined && VGT.things.selected[this.team_select][this.id_thing])
         delete VGT.things.selected[this.team_select][this.id_thing];
     this.team_select = -1;
 
@@ -4618,13 +4611,14 @@ class _Game {
 
     // Get the things to adjust
     var things = VGT.things.selected[team];
-    if(!things) things = {};
-    
+    if(things == undefined) things = {};          // Empty list
+    else                    things = {...things}; // Make a copy so no one messes with it.
+
     // If there is nothing, use what's under the mouse
     if(!Object.keys(things).length && under_mouse) {
       var p = VGT.game.get_top_thing_at(VGT.game.mouse.x, VGT.game.mouse.y);
       if(!p) return {};
-      things = [p];
+      things[p.id_thing] = p;
     }
     
     return things;
@@ -4917,24 +4911,27 @@ class _Game {
     return {count: count, worths: worths}
   }
 
-  // Collect things into a tidy stack
+  // Collect things into a tidy stack; 
+  // things should be an array.
   collect(things, x, y, r, r_stack, dx, dy, center_on_top, supplied_order) {
 
-    // Get an object, indexed by layer with lists of things, sorted by z
+    // Do nothing with nothing.
+    if(Object.keys(things).length == 0) return
+
+    // Get list of things sorted by z
     if(!supplied_order) var sorted = VGT.game.sort_by_z_target(things); 
     else                var sorted = things; 
 
-    // Loop over layers and stack at the mouse coordinates
-    var p, n=0, dx0, dy0, v;
-    for(var k in sorted) { p = sorted[k];
-      if(dx == undefined) dx0 = p.settings.collect_dx;
-      else                dx0 = dx;
-      
-      if(dy == undefined) dy0 = p.settings.collect_dy;
-      else                dy0 = dy;
+    // Figure out the dx and dy for the whole stack
+    if(dx == undefined) dx = things[0].settings.collect_dx;
+    if(dy == undefined) dy = things[0].settings.collect_dy;
 
-      if(center_on_top) v = rotate_vector([(n-sorted.length+1)*dx0, (n-sorted.length+1)*dy0], r_stack);
-      else              v = rotate_vector([ n                 *dx0,  n                 *dy0], r_stack);
+    // Loop over layers and stack at the mouse coordinates
+    var p, n=0, v;
+    for(var k in sorted) { p = sorted[k];
+      
+      if(center_on_top) v = rotate_vector([(n-sorted.length+1)*dx, (n-sorted.length+1)*dy], r_stack);
+      else              v = rotate_vector([ n                 *dx,  n                 *dy], r_stack);
 
       // Set the location and then increment the offset integer.
       p.set_xyrs(x+v[0], y+v[1], r);
@@ -5271,7 +5268,7 @@ class _Game {
   send_selected_to_top(team) { 
 
     // If we have a selected list for this team
-    if(VGT.things.selected[team]) {
+    if(VGT.things.selected[team] != undefined) {
       
       // Get the sorted objects
       var sorted = this.sort_by_z_value(Object.values(VGT.things.selected[team]));
