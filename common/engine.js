@@ -2678,7 +2678,7 @@ class _Thing {
   /**
    * Uncontrols a thing.
    */
-  release(id_client, force, do_not_update_q_out) { //VGT.log('thing.release()', this.id_thing, id_client, force, do_not_update_q_out, this.id_client_hold);
+  release(id_client, force, do_not_update_q_out, do_not_snap) { //VGT.log('thing.release()', this.id_thing, id_client, force, do_not_update_q_out, this.id_client_hold);
 
     // If we're already not holding
     // or there is a valid holder that is different from the requestor (and we aren't overriding this)
@@ -2689,11 +2689,12 @@ class _Thing {
     && !force) return;
 
     // Snap leader should be a piece that is grabbed by me
-    if(this.is_snap_leader) {
+    if(this.is_snap_leader && !do_not_snap) {
 
       // Find the closest snap point, if any, and set it
       var a = this.get_best_snap_relationship();
       if(a) {
+        
         // Get the difference so we can similarly shift the other formerly held pieces
         var dx = a.x - this.x.target;
         var dy = a.y - this.y.target;
@@ -3348,7 +3349,10 @@ class _Thing {
   }
 
   // Randomizes the shown image
-  randomize_image_index(do_not_update_q_out) { this.set_image_index(random_integer(0,this.textures[0].length-1), do_not_update_q_out); }
+  randomize_image_index(do_not_update_q_out) { 
+    if(this.textures != undefined && this.textures[0] != undefined) 
+      this.set_image_index(random_integer(0,this.textures[0].length-1), do_not_update_q_out); 
+  }
 
   // show / hide the sprite
   show(invert)  {
@@ -5307,6 +5311,10 @@ class _Game {
    */
   hold_selected(id_client, force, do_not_update_q_out) { VGT.log('VGT.game.hold_selected()', id_client, force);
 
+    // Housekeeping: first release everything I'm holding already
+    var held = VGT.things.held[VGT.clients.me.id_client];
+    if(held) for(var i in held) held[i].release(undefined, true, undefined, true) 
+
     // Loop over the selected things and hold whatever isn't already held by someone else.
     for(var k in VGT.things.selected[VGT.clients.all[id_client].team]) 
       VGT.things.selected[VGT.clients.all[id_client].team][k].hold(id_client, force, do_not_update_q_out);
@@ -5321,6 +5329,9 @@ class _Game {
     for(var k in things) things[k].select(team);
   }
 
+  // Returns the number of teams
+  get_team_count() {return Object.keys(this.settings.teams).length;}
+
   /**
    * unselect all things for this team.
    */
@@ -5333,6 +5344,8 @@ class _Game {
     for(var k in VGT.things.selected[team]) VGT.things.selected[team][k].unselect(); 
   }
 
+  // Unselects everything
+  unselect_all_teams() { for(var team=0; team<this.get_team_count(); team++) this.unselect(team); }
 
   /** Function called every quarter second to do housekeeping. */
   _housekeeping() {
