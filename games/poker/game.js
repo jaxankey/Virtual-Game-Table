@@ -278,6 +278,21 @@ function deal_one_to_mouse(e) { deal_one_to_xy(game.mouse.x, game.mouse.y, e.shi
 // Deals a card to everyone. e.shiftKey makes it face up.
 function deal_to_all(e) { log('deal_to_all()', e) 
   
+  // First we get all the chips that are outside the central pot
+  //
+  // Loop over all the chips, looking for those in the right region.
+  var pot = [], c
+  for(var n in chips) for(var m in chips[n]) for(var i in chips[n][m]) { c = chips[n][m][i]
+    if(polygon_inner.contains(c.x.value, c.y.value)
+    && c.x.value*c.x.value + c.y.value*c.y.value > 100*100) pot.push(chips[n][m][i])
+  }
+  // Only the unheld pot chips
+  pot = game.get_unheld_things(pot)
+  //
+  // Unselect & bring them in!
+  game.unselect_all_teams(pot)
+  game.pile(pot, 0, 0, 90)
+
   // Get a sorted list of participating team indices
   var teams = []
   for(var n=0; n<N; n++) if(bars[n].get_image_index()) teams.push(n+1)
@@ -329,6 +344,9 @@ function get_shuffle_deck(e,team,all_cards) { log('get_shuffle_deck()', e, team,
     for(var n in cards) if(polygon_outer.contains(cards[n].x.value, cards[n].y.value)) cs.push(cards[n])
   }
 
+  // Finally, we only collect those that are unheld
+  cs = game.get_unheld_things(cs)
+
   // Get the team angle
   var r = get_team_angle(team)
 
@@ -336,7 +354,7 @@ function get_shuffle_deck(e,team,all_cards) { log('get_shuffle_deck()', e, team,
   if(r == null) { r = 0; var v = [0,0]; }
 
   // Otherwise, use a nice dealer spot for our team
-  else { var v = rotate_vector([x1-60, y1-48], r )}
+  else { var v = rotate_vector([x1-60, y1-48], r ) }
 
   // Set the dealer paddle and collect the cards on top of it
   dealer.set_xyrs(v[0],v[1], r);
@@ -361,12 +379,18 @@ function collect_pot() {
   for(var n in chips) for(var m in chips[n]) for(var i in chips[n][m]) 
     if(polygon_inner.contains(chips[n][m][i].x.value, chips[n][m][i].y.value)) pot.push(chips[n][m][i]);
 
-  // Select the pot
+  // Only the unheld pot chips
+  pot = game.get_unheld_things(pot)
+
+  // Deselect the pot chips for all the teams
+  game.unselect_all_teams(pot)
+
+  // Unselect everything I'm holding and then select the pot
   game.unselect()
   game.select(pot)
 
   // Get the place to collect them
-  var v = rotate_vector([0,y1+120], get_team_angle(team))
+  var v = rotate_vector([0,y1+150], get_team_angle(team))
   game.pile(pot, v[0], v[1], 30)
 
   // Count it

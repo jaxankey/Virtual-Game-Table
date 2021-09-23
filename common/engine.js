@@ -469,7 +469,8 @@ class _Net {
     || this.q_sounds_out.length) {
 
       // Send the outbound information and clear it.
-      VGT.log(    'NETS_q_'+String(VGT.net.id), Object.keys(this.q_pieces_out).length, Object.keys(this.q_hands_out).length, Object.keys(this.q_nameplates_out).length, this.q_sounds_out);
+      //VGT.log(    'NETS_q_'+String(VGT.net.id), this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out);
+      VGT.log('NETS_q_'+String(VGT.net.id), Object.keys(this.q_pieces_out).length, Object.keys(this.q_hands_out).length, Object.keys(this.q_nameplates_out).length, this.q_sounds_out.length);
       this.io.emit('q', [this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out]);
       this.q_pieces_out     = {};
       this.q_hands_out      = {};
@@ -1700,7 +1701,8 @@ class _Interaction {
     var dragging_table = false;
     
     // Only do stuff if the mouse is down
-    if(this.button != undefined && this.button >= 0) {
+    if(this.button != undefined && this.button >= 0 
+      || document.getElementById('debug').checked) {
       
       // If we have held stuff, move them around.
       if(VGT.things.held[VGT.net.id]) {
@@ -1753,7 +1755,7 @@ class _Interaction {
             false,            // do_not_update_q_out (we want to send this info)
             true);            // do_not_reset_R (we don't want to mess with aux rotation for this; it may be animating)
         }
-      } 
+      } // End of "if held"
       
       // Otherwise, if it's the left mouse, pan the board.
       else if(this.button == 0) {
@@ -2674,7 +2676,12 @@ class _Thing {
   } // End of hold
 
   /**
-   * Uncontrols a thing.
+   * Stops holding a thing
+   * @param {int} id_client               Client id requesting release. Canceled if this doesn't match this.id_client_hold.
+   * @param {boolean} force 
+   * @param {boolean} do_not_update_q_out 
+   * @param {boolean} do_not_snap 
+   * @returns 
    */
   release(id_client, force, do_not_update_q_out, do_not_snap) { //VGT.log('thing.release()', this.id_thing, id_client, force, do_not_update_q_out, this.id_client_hold);
 
@@ -2709,8 +2716,9 @@ class _Thing {
     // Reset the snap leader flag
     this.is_snap_leader = undefined;
 
-    // Remove it from the list
+    // Remove it from the list and Delete the empty lists
     delete VGT.things.held[this.id_client_hold][this.id_thing];
+    if(Object.keys(VGT.things.held[this.id_client_hold]).length == 0) delete VGT.things.held[this.id_client_hold];
     this.id_client_hold = 0;
 
     // If we're supposed to send an update, make sure there is an entry in the queue
@@ -3461,27 +3469,27 @@ class _Thing {
    * @param {boolean} do_not_update_q_out   if true, do not send this information to the server (useful on server updates)
    * @param {boolean} do_not_reset_R        if true, do not reset the auxiliary rotation thing.R when setting r.
    */
-  set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) { if(this.is_disabled) return this;
+  set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R, force_update_q_out) { if(this.is_disabled) return this;
     
     // Now for each supplied coordinate, update and send
-    if(x!=undefined && x != this.x.target) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}
-    if(y!=undefined && y != this.y.target) {this.y.set(y,immediate); this.update_q_out('y', 'y', do_not_update_q_out);}
-    if(r!=undefined && r != this.r.target) {
+    if(x!=undefined && (x != this.x.target || force_update_q_out)) {this.x.set(x,immediate); this.update_q_out('x', 'x', do_not_update_q_out);}
+    if(y!=undefined && (y != this.y.target || force_update_q_out)) {this.y.set(y,immediate); this.update_q_out('y', 'y', do_not_update_q_out);}
+    if(r!=undefined && (r != this.r.target || force_update_q_out)) {
       this.r.set(r,immediate); 
       this.update_q_out('r', 'r', do_not_update_q_out);
       if(!do_not_reset_R) {this.set_R(0, immediate, do_not_update_q_out);}
     }
-    if(s!=undefined && s != this.s.target) {this.s.set(s,immediate); this.update_q_out('s', 's', do_not_update_q_out);}
+    if(s!=undefined && (s != this.s.target || force_update_q_out)) {this.s.set(s,immediate); this.update_q_out('s', 's', do_not_update_q_out);}
     this.t_last_move = Date.now();
 
     // Dummy function overloaded by sub-classes, e.g., NamePlate
-    this.after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R);
+    this.after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R, force_update_q_out);
 
     return this
   }
 
   // Called after set_xyrs(); dummy function to overload
-  after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) {};
+  after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R, force_update_q_out) {};
 
   /**
    * Sets the x,y,r,s of this thing relative to the supplied thing's target coordinates.
@@ -4163,8 +4171,9 @@ class _Hand extends _Thing {
   /** Sets t_last_move to the current time to show the hand. */
   ping() {this.t_last_move = Date.now();}
 
-  after_set_xyrs(x,y,r,s,immediate) {
-    this.polygon.set_xyrs(x, y, r, undefined, immediate);
+  // Sets the polygon location to be the same as the hand location; this shouldn't send data, since it's not a _Piece
+  after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R, force_update_q_out) {
+    this.polygon.set_xyrs(x, y, r, undefined, immediate, do_not_update_q_out, do_not_reset_R, force_update_q_out);
   }
 
   /** Other animations associate with the hand. */
@@ -4328,8 +4337,9 @@ class _Clients {
     // Keep track of me
     this.me = this.all[VGT.net.id];
 
-    // Send my hand's rotation
-    this.me.hand.set_xyrs(undefined, undefined, VGT.tabletop.r.target);
+    // Send my hand's rotation x, y, r, s, *immediate, do_not_update_q_out, do_not_reset_R, *force_update_q_out
+    this.me.hand.set_xyrs(undefined, undefined, -VGT.tabletop.r.target, undefined, true, undefined, undefined, true);
+    VGT.net.process_queues(true); // immediately process q's to avoid weird rotation animation as hands are swapped
 
     // Load my last nameplate position (everyone else does this), set it, and send to everyone.
     var s = VGT.html.load_cookie('my_nameplate_xyrs');
@@ -4356,6 +4366,22 @@ class _Clients {
     // Since we know we've got MINE in the right place, show it.
     // The other nameplates will be shown when we receive the first location.
     this.me.nameplate.show();
+
+    // Housekeeping: clear out all the unused held pieces
+    var client_ids = Object.keys(this.all)
+    //
+    // Loop over client ids (k = '10' e.g.)
+    for(var k in VGT.things.held) {
+      //
+      // If the current list of clients doesn't include k, clear it out
+      if(!client_ids.includes(k)) {
+        //
+        // Force release all of them associated with this client and then kill the object.
+        for(var j in VGT.things.held[k]) VGT.things.held[k][j].release(0,true,false,true);
+        delete VGT.things.held[k];
+      }
+    }
+
 
     // Finally, using the current VGT.net.clients, rebuild the html table.
     VGT.html.rebuild_client_table();
@@ -4628,6 +4654,13 @@ class _Game {
     }
     
     return things;
+  }
+
+  // Given a list of things, returns a list of those that are not held.
+  get_unheld_things(things) {
+    var unheld = [];
+    for(var n in things) if(!things[n].id_client_hold) unheld.push(things[n]);
+    return unheld;
   }
 
   /** Adds an undo level if something has changed */
@@ -5355,7 +5388,7 @@ class _Game {
   _housekeeping() {
     
     // Save an undo if we're not holding pieces (and if it's been awhile, which is handled by the function itself)
-    if(VGT.things.held[VGT.net.id] != undefined) this.save_undo();
+    if(VGT.things.held[VGT.net.id] == undefined) this.save_undo();
 
     // If Pixi has finally finished loading, we still haven't connected, 
     // and everything is loaded, connect to server
