@@ -404,7 +404,7 @@ function fold(n) { log('fold()', n)
   if(typeof n != 'number') n = VGT.game.get_my_team_index()-1;
   if(n < 0 || n > 7) return;
   
-  // Unselect everything
+  // Unselect everything I'm holding
   game.unselect()
 
   // Pile center
@@ -526,10 +526,10 @@ function new_game() {
 
 
 //////////////////////////////////////// KEY BINDINGS
-game.bind_key('Backspace|Down', get_shuffle_deck)
-game.bind_key('Shift|Backspace|Down', collect_pot)
+game.bind_key('Backslash|Down', get_shuffle_deck)
+game.bind_key('Shift|Backslash|Down', collect_pot)
 game.bind_key('End|Down', fold)
-game.bind_key('Delete|Down', fold_with_noise)
+game.bind_key('Shift|End|Down', fold_with_noise)
 game.bind_key(['KeyL|Down', 'Shift|KeyL|Down'], deal_to_all)
 game.bind_key(['KeyO|Down', 'Shift|KeyO|Down'], deal_one_to_mouse)
 game.bind_key(['KeyB|Down', 'KeyT|Down'], toss);
@@ -540,8 +540,8 @@ game.bind_pointerdown_button([1,3,4,5], toss);
 
 //////////////////////////////////////// ADDITIONAL GUI
 game.set_special_title('Poker')
-game.add_special_html('<button title="[Backspace] Collects and shuffles the cards in the play area." onpointerdown="get_shuffle_deck()">Get Deck</button>')
-game.add_special_html('<button id="button_pot" title="[Shift-Backspace] Collect all chips in the inner play area."   onpointerdown="collect_pot()"      style="margin-left:0.4em; ">Collect Pot</button>')
-game.add_special_html('<button title="[End] / [Delete] Fold cards and quit playing" onpointerdown="fold()" style="margin-left: 0.4em">Fold</button>')
+game.add_special_html('<button title="[Backslash] Collects and shuffles the cards in the play area." onpointerdown="get_shuffle_deck()">Get Deck</button>')
+game.add_special_html('<button id="button_pot" title="[Shift-Backslash] Collect all chips in the inner play area."   onpointerdown="collect_pot()"      style="margin-left:0.4em; ">Collect Pot</button>')
+game.add_special_html('<button title="[End] Fold cards and quit playing" onpointerdown="fold()" style="margin-left: 0.4em">Fold</button>')
 game.add_special_html('<div style="flex-grow:1"></div>')
 game.add_special_html('<button title="[L] Deals one card to all participants. [Shift] or [Right-click] deals face up." onpointerdown="deal_to_all(event)" style="margin-left:0.4em;">Deal</button>')

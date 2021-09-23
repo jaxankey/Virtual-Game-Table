@@ -1305,7 +1305,7 @@ class _Interaction {
     this.bind_key(['Comma|Down'],                                    this.decrement_selected_images.bind(this));
 
     // Tantrum
-    this.bind_key(['Shift|End|Down'], this.tantrum.bind(this));
+    this.bind_key(['Shift|Escape|Down'], this.tantrum.bind(this));
 
     // Event listeners
     document.addEventListener('contextmenu', e => {e.preventDefault();}); 

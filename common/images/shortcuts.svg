@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    inkscape:export-ydpi="150"
    inkscape:export-xdpi="150"
    inkscape:export-filename="shortcuts.png"
    sodipodi:docname="shortcuts.svg"
-   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   inkscape:version="1.1 (1:1.1+202105261517+ce6663b3b7)"
    id="svg8"
    version="1.1"
    viewBox="0 0 210 297"
    height="297mm"
-   width="210mm">
+   width="210mm"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <defs
      id="defs2">
     <marker
@@ -188,13 +188,13 @@
          id="path1049-1-1" />
     </marker>
     <filter
-       height="1.1000000000000001"
-       width="1.0600000000000001"
-       y="-0.050000000000000003"
-       x="-0.029999999999999999"
+       height="1.0228031"
+       width="1.014252"
+       y="-0.0098267713"
+       x="-0.0061417321"
        id="filter1314"
        inkscape:label="Drop Shadow"
-       style="color-interpolation-filters:sRGB;">
+       style="color-interpolation-filters:sRGB">
       <feFlood
          id="feFlood1304"
          result="flood"
@@ -228,27 +228,32 @@
      inkscape:pagecheckerboard="true"
      showborder="false"
      inkscape:snap-text-baseline="true"
-     inkscape:window-maximized="0"
+     inkscape:window-maximized="1"
      inkscape:window-y="0"
-     inkscape:window-x="-4"
-     inkscape:window-height="1040"
-     inkscape:window-width="1613"
+     inkscape:window-x="0"
+     inkscape:window-height="1015"
+     inkscape:window-width="1920"
      showgrid="true"
      inkscape:document-rotation="0"
      inkscape:current-layer="layer1"
      inkscape:document-units="mm"
-     inkscape:cy="324.967"
-     inkscape:cx="326.85517"
-     inkscape:zoom="0.7"
+     inkscape:cy="253.90625"
+     inkscape:cx="772.65625"
+     inkscape:zoom="0.64"
      inkscape:pageshadow="2"
      inkscape:pageopacity="0"
      borderopacity="1.0"
      bordercolor="#666666"
      pagecolor="#ffffff"
-     id="base">
+     id="base"
+     showguides="false">
     <inkscape:grid
        id="grid833"
        type="xygrid" />
+    <sodipodi:guide
+       position="187.85416,328.75001"
+       orientation="1,0"
+       id="guide17321" />
   </sodipodi:namedview>
   <metadata
      id="metadata5">
@@ -258,24 +263,42 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <g
-     id="layer1"
      inkscape:groupmode="layer"
-     inkscape:label="Layer 1">
+     id="layer2"
+     inkscape:label="Layer 2">
     <rect
        ry="0"
        y="-116.41666"
        x="-52.916664"
-       height="343.95831"
+       height="333.375"
        width="508"
        id="rect1302"
-       style="fill:#ffffff;fill-opacity:0.99411756;stroke-width:0.665001;filter:url(#filter1314);stop-color:#000000" />
+       style="fill:#ffffff;fill-opacity:0.994118;stroke-width:0.665001;stop-color:#000000"
+       inkscape:export-filename="shortcuts.png"
+       inkscape:export-xdpi="150"
+       inkscape:export-ydpi="150" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
+       x="-37.041668"
+       y="203.72917"
+       id="text1593-0-7-6-7-3"><tspan
+         sodipodi:role="line"
+         id="tspan1591-3-3-7-9-9"
+         x="-37.041668"
+         y="203.72917"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Toggle controls: </tspan></text>
+  </g>
+  <g
+     id="layer1"
+     inkscape:groupmode="layer"
+     inkscape:label="Layer 1">
     <g
-       transform="translate(2.639621,77.115263)"
+       transform="translate(13.229165,71.437498)"
        id="g844">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -299,7 +322,7 @@
     </g>
     <g
        id="g844-9"
-       transform="translate(2.63962,90.34443)">
+       transform="translate(13.229164,84.666665)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -322,7 +345,7 @@
     </g>
     <g
        id="g844-1"
-       transform="translate(15.868788,90.34443)">
+       transform="translate(26.458332,84.666665)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -345,7 +368,7 @@
     </g>
     <g
        id="g844-11"
-       transform="translate(-10.589544,90.34443)">
+       transform="translate(0,84.666665)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -368,7 +391,7 @@
     </g>
     <g
        id="g844-5"
-       transform="translate(47.618787,77.115263)">
+       transform="translate(58.208331,71.437498)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -390,7 +413,7 @@
            sodipodi:role="line">8</tspan></text>
     </g>
     <g
-       transform="translate(47.618785,90.34443)"
+       transform="translate(58.208329,84.666665)"
        id="g844-9-7">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -413,7 +436,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">5</tspan></text>
     </g>
     <g
-       transform="translate(60.847953,90.34443)"
+       transform="translate(71.437497,84.666665)"
        id="g844-1-0">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -436,7 +459,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">6</tspan></text>
     </g>
     <g
-       transform="translate(34.38962,90.34443)"
+       transform="translate(44.979164,84.666665)"
        id="g844-11-7">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -459,7 +482,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">4</tspan></text>
     </g>
     <g
-       transform="translate(92.597947,77.115263)"
+       transform="translate(103.18749,71.437498)"
        id="g1384">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -477,7 +500,7 @@
     </g>
     <g
        id="g1384-6"
-       transform="rotate(90,28.904908,121.89517)">
+       transform="rotate(90,37.038562,124.35106)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -494,7 +517,7 @@
     </g>
     <g
        id="g1384-7"
-       transform="matrix(1,0,0,-1,92.597947,137.96323)">
+       transform="matrix(1,0,0,-1,103.18749,132.28547)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -511,7 +534,7 @@
     </g>
     <g
        id="g1384-8"
-       transform="rotate(-90,106.02638,29.297217)">
+       transform="rotate(-90,108.48227,21.163563)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -541,16 +564,16 @@
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
        x="-37.041668"
-       y="134.9375"
+       y="129.64583"
        id="text1593-0-7"><tspan
          sodipodi:role="line"
          id="tspan1591-3-3"
          x="-37.041668"
-         y="134.9375"
+         y="129.64583"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Rotate:</tspan></text>
     <g
        id="g844-9-3"
-       transform="translate(2.645828,108.47916)">
+       transform="translate(13.229162,103.18749)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -573,7 +596,7 @@
     </g>
     <g
        id="g844-11-74"
-       transform="translate(-10.583336,108.47916)">
+       transform="translate(-2e-6,103.18749)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -595,7 +618,7 @@
            sodipodi:role="line">Q</tspan></text>
     </g>
     <g
-       transform="translate(47.618789,108.86526)"
+       transform="translate(58.202123,103.57359)"
        id="g844-9-7-9">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -618,7 +641,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">9</tspan></text>
     </g>
     <g
-       transform="translate(34.389624,108.86526)"
+       transform="translate(44.972958,103.57359)"
        id="g844-11-7-5">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -642,18 +665,18 @@
     </g>
     <text
        id="text1593-0-7-6"
-       y="182.5625"
+       y="166.6875"
        x="-37.041668"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
        xml:space="preserve"><tspan
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538"
-         y="182.5625"
+         y="166.6875"
          x="-37.041668"
          id="tspan1591-3-3-7"
          sodipodi:role="line">Save:</tspan></text>
     <g
        id="g844-11-7-2"
-       transform="translate(23.806291,156.49026)">
+       transform="translate(34.389627,140.61526)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -675,7 +698,7 @@
            sodipodi:role="line">1</tspan></text>
     </g>
     <g
-       transform="translate(37.035458,156.49026)"
+       transform="translate(47.618794,140.61526)"
        id="g844-11-7-2-5">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -698,7 +721,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">2</tspan></text>
     </g>
     <g
-       transform="translate(50.264624,156.49026)"
+       transform="translate(60.84796,140.61526)"
        id="g844-11-7-2-2">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -721,7 +744,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">3</tspan></text>
     </g>
     <g
-       transform="translate(63.493791,156.49026)"
+       transform="translate(74.077127,140.61526)"
        id="g844-11-7-2-20">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -744,7 +767,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">4</tspan></text>
     </g>
     <g
-       transform="translate(76.722958,156.49026)"
+       transform="translate(87.306294,140.61526)"
        id="g844-11-7-2-9">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -767,7 +790,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">5</tspan></text>
     </g>
     <g
-       transform="translate(89.95212,156.49026)"
+       transform="translate(100.53546,140.61526)"
        id="g844-11-7-2-55">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -791,7 +814,7 @@
     </g>
     <g
        id="g844-11-7-2-5-0"
-       transform="translate(103.18127,156.49026)">
+       transform="translate(113.7646,140.61526)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -814,7 +837,7 @@
     </g>
     <g
        id="g844-11-7-2-2-0"
-       transform="translate(116.41044,156.49026)">
+       transform="translate(126.99377,140.61526)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -837,7 +860,7 @@
     </g>
     <g
        id="g844-11-7-2-20-8"
-       transform="translate(129.63961,156.49026)">
+       transform="translate(140.22294,140.61526)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -860,7 +883,7 @@
     </g>
     <g
        id="g844-11-7-2-9-6"
-       transform="translate(142.86877,156.49026)">
+       transform="translate(153.4521,140.61526)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -883,7 +906,7 @@
     </g>
     <g
        id="g3100"
-       transform="translate(0,60.854146)">
+       transform="translate(10.583337,44.979145)">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
          id="rect835-0-4-9-18"
@@ -917,18 +940,18 @@
     </g>
     <text
        id="text1593-0-4-4-5"
-       y="26.4583"
-       x="222.24998"
+       y="31.75"
+       x="224.89583"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
        xml:space="preserve"><tspan
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538"
-         y="26.4583"
-         x="222.24998"
+         y="31.75"
+         x="224.89583"
          id="tspan1591-3-1-5-6"
          sodipodi:role="line">Expand / sort:</tspan></text>
     <g
        id="g844-11-9-0-0"
-       transform="translate(293.6875,-3.6648031e-5)">
+       transform="translate(296.33335,5.2916623)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -950,7 +973,7 @@
            sodipodi:role="line">X</tspan></text>
     </g>
     <g
-       transform="translate(317.5,-3.6648031e-5)"
+       transform="translate(320.14585,5.2916623)"
        id="g844-11-7-2-4-6-0-4">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -984,7 +1007,7 @@
            style="stroke-width:0.264583">+</tspan></text>
     </g>
     <g
-       transform="translate(346.60417,-3.6648031e-5)"
+       transform="translate(349.25002,5.2916623)"
        id="g844-11-9-0-3-9">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1009,16 +1032,16 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
-       x="-37.041664"
-       y="206.37502"
+       x="-37.041668"
+       y="185.20833"
        id="text1593-0-7-6-7"><tspan
          sodipodi:role="line"
          id="tspan1591-3-3-7-9"
-         x="-37.041664"
-         y="206.37502"
+         x="-37.041668"
+         y="185.20833"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Restore:</tspan></text>
     <g
-       transform="translate(23.806292,180.30276)"
+       transform="translate(34.389629,159.13609)"
        id="g844-11-7-2-0">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1042,7 +1065,7 @@
     </g>
     <g
        id="g844-11-7-2-5-09"
-       transform="translate(37.035459,180.30276)">
+       transform="translate(47.618796,159.13609)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -1065,7 +1088,7 @@
     </g>
     <g
        id="g844-11-7-2-2-6"
-       transform="translate(50.264627,180.30276)">
+       transform="translate(60.847964,159.13609)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -1088,7 +1111,7 @@
     </g>
     <g
        id="g844-11-7-2-20-4"
-       transform="translate(63.493787,180.30276)">
+       transform="translate(74.077124,159.13609)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -1111,7 +1134,7 @@
     </g>
     <g
        id="g844-11-7-2-9-3"
-       transform="translate(76.722957,180.30276)">
+       transform="translate(87.306294,159.13609)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -1134,7 +1157,7 @@
     </g>
     <g
        id="g844-11-7-2-55-5"
-       transform="translate(89.95212,180.30276)">
+       transform="translate(100.53546,159.13609)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -1156,7 +1179,7 @@
            sodipodi:role="line">6</tspan></text>
     </g>
     <g
-       transform="translate(103.18127,180.30276)"
+       transform="translate(113.7646,159.13609)"
        id="g844-11-7-2-5-0-6">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1179,7 +1202,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">7</tspan></text>
     </g>
     <g
-       transform="translate(116.41044,180.30276)"
+       transform="translate(126.99377,159.13609)"
        id="g844-11-7-2-2-0-0">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1202,7 +1225,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">8</tspan></text>
     </g>
     <g
-       transform="translate(129.63961,180.30276)"
+       transform="translate(140.22294,159.13609)"
        id="g844-11-7-2-20-8-0">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1225,7 +1248,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">9</tspan></text>
     </g>
     <g
-       transform="translate(142.86877,180.30276)"
+       transform="translate(153.4521,159.13609)"
        id="g844-11-7-2-9-6-8">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1249,7 +1272,7 @@
     </g>
     <g
        id="g844-11-7-2-0-4"
-       transform="translate(10.577125,180.30276)">
+       transform="translate(21.160462,159.13609)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -1284,17 +1307,17 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
-       x="222.24998"
-       y="-21.16667"
+       x="224.89581"
+       y="-23.812504"
        id="text1593-0-4"><tspan
          sodipodi:role="line"
          id="tspan1591-3-1"
-         x="222.24998"
-         y="-21.16667"
+         x="224.89581"
+         y="-23.812504"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Rotate:</tspan></text>
     <g
        id="g844-11-7-2-4-6"
-       transform="translate(298.97917,-47.625006)">
+       transform="translate(301.625,-50.27084)">
       <rect
          ry="2.6458328"
          y="18.520836"
@@ -1326,20 +1349,54 @@
            id="tspan1196-8"
            sodipodi:role="line">+</tspan></text>
     </g>
+    <g
+       id="g844-11-7-2-4-6-04"
+       transform="translate(301.625,-31.750002)">
+      <rect
+         ry="2.6458328"
+         y="18.520836"
+         x="10.583333"
+         height="10.583332"
+         width="23.8125"
+         id="rect835-0-4-9-18-9-1"
+         style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000" />
+      <text
+         id="text839-5-8-7-1-9-0"
+         y="26.844433"
+         x="22.328266"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.47121px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.21178"
+         xml:space="preserve"><tspan
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178"
+           y="26.844433"
+           x="22.328266"
+           id="tspan837-9-1-6-78-8-4"
+           sodipodi:role="line">Alt</tspan></text>
+      <text
+         id="text1198-5-87"
+         y="27.130117"
+         x="35.340775"
+         style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+         xml:space="preserve"><tspan
+           style="stroke-width:0.264583"
+           y="27.130117"
+           x="35.340775"
+           id="tspan1196-8-0"
+           sodipodi:role="line">+</tspan></text>
+    </g>
     <text
        id="text1593-0-4-4"
-       y="2.6458032"
-       x="222.24998"
+       y="13.229166"
+       x="224.89583"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
        xml:space="preserve"><tspan
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538"
-         y="2.6458032"
-         x="222.24998"
+         y="13.229166"
+         x="224.89583"
          id="tspan1591-3-1-5"
          sodipodi:role="line">Collect / pile:</tspan></text>
     <g
        id="g844-11-9-0"
-       transform="translate(293.6875,-23.812536)">
+       transform="translate(296.33335,-13.229174)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -1361,7 +1418,7 @@
            sodipodi:role="line">C</tspan></text>
     </g>
     <g
-       transform="translate(317.5,-23.812536)"
+       transform="translate(320.14585,-13.229174)"
        id="g844-11-7-2-4-6-0">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1395,7 +1452,7 @@
            style="stroke-width:0.264583">+</tspan></text>
     </g>
     <g
-       transform="translate(346.60416,-23.812536)"
+       transform="translate(349.25001,-13.229174)"
        id="g844-11-9-0-3">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1420,16 +1477,16 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
-       x="222.24998"
-       y="50.27084"
+       x="224.89583"
+       y="50.270832"
        id="text1593-0-4-4-5-8"><tspan
          sodipodi:role="line"
          id="tspan1591-3-1-5-6-6"
-         x="222.24998"
-         y="50.27084"
+         x="224.89583"
+         y="50.270832"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Shuffle: </tspan></text>
     <g
-       transform="translate(293.69371,23.426434)"
+       transform="translate(296.33956,23.426427)"
        id="g844-11-9-0-0-2">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1454,16 +1511,16 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
-       x="222.24998"
-       y="74.083336"
+       x="224.89583"
+       y="68.791664"
        id="text1593-0-4-4-5-2"><tspan
          sodipodi:role="line"
          id="tspan1591-3-1-5-6-2"
-         x="222.24998"
-         y="74.083336"
+         x="224.89583"
+         y="68.791664"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Roll (like dice):</tspan></text>
     <g
-       transform="translate(293.68749,47.625044)"
+       transform="translate(296.33334,42.33337)"
        id="g844-11-9-0-0-7">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1510,28 +1567,28 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
-       x="343.95831"
-       y="-21.166685"
+       x="346.60419"
+       y="-23.8125"
        id="text1593-0-8"><tspan
          sodipodi:role="line"
          id="tspan1591-3-2"
-         x="343.95831"
-         y="-21.166685"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Pan</tspan></text>
+         x="346.60419"
+         y="-23.8125"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Pan keys</tspan></text>
     <text
        id="text1593-0-4-4-5-2-6"
-       y="97.895836"
-       x="222.24998"
+       y="87.3125"
+       x="224.89583"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
        xml:space="preserve"><tspan
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538"
-         y="97.895836"
-         x="222.24998"
+         y="87.3125"
+         x="224.89583"
          id="tspan1591-3-1-5-6-2-7"
          sodipodi:role="line">Align / distribute:</tspan></text>
     <g
        id="g844-11-9-0-0-7-0"
-       transform="translate(293.68749,71.437514)">
+       transform="translate(296.33334,60.854168)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -1553,7 +1610,7 @@
            sodipodi:role="line">H</tspan></text>
     </g>
     <g
-       transform="translate(330.72917,71.437514)"
+       transform="translate(333.37502,60.854168)"
        id="g844-11-7-2-4-6-0-4-9-0">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1587,7 +1644,7 @@
            style="stroke-width:0.264583">+</tspan></text>
     </g>
     <g
-       transform="translate(359.83335,71.437514)"
+       transform="translate(362.4792,60.854168)"
        id="g844-11-9-0-3-9-2-4">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1611,7 +1668,7 @@
     </g>
     <g
        id="g844-11-9-0-3-9-2-8-9"
-       transform="translate(306.91667,71.437504)">
+       transform="translate(309.56252,60.854158)">
       <rect
          ry="2.6458328"
          y="18.520834"
@@ -1633,7 +1690,7 @@
            sodipodi:role="line">V</tspan></text>
     </g>
     <g
-       transform="translate(373.06251,71.437514)"
+       transform="translate(375.70836,60.854168)"
        id="g844-11-9-0-3-9-2-8-8-5">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1658,16 +1715,16 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
-       x="222.24998"
-       y="121.70834"
+       x="224.89583"
+       y="105.83334"
        id="text1593-0-4-4-5-2-6-7"><tspan
          sodipodi:role="line"
          id="tspan1591-3-1-5-6-2-7-4"
-         x="222.24998"
-         y="121.70834"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Toggle images:</tspan></text>
+         x="224.89583"
+         y="105.83334"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Cycle images:</tspan></text>
     <g
-       transform="translate(402.16667,95.250024)"
+       transform="translate(404.81252,79.375008)"
        id="g844-11-9-0-0-7-0-1">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1702,7 +1759,7 @@
     </g>
     <g
        id="g844-11-7-2-4-6-0-4-9-0-1"
-       transform="translate(336.02084,95.250024)">
+       transform="translate(338.66669,79.375008)">
       <rect
          ry="2.6458328"
          y="18.520836"
@@ -1735,7 +1792,7 @@
            sodipodi:role="line">+</tspan></text>
     </g>
     <g
-       transform="translate(415.39585,95.250024)"
+       transform="translate(418.0417,79.375008)"
        id="g844-11-9-0-3-9-2-8-9-5">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1769,7 +1826,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">&gt;</tspan></text>
     </g>
     <g
-       transform="translate(300.30209,95.250024)"
+       transform="translate(302.94794,79.375008)"
        id="g844-11-7-2-4-6-0-4-9-0-1-5">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -1793,7 +1850,7 @@
     </g>
     <g
        id="g844-11-7-2-4-6-0-4-9-0-1-5-7"
-       transform="translate(371.73959,95.250024)">
+       transform="translate(374.38544,79.375008)">
       <rect
          ry="2.6458328"
          y="18.52083"
@@ -1817,17 +1874,17 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
-       x="222.25"
-       y="169.33333"
+       x="224.89583"
+       y="142.875"
        id="text1593-0-4-4-5-3"><tspan
          sodipodi:role="line"
          id="tspan1591-3-1-5-6-0"
-         x="222.25"
-         y="169.33333"
+         x="224.89583"
+         y="142.875"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Tantrum:</tspan></text>
     <g
        id="g844-11-7-2-4-6-0-4-5"
-       transform="translate(298.9792,142.87502)">
+       transform="translate(301.62503,116.41669)">
       <rect
          ry="2.6458328"
          y="18.520836"
@@ -1861,7 +1918,7 @@
     </g>
     <g
        id="g844-11-9-0-3-9-3"
-       transform="translate(333.37503,142.87502)">
+       transform="translate(336.02086,116.41669)">
       <rect
          ry="2.6458328"
          y="18.520836"
@@ -1880,7 +1937,30 @@
            y="26.844433"
            x="21.160461"
            id="tspan837-9-0-0-8-2-3"
-           sodipodi:role="line">End</tspan></text>
+           sodipodi:role="line">Esc</tspan></text>
+    </g>
+    <g
+       id="g844-11-9-0-3-9-3-3"
+       transform="translate(26.458334,177.27083)">
+      <rect
+         ry="2.6458328"
+         y="18.520836"
+         x="10.583333"
+         height="10.583331"
+         width="21.166668"
+         id="rect835-0-2-1-7-5-5-1"
+         style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000" />
+      <text
+         id="text839-5-6-6-4-5-7-1"
+         y="26.844433"
+         x="21.160461"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.47121px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.21178"
+         xml:space="preserve"><tspan
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178"
+           y="26.844433"
+           x="21.160461"
+           id="tspan837-9-0-0-8-2-3-9"
+           sodipodi:role="line">Esc</tspan></text>
     </g>
     <text
        id="text2067-0-1-2"
@@ -2039,17 +2119,17 @@
          sodipodi:role="line">Right-click-drag</tspan></text>
     <text
        id="text1593-0-6-2-6-0"
-       y="158.75"
+       y="148.16667"
        x="-37.041668"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
        xml:space="preserve"><tspan
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538"
-         y="158.75"
+         y="148.16667"
          x="-37.041668"
          id="tspan1591-3-7-5-0-5"
          sodipodi:role="line">Zoom:</tspan></text>
     <g
-       transform="translate(2.6458326,132.29167)"
+       transform="translate(13.229168,121.70834)"
        id="g844-9-3-1">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -2072,7 +2152,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">-</tspan></text>
     </g>
     <g
-       transform="translate(-10.583332,132.29167)"
+       transform="translate(3e-6,121.70834)"
        id="g844-11-74-3">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -2124,17 +2204,17 @@
          sodipodi:role="line">(click anywhere to hide)</tspan></text>
     <text
        id="text1593-0-4-4-5-3-0"
-       y="145.52083"
-       x="222.25"
+       y="124.35418"
+       x="224.89583"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
        xml:space="preserve"><tspan
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538"
-         y="145.52083"
-         x="222.25"
+         y="124.35418"
+         x="224.89583"
          id="tspan1591-3-1-5-6-0-6"
          sodipodi:role="line">Count / value</tspan></text>
     <g
-       transform="translate(298.97919,119.06252)"
+       transform="translate(301.62502,97.895859)"
        id="g844-11-7-2-4-6-0-4-5-2">
       <rect
          style="fill:#666666;stroke:#808080;stroke-width:0.765;stop-color:#000000"
@@ -2156,5 +2236,27 @@
            y="26.844433"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.21178">Enter</tspan></text>
     </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
+       x="224.89583"
+       y="-5.2916665"
+       id="text1593-0-6-2-6-5-0-7"><tspan
+         sodipodi:role="line"
+         id="tspan1591-3-7-5-0-7-3-3"
+         x="224.89583"
+         y="-5.2916665"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538">Nudge:</tspan></text>
+    <text
+       id="text1593-0-6-9-65-5-2"
+       y="-5.2916665"
+       x="346.60419"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.326538"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.81944px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000080;stroke-width:0.326538"
+         y="-5.2916665"
+         x="346.60419"
+         id="tspan1591-3-7-2-2-3-6"
+         sodipodi:role="line">Pan keys</tspan></text>
   </g>
 </svg>
