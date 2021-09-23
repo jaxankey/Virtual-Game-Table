@@ -1634,7 +1634,7 @@ class _Interaction {
 
       // If we're not holding shift and it's not already a thing we've selected, 
       // unselect everything.
-      if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.game.unselect(VGT.clients.me.team);
+      if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.game.unselect(undefined, VGT.clients.me.team);
       
       // If we're holding shift and it's already selected, and we're not deselect
       if(e.shiftKey && thing.team_select == VGT.clients.me.team) thing.unselect()
@@ -1656,7 +1656,7 @@ class _Interaction {
     else {
      
       // If we're clicking the tabletop without shift, unselect everything
-      if(!e.shiftKey) VGT.game.unselect(VGT.clients.me.team);
+      if(!e.shiftKey) VGT.game.unselect(undefined, VGT.clients.me.team);
 
       // If we're going to start dragging the rectangle, send the table coordinates of the click
       if(e.button == 2 && hand) { 
@@ -1815,6 +1815,10 @@ class _Interaction {
     if(hand) {
       hand.open();
       hand.vd = false; hand.update_q_out('vd');
+
+      // Remove the selection lists
+      hand._newly_selected      = {};
+      hand._originally_selected = [];
     }
   }
   
@@ -4192,13 +4196,14 @@ class _Hand extends _Thing {
         // Loop over the pieces and select those that are in it.
         var p;
         for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
+
+          // If it's grabbable by me and in the bounds of the selection rectangle, select it.
           if(p.is_grabbable_by_me() && poly.contains(p.x.value, p.y.value)) {
             p.select(VGT.clients.me.team);
-            this._newly_selected[p.id_piece] = true;
+            this._newly_selected[p.id_piece] = true; // Remember this is part of the new batch
           }
           
-          // JACK This logic needs fixing. There should be a list of my originally selected pieces, and a list of newly selected pieces. 
-          // It will need to be in the newly selected pieces in order to unselect
+          // Outside the bounds: If this is one of the newly selected pieces and it's NOT one of the originally selected, unselect 
           else if(Object.keys(this._newly_selected).includes(String(p.id_piece)) && !this._originally_selected.includes(p)) {
             p.unselect();
             delete this._newly_selected[p.id_piece];
@@ -5326,19 +5331,25 @@ class _Game {
   get_team_count() {return Object.keys(this.settings.teams).length;}
 
   /**
-   * unselect all things for this team.
+   * Unselect supplied things (list or object) for this team.
+   * If things==undefined, all things are included. Otherwise, you can restrict this to a list of things.
    */
-  unselect(team) { VGT.log('VGT.game.unselect()', team);
+  unselect(things, team) { VGT.log('VGT.game.unselect()', team);
 
     // If no team, use our team
     if(team == undefined) team = VGT.clients.me.team;
 
+    // It should be faster to loop over things, check if they're selected by the supplied team, and unselect them,
+    // Rather than looping over the team's list and checking if each is in the supplied list.
+    if(things == undefined) things = VGT.things.all;
+    for(var k in things) if(things[k].team_select == team) things[k].unselect();
+
     // Loop over all the selected things and pop them.
-    for(var k in VGT.things.selected[team]) VGT.things.selected[team][k].unselect(); 
+    //for(var k in VGT.things.selected[team]) VGT.things.selected[team][k].unselect(); 
   }
 
   // Unselects everything
-  unselect_all_teams() { for(var team=0; team<this.get_team_count(); team++) this.unselect(team); }
+  unselect_all_teams(things) { for(var team=0; team<this.get_team_count(); team++) this.unselect(things, team); }
 
   /** Function called every quarter second to do housekeeping. */
   _housekeeping() {

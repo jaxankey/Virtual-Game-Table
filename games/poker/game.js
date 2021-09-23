@@ -340,6 +340,7 @@ function get_shuffle_deck(e,team,all_cards) { log('get_shuffle_deck()', e, team,
 
   // Set the dealer paddle and collect the cards on top of it
   dealer.set_xyrs(v[0],v[1], r);
+  game.unselect_all_teams(cs);
   game.start_shuffle(cs, v[0], v[1], r, r, false);
   game.set_image_indices(cs, 0);
 
