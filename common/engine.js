@@ -5346,7 +5346,7 @@ class _Game {
   _housekeeping() {
     
     // Save an undo if we're not holding pieces (and if it's been awhile, which is handled by the function itself)
-    if(!VGT.things.held[VGT.net.id]) this.save_undo();
+    if(VGT.things.held[VGT.net.id] != undefined) this.save_undo();
 
     // If Pixi has finally finished loading, we still haven't connected, 
     // and everything is loaded, connect to server
