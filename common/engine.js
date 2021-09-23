@@ -5311,9 +5311,12 @@ class _Game {
    */
   hold_selected(id_client, force, do_not_update_q_out) { VGT.log('VGT.game.hold_selected()', id_client, force);
 
-    // Housekeeping: first release everything I'm holding already
+    // First release everything I might be holding already; ideally this step is not required, but in case it is
     var held = VGT.things.held[VGT.clients.me.id_client];
-    if(held) for(var i in held) held[i].release(undefined, true, undefined, true) 
+    if(held) {
+      log('WEIRD: we are already holding', Object.keys(held).length, 'objects when calling game.hold_selected().', held)
+      for(var i in held) held[i].release(undefined, true, undefined, true);
+    }
 
     // Loop over the selected things and hold whatever isn't already held by someone else.
     for(var k in VGT.things.selected[VGT.clients.all[id_client].team]) 
