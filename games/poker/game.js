@@ -369,7 +369,7 @@ function collect_pot() {
   game.pile(pot, v[0], v[1], 30)
 
   // Count it
-  game.count(pot,true)
+  //game.count(pot,true)
 
   log('collect_pot()', pot.length, v, y1, get_team_angle(team))
 }
@@ -476,8 +476,8 @@ function new_game() {
     get_shuffle_deck(undefined, game.get_my_team_index(), cards.slice(0,52))
 
     // Send the jokers away
-    cards[52].set_xyrs(y1*2, 0, Math.random()*1000).set_image_index(1)
-    cards[53].set_xyrs(y1*2, 0, Math.random()*1000).set_image_index(1)
+    cards[52].set_xyrs(y1*3, 0, Math.random()*1000).set_image_index(1)
+    cards[53].set_xyrs(y1*3, 0, Math.random()*1000).set_image_index(1)
   }
 
   // Distribute the bars
