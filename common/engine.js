@@ -1660,14 +1660,14 @@ class _Interaction {
       if(!e.shiftKey) VGT.game.unselect(undefined, VGT.clients.me.team);
 
       // If we're going to start dragging the rectangle, send the table coordinates of the click
-      if(e.button == 2 && hand) { 
+      if((e.button == 2 || e.button == 0 && e.shiftKey) && hand) { 
 
         // Keep the coordinates of the click (starting coordinates of the box), and tell everyone
         hand.vd = v; 
         hand.update_q_out('vd'); 
 
         // Remember the originally selected items if we're holding shift
-        if(e.shiftKey) hand._originally_selected = Object.values(VGT.things.selected[VGT.clients.me.team]);
+        if(e.shiftKey && VGT.things.selected[VGT.clients.me.team]) hand._originally_selected = Object.values(VGT.things.selected[VGT.clients.me.team]);
       }
     }
 
@@ -1758,7 +1758,8 @@ class _Interaction {
       } // End of "if held"
       
       // Otherwise, if it's the left mouse, pan the board.
-      else if(this.button == 0) {
+      else if(this.button == 0 && !e.shiftKey) {
+        
         var dx0 = (this.xm_client - this.xd_client)/VGT.tabletop.s.value;
         var dy0 = (this.ym_client - this.yd_client)/VGT.tabletop.s.value;
         
