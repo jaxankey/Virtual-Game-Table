@@ -1456,7 +1456,7 @@ class _Interaction {
   start_roll(e) { VGT.log('start_roll()');
 
     // Ignore subsequent keys
-    if(this.rolling) return;
+    if(this._rolling) return;
 
     // Collect to the starting mouse position, with offset (set to true to remove offset)
     this.collect_selected_to_mouse(e,false);
@@ -1464,22 +1464,21 @@ class _Interaction {
     this.yroll = this.ym_tabletop;
 
     // Let us know that we're rolling
-    this.rolling = {...VGT.things.selected[VGT.clients.me.team]};
-
+    this._rolling = {...VGT.things.selected[VGT.clients.me.team]};
   }
 
-  // Throws the held pieces out
+  // Throws the rolling pieces out (if any)
   roll(e) {
 
     // If rolling
-    if(this.rolling) {
+    if(this._rolling) {
 
       // Distribute them around the mouse
-      VGT.game.scramble(Object.values(this.rolling), this.xm_tabletop, this.ym_tabletop, 1.5, 1.4);
+      VGT.game.scramble(Object.values(this._rolling), this.xm_tabletop, this.ym_tabletop, 1.5, 1.4);
 
       // Not rolling
-      this.rolling.length = 0;
-      this.rolling = false;
+      this._rolling.length = 0;
+      this._rolling = false;
     }
   }
 
@@ -2268,10 +2267,7 @@ class _SnapGrid {
 
     var parent = this.settings.parent;
 
-    // If the parent is the piece or the parent is held, do nothing
-    // Note checking if the piece is held here would randomly prevent snapping
-    // to released pieces, because they're released one at a time. 
-    // Could add 'things to avoid' list or something.
+    // Don't snap a thing to itself (!)
     if(parent == thing) return false;
 
     // If the parent is the tabletop, use the tabletop coordinates
@@ -2459,10 +2455,9 @@ class _Thing {
     this.sh = this.s;
 
     // Time of last movement (used for fade out animation)
-    this.t_last_move    = 0;
+    this.t_last_move  = 0;
     this.t_last_image = 0;
-    this.t_last_hold    = 0; // Last time we held the piece
-
+    
     // image parameters
     this._n = 0;             // Current image index
 
@@ -2713,9 +2708,6 @@ class _Thing {
 
     // Remove it from the list
     delete VGT.things.held[this.id_client_hold][this.id_thing];
-
-    // If it was me holding it, remember the time I let go.
-    if(this.id_client_hold == VGT.net.id) this.t_last_hold = Date.now();
     this.id_client_hold = 0;
 
     // If we're supposed to send an update, make sure there is an entry in the queue
@@ -5028,7 +5020,7 @@ class _Game {
   client_release(id_client, force, do_not_update_q_out) { 
     
     // If we have a held list for this client id
-    if(VGT.things.held[id_client]) {
+    if(VGT.things.held[id_client] != undefined) {
       VGT.log('client_release()', id_client, VGT.things.held[id_client].length);
 
       // Remember the previously held pieces so they know what to do with the snap etc
@@ -5278,10 +5270,10 @@ class _Game {
   // Sends all selected things to the top.
   send_selected_to_top(team) { 
 
-    // If we have a held list for this client id
+    // If we have a selected list for this team
     if(VGT.things.selected[team]) {
       
-      // Get the sorted held objects, indexed by layer
+      // Get the sorted objects
       var sorted = this.sort_by_z_value(Object.values(VGT.things.selected[team]));
       
       // Send them to the top, bottom first
@@ -5293,10 +5285,10 @@ class _Game {
   // Sends all selected things to the bottom.
   send_selected_to_bottom(team) { 
 
-    // If we have a held list for this client id
+    // If we have a selected list for this team
     if(VGT.things.selected[team]) {
       
-      // Get the sorted held objects
+      // Get the sorted objects
       var sorted = this.sort_by_z_value(Object.values(VGT.things.selected[team]), true);
       
       // Send them to the top, bottom first
@@ -5361,16 +5353,16 @@ class _Game {
     if(VGT.pixi.ready && !VGT.net.ready && VGT.pixi.queue.length==0) VGT.net.connect_to_server();
 
     // If we're rolling dice, do the animation, just before telling everyone
-    if(VGT.interaction.rolling) 
+    if(VGT.interaction._rolling) 
       var d;
-      for(var n in VGT.interaction.rolling) {
+      for(var n in VGT.interaction._rolling) {
 
         // Randomize the shown image
-        VGT.interaction.rolling[n].randomize_image_index();
+        VGT.interaction._rolling[n].randomize_image_index();
 
         // Randomize the location around the hand
-        d = get_random_location_disc(Math.min(VGT.interaction.rolling[n].width, VGT.interaction.rolling[n].height));
-        VGT.interaction.rolling[n].set_xyrs(VGT.interaction.xroll+d.x, VGT.interaction.yroll+d.y, d.r*4);
+        d = get_random_location_disc(Math.min(VGT.interaction._rolling[n].width, VGT.interaction._rolling[n].height));
+        VGT.interaction._rolling[n].set_xyrs(VGT.interaction.xroll+d.x, VGT.interaction.yroll+d.y, d.r*4);
       }
 
     // Process net queues.
