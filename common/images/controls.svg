@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   inkscape:export-ydpi="150"
-   inkscape:export-xdpi="150"
+   inkscape:export-ydpi="100"
+   inkscape:export-xdpi="100"
    inkscape:export-filename="shortcuts.png"
-   sodipodi:docname="shortcuts.svg"
+   sodipodi:docname="controls.svg"
    inkscape:version="1.1 (1:1.1+202105261517+ce6663b3b7)"
    id="svg8"
    version="1.1"
@@ -235,11 +235,11 @@
      inkscape:window-width="1920"
      showgrid="true"
      inkscape:document-rotation="0"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="layer2"
      inkscape:document-units="mm"
-     inkscape:cy="253.90625"
-     inkscape:cx="772.65625"
-     inkscape:zoom="0.64"
+     inkscape:cy="235.33398"
+     inkscape:cx="941.3359"
+     inkscape:zoom="0.45254834"
      inkscape:pageshadow="2"
      inkscape:pageopacity="0"
      borderopacity="1.0"
@@ -272,10 +272,10 @@
      inkscape:label="Layer 2">
     <rect
        ry="0"
-       y="-116.41666"
-       x="-52.916664"
-       height="333.375"
-       width="508"
+       y="-95.25"
+       x="-47.625"
+       height="306.9166"
+       width="497.41663"
        id="rect1302"
        style="fill:#ffffff;fill-opacity:0.994118;stroke-width:0.665001;stop-color:#000000"
        inkscape:export-filename="shortcuts.png"
@@ -2178,30 +2178,13 @@
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:20.5189px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.512974"
        x="-42.333332"
-       y="-89.958336"
+       y="-74.083336"
        id="text2067-0-1-2-9"><tspan
          sodipodi:role="line"
-         id="tspan2065-9-5-8-9"
          x="-42.333332"
-         y="-89.958336"
-         style="fill:#bb4646;fill-opacity:1;stroke-width:0.512974">Welcome to Virtual Game Table!</tspan><tspan
-         sodipodi:role="line"
-         x="-42.333332"
-         y="-64.309708"
+         y="-74.083336"
          style="fill:#bb4646;fill-opacity:1;stroke-width:0.512974"
-         id="tspan3380" /></text>
-    <text
-       id="text2067-0-1-2-9-1"
-       y="-74.084946"
-       x="-42.332409"
-       style="font-style:normal;font-weight:normal;font-size:8.46667px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.512973"
-       xml:space="preserve"
-       transform="scale(1.0000218,0.9999782)"><tspan
-         id="tspan3380-3"
-         style="font-size:8.46667px;fill:#bb4646;fill-opacity:1;stroke-width:0.512973"
-         y="-74.084946"
-         x="-42.332409"
-         sodipodi:role="line">(click anywhere to hide)</tspan></text>
+         id="tspan3380">Virtual Game Table Controls</tspan></text>
     <text
        id="text1593-0-4-4-5-3-0"
        y="124.35418"
