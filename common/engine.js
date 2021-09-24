@@ -3019,7 +3019,7 @@ class _Thing {
     // IF the packet is new or it's time to give up and trust the server
     // OR this piece is held and held by someone else; If I'm still holding it, throw away whatever the server says
     // JACK: Didn't this need to be >, not >= to avoid flicker? Also, I think k=='ih' should be no matter what?
-    if( ( d[Nk] > this._N[k] || Date.now()-this._T[k] > 2000 ) 
+    if( ( d[Nk] >= this._N[k] || Date.now()-this._T[k] > 2000 ) 
     || this.id_client_hold > 0 && this.id_client_hold != VGT.clients.me.id_client) { 
     
       // Set the value
