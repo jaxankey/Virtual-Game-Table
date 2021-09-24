@@ -3012,14 +3012,13 @@ class _Thing {
     // Helpful shortcut
     var Nk = 'N'+k;
     
-    // We only set the packet data if it exists, and if it's not too old;
-    // or if it's been awhile since the parameter changed,
-    // or if someone else is holding it (supercedes any _N stuff we might have incremented)
-    
-    // IF the packet is new or it's time to give up and trust the server
-    // OR this piece is held and held by someone else; If I'm still holding it, throw away whatever the server says
-    // JACK: Didn't this need to be >, not >= to avoid flicker? Also, I think k=='ih' should be no matter what?
-    if( ( d[Nk] >= this._N[k] || Date.now()-this._T[k] > 2000 ) 
+    // If the server is telling us to change the holder, CHANGE THE HOLDER! It's like z. MUST defer to server.
+    if(k=='ih') this.hold(d[k], true, true);
+
+    // Otherwise, we update the value....
+    //   IF the packet is newer than our estimate or it's time to give up and trust the server
+    //   OR this piece is held and held by someone else (if I'm still holding it legally, screw the server)
+    else if( ( d[Nk] >= this._N[k] || Date.now()-this._T[k] > 2000 ) 
     || this.id_client_hold > 0 && this.id_client_hold != VGT.clients.me.id_client) { 
     
       // Set the value
