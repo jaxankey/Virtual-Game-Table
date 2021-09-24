@@ -433,24 +433,25 @@ io.on('connection', function(socket) {
         delete state_list[id]['Nih'];
       } // End of missing holder cleanup
 
-      // If no one is hold it (0 or undefined) OR the holder is this client, set a flag to update the server state for this piece
+      // If no one is holding it (0 or undefined) OR the holder is this client, 
+      // set a flag to update the server state for this piece
       // Otherwise, we update the incoming q state with that of the server
       update_server_state = !state_list[id]['ih'] || state_list[id]['ih'] == socket.id;    
 
       // Loop over attributes and transfer to or from the server state, depending on who is holding the piece
-      // Note the input queue (q) should never carry 'N' data
+      // Note the input queue (q) from clients should never carry 'N' data; this is tracked and sent by the server
       for(k in q[id]) {
         if(k[0] == 'N') throw 'WHUT??'
         
         // Flag to send along with everything to make sure the end users know to update things immediately
         if(k == 'now') continue; // On to the next key
         
-        // Make sure there is an update number for this property
+        // Make sure there is a packet number for this property
         // This is tracked by the server to remove ambiguity about the order of things.
         if(state_list[id]['N'+k] == undefined) state_list[id]['N'+k] = 1;
 
         // If it is valid to update the server state for this piece
-        if(update_server_state) state_list[id][k]      = q[id][k];
+        if(update_server_state) state_list[id][k] = q[id][k];
         
         // Otherwise overwrite the q entry
         else q[id][k] = state_list[id][k];

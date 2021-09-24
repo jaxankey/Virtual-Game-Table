@@ -445,7 +445,7 @@ class _Net {
         if(immediate != undefined) c['now'] = true;
         
         // Force-set the position etc (we will never be holding or send others' hand info)
-        p.set_packets(['x','y','r','n'], c);
+        p.set_packet_attributes(['x','y','r','n'], c);
         
         // vd should be null or [x,y] for the down click coordinates
         if(c.vd != undefined) p.vd = c.vd;
@@ -2958,10 +2958,10 @@ class _Thing {
     // If we're overriding immediate
     if(immediate != undefined) d['now'] = immediate;
 
-    // Show the nameplates if they have a 'now' attached to them.
+    // Special case: nameplate initialization -- show the nameplates if they have a 'now' attached to them.
     if(this.type=='NamePlate' && d['now']) this.show();
 
-    // We do not want to let the server change anything about the pieces we're legally holding, 
+    // We do not want to let the server change anything about the pieces that it said we are holding, 
     // UNLESS it's overriding our hold status, for example, when someone else grabbed it first and our packets crossed paths. 
     // As such, we should update the hold status first!
     //
@@ -2985,11 +2985,11 @@ class _Thing {
     // Updates the holder regardless of who is holding it
     
     // There are some "bad network" scenarios when the N's for each attribute are stuck at a higher value than that of the server's packet
-    // Eventually, we should defer to the server. 
-    this.set_packet('ih', d);
+    // Eventually, we will timeout and defer to the server.  
+    this.set_packet_attribute('ih', d);
 
     // Now update the different attributes only if we're not holding it (our hold supercedes everything)
-    if(this.id_client_hold != VGT.net.id) this.set_packets(['x','y','r','s','R','n','ts'], d);
+    if(this.id_client_hold != VGT.net.id) this.set_packet_attributes(['x','y','r','s','R','n','ts'], d);
   }
 
   set_x(x, immediate, do_not_update_q_out)                 { this.set_xyrs(x,undefined,undefined,undefined, immediate, do_not_update_q_out) }
@@ -2999,25 +2999,29 @@ class _Thing {
   set_R(R, immediate, do_not_update_q_out)                 { this.R.set(R,immediate); this.update_q_out('R','R', do_not_update_q_out); }
   
   /**
-   * 
+   * Given packet data d, use netcode logic to set the piece data for the supplied key k.
    * @param {string} k Key, either 'ih', 'x', 'y', 'r', 's', 'R', 'n', 'ts'
    * @param {object} d Data packet, containing at least d[key], d['N'+k]
    * @param {boolean} immediate Whether to apply the change immediately
    * @param {boolean} do_not_update_q_out whether to update the outbound q
    * @param {boolean} do_not_reset_R whether to reset the aux rotation R
    */
-  set_packet(k, d) {
-    if(this.is_disabled) return; 
+  set_packet_attribute(k, d) {
+    if(this.is_disabled || d[k] == undefined) return this; 
 
+    // Helpful shortcut
     var Nk = 'N'+k;
     
     // We only set the packet data if it exists, and if it's not too old;
     // or if it's been awhile since the parameter changed,
     // or if someone else is holding it (supercedes any _N stuff we might have incremented)
-    if(d[k] != undefined && (
-          (d[Nk] >= this._N[k] || Date.now()-this._T[k] > 2000)
-          || this.id_client_hold && this.id_client_hold != VGT.clients.me.id_client)
-    ) { 
+    
+    // IF the packet is new or it's time to give up and trust the server
+    // OR this piece is held and held by someone else; If I'm still holding it, throw away whatever the server says
+    // JACK: Didn't this need to be >, not >= to avoid flicker? Also, I think k=='ih' should be no matter what?
+    if( ( d[Nk] > this._N[k] || Date.now()-this._T[k] > 2000 ) 
+    || this.id_client_hold > 0 && this.id_client_hold != VGT.clients.me.id_client) { 
+    
       // Set the value
       if      (k=='x')  this.set_x(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
       else if (k=='y')  this.set_y(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
@@ -3026,18 +3030,20 @@ class _Thing {
       else if (k=='R')  this.set_R(d[k], d['now'], true);       // value, immediate, do_not_update_q_out
       else if (k=='n')  this.set_image_index(d[k], true);       // index, do_not_update_q_out
       else if (k=='ts') this.select(d[k], true);                // id_team, do_not_update_q_out
-      else if (k=='ih') this.hold(d[k], true, true);            // id_client, force, do_not_update_q_out
+      //else if (k=='ih') this.hold(d[k], true, true);            // id_client, force, do_not_update_q_out
       else return this;
 
       // Remember the packet number and the time that this happened
       this._N[k] = d[Nk];
       this._T[k] = Date.now();
-    }
-    return this;
-  } // End of set_packet()
+    } // End of "we're allowed to set this"
 
-  /** Sets all the supplied packet keys with this.set_packet. */
-  set_packets(ks, d, force) { for(var n in ks) this.set_packet(ks[n],d,force); }
+    return this;
+
+  } // End of set_packet_attribute()
+
+  /** Sets all the supplied packet keys with this.set_packet_attribute. */
+  set_packet_attributes(ks, d, force) { for(var n in ks) this.set_packet_attribute(ks[n],d,force); }
 
   // Returns the z-order index (pieces with lower index are behind this one)
   get_z_value() {
