@@ -63,18 +63,11 @@ The games I have coded thus far include some basics:
 and some more complicated systems:
  * `puerto-rico`: Puerto Rico (can't publish images, but you can find / scan them)
 
+## Controls
+
+![Controls](https://raw.githubusercontent.com/jaxankey/Virtual-Game-Table/VGT3/common/images/controls.png)
+
 ## Roadmap
- * Help page with keyboard controls. For now:
-   * pan with `W` `A` `S` `D` 
-   * rotate with `Q` `E` 
-   * rotate pieces with `Shift`-`W` `A` `S` `D`
-   * collect pieces with `C`
-   * expand pieces with `X` (sort with `Shift`-`X`)
-   * shuffle with `Z`
-   * roll (like dice) with `R`
-   * Save view with `Shift`-`1` to `9`, load view with `1` to `9`
-   * Throw a tantrum with `Shift`-`End`
-   * Poker: hover over buttons for hotkeys, and use `B` or `T` to bet/toss things into the pot
  * `arkham-horror`: Arkham Horror base set (can't publish images, but you can find / scan them)
  * `pandemic`: Pandemic base set plus some other stuff.
  * Go: Stones and a board
