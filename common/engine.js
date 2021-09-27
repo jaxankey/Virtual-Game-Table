@@ -526,17 +526,15 @@ class _Net {
   /** First thing to come back after 'hallo' is the full game state. */
   on_state(data) { VGT.log('NETR_state', data);
 
-    // Get our client id and the server state
-    var id           = data[0];
-    var server_state = data[1];
-    
+    // This assumes 'id' and 'clients' packet has already arrived.
+
     // Get the enabled piece count
     var count = 0;
     for(var k in VGT.pieces.all) if(!VGT.pieces.all[k].is_disabled) count++;
     
     // If there are no or too few pieces on the server, initialize / create entries the server's state with layer and z data
     // This should only actually happen if the server has NO pieces, and we're just creating our z-data for it.
-    if(Object.keys(data[1].pieces).length != count) {
+    if(Object.keys(data.pieces).length != count) {
       VGT.log('  NETR_state: Mismatched number of pieces; sending layer and z info...');
       var p;
       for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
@@ -546,20 +544,14 @@ class _Net {
       }
     }
 
-    // Store all the info we need to keep locally
-    this.clients = server_state.clients;
-
-    // The server assigned VGT.net.me a unique id
-    this.id = parseInt(id);
-
-    // Rebuild the client object, hands, nameplates and HTML; 
-    // also loads our cookie for where our nameplate was last positioned, and sends this via set_xyrs()
-    VGT.clients.rebuild();
+    // After a disconnect, there can be leftover lists like things.selected and things.held that need fixing. 
+    VGT.game.unselect_all_teams(VGT.things.all, true); // Start in a state where nothing is selected locally, and let the incoming data tell us everything else.
+    // Things.held should be corrected on the first click.
 
     // Regardless of the z-fix above, process rest of the incoming piece data (xyrs, etc), ignoring the nameplates and hands
-    this.q_pieces_in = server_state['pieces'];
-    //this.q_nameplates_in = server_state['nameplates']; // Nameplates are not even assigned yet
-    //this.q_hands_in      = server_state['hands'];
+    this.q_pieces_in = data['pieces'];
+    //this.q_nameplates_in = data['nameplates']; // Nameplates are not even assigned yet
+    //this.q_hands_in      = data['hands'];      // We should update these when people move.
     this.process_queues(true); // immediate
 
     // Make sure all the hands are initially faded out
@@ -586,13 +578,15 @@ class _Net {
 
   } // End of on_state
 
-  /** Someone sends the client table data. */
-  on_clients(data) { if(!this.ready) return; VGT.log('NETR_clients', data);
+  /** Someone sends [id, clients] table data. */
+  on_clients(data) { VGT.log('NETR_clients', data);
 
-    // Update the state
-    this.clients = data;
+    // IMPORTANT: This can happen when the server reboots and we are still "connected".
+    // In this case, VGT.net.id is stale and will not match. See VGT.clients.rebuild()
 
-    // Rebuild gui and clients list
+    // Get my VGT.net.id and update the clients list, then rebuild the data and html
+    this.id      = data[0];
+    this.clients = data[1];
     VGT.clients.rebuild();
 
   } // End of on_clients
@@ -637,18 +631,23 @@ class _Net {
     if(VGT.game._redos) VGT.game._redos.length = 0;
   }
 
+  // Server connection error; just reload so things don't get out of sync and the user is 
+  // accutely aware of what's happening!
+  on_connect_error() { location.reload(); }
+
   /** Define what server messages to expect, and how to handle them. */
   setup_listeners() {
   
-    this.io.on('z',          this.on_z       .bind(this));
-    this.io.on('q',          this.on_q       .bind(this));
-    this.io.on('sounds',     this.on_sounds  .bind(this));
-    this.io.on('state',      this.on_state   .bind(this));
-    this.io.on('clients',    this.on_clients .bind(this));
-    this.io.on('yabooted',   this.on_yabooted.bind(this));
-    this.io.on('say',        this.on_say     .bind(this)); 
-    this.io.on('chat',       this.on_chat    .bind(this));
-    this.io.on('kill_undos', this.on_kill_undos.bind(this));
+    this.io.on('z',             this.on_z         .bind(this));
+    this.io.on('q',             this.on_q         .bind(this));
+    this.io.on('sounds',        this.on_sounds    .bind(this));
+    this.io.on('clients',       this.on_clients   .bind(this));
+    this.io.on('state',         this.on_state     .bind(this));
+    this.io.on('yabooted',      this.on_yabooted  .bind(this));
+    this.io.on('say',           this.on_say       .bind(this)); 
+    this.io.on('chat',          this.on_chat      .bind(this));
+    this.io.on('kill_undos',    this.on_kill_undos.bind(this));
+    this.io.on('connect_error', this.on_connect_error.bind(this));
 
   } // End of setup_listeners()
 
@@ -2820,8 +2819,10 @@ class _Thing {
     // from other lists! (Do not send a network packet for this).
     if(this.team_select != -1) this.unselect(true); 
 
-    // Make sure there is an object to hold selected things for this id and select it.
+    // Make sure there is an object to hold selected things for this id.
     if(VGT.things.selected[team] == undefined) VGT.things.selected[team] = {};
+    //
+    // Do the selecting.
     VGT.things.selected[team][this.id_thing] = this;
     this.team_select = team;
 
@@ -4327,7 +4328,7 @@ class _Clients {
       // Set the hand id_client
       this.all[c.id].hand.id_client = c.id;
       
-      // Show all hands but my own
+      // Show all hands but my own: JACK: this is where the checkbox check happens for showing my own hand.
       if(c.id == VGT.net.id) this.all[c.id].hand.show();
       else                   this.all[c.id].hand.show();
 
@@ -5381,7 +5382,7 @@ class _Game {
    * Unselect supplied things (list or object) for this team.
    * If things==undefined, all things are included. Otherwise, you can restrict this to a list of things.
    */
-  unselect(things, team) { VGT.log('VGT.game.unselect()', team);
+  unselect(things, team, do_not_update_q_out) { VGT.log('VGT.game.unselect()', team);
 
     // If no team, use our team
     if(team == undefined) team = VGT.clients.me.team;
@@ -5389,14 +5390,14 @@ class _Game {
     // It should be faster to loop over things, check if they're selected by the supplied team, and unselect them,
     // Rather than looping over the team's list and checking if each is in the supplied list.
     if(things == undefined) things = VGT.things.all;
-    for(var k in things) if(things[k].team_select == team) things[k].unselect();
+    for(var k in things) if(things[k].team_select == team) things[k].unselect(do_not_update_q_out);
 
     // Loop over all the selected things and pop them.
     //for(var k in VGT.things.selected[team]) VGT.things.selected[team][k].unselect(); 
   }
 
   // Unselects everything
-  unselect_all_teams(things) { for(var team=0; team<this.get_team_count(); team++) this.unselect(things, team); }
+  unselect_all_teams(things, do_not_update_q_out) { for(var team=0; team<this.get_team_count(); team++) this.unselect(things, team, do_not_update_q_out); }
 
   /** Function called every quarter second to do housekeeping. */
   _housekeeping() {

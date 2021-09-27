@@ -181,6 +181,15 @@ function delay_send(socket, key, data) {
   }
 }
 
+/**
+ * Special case: for sending clients, we have to attach the socket id for everyone.
+ */
+function delay_send_clients_to_all() {
+
+  // Loop over all the client ids (should match socket ids---)
+  for (id in sockets) delay_send(sockets[id], 'clients', [id, state.clients]);
+}
+
 
 
 ///////////////////////////////////////////
@@ -201,13 +210,6 @@ var last_names_2  = ['tastic', 'cakes', 'pants', 'face', 'juice',
                      'bag', 'hole', 'friends', 'skillet', 'billy',
                      'chunks', 'dirt', 'mouth'];
 
-// Sends the game state to the specified client id
-function send_state(id) {
-  fun.log_date('NETS_state to', id);
-
-  // Send it
-  delay_send(sockets[id], 'state', [id, state]);
-}     
 
 
 
@@ -230,15 +232,10 @@ io.on('connection', function(socket) {
    * My own function that sends the supplied data to everyone else; 
    * socket.broadcast.emit is not working. 
    */
-   function broadcast(key, data) {
-    for (id in state.clients) 
-      if(id != socket.id) delay_send(sockets[id], key, data);
-  }
+  function broadcast(key, data) { for (id in state.clients) if(id != socket.id) delay_send(sockets[id], key, data); }
 
-  // Put the id somewhere safe.
+  // Put the id somewhere safe, and use this id to update the master sockets list
   socket.id = last_id++;
-
-  // Save this socket, sorted by id
   sockets[socket.id] = socket;
 
   // Add a new client to the list
@@ -251,6 +248,8 @@ io.on('connection', function(socket) {
   
   // Summarize existing state.clients
   for(n in state.clients) fun.log_date(' ', n, state.clients[n]);
+
+
 
   ////////////////////////////
   // Queries sent by client
@@ -266,11 +265,9 @@ io.on('connection', function(socket) {
     if(name != '' && socket && state.clients) state.clients[socket.id].name = name;
     if(              socket && state.clients) state.clients[socket.id].team = team;
 
-    // Send the full game state
-    send_state(socket.id);
-
-    // Tell everyone else just the client list (socket.brodcast.emit is not working)
-    broadcast('clients', state.clients);
+    // FIRST the client list (to everyone), THEN the state.
+    delay_send_clients_to_all();
+    delay_send(socket, 'state', state);
   }
   socket.on('hallo', function(data) {delay_function(on_hallo, data)});
 
@@ -293,8 +290,8 @@ io.on('connection', function(socket) {
     state.nameplates = {};
     state.hands      = {};
 
-    // Send the game state
-    delay_send(io, 'clients', clients);
+    // Remind of the id and send the clients list
+    delay_send_clients_to_all();
   }
   socket.on('clients', function(data) {delay_function(on_clients, data)});
 
@@ -324,8 +321,8 @@ io.on('connection', function(socket) {
         }
       }
 
-      // Set a variable
-      else if(s[0] == '/set') {
+      // Set a variable NEEDS A REVIEW / REDESIGN SINCE SO MUCH HAS CHANGED!
+      /*else if(s[0] == '/set') {
 
         // If we can set it
         if(s[1] in state && !state_keys_no_set.includes(s[1]) && s.length==3) {
@@ -345,7 +342,7 @@ io.on('connection', function(socket) {
         for(var key in state) if(!state_keys_no_set.includes(key)) s = s + '\n' + key + ' ' + state[key];
 
         delay_send(socket, 'chat', [socket.id,s]);
-      }
+      } */
     } // end of "message starts with /"
 
     // Send a normal chat
@@ -482,6 +479,8 @@ io.on('connection', function(socket) {
     
     // Can't broadcast (leads to unsync)
     delay_send(io, 'q', [q_pieces, q_hands, q_nameplates]);
+
+    // For sounds we broadcast just to others (no need for us to hear it again!)
     if(q_sounds.length) broadcast('sounds', q_sounds);
   }
   socket.on('q', function(data) {delay_function(on_q, data)});
@@ -500,7 +499,8 @@ io.on('connection', function(socket) {
     if(sockets[id]) delete sockets[id];
 
     // tell the world!
-    delay_send(io, 'clients', state.clients);
+    delay_send_clients_to_all();
+    //delay_send(io, 'clients', state.clients);
   }
   socket.on('disconnect', function(data) {delay_function(on_disconnect, data)});
 
