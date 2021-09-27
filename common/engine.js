@@ -1623,17 +1623,16 @@ class _Interaction {
     var hand=null;
     if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand; hand.close(); }
 
-    // Find the top thing under the pointer
-    VGT.log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd);
-
     // Find a thing under the pointer if there is one.
     var thing = VGT.game.get_top_thing_at(v.x,v.y);
+
+    VGT.log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd, thing);
 
     // If it's not null, handle this
     if(thing != null && thing.is_grabbable_by_me()) {
       
       // Get the coordinates on the thing
-      var a = thing.xy_tabletop_to_local(v.x, v.y); VGT.log('     on piece:', a);
+      var a = thing.xy_tabletop_to_local(v.x, v.y); VGT.log('     piece coordinates:', a, 'piece:', thing);
 
       // The piece we click is the snap leader
       thing.is_snap_leader = true;
