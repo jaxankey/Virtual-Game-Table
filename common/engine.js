@@ -4601,8 +4601,8 @@ class _Game {
         // container of thing
         container = layer.children[m]; 
        
-        // Get the scaled bounds and test
-        if(container.thing.contains(x,y)) {
+        // Get the scaled bounds and test (only include visible pieces)
+        if(container.thing.is_showing() && container.thing.contains(x,y)) {
          
           // If our team is allowed to control this thing, return it
           if(container.thing.is_grabbable_by_me()) return container.thing;
