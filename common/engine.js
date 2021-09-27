@@ -971,7 +971,7 @@ class _Animated {
     this.velocity += acceleration-this.velocity*this.settings.damping;
 
     // If the velocity is larger than the distance to the target, adjust
-    if(this.velocity >= this.target - this.value) this.velocity = 0.9*(this.target-this.value);
+    //if(this.velocity >= this.target - this.value) this.velocity = 0.9*(this.target-this.value);
 
     // Send it.
     this.value += this.velocity;
