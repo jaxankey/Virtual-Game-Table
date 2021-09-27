@@ -969,7 +969,12 @@ class _Animated {
     
     // Increment the velocity
     this.velocity += acceleration-this.velocity*this.settings.damping;
-    this.value    += this.velocity;
+
+    // If the velocity is larger than the distance to the target, adjust
+    if(this.velocity >= this.target - this.value) this.velocity = 0.9*(this.target-this.value);
+
+    // Send it.
+    this.value += this.velocity;
 
     // If we're close enough, snap
     if(Math.abs(this.velocity) < 1e-8) {
@@ -1639,7 +1644,7 @@ class _Interaction {
       
       // If we're holding shift and it's already selected, and we're not deselect
       if(e.shiftKey && thing.team_select == VGT.clients.me.team) thing.unselect()
-
+      //
       // Otherwise, select it and hold everything, sending it to the top or bottom.
       else {
         thing.select(VGT.clients.me.team); // send q, shovel
