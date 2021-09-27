@@ -551,7 +551,7 @@ game.bind_pointerdown_button([1,3,4,5], toss);
 //////////////////////////////////////// ADDITIONAL GUI
 game.set_special_title('Poker')
 game.add_special_html('<button title="[Backspace] Collects and shuffles the cards in the play area." onpointerdown="get_shuffle_deck()">Get Deck</button>')
-game.add_special_html('<button id="button_pot" title="[Shift-Backspace] Collect all chips in the inner play area."   onpointerdown="collect_pot()"      style="margin-left:0.4em; ">Get Pot</button>')
+game.add_special_html('<button id="button_pot" title="[Shift-Backspace] Collect all chips in the inner play area."   onpointerdown="collect_pot()" style="margin-left:0.4em; ">Collect Pot</button>')
 game.add_special_html('<button title="[End] Fold cards and quit playing" onpointerdown="fold()" style="margin-left: 0.4em">Fold</button>')
 game.add_special_html('<div style="flex-grow:1"></div>')
 game.add_special_html('<button title="[L] Deals one card to all participants. [Shift] or [Right-click] deals face up." onpointerdown="deal_to_all(event)" style="margin-left:0.4em;">Deal</button>')
