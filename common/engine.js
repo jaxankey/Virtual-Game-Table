@@ -2989,8 +2989,7 @@ class _Thing {
     // ALSO we should ensure that we have not since queued out a newer packet updating the hold status
     // Updates the holder regardless of who is holding it
     
-    // There are some "bad network" scenarios when the N's for each attribute are stuck at a higher value than that of the server's packet
-    // Eventually, we will timeout and defer to the server.  
+    // Always update the holder information first!
     this.set_packet_attribute('ih', d);
 
     // Now update the different attributes only if we're not holding it (our hold supercedes everything)
@@ -3018,7 +3017,13 @@ class _Thing {
     var Nk = 'N'+k;
     
     // If the server is telling us to change the holder, CHANGE THE HOLDER! It's like z. MUST defer to server.
-    if(k=='ih') this.hold(d[k], true, true);
+    if(k=='ih') {
+      this.hold(d[k], true, true);
+      // JACK: Nih may not be necessary (not used!)
+      // Remember the packet number and the time that this happened
+      this._N[k] = d[Nk];
+      this._T[k] = Date.now();
+    }
 
     // Otherwise, we update the value....
     //   IF the packet is newer than our estimate or it's time to give up and trust the server
