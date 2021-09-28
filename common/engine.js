@@ -541,6 +541,7 @@ class _Net {
         p.update_q_out('z');
         p.update_q_out('l');
         p._z_target = p.get_z_value();   // The other place this "engine tracking" z is set is when the server sends us info, in process_queues
+        //p.update_q_out('ih');            // Also update the holder so there's at least a number associated with the piece.
       }
     }
 
