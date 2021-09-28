@@ -134,26 +134,25 @@ settings.worth_decimals = 2
 settings.collect_dx =  2;
 settings.collect_dy = -2;
 
-// Loop over players
+// Set up the player's chips and bars
 chips = []; 
 bars  = [];
 for(var n=0; n<N; n++) {
-
-    // in/out bar
     bars[n] = game.add_piece(settings, ['out','in'])
-    
-    // Chip stacks
     chips[n] = [] 
-    chips[n][0] = game.add_pieces(5, {...settings, worth:1,    worth_prefix:'$', shape:'circle'}, 'black')
-    chips[n][1] = game.add_pieces(5, {...settings, worth:0.25, worth_prefix:'$', shape:'circle'}, 'blue')
-    chips[n][2] = game.add_pieces(5, {...settings, worth:0.05, worth_prefix:'$', shape:'circle'}, 'red')
-    chips[n][3] = game.add_pieces(5, {...settings, worth:0.05, worth_prefix:'$', shape:'circle'}, 'red')
-    chips[n][4] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$', shape:'circle'}, 'white')
-    chips[n][5] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$', shape:'circle'}, 'white')
-    chips[n][6] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$', shape:'circle'}, 'white')
-    chips[n][7] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$', shape:'circle'}, 'white')
-    chips[n][8] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$', shape:'circle'}, 'white')
 }
+// Add the stacks in descending order, so the sorting function works by chip value
+for(var n=0; n<N; n++) chips[n][0] = game.add_pieces(5, {...settings, worth:1,    worth_prefix:'$', shape:'circle'}, 'black')
+for(var n=0; n<N; n++) chips[n][1] = game.add_pieces(5, {...settings, worth:0.25, worth_prefix:'$', shape:'circle'}, 'blue')
+for(var n=0; n<N; n++) chips[n][2] = game.add_pieces(5, {...settings, worth:0.05, worth_prefix:'$', shape:'circle'}, 'red')
+for(var n=0; n<N; n++) chips[n][3] = game.add_pieces(5, {...settings, worth:0.05, worth_prefix:'$', shape:'circle'}, 'red')
+for(var n=0; n<N; n++) chips[n][4] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$', shape:'circle'}, 'white')
+for(var n=0; n<N; n++) chips[n][5] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$', shape:'circle'}, 'white')
+for(var n=0; n<N; n++) chips[n][6] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$', shape:'circle'}, 'white')
+for(var n=0; n<N; n++) chips[n][7] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$', shape:'circle'}, 'white')
+for(var n=0; n<N; n++) chips[n][8] = game.add_pieces(5, {...settings, worth:0.01, worth_prefix:'$', shape:'circle'}, 'white')
+
+
 
 // Bat
 settings.y = -100
