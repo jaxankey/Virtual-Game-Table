@@ -70,9 +70,6 @@ var VGT = {
     return s;
   },
 
-  // Overload me
-  game_is_ready() {},
-
   // Resources
   sounds: {},
   images: {},
@@ -564,23 +561,17 @@ class _Net {
     // Reset the fade-in ticker
     VGT.tabletop._t0_fade_in = Date.now();
 
-    // Say hello
-    VGT.html.chat('Server', 'Welcome, '+ this.clients[VGT.net.id].name + '!')
-
-    // Ready to receive all the other packets now!
+    // Ready to receive all the other packets now. The next one should be clients.
     VGT.net.ready = true; 
     delete this._connecting_to_server;
 
     // Set the tab title
     document.title = VGT.game.settings.name;
     
-    // Call the user-defined game ready function
-    VGT.game_is_ready();
-
   } // End of on_state
 
   /** Someone sends [id, clients] table data. */
-  on_clients(data) { VGT.log('NETR_clients', data);
+  on_clients(data) { if(!this.ready) return; VGT.log('NETR_clients', data);
 
     // IMPORTANT: This can happen when the server reboots and we are still "connected".
     // In this case, VGT.net.id is stale and will not match. See VGT.clients.rebuild()

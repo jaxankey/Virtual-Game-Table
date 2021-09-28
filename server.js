@@ -186,7 +186,7 @@ function delay_send(socket, key, data) {
  */
 function delay_send_clients_to_all() {
 
-  // Loop over all the client ids (should match socket ids---)
+  // Loop over all the client ids (should match socket ids)
   for (id in sockets) delay_send(sockets[id], 'clients', [id, state.clients]);
 }
 
@@ -265,9 +265,12 @@ io.on('connection', function(socket) {
     if(name != '' && socket && state.clients) state.clients[socket.id].name = name;
     if(              socket && state.clients) state.clients[socket.id].team = team;
 
-    // FIRST the client list (to everyone), THEN the state.
-    delay_send_clients_to_all();
+    // Send the state so the net.ready flag is good, then send clients.
     delay_send(socket, 'state', state);
+    delay_send_clients_to_all();
+
+    // Send a chat welcoming the new player
+    delay_send(io, 'chat', [0, 'Welcome, ' + state.clients[socket.id].name + '!']);
   }
   socket.on('hallo', function(data) {delay_function(on_hallo, data)});
 
