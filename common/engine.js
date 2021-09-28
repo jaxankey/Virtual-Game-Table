@@ -585,7 +585,7 @@ class _Net {
     // In this case, VGT.net.id is stale and will not match. See VGT.clients.rebuild()
 
     // Get my VGT.net.id and update the clients list, then rebuild the data and html
-    this.id      = data[0];
+    this.id      = parseInt(data[0]);
     this.clients = data[1];
     VGT.clients.rebuild();
 
