@@ -541,6 +541,7 @@ class _Net {
         p.update_q_out('z');
         p.update_q_out('l');
         p._z_target = p.get_z_value();   // The other place this "engine tracking" z is set is when the server sends us info, in process_queues
+        //p.update_q_out('ih');            // Also update the holder so there's at least a number associated with the piece.
       }
     }
 
@@ -585,7 +586,7 @@ class _Net {
     // In this case, VGT.net.id is stale and will not match. See VGT.clients.rebuild()
 
     // Get my VGT.net.id and update the clients list, then rebuild the data and html
-    this.id      = data[0];
+    this.id      = parseInt(data[0]);
     this.clients = data[1];
     VGT.clients.rebuild();
 
@@ -1659,8 +1660,8 @@ class _Interaction {
     // Otherwise, we have hit the table top. 
     else {
      
-      // If we're clicking the tabletop without shift, unselect everything
-      if(!e.shiftKey) VGT.game.unselect(undefined, VGT.clients.me.team);
+      // If we're clicking the tabletop without shift, unselect everything for our team
+      if(!e.shiftKey) VGT.game.unselect();
 
       // If we're going to start dragging the rectangle, send the table coordinates of the click
       if((e.button == 2 || e.button == 0 && e.shiftKey) && hand) { 
@@ -2172,7 +2173,6 @@ class _SnapCircle {
       for(var n in VGT.things.all) { p = VGT.things.all[n];
 
         // If this is in the right group, check it
-        if(p.id_thing == 200 && parent.id_thing == 41) _l(this.settings.x0-p.x.target)
         if(this.settings.x0 == p.x.target && this.settings.y0 == p.y.target 
         && arrays_have_common_element(this.settings.groups, p.settings.groups)) {
           occupancy++;
@@ -2695,7 +2695,7 @@ class _Thing {
     if(this.id_client_hold == 0
     || Object.keys(VGT.clients.all).includes(String(this.id_client_hold))
     && this.id_client_hold != id_client
-    && !force) return;
+    && !force) return this;
 
     // Snap leader should be a piece that is grabbed by me
     if(this.is_snap_leader && !do_not_snap) {
@@ -2727,6 +2727,8 @@ class _Thing {
 
     // If we're supposed to send an update, make sure there is an entry in the queue
     this.update_q_out('id_client_hold', 'ih', do_not_update_q_out);
+
+    return this
   }
 
   draw_select_graphics(team) {
@@ -2815,9 +2817,10 @@ class _Thing {
     // If team is -1, unselect it and poop out
     if(team < 0) return this.unselect(do_not_update_q_out);
 
-    // If there is any team selecting this already, make sure to unselect it to remove it
-    // from other lists! (Do not send a network packet for this).
-    if(this.team_select != -1) this.unselect(true); 
+    // If there is any team selecting this already, make sure to unselect it to remove it from other lists! 
+    // Do NOT send a network packet for this (not a big deal, but the selection below will suffice), 
+    // and make sure to force it, since we're DEFINITELY setting the selection!
+    if(this.team_select != -1) this.unselect(true, true);
 
     // Make sure there is an object to hold selected things for this id.
     if(VGT.things.selected[team] == undefined) VGT.things.selected[team] = {};
@@ -2836,17 +2839,18 @@ class _Thing {
 
 
   /**
-   * Unselects thing. This will not unselect anything held by someone else.
+   * Unselects thing. This will not unselect anything held by someone else unless force=true
    */
-  unselect(do_not_update_q_out) { //VGT.log('thing.unselect()', this.id_thing, this.selected_id);
+  unselect(do_not_update_q_out, force) { //VGT.log('thing.unselect()', this.id_thing, this.selected_id);
 
-    // If we're already unselected, or it is held by someone do nothing
-    if(this.team_select < 0 || this.id_client_hold) return;
-    
+    // If we're already unselected, or it is held by someone else do nothing
+    if(this.team_select < 0 || !force && this.id_client_hold && this.id_client_hold != VGT.net.id) return;
+
     // Remove it from the list
-    if(VGT.things.selected[this.team_select] != undefined && VGT.things.selected[this.team_select][this.id_thing])
-        delete VGT.things.selected[this.team_select][this.id_thing];
+    if(VGT.things.selected[this.team_select] && VGT.things.selected[this.team_select][this.id_thing]) 
+      delete VGT.things.selected[this.team_select][this.id_thing];
     this.team_select = -1;
+
 
     // If we're supposed to send an update, make sure there is an entry in the queue
     this.update_q_out('team_select', 'ts', do_not_update_q_out);
@@ -3019,10 +3023,12 @@ class _Thing {
     // If the server is telling us to change the holder, CHANGE THE HOLDER! It's like z. MUST defer to server.
     if(k=='ih') {
       this.hold(d[k], true, true);
+      
       // JACK: Nih may not be necessary (not used!)
       // Remember the packet number and the time that this happened
       this._N[k] = d[Nk];
       this._T[k] = Date.now();
+      // END OF UNNECESSARY?
     }
 
     // Otherwise, we update the value....
@@ -5385,11 +5391,11 @@ class _Game {
   unselect(things, team, do_not_update_q_out) { VGT.log('VGT.game.unselect()', team);
 
     // If no team, use our team
-    if(team == undefined) team = VGT.clients.me.team;
+    if(team == undefined) team = this.get_my_team_index();
 
     // It should be faster to loop over things, check if they're selected by the supplied team, and unselect them,
     // Rather than looping over the team's list and checking if each is in the supplied list.
-    if(things == undefined) things = VGT.things.all;
+    if(things == undefined) things = VGT.things.selected[team];
     for(var k in things) if(things[k].team_select == team) things[k].unselect(do_not_update_q_out);
 
     // Loop over all the selected things and pop them.
