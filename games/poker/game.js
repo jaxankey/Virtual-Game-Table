@@ -411,7 +411,7 @@ function collect_pot() {
 
 // Folds from bar number n
 function fold(n) { log('fold()', n) 
-  if(typeof n != 'number') n = VGT.game.get_my_team_index()-1;
+  if(typeof n != 'number') n = game.get_my_team_index()-1;
   if(n < 0 || n > 7) return;
   
   // Unselect everything I'm holding
@@ -480,7 +480,7 @@ function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
     this.v_last = v;
 
     // Send it
-    p.release(VGT.net.id).send_to_top().set_xyrs(v[0],v[1],(Math.random()-0.5)*720)
+    p.release(game.get_my_client_id()).send_to_top().set_xyrs(v[0],v[1],(Math.random()-0.5)*720)
   }
 }
 
