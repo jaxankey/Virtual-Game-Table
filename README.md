@@ -15,14 +15,14 @@ Windows
  
 You can also launch a server directly with a command similar to `node server.js cards 37777`. A successfully booted server should declare something like `listening on port 37777` after initializing. At this point, you can test the server by opening a few browser windows side-by-side and typing in the address `localhost:37777`. Things moving around in one window should also move around in the other. Push a few buttons, click a few things, see what happens. 
 
-You can do most things with the mouse and "shift" button, but it is *well* worth your time to learn the keyboard shortcuts. They make navigation effortless.
+Note this is the perfect use of an Amazon Web Services "Always Free" tier server. I may write a tutorial on setting this up at some point.
 
 ## A Minimal Game
 
-To give a sense of how the engine works, here is the minimal code required to make a basic checkers game (see `games/minimal/game.js`):
+To give a sense of how the engine works, here is the minimal code required to make the most basic checkers game (see `games/minimal/game.js`):
 
 ```javascript
-// Master list of all images. 
+// Master list of all images with identifiers. 
 VGT.images = { paths: {
   hand          : 'images/hands/hand.png',             // Required for player hands
   fist          : 'images/hands/fist.png',             // Required for player hands
@@ -49,7 +49,7 @@ game.add_pieces(12, {layer:1}, ['checker_black', 'king_black'])
 function new_game() { game.load_state_from_server('setup-standard.txt') }
 ```
 
-Even for the more complicated games (poker, e.g.), making the images usually takes more time than writing the code.
+A more complicated version of this, including a snap grid, is in the `games/checkers` folder. Even for the more complicated games (poker, e.g.), writing the code takes far less time than making / finding the images.
 
 
 ## Games
@@ -63,9 +63,13 @@ The games I have coded thus far include some basics:
 and some more complicated systems:
  * `puerto-rico`: Puerto Rico (can't publish images, but you can find / scan them)
 
+
 ## Controls
 
+You can do most things with the mouse and "shift" button, but it is *well* worth your time to learn the keyboard shortcuts; they make navigation and manipulation very smooth and fast.
+
 ![Controls](https://raw.githubusercontent.com/jaxankey/Virtual-Game-Table/VGT3/common/images/controls.png)
+
 
 ## Roadmap
  * `arkham-horror`: Arkham Horror base set (can't publish images, but you can find / scan them)
@@ -75,15 +79,17 @@ and some more complicated systems:
 
 Each of these games illustrate the functionalities of the main workhorse code in `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented. In particular, I would monkey with `minimal/game.js` first, since it's by far the simplest (see below)! Then check out `checkers`, `chess`, and (quite complex) `poker` or `puerto-rico`.
 
+
 ## Known issues
  * Firefox on Linux has horrible rendering speed that can grind to a halt, likely due to the webGL context being immediately lost for some reason, or the browser thinking things are not hardware accelerated. Recommend using chrome on Linux. Firefox works great on Windows.
  * Looks distorted on phones, not that this is intended for phones (yet?)
 
+
 ## Here to Help
-Feel free to pester me if something isn't clear. I will likely be a bit slow to respond, but I believe in this project and will gladly update the comments in the code or help out within reason.
+Feel free to pester me (jack.sankey@gmail.com) if something isn't clear. I will likely be a bit slow to respond, but I believe in this project and will gladly update the comments in the code or help out within reason. At some point a larger documentation should occur, but only if this gets popular. For now, learn by example: play with the existing games and check the code to see how different features are implemented.
 
 Things I will _never_ do:
  * Hard-code any rules or anti-cheat measures. You will _always_ be able to look at your oponent's hidden pieces or move them around when they are taking a poo. 
- * Convince my friends and family that the games I personally invent are worth playing.
+ * Convince my friends and family that the games I invent are worth playing.
 
 More to come...
