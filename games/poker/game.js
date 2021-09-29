@@ -18,6 +18,7 @@
 
 
 
+
 /////////////////////////////////////// RESOURCES
 
 // Master list of all sounds. 
@@ -283,14 +284,18 @@ function deal_to_all(e) { log('deal_to_all()', e)
   var pot = [], c
   for(var n in chips) for(var m in chips[n]) for(var i in chips[n][m]) { c = chips[n][m][i]
     if(polygon_inner.contains(c.x.value, c.y.value)
-    && c.x.value*c.x.value + c.y.value*c.y.value > 100*100) pot.push(chips[n][m][i])
+    && c.x.value*c.x.value + c.y.value*c.y.value > 90*90) pot.push(chips[n][m][i])
   }
   // Only the unheld pot chips
   pot = game.get_unheld_things(pot)
   //
   // Unselect & bring them in!
   game.unselect_all_teams(pot)
-  game.pile(pot, 0, 0, 90)
+  var p
+  for(var n in pot) { p = pot[n]
+    v = get_random_location_disc(20)
+    p.set_xyrs(p.x.value*70/y1+v.x, p.y.value*70/y1+v.y)
+  }
   //
   // Remove the last toss
   toss.v_last = undefined;
