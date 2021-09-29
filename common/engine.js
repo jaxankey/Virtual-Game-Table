@@ -4326,7 +4326,7 @@ class _Clients {
       this.all[c.id].hand.id_client = c.id;
       
       // Show all hands but my own: JACK: this is where the checkbox check happens for showing my own hand.
-      if(c.id == VGT.net.id) this.all[c.id].hand.show();
+      if(c.id == VGT.net.id) this.all[c.id].hand.hide();
       else                   this.all[c.id].hand.show();
 
       // Update the hand color
