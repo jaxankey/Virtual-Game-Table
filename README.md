@@ -1,5 +1,6 @@
 # Virtual Game Table
-This is a general-purpose, browser-based board game table, aimed at online game nights and rapid game development. No rules will ever be hard coded, so you can play however you like. The purpose of this is only to provide an intuitive, synchronized game table in everyone's browser.
+Virtual Game Table is a general-purpose, online, multiplayer, browser-based board game table, aimed at online game nights and rapid game development. No rules will be hard coded, so you can play however you like. The goal is to provide an intuitive, synchronized game table in everyone's browser, and an engine that accelerates the creation of new games. Virtual Game Table has been extensively Dad tested and Dad approved™.
+
 
 ## Starting and testing a server
 
