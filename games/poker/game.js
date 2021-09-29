@@ -475,7 +475,7 @@ function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
     this.v_last = v;
 
     // Send it
-    p.send_to_top().set_xyrs(v[0],v[1],(Math.random()-0.5)*720)
+    p.release(VGT.net.id).send_to_top().set_xyrs(v[0],v[1],(Math.random()-0.5)*720)
   }
 }
 
