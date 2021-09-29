@@ -19,7 +19,7 @@ Windows
  
 You can also launch a server directly with a command similar to `node server.js cards 37777`. A successfully booted server should declare something like `listening on port 37777` after initializing. At this point, you can test the server by opening a few browser windows side-by-side and typing in the address `localhost:37777`. Things moving around in one window should also move around in the other. Push a few buttons, click a few things, see what happens. 
 
-Note this is the perfect use of an Amazon Web Services "Always Free" tier server. I may write a tutorial on setting this up at some point.
+Note this is the perfect use of an Amazon Web Services "Always Free" tier server, combined with [DuckDNS](https://duckdns.org/). I may write a tutorial on setting this up at some point.
 
 ## A Minimal Game
 
