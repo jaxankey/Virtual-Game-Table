@@ -4645,6 +4645,9 @@ class _Game {
     else                              return 0;
   }
 
+  // Returns the client id
+  get_my_client_id() {return VGT.net.id;}
+
   /** Returns the selected list for the specified team. If under_mouse is true,
    * and no selection exists, returns a list containing the piece (if any) under the mouse.
   */
