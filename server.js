@@ -423,7 +423,7 @@ io.on('connection', function(socket) {
       // Make sure we have a place to hold the data in the global list
       if(!state_list[id]) state_list[id] = {};
 
-      // If there is a left over holder id from a non-existent client, kill it.
+      // Housekeeping: If there is a left over holder id from a non-existent client, kill it.
       if( state_list[id]['ih'] // If there is a holder id
       && !Object.keys(sockets).includes(String(state_list[id]['ih'])) ) { // And that client is gone
         delete state_list[id]['ih'];
@@ -514,11 +514,22 @@ function send_full_update() {
   // Send the queue if any sockets exist.
   if(Object.keys(sockets).length) {
     fun.log_date('send_full_update()', Object.keys(sockets).length, 'sockets', Object.keys(state.pieces).length, 'pieces');
-    
+
+    // Hold dynamics require some thought. This is a "housekeeping" update to handle packet loss, but 
+    // hold (and z) are locked to the server. Hold, however, has some latching behavior to keep 
+    // local reality seeming snappy. These housekeeping events can interrupt this
+    //
+    // Basically, let the hold dynamics figure themselves out. Make a copy of each list and 
+    // remove the ih & Nih so it's not set by the clients.
+    var pieces = JSON.parse(JSON.stringify(state.pieces));
+    var plates = JSON.parse(JSON.stringify(state.nameplates));
+    for(var id in pieces) {delete pieces[id].ih; delete pieces[id].Nih;}
+    for(var id in plates) {delete plates[id].ih; delete plates[id].Nih;}
+
     // including hands not needed, including nameplates leads to confusion on reloads with any net delay.
     // We make copies in case we're doing a delay send, so the state doesn't change!
     // Hands vanish and we don't want them to keep pulsing.
-    delay_send(io, 'q', [state.pieces, {}, state.nameplates]); 
+    delay_send(io, 'q', [pieces, {}, plates]); 
   }
 
   // Start the next full update
