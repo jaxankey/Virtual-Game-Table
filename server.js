@@ -311,10 +311,10 @@ io.on('connection', function(socket) {
     if(message[0]=='/') {
 
       // Split it by space
-      var s = message.split(' ');
+      var s = message.split('%20');
 
       // Special commands
-      if(s[0] == '/boot') {
+      /*if(s[0] == '/boot') {
 
         // Find the client by name and boot them
         for(var id in state.clients) if(state.clients[id].name == s[1]) {
@@ -322,30 +322,27 @@ io.on('connection', function(socket) {
           sockets[id].emit('yabooted');
           sockets[id].disconnect(true);
         }
-      }
+      }*/
 
       // Set a variable NEEDS A REVIEW / REDESIGN SINCE SO MUCH HAS CHANGED!
-      /*else if(s[0] == '/set') {
+      if(s[0] == '/set') {
 
-        // If we can set it
-        if(s[1] in state && !state_keys_no_set.includes(s[1]) && s.length==3) {
+        // If the variable is in the state and we're allowed to set it, and we supplied a value
+        if(state[s[1]] != undefined && !state_keys_no_set.includes(s[1]) && s.length==3) {
         
           // Update
           state[s[1]] = parseFloat(s[2]);
-
-          // Remember for next time
-          state_defaults[s[1]] = state[s[1]];
-
-          // Send the state to everyone
-          for(var id in sockets) send_state(id);
+          fun.log_date('VARIABLE '+s[1]+' SET TO '+String(state[s[1]]));
+          delay_send(socket, 'chat', [0,'Server variable '+s[1]+' set to '+String(state[s[1]])]);
         }
 
         // Send the current settings.
-        s = 'OPTIONS:';
-        for(var key in state) if(!state_keys_no_set.includes(key)) s = s + '\n' + key + ' ' + state[key];
-
-        delay_send(socket, 'chat', [socket.id,s]);
-      } */
+        else {
+          s = 'OPTIONS: ';
+          for(var key in state) if(!state_keys_no_set.includes(key)) s = s + key + '=' + state[key]+', ';
+          delay_send(socket, 'chat', [0,s.slice(0,s.length-2)]);
+        }
+      }
     } // end of "message starts with /"
 
     // Send a normal chat
