@@ -1610,7 +1610,7 @@ class _Interaction {
     }
     // The rest is for right and left clicks
 
-    // Holding, so close fist
+    // Close fist
     var hand=null;
     if(VGT.clients && VGT.clients.me && VGT.clients.me.hand) { hand = VGT.clients.me.hand; hand.close(); }
 
@@ -1619,7 +1619,7 @@ class _Interaction {
 
     VGT.log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd, thing);
 
-    // If it's not null, handle this
+    // If it's not null and we can grab it
     if(thing != null && thing.is_grabbable_by_me()) {
       
       // Get the coordinates on the thing

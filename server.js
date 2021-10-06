@@ -521,6 +521,11 @@ function send_full_update() {
     //
     // Basically, let the hold dynamics figure themselves out. Make a copy of each list and 
     // remove the ih & Nih so it's not set by the clients.
+    //
+    // JACK: this might lead to a stuck hold piece. But the person who's holding it could click again to 
+    // release it, or reload the page (server will housekeep old holds away.)
+    // Ideally, we should probably have Nih only come with full updates and have the user
+    // check this and maybe a timeout, though this leads to async!
     var pieces = JSON.parse(JSON.stringify(state.pieces));
     var plates = JSON.parse(JSON.stringify(state.nameplates));
     for(var id in pieces) {delete pieces[id].ih; delete pieces[id].Nih;}
