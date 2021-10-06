@@ -331,7 +331,7 @@ function deal_to_all(e) { log('deal_to_all()', e)
       (Math.random()-0.5)*cards[0].width*0.7 + y1-175], r);
     
     // Send it to this xy value
-    deal_one_to_xy(v[0],v[1], e ? (e.shiftKey||e.button) : undefined, n);
+    setTimeout(deal_one_to_xy, n*150, v[0],v[1], e ? (e.shiftKey||e.button) : undefined, n);
   }
 }
 
