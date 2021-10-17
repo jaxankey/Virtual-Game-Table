@@ -247,16 +247,23 @@ function get_team_angle(team) {
   return 360*(team-1)/N
 }
 
+// Gets the top card from the dealer stack.
+function get_top_card() {
+  
+  // Get the cards on the dealer platter
+  var deck = dealer.get_shoveled(true)
+  deck = game.sort_by_z_value(deck, true) 
+
+  // Now find the first that doesn't have target x,y on the paddle (not moving)
+  for(var n in deck) if(dealer.contains(deck[n].x.target, deck[n].y.target)) return deck[n]
+}
+
 // Deals one card to the table coordinates x,y, optionally face up.
 // You can also optionally specify the depth from which to deal.
-function deal_one_to_xy(x,y,face_up,depth) {
+function deal_one_to_xy(x,y,face_up) {
     
-    // Get the cards on the dealer platter
-    var deck = dealer.get_shoveled(true)
-    deck = game.sort_by_z_value(deck, true) 
-  
     // Get the card
-    var p = deck[depth ? depth : 0]
+    var p = get_top_card()
     if(!p) return
   
     // Get the angle of the card based on region
@@ -270,14 +277,42 @@ function deal_one_to_xy(x,y,face_up,depth) {
     // If shiftKey we are dealing up
     if(face_up) p.set_image_index(1);
     else        p.set_image_index(0);
+
+    // Return the card if successful
+    return p;
 }
 
 // Sends one to the mouse coordinates
 function deal_one_to_mouse(e) { deal_one_to_xy(game.mouse.x, game.mouse.y, e.shiftKey); }
 
-// Deals a card to everyone. e.shiftKey makes it face up.
-function deal_to_all(e) { log('deal_to_all()', e) 
+// Deals one card from the queue
+var q_dealing = [];            // list of coordinates to deal to in order
+var timer_dealing = undefined; // timer for dealing the next from the q.
+function deal_from_q() {
+
+  // Send it to the next coordinates (third element is face up)
+  var a = q_dealing.splice(0,1)[0]
   
+  // Send it.
+  deal_one_to_xy(...a)
+
+  // If we still have some left, start the next timer and we're done
+  if(q_dealing.length) {
+    timer_dealing = setTimeout(deal_from_q, 200)
+    return
+  }
+  
+  // Nothing in the q at this point, either we dealt the last or didn't have any to begin with
+
+  // Set the timeout for pulling in the chips
+  setTimeout(pull_chips_to_middle, 500)
+
+  // Clear the timer variable
+  timer_dealing = undefined
+}
+
+// Pulls the chips in 
+function pull_chips_to_middle() {
   // First we get all the chips that are outside the central pot
   //
   // Loop over all the chips, looking for those in the right region.
@@ -299,6 +334,10 @@ function deal_to_all(e) { log('deal_to_all()', e)
   //
   // Remove the last toss
   toss.v_last = undefined;
+}
+
+// Deals a card to everyone. e.shiftKey makes it face up.
+function deal_to_all(e) { log('deal_to_all()', e) 
 
   // Get a sorted list of participating team indices
   var teams = []
@@ -330,10 +369,14 @@ function deal_to_all(e) { log('deal_to_all()', e)
       (Math.random()-0.5)*cards[0].width*1.5,
       (Math.random()-0.5)*cards[0].width*0.7 + y1-175], r);
     
-    // Send it to this xy value
-    setTimeout(deal_one_to_xy, 2*n*game.settings.t_housekeeping, v[0],v[1], e ? (e.shiftKey||e.button) : undefined, n);
+    // Add it to the q
+    q_dealing.push([...v, e.shiftKey]);
   }
+
+  // Start the dealing if it's not already going
+  if(timer_dealing == undefined) deal_from_q();
 }
+
 
 
 // Collects all the cards onto the dealer paddle and brings it all to my dealing position.
