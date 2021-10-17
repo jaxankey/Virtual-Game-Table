@@ -4415,7 +4415,7 @@ class _Game {
     undos: 500,         // Number of undos to remember (each 0.5 seconds minimum)
     default_zoom: 1,    // Default zoom level for new users
 
-    background_color : 0xEEE7E2, // Tabletop background color
+    background_color : 0xFFFAFA, // Tabletop background color
 
     // Available teams for clients and their colors.
     teams : {
