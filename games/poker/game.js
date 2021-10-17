@@ -343,17 +343,27 @@ function deal_to_all(e) { log('deal_to_all()', e)
   var teams = []
   for(var n=0; n<N; n++) if(bars[n].get_image_index()) teams.push(n+1)
   var my_team = game.get_my_team_index()
-  
-  // If I'm playing, reorder the list so that the player to my left is first
-  if(my_team > 0 && my_team) {
-    var i = teams.indexOf(my_team)
 
-    // Only do this if we found a valid index and we're not the last in the list (already ok)
-    if(i >= 0 && i < teams.length-1) {
-      var a = teams.slice(i+1)   // start of the new array
-      var b = teams.slice(0,i+1) // end of the new array
-      teams = [...a,...b]
+  // If I'm playing, reorder the list so that the player to my left is first
+  if(my_team > 0) {
+    // Find the index of the team that is me or next (if I'm not participating)
+    var i = -1; 
+    for(var j=0; j<teams.length; j++) {
+      
+      // Still haven't found one and this one is me or next
+      if(i==-1 && teams[j] > my_team) {
+        i = j;
+        break;
+      }
     }
+
+    // Still haven't found one means all teams were lower than my team; use the first element
+    if(i==-1) i = 0;
+
+    // At this point we have a valid "first team" index, so reorder
+    var a = teams.slice(i)   // start of the new array
+    var b = teams.slice(0,i) // end of the new array
+    teams = [...a,...b]
   } // End of reorder the list
 
   // Loop over the teams in order from the person to our left

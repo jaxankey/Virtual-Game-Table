@@ -97,6 +97,7 @@ class _Html {
     this.ul_messages   = document.getElementById('messages');
     
     this.input_volume  = document.getElementById('volume');
+    this.input_chat    = document.getElementById('chat-box');
     
     this.select_setups = document.getElementById('setups');
     
@@ -1679,6 +1680,9 @@ class _Interaction {
   onpointermove(e) { //VGT.log('onpointermove()', e.button);
     this.last_pointermove_e = e;
     
+    // lose focus on chat box
+    VGT.html.chat
+
     // Get the tabletop coordinates
     var v = VGT.tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
     
