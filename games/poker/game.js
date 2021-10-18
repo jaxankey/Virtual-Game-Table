@@ -287,32 +287,23 @@ function deal_one_to_mouse(e) { deal_one_to_xy(game.mouse.x, game.mouse.y, e.shi
 
 // Deals one card from the queue
 var q_dealing = [];            // list of coordinates to deal to in order
-var timer_dealing = undefined; // timer for dealing the next from the q.
-function deal_from_q() {
+game.after_housekeeping = function() {
 
-  // Send it to the next coordinates (third element is face up)
+  // If we have nothing in the q, we're done
+  if(q_dealing.length == 0) return
+
+  // Get the FIFO coordinates and send it
   var a = q_dealing.splice(0,1)[0]
-  
-  // Send it.
   deal_one_to_xy(...a)
 
-  // If we still have some left, start the next timer and we're done
-  if(q_dealing.length) {
-    timer_dealing = setTimeout(deal_from_q, 200)
-    return
-  }
-  
-  // Nothing in the q at this point, either we dealt the last or didn't have any to begin with
-
-  // Set the timeout for pulling in the chips
-  setTimeout(pull_chips_to_middle, 500)
-
-  // Clear the timer variable
-  timer_dealing = undefined
+  // If NOW we're empty, do the chip pull-in
+  if(q_dealing.length == 0) setTimeout(pull_chips_to_middle, 500)
 }
 
 // Pulls the chips in 
 function pull_chips_to_middle() {
+  log('pull_chips_to_middle()')
+
   // First we get all the chips that are outside the central pot
   //
   // Loop over all the chips, looking for those in the right region.
@@ -372,9 +363,6 @@ function deal_to_all(e) { log('deal_to_all()', e)
     // Add it to the q
     q_dealing.push([...v, e.shiftKey]);
   }
-
-  // Start the dealing if it's not already going
-  if(timer_dealing == undefined) deal_from_q();
 }
 
 

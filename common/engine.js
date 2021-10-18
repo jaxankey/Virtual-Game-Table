@@ -5425,8 +5425,13 @@ class _Game {
     // Process net queues.
     VGT.net.process_queues();
 
+    // Custom housekeeping
+    this.after_housekeeping();
 
   } // End of housekeeping.
+
+  // Function to overload, e.g., dealing cards.
+  after_housekeeping() {}
 
 } // End of Game
 VGT.Game = _Game;
