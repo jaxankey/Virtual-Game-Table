@@ -286,11 +286,13 @@ function deal_one_to_xy(x,y,face_up) {
 function deal_one_to_mouse(e) { deal_one_to_xy(game.mouse.x, game.mouse.y, e.shiftKey); }
 
 // Deals one card from the queue
-var q_dealing = [];            // list of coordinates to deal to in order
+var q_dealing = []            // list of coordinates to deal to in order
+var n_housekeeping = 0
 game.after_housekeeping = function() {
+  n_housekeeping++; // Keep track
 
-  // If we have nothing in the q, we're done
-  if(q_dealing.length == 0) return
+  // If we have nothing in the q or it's even, we're done
+  if(q_dealing.length == 0 || n_housekeeping % 2) return
 
   // Get the FIFO coordinates and send it
   var a = q_dealing.splice(0,1)[0]
@@ -370,6 +372,9 @@ function deal_to_all(e) { log('deal_to_all()', e)
       (Math.random()-0.5)*cards[0].width*1.5,
       (Math.random()-0.5)*cards[0].width*0.7 + y1-175], r);
     
+    // If this is the first q, make sure it's immediate
+    if(q_dealing.length == 0) n_housekeeping = 1;
+
     // Add it to the q
     q_dealing.push([...v, e.shiftKey]);
   }
