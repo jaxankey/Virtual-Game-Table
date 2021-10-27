@@ -113,7 +113,7 @@ class _Html {
     this.div_help.style.clipPath = 'inset(100% 100% -1em -1em)'
     this.div_help.style.opacity = 0;
     this.div_help_button.style.opacity = 1;
-    this.save_cookie('saw_help', true);
+    //this.save_cookie('saw_help', true);
   }
   show_help() {
     this.div_help.style.clipPath = 'inset(-1em -1em -1em -1em)'
@@ -4501,7 +4501,8 @@ class _Game {
     setInterval(this._housekeeping.bind(this), this.settings.t_housekeeping);
 
     // If the user is new, show the help
-    if(VGT.html.load_cookie('saw_help') == '') VGT.html.show_help();
+    //if(VGT.html.load_cookie('saw_help') == '') VGT.html.show_help();
+    VGT.html.show_help();
   }
 
   // Sets the title of the special area and reveals it
