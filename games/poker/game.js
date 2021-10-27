@@ -512,11 +512,11 @@ function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
     v[0] += dv.x;
     v[1] += dv.y;
 
-    // If we have tossed something already, make sure this toss isn't too close
+    // If we have tossed something to a similar location already move this one a bit away
     if(this.v_last != undefined) {
       var dx = v[0]-this.v_last[0]
       var dy = v[1]-this.v_last[1]
-      if(dx*dx+dy*dy < p.width*0.25) {
+      if(dx*dx+dy*dy < Math.pow(p.width*0.25,2)) {
         dv = rotate_vector([p.width*0.25,0], Math.random()*360)
         v[0] += dv[0]
         v[1] += dv[1]
