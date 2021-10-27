@@ -1222,8 +1222,14 @@ class _Tabletop {
       this.s.target * factor);
   }
 
-  zoom_in()  {this.zoom(this.settings.s_step);}
-  zoom_out() {this.zoom(1.0/this.settings.s_step);}
+  zoom_in(e) {_l(e)
+    if(e && e.shiftKey) this.zoom(Math.pow(this.settings.s_step, 0.25));
+    else                this.zoom(this.settings.s_step);
+  }
+  zoom_out(e) {
+    if(e && e.shiftKey) this.zoom(Math.pow(1.0/this.settings.s_step, 0.25));
+    else                this.zoom(1.0/this.settings.s_step);
+  }
 } // End of _Tabletop
 
 
@@ -1264,8 +1270,8 @@ class _Interaction {
     this.bind_key(['KeyE|Down', 'Numpad9|Down'], VGT.tabletop.rotate_right.bind(VGT.tabletop));
 
     // Zoom
-    this.bind_key(['Equal|Down', 'NumpadAdd|Down'],      VGT.tabletop.zoom_in .bind(VGT.tabletop));
-    this.bind_key(['Minus|Down', 'NumpadSubtract|Down'], VGT.tabletop.zoom_out.bind(VGT.tabletop));
+    this.bind_key(['Equal|Down', 'NumpadAdd|Down',      'Shift|Equal|Down', 'Shift|NumpadAdd|Down'],      VGT.tabletop.zoom_in .bind(VGT.tabletop));
+    this.bind_key(['Minus|Down', 'NumpadSubtract|Down', 'Shift|Minus|Down', 'Shift|NumpadSubtract|Down'], VGT.tabletop.zoom_out.bind(VGT.tabletop));
 
     // Save/Load views
     this.bind_key([
