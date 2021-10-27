@@ -534,7 +534,7 @@ function send_full_update() {
     // including hands not needed, including nameplates leads to confusion on reloads with any net delay.
     // We make copies in case we're doing a delay send, so the state doesn't change!
     // Hands vanish and we don't want them to keep pulsing.
-    delay_send(io, 'q', [pieces, {}, plates]); 
+    delay_send(io, 'q', [pieces, {}, plates, true]); // true means "full update"; used so far for z stuff.
   }
 
   // Start the next full update

@@ -477,11 +477,19 @@ class _Net {
     }
   } // End of process_queues()
 
-  // Processes the inbound and outbound z queues
+  // Processes outbound z queues. Incoming z is handled immediately.
   process_q_z_out() {
     if(this.q_z_out.length) {
       this.io.emit('z', this.q_z_out);
       this.q_z_out.length = 0;
+      
+      // Order of operations matters for z, so we can't have 
+      // the next full update ordering them before we receive
+      // the ping-back.
+      //
+      // This flag causes the z-information to be stripped from the
+      // next full update.
+      this.skip_next_z = true;  
     }
   }
 
@@ -509,6 +517,19 @@ class _Net {
 
   /** We receive a queue of piece information from the server. */
   on_q(data) { if(!this.ready) return; VGT.log('NETR_q', data);
+  
+    // Incoming q's are objects with id-indexed objects containing piece parameters or changes in those.
+    
+    // Element 3 is true (not undefined). If this is a full update and we're supposed to skip the z information
+    // strip away the z stuff!
+    if(data[3] && this.skip_next_z) {
+
+      // Loop over the pieces data[0] and strip all the z-info
+      for(var i in data[0]) {delete data[0][i].z}
+      
+      // No need to do this again until we alter z.
+      this.skip_next_z = false;
+    }
 
     // Update the q's
     this.transfer_to_q_in(data[0], this.q_pieces_in);
