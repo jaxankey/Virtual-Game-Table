@@ -220,6 +220,25 @@ class _Html {
     name = this.string_to_html(name);
     message = this.string_to_html(message);
     
+    // Add links
+    //
+    // loop over each word, looking for a dot followed by a character
+    var s = message.split(' ');
+    for(var i in s) {
+
+      // Split by dots and see if the last element is something.
+      var p = s[i].split('.'); 
+      if(p.length > 1 && p[p.length-1] != '') {
+
+        // link variable should be properly formed
+        var l = s[i];
+        if(l.indexOf('://') < 0) l = 'http://'+s[i];
+        s[i] = '<a href="'+l+'" target="new">'+s[i]+'</a>';
+      } 
+    }
+    message = s.join(' ');
+
+
     // messages div object
     var m = VGT.html.ul_messages;
 
@@ -1334,9 +1353,7 @@ class _Interaction {
     // Event listeners
     document.addEventListener('contextmenu', e => {e.preventDefault();}); 
     window  .addEventListener('resize',  this.onresize_window);
-    window  .addEventListener('keydown', this.onkey.bind(this), true);
-    window  .addEventListener('keyup',   this.onkey.bind(this), true);
-
+    
     // Starting values
     this.xm_tabletop = 0;
     this.ym_tabletop = 0;
@@ -1351,6 +1368,10 @@ class _Interaction {
     VGT.pixi.app.view.onpointerout  = this.onpointerup  .bind(this);
     VGT.pixi.app.view.onwheel       = this.onwheel      .bind(this);
     VGT.pixi.app.view.ondblclick    = this.ondblclick   .bind(this);
+
+    // Keys
+    window.addEventListener('keydown', this.onkey.bind(this));
+    window.addEventListener('keyup',   this.onkey.bind(this));
   }
 
   /**
@@ -1524,8 +1545,8 @@ class _Interaction {
     var pieces = Object.values(VGT.things.selected[team]);
 
     // Do the collection
-    if(e.shiftKey || no_offsets) VGT.game.pile(pieces, x, y);
-    else VGT.game.collect(pieces, x, y, r, r, undefined, undefined, true);
+    if(e.shiftKey || no_offsets) VGT.game.collect(pieces, x, y, r, r, 0, 0);
+    else                         VGT.game.collect(pieces, x, y, r, r, undefined, undefined, true);
   }
 
   // Expands the selected pieces in a grid below the mouse
@@ -1610,7 +1631,7 @@ class _Interaction {
   }
 
   // Pointer touches the underlying surface.
-  onpointerdown(e) {
+  onpointerdown(e) { 
     e.preventDefault();
     this.last_pointerdown = e;
 
@@ -1707,8 +1728,8 @@ class _Interaction {
   onpointermove(e) { //VGT.log('onpointermove()', e.button);
     this.last_pointermove_e = e;
     
-    // lose focus on chat box
-    VGT.html.chat
+    // Let the body take focus
+    document.activeElement.blur();
 
     // Get the tabletop coordinates
     var v = VGT.tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
@@ -1878,10 +1899,13 @@ class _Interaction {
     // toggling full screen (F11), or using an input, don't 
     // change the default behavior of the keys.
     if(// !net.me.ready 
-    e.code == 'F11'
+    e.code == 'F11' || e.ctrlKey
     || document.activeElement.id == 'name' 
-    || document.activeElement.id == 'team' 
-    || document.activeElement.id == 'chat-box') return;
+    || document.activeElement.id == 'team') return;
+    if(document.activeElement.id == 'chat-box') {
+      if(e.key == 'Enter' && e.type == 'keydown') this.onchat();
+      return;
+    }
 
     // Prevent the key's normal response.
     e.preventDefault();
@@ -1954,6 +1978,7 @@ class _Interaction {
     // Get the chat text and clear it
     var chat_box = document.getElementById('chat-box')
     var message  = chat_box.value;
+    if(message == '') return;
     chat_box.value = '';
 
     // Send a chat.

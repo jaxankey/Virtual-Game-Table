@@ -42,6 +42,8 @@
       background-color: gray;
     }
 
+    a {background-color: transparent; color: blue;}
+
     #gameboard {
       cursor: crosshair;
     }
@@ -99,7 +101,7 @@
       color: white;
       z-index: 100;
       transition: all;
-      transition-duration: 1s;
+      transition-duration: 0.5s;
     }
       #progress {
         margin-top: 2em;
@@ -188,12 +190,12 @@
       box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.2);
       clip-path: inset(-1em -1em -1em -1em); /* for the shadow */
     }
-      #new    {}
+      /*#new    {}*/
       #setups {margin-left: -0.07em; flex-grow:1;}
       #rules  {margin-left: 0.4em;}
       #save   {margin-left: 0.4em;}
       #load   {margin-left: 0.4em;}
-      #volume_container {}
+      /*#volume_container {}*/
       #volume {
         flex-grow: 1;
         padding: 0;
@@ -233,83 +235,79 @@
   <!-- Holds the canvas etc. -->
   <div id="gameboard"></div>
   
-  <div id="enclosure">
-  
-    <div id="controls_button"><button style='border: none; width: 2em;' onpointerdown="VGT.html.show_controls();"><h1>+</h1></button></div>
+  <div id="controls_button"><button style='border: none; width: 2em;' onpointerdown="VGT.html.show_controls();"><h1>+</h1></button></div>
 
-    <div id="controls">
+  <div id="controls">
+    
+    <div class='close_button'><button style='border: none; width: 2em' onpointerdown='VGT.html.hide_controls();'>X</button></div>
+
+    <div id="setup">
       
-      <div class='close_button'><button style='border: none; width: 2em' onpointerdown='VGT.html.hide_controls();'>X</button></div>
-
-      <div id="setup">
-        
-        
-        <div class='row_left'><h1>Setup</h1></div>
-        
-        <div class='row_left'>
-          <button id='new'    
-                  title='Resets everything according to the selected game mode.' 
-                  onclick="new_game();">New Game</button>
-                  
-          <select id="setups" 
-                  title='Game mode' 
-                  onchange="VGT.interaction.onchange_setups();"></select>
-          
-          <button id="rules"  
-                  title='Rules document'
-                  onclick="VGT.game.open_rules();">Rules</button>
-        
-          <button id='save' 
-                  title='Saves the current setup to a file'
-                  onclick="VGT.game.save_state();">Save</button>
-          <button id='load' 
-                  title='Loads a setup from a file'
-                  onclick="VGT.game.load_state_from_file();">Load</button>
-        </div>
-
-        
-        <div id='volume_container' class='row_left'>
-          Volume: <input 
-            title='Audio volume (if there are any sounds)'
-            type="range" min="0" max="100" value="25"  class="slider" id="volume" onchange="VGT.interaction.onchange_volume();">
-            <input type='checkbox' id='debug' style='margin-left:0.4em; margin-top: 0.2em;' title="Debug mode: leave unchecked unless you know what this does.">
-        </div> 
-
-        <div id='special' style='display:none'>
-          <div class='row_left' style='margin-top: 1em;'><h1 id='special_title'>Game Controls</h1></div>
-          <div id='special_controls' class='row_left'></div>
-        </div>
-        
-        
       
+      <div class='row_left'><h1>Setup</h1></div>
+      
+      <div class='row_left'>
+        <button id='new'    
+                title='Resets everything according to the selected game mode.' 
+                onclick="new_game();">New Game</button>
+                
+        <select id="setups" 
+                title='Game mode' 
+                onchange="VGT.interaction.onchange_setups();"></select>
+        
+        <button id="rules"  
+                title='Rules document'
+                onclick="VGT.game.open_rules();">Rules</button>
+      
+        <button id='save' 
+                title='Saves the current setup to a file'
+                onclick="VGT.game.save_state();">Save</button>
+        <button id='load' 
+                title='Loads a setup from a file'
+                onclick="VGT.game.load_state_from_file();">Load</button>
       </div>
 
-      <div class='row_left' style='margin-top: 1em;'><h1>People</h1></div>
       
-      <div id='clients'></div>
+      <div id='volume_container' class='row_left'>
+        Volume: <input 
+          title='Audio volume (if there are any sounds)'
+          type="range" min="0" max="100" value="25"  class="slider" id="volume" onchange="VGT.interaction.onchange_volume();">
+          <input type='checkbox' id='debug' style='margin-left:0.4em; margin-top: 0.2em;' title="Debug mode: leave unchecked unless you know what this does.">
+      </div> 
 
-
-  
-        <!-- where chat messages will appear -->
-      <div id='chat' class='row_left'>
-        <ul id="messages"></ul>
-        <input id="chat-box" tabindex="2" onchange="VGT.interaction.onchat()" value="Type your chat messages here..." onfocus="this.value='';"/>
+      <div id='special' style='display:none'>
+        <div class='row_left' style='margin-top: 1em;'><h1 id='special_title'>Game Controls</h1></div>
+        <div id='special_controls' class='row_left'></div>
       </div>
-  
-    </div><!-- End of controls -->
+      
+      
+    
+    </div>
+
+    <div class='row_left' style='margin-top: 1em;'><h1>People</h1></div>
+    
+    <div id='clients'></div>
+
+   <!-- where chat messages will appear -->
+    <div id='chat' class='row_left'>
+      <ul id="messages"></ul>
+      <input id="chat-box" svalue="Type your chat messages here..." onfocus="this.value='';"/>
+    </div>
+
+  </div><!-- End of controls -->
 
 
-    <div id="help" onpointerdown="VGT.html.hide_help();">
-      <img src='images/controls.png' class='center_fit'>
-      <div class='close_button'><button style='border: none; width: 2em'>X</button></div>
-    </div><!-- End of help -->
+  <div id="help" onpointerdown="VGT.html.hide_help();">
+    <img src='images/controls.png' class='center_fit'>
+    <div class='close_button'><button style='border: none; width: 2em'>X</button></div>
+  </div><!-- End of help -->
 
-    <div id="help_button"><button style='border: none; width: 2em;' onpointerdown="VGT.html.toggle_help();"><h1>?</h1></button></div>
+  <div id="help_button"><button style='border: none; width: 2em;' onpointerdown="VGT.html.toggle_help();"><h1>?</h1></button></div>
 
-    <div id="loader"><div id="progress">Loading...</div><div id="progress_path"></div></div>
+  <div id="loader"><div id="progress">Loading...</div><div id="progress_path"></div></div>
 
     
-  </div><!-- End of enclosure -->
+
 
   
   <!-- External Scripts -->
