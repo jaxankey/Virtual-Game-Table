@@ -232,7 +232,7 @@ class _Html {
 
         // link variable should be properly formed
         var l = s[i];
-        if(l.indexOf('@')  >= 0) l = 'mailto:'+s[i];
+        if     (l.indexOf('@')  >= 0) l = 'mailto:'+s[i];
         else if(l.indexOf('://') < 0) l = 'http://'+s[i];
         s[i] = '<a href="'+l+'" target="new">'+s[i]+'</a>';
       } 
