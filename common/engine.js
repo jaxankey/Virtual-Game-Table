@@ -132,7 +132,7 @@ class _Html {
     this.div_controls_button.style.opacity = 1;
   }
   show_controls() {
-    this.div_controls.style.opacity  = 1;
+    this.div_controls.style.opacity  = 0.9;
     this.div_controls.style.clipPath = 'inset(-1em -1em -1em -1em)';
     this.div_controls_button.style.opacity = 0;
   }
