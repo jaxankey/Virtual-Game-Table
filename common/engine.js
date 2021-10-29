@@ -1004,10 +1004,10 @@ class _Animated {
     this.velocity += acceleration-this.velocity*this.settings.damping;
 
     // If the velocity is larger than the distance to the target, adjust
-    // NEEDS SIGN ADJUSTMENT
-    if(  this.velocity > 0 && this.velocity >= this.target - this.value
+    // Causes nasty jitters in hands etc.
+    /*if(  this.velocity > 0 && this.velocity >= this.target - this.value
       || this.velocity < 0 && this.velocity <= this.target - this.value) 
-        this.velocity = 0.9*(this.target-this.value);
+        this.velocity = 0.9*(this.target-this.value);*/
 
     // Send it.
     this.value += this.velocity;
@@ -1372,7 +1372,6 @@ class _Interaction {
     VGT.html.div_gameboard.onpointerout  = this.onpointerup  .bind(this);
     VGT.html.div_gameboard.onwheel       = this.onwheel      .bind(this);
     VGT.html.div_gameboard.ondblclick    = this.ondblclick   .bind(this);
-
 
     // Keys
     window.addEventListener('keydown', this.onkey.bind(this));
