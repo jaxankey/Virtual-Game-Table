@@ -1004,7 +1004,10 @@ class _Animated {
     this.velocity += acceleration-this.velocity*this.settings.damping;
 
     // If the velocity is larger than the distance to the target, adjust
-    //if(this.velocity >= this.target - this.value) this.velocity = 0.9*(this.target-this.value);
+    // NEEDS SIGN ADJUSTMENT
+    if(  this.velocity > 0 && this.velocity >= this.target - this.value
+      || this.velocity < 0 && this.velocity <= this.target - this.value) 
+        this.velocity = 0.9*(this.target-this.value);
 
     // Send it.
     this.value += this.velocity;
@@ -1363,12 +1366,13 @@ class _Interaction {
     // Using the surface and objects with the built-in hit test is rough, because it
     // does it for every mouse move, etc. Also, I can't seem to get the button number
     // this way in PixiJS 6.
-    VGT.pixi.app.view.onpointerdown = this.onpointerdown.bind(this);
-    VGT.pixi.app.view.onpointermove = this.onpointermove.bind(this);
-    VGT.pixi.app.view.onpointerup   = this.onpointerup  .bind(this);
-    VGT.pixi.app.view.onpointerout  = this.onpointerup  .bind(this);
-    VGT.pixi.app.view.onwheel       = this.onwheel      .bind(this);
-    VGT.pixi.app.view.ondblclick    = this.ondblclick   .bind(this);
+    VGT.html.div_gameboard.onpointerdown = this.onpointerdown.bind(this);
+    VGT.html.div_gameboard.onpointermove = this.onpointermove.bind(this);
+    VGT.html.div_gameboard.onpointerup   = this.onpointerup  .bind(this);
+    VGT.html.div_gameboard.onpointerout  = this.onpointerup  .bind(this);
+    VGT.html.div_gameboard.onwheel       = this.onwheel      .bind(this);
+    VGT.html.div_gameboard.ondblclick    = this.ondblclick   .bind(this);
+
 
     // Keys
     window.addEventListener('keydown', this.onkey.bind(this));
