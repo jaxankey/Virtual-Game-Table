@@ -488,8 +488,12 @@ class _Net {
 
       // Send the outbound information and clear it.
       //VGT.log(    'NETS_q_'+String(VGT.net.id), this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out);
-      VGT.log('NETS_q_'+String(VGT.net.id), Object.keys(this.q_pieces_out).length, Object.keys(this.q_hands_out).length, Object.keys(this.q_nameplates_out).length, this.q_sounds_out.length);
-      this.io.emit('q', [this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out]);
+      VGT.log('NETS_q_'+String(VGT.net.id), this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out, '\n  ',
+        Object.keys(this.q_pieces_out).length, 'pieces,  ',
+        Object.keys(this.q_hands_out).length,  'hands,  ', 
+        Object.keys(this.q_nameplates_out).length, 'nameplates,  ', 
+        Object.keys(this.q_sounds_out).length, 'sounds');
+      this.io.emit('q',                     [this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out]);
       this.q_pieces_out     = {};
       this.q_hands_out      = {};
       this.q_nameplates_out = {};
