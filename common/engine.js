@@ -3059,8 +3059,14 @@ class _Thing {
   set_y(y, immediate, do_not_update_q_out)                 { this.set_xyrs(undefined,y,undefined,undefined, immediate, do_not_update_q_out) }
   set_r(r, immediate, do_not_update_q_out, do_not_reset_R) { this.set_xyrs(undefined,undefined,r,undefined, immediate, do_not_update_q_out, do_not_reset_R) }
   set_s(s, immediate, do_not_update_q_out)                 { this.set_xyrs(undefined,undefined,undefined,s, immediate, do_not_update_q_out) }
-  set_R(R, immediate, do_not_update_q_out)                 { this.R.set(R,immediate); this.update_q_out('R','R', do_not_update_q_out); }
-  
+
+  set_R      (R, immediate, do_not_update_q_out) { 
+    this.R.set(R,immediate); 
+    this.update_q_out('R','R', do_not_update_q_out); 
+    this.after_set_R(R, immediate, do_not_update_q_out); 
+  }
+  after_set_R(R, immediate, do_not_update_q_out) {} // Dummy function to overload
+
   /**
    * Given packet data d, use netcode logic to set the piece data for the supplied key k.
    * @param {string} k Key, either 'ih', 'x', 'y', 'r', 's', 'R', 'n', 'ts'
@@ -4137,7 +4143,7 @@ class _TeamZones {
 VGT.teamzones = new _TeamZones();
 VGT.TeamZones = _TeamZones;
 
-
+// These are funny objects, because they're dynamic AND you have to keep their information locally in a user cookie.
 class _NamePlate extends _Thing {
 
   constructor(settings) { if(!settings) settings = {};
@@ -4149,6 +4155,9 @@ class _NamePlate extends _Thing {
 
     // Remember the type
     this.type = 'NamePlate';
+
+    // After set R too.
+    this.after_set_R = this.after_set_xyrs;
   }
 
   // NAMEPLATE: No z-setting or q for this; that's only for pieces
@@ -4160,7 +4169,7 @@ class _NamePlate extends _Thing {
     // JACK: This happens many times for one xyrs call.
     // If it's associated with MY hand, save it
     if(this.hand && VGT.clients.me && this.hand.id_client == VGT.clients.me.id_client) 
-        VGT.html.save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target,this.s.target]);
+        VGT.html.save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target+this.R.target,this.s.target]);
   }
 } // End of NamePlate
 
@@ -4438,6 +4447,7 @@ class _Clients {
     this.me.nameplate.update_q_out('y', undefined, undefined, true);
     this.me.nameplate.update_q_out('r', undefined, undefined, true);
     this.me.nameplate.update_q_out('s', undefined, undefined, true);
+    this.me.nameplate.update_q_out('R', undefined, undefined, true);
 
     // Since we know we've got MINE in the right place, show it.
     // The other nameplates will be shown when we receive the first location.
