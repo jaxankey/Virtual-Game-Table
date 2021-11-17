@@ -434,6 +434,8 @@ class _Net {
 
 
     //// NAMEPLATES (No z-processing)
+    // Nameplates are indexed by THEIR id, not by the client / hand owning them
+    // Though their id should match that of the hands, since hands create them.
     for(var id_nameplate in this.q_nameplates_in) { 
       c = this.q_nameplates_in[id_nameplate]; // incoming changes for this thing
       p = VGT.nameplates.all[id_nameplate];   // the actual piece object
@@ -4143,7 +4145,10 @@ class _TeamZones {
 VGT.teamzones = new _TeamZones();
 VGT.TeamZones = _TeamZones;
 
-// These are funny objects, because they're dynamic AND you have to keep their information locally in a user cookie.
+/**
+ * Nameplate object. This is a weird one that is dynamically created, and associated with each client's
+ * hand object.
+ */
 class _NamePlate extends _Thing {
 
   constructor(settings) { if(!settings) settings = {};
@@ -4167,7 +4172,7 @@ class _NamePlate extends _Thing {
   after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) {
     
     // JACK: This happens many times for one xyrs call.
-    // If it's associated with MY hand, save it
+    // If it's associated with MY nameplate, save it
     if(this.hand && VGT.clients.me && this.hand.id_client == VGT.clients.me.id_client) 
         VGT.html.save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target+this.R.target,this.s.target]);
   }
@@ -4218,7 +4223,7 @@ class _Hand extends _Thing {
     // Create a nameplate with the hand
     this.nameplate = new _NamePlate({text:'player', layer: VGT.tabletop.LAYER_NAMEPLATES});
     this.nameplate.hand = this;
-    this.nameplate.hide(); // New Hands need to be hidden. The other thing that hides them is free_all_hands()
+    this.nameplate.hide(); // New Hands need to be hidden. The other thing that hides them is free_all_hands_and_nameplates()
 
     // For selection rectangle dynamics
     this._originally_selected = [];
@@ -4328,7 +4333,7 @@ class _Hands { constructor() {this.all = [];}
   }
 
   /** Finds a free hand or creates and returns one */ 
-  get_unused_hand() {
+  get_unused_hand_and_nameplate() {
     
     // Loop over hands trying to find a free one
     for(var l in this.all) if(this.all[l].id_client == 0) return this.all[l];
@@ -4338,7 +4343,7 @@ class _Hands { constructor() {this.all = [];}
   }
 
   /** Frees all hands from ownership */
-  free_all_hands() { 
+  free_all_hands_and_nameplates() { 
 
     // For each hand, set the client to 0 (server or no one),
     // And make the nameplate invisible
@@ -4379,8 +4384,9 @@ class _Clients {
     // Clear out the list
     this.all = {};
 
-    // Unassign all hands, hide at plates, sets id_client's to 0
-    VGT.hands.free_all_hands();
+    // Unassign all hands, hide all plates, sets the hands' id_client to 0 (server)
+    // so that we know they are available to assign.
+    VGT.hands.free_all_hands_and_nameplates();
 
     // Loop over the client list
     for (var k in VGT.net.clients) {var c = VGT.net.clients[k];
@@ -4388,12 +4394,17 @@ class _Clients {
     
       // Store everything for this client.
       this.all[c.id] = {
-        name  : c.name,
-        team  : c.team, // index
-        color : VGT.game.get_team_color(c.team),
-        hand  : VGT.hands.get_unused_hand(),
+        name      : c.name,
+        team      : c.team, // index
+        color     : VGT.game.get_team_color(c.team),
+        hand      : VGT.hands.get_unused_hand_and_nameplate(),
         id_client : c.id,
       }
+
+      // JACK: this is where we could use incoming client data nameplate_ts to select
+      // the nameplate. But does the server even know which nameplate goes to which client?
+      // Server could hold hand_id and nameplate_id in the client data (we should send this?)
+      // But these are dynamically assigned locally; do they naturally sync?
       
       // Set the hand id_client
       this.all[c.id].hand.id_client = c.id;
@@ -4405,7 +4416,7 @@ class _Clients {
       // Update the hand color
       this.all[c.id].hand.set_tint(this.all[c.id].color);
 
-      // Get the nameplate
+      // Get the nameplate for this client
       this.all[c.id].nameplate = this.all[c.id].hand.nameplate;
 
       // Update the nameplate and colors
