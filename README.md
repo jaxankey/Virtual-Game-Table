@@ -10,7 +10,7 @@ Virtual Game Table is a general-purpose, online, multiplayer, browser-based boar
 This program runs directly from the source code (see [Releases](https://github.com/jaxankey/Virtual-Game-Table/releases)) so no compiling or binaries are required, other than downloading / installing [Node.js](https://nodejs.org/). This server has been tested on Linux & Windows, but should work on OSX as well.
 
 Linux
- 1. Install [Node.js](https://nodejs.org/): For me, this meant downloading the binaries, unpacking them in a convenient folder, adding the binary path to `.profile` (with a line like `PATH=$PATH:/path/to/node/bin`) then logging out & back in.
+ 1. Install [Node.js](https://nodejs.org/): For me, this meant running the command `sudo apt install nodejs`, but you can also download the binaries, unpack them in a convenient folder, add the binary path to `.profile` (with a line like `PATH=$PATH:/path/to/node/bin`) then log out & back in.
  2. From a console in the Virtual-Game-Table folder, run `start-server-linux` from the terminal. You can optionally specify a game and port, e.g., `start-server-linux poker 37000`.
  
 Windows
