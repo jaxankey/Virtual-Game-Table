@@ -3156,40 +3156,42 @@ class _Thing {
     // The pieces go through _set_z_target(), which shuffles them around and updates their 
     // this._z_target values to a well-ordered list. Before the server has data, _z_target is also set well.
     
-    // Get this piece's zi (initial / current value) and zf (setpoint)
-    var zi = this._z_target
-    var zf = parseInt(z);
+    // JACK: I thought the point was to have no local z ordering happen at the request of the user
+    //       only from teh server, so I commented all this out.
+    // // Get this piece's zi (initial / current value) and zf (setpoint)
+    // var zi = this._z_target
+    // var zf = parseInt(z);
 
-    // We follow the same numbering logic of the server:
-    //
-    // If zf > zi 
-    //   p.z < zi         no change
-    //   p.z == zi        set to zf
-    //   zi < p.z <= zf   subtract one
-    //   p.z > zf         no change
+    // // We follow the same numbering logic of the server:
+    // //
+    // // If zf > zi 
+    // //   p.z < zi         no change
+    // //   p.z == zi        set to zf
+    // //   zi < p.z <= zf   subtract one
+    // //   p.z > zf         no change
     
-    // If zi > zf
-    //   p.z < zf         no change
-    //   zf <= p.z < zi   add one
-    //   p.z == zi        set to zf
-    //   p.x > zi         no change
+    // // If zi > zf
+    // //   p.z < zf         no change
+    // //   zf <= p.z < zi   add one
+    // //   p.z == zi        set to zf
+    // //   p.x > zi         no change
 
-    // Now that we have the zi and zf, loop over the pieces in this layer and update the z's according to the above.
-    var p;
-    for(var i in this.container.parent.children) { p = this.container.parent.children[i].thing;
+    // // Now that we have the zi and zf, loop over the pieces in this layer and update the z's according to the above.
+    // var p;
+    // for(var i in this.container.parent.children) { p = this.container.parent.children[i].thing;
 
-      // Do different numbering depending on where the z is relative to the initial and final values.
+    //   // Do different numbering depending on where the z is relative to the initial and final values.
       
-      // No matter what, if the z matches the initial z (i.e., it is this piece), this is the one to set
-      if(p == this) { p._z_target = zf; }
+    //   // No matter what, if the z matches the initial z (i.e., it is this piece), this is the one to set
+    //   if(p == this) { p._z_target = zf; }
       
-      // If zf > zi, we're moving it up in z order, so the middle numbers shift down.
-      else if(zi < p._z_target && p._z_target <= zf) { p._z_target--; }
+    //   // If zf > zi, we're moving it up in z order, so the middle numbers shift down.
+    //   else if(zi < p._z_target && p._z_target <= zf) { p._z_target--; }
 
-      // If zi > zf, we're moving it lower, so the middle numbers shift up
-      else if(zf <= p._z_target && p._z_target < zi) { p._z_target++; }
+    //   // If zi > zf, we're moving it lower, so the middle numbers shift up
+    //   else if(zf <= p._z_target && p._z_target < zi) { p._z_target++; }
     
-    } // End of _z_target update loop
+    // } // End of _z_target update loop
   
     return this;
 
