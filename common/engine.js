@@ -553,7 +553,7 @@ class _Net {
   /** We receive a queue of piece information from the server. */
   on_q(data) { if(!this.ready) return; VGT.log('NETR_q', data);
   
-    if(data[3]) VGT.log('ZZZ FULL UPDATE')
+    if(data[3]) VGT.log('ZZZ FULL UPDATE', data)
 
     // Incoming q's are objects with id-indexed objects containing piece parameters or changes in those.
     
@@ -3211,14 +3211,16 @@ class _Thing {
     // Get the parent of the container
     var parent = this.container.parent;
     
-    // Get the current index
-    var n_old = this.get_z_value();
+    // Get the current z index
+    var z0 = this.get_z_value();
 
     // If it's in the list, pop it out and stick it where it belongs
-    if(n_old >= 0) {
+    // Note z0 is determined from the actual list of objects in pixijs's layer,
+    // not some internal number structure I designed, so z0 should always be >=0...
+    if(z0 >= 0) {
 
       // Remove it
-      var c = parent.removeChildAt(n_old);
+      var c = parent.removeChildAt(z0);
 
       // Make sure we have a valid index
       if(z > parent.children.length) z = parent.children.length;
@@ -3227,7 +3229,7 @@ class _Thing {
       // stuff it back in
       parent.addChildAt(c, z);
     }
-
+    
     // Update the z-values to a well-ordered list for this layer
     var p;
     for(var n in VGT.tabletop.layers[this.settings.layer].children) {
