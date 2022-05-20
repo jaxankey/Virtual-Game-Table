@@ -506,6 +506,8 @@ class _Net {
   // Processes outbound z queues. Incoming z is handled immediately.
   process_q_z_out() {
     if(this.q_z_out.length) {
+      VGT.log('ZZZ sending', this.q_zout)
+
       this.io.emit('z', this.q_z_out);
       this.q_z_out.length = 0;
       
@@ -542,7 +544,7 @@ class _Net {
   }
 
   // Server relayed a z command [id,z,id,z,id,z,...]
-  on_z(data) { if(!this.ready) return; VGT.log('NETR_z', data.length);
+  on_z(data) { if(!this.ready) return; VGT.log('ZZZ NETR_z', data.length);
 
     // Set the z locally
     for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1]);
@@ -551,6 +553,8 @@ class _Net {
   /** We receive a queue of piece information from the server. */
   on_q(data) { if(!this.ready) return; VGT.log('NETR_q', data);
   
+    if(data[3]) VGT.log('ZZZ FULL UPDATE')
+
     // Incoming q's are objects with id-indexed objects containing piece parameters or changes in those.
     
     // Element 3 is true (not undefined) if it is a full update. 
