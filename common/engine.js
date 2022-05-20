@@ -509,22 +509,9 @@ class _Net {
       VGT.log('ZZZ sending', this.q_z_out)
 
       this.io.emit('z', this.q_z_out);
-      this.q_z_out.length = 0;
       
-      // This packet contains partial z information.
-      // The order of operations matters for z, so we can't have 
-      // the next full update ordering them before we receive
-      // the ping-back. 
-      //
-      // This flag causes the z-information to be stripped from the
-      // next full update.
-      //
-      // JACK: I think skipping the next z is a bad idea,
-      // because the packets coming from the server are correctly
-      // time-ordered, representing the z-situation at each step.
-      // z information is determined locally entirely by incoming
-      // server commands. I am commenting this out.
-      //this.skip_next_z = true;  
+      // Clear it.
+      this.q_z_out.length = 0;
     }
   }
 
@@ -548,6 +535,15 @@ class _Net {
 
     // Set the z locally
     for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1], true);
+
+    // If this is the packet I was waiting for, stop ignoring full updates. 
+    // JACK: This hack shouldn't be necessary! I don't understand why full updates before
+    // the pingback z packet negates the action
+    // of the next on_z action in the for loop above!
+    if(identical(self.waiting_for_my_z, data)) {
+      VGT.log('ZZZ unlocking waiting for my z')
+      this.waiting_for_my_z = false;
+    }
   }
 
   /** We receive a queue of piece information from the server. */
@@ -561,14 +557,14 @@ class _Net {
     // If this is a full update and we're supposed to skip the z information
     // strip away the z stuff!
     // JACK: The server data should come back time ordered, and it should determine z.
-    // if(data[3] && this.skip_next_z) {
+    if(data[3] && this.waiting_for_my_z) {
 
-    //   // Loop over the pieces data[0] and strip all the z-info
-    //   for(var i in data[0]) {delete data[0][i].z}
+      // Loop over the pieces data[0] and strip all the z-info
+      for(var i in data[0]) {delete data[0][i].z}
       
-    //   // No need to do this again until we alter z.
-    //   this.skip_next_z = false;
-    // }
+      // Just to be sure this eventually resets... JACK: wtf.
+      this.waiting_for_my_z = false;
+    }
 
     // Update the q's
     this.transfer_to_q_in(data[0], this.q_pieces_in);
@@ -3157,6 +3153,21 @@ class _Thing {
     // Add it to the quick q
     VGT.net.q_z_out.push(this.id_piece);
     VGT.net.q_z_out.push(z);
+
+    // This packet contains partial z information.
+    // The order of operations matters for z, so we can't have 
+    // the next full update ordering them before we receive
+    // the ping-back. 
+    //
+    // This flag causes the z-information to be stripped from the
+    // next full update.
+    //
+    // JACK: I think skipping the next z is a bad idea,
+    // because the packets coming from the server are correctly
+    // time-ordered, representing the z-situation at each step.
+    // z information is determined locally entirely by incoming
+    // server commands. Comment out?
+    this.waiting_for_my_z = [...this.q_z_out];  
 
     // For each piece, every time the server sends z information (process_q or process_z_q),
     // The pieces go through _set_z_target(), which shuffles them around and updates their 
