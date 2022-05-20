@@ -541,7 +541,7 @@ class _Net {
     // the pingback z packet negates the action
     // of the next on_z action in the for loop above!
     // if(identical(self.waiting_for_my_z, data)) {
-    //   VGT.log('  ZZZ unlocking waiting for my z')
+    //   VGT.log('  unlocking waiting for my z')
     //   this.waiting_for_my_z = false;
     // }
   }
@@ -594,7 +594,7 @@ class _Net {
       for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
         p.update_q_out('z');
         p.update_q_out('l');
-        p._z_target = p.get_z_value();   // ZZZ The other place this "engine tracking" z is set is when the server sends us info, in process_queues
+        //p._z_target = p.get_z_value();   // ZZZ The other place this "engine tracking" z is set is when the server sends us info, in process_queues
         //p.update_q_out('ih');          // Also update the holder so there's at least a number associated with the piece.
       }
     }
@@ -3224,6 +3224,7 @@ class _Thing {
     
     // Get the current z index
     var z0 = this.get_z_value();
+    if(log) VGT.log('    z0=', z0)
 
     // If it's in the list, pop it out and stick it where it belongs
     // Note z0 is determined from the actual list of objects in pixijs's layer,
@@ -3242,11 +3243,13 @@ class _Thing {
     }
     
     // Update the z-values to a well-ordered list for this layer
-    var p;
-    for(var n in VGT.tabletop.layers[this.settings.layer].children) {
-      p = VGT.tabletop.layers[this.settings.layer].children[n].thing;
-      p._z_target = parseInt(n); // ZZZ
-    }
+    // JACK: Commenting this out because _z_target is only used for sorting,
+    //       and we can instead just get the actual z value to avoid confusion.
+    // var p;
+    // for(var n in VGT.tabletop.layers[this.settings.layer].children) {
+    //   p = VGT.tabletop.layers[this.settings.layer].children[n].thing;
+    //   p._z_target = parseInt(n); // ZZZ
+    // }
   }
 
   send_to_top() { 
@@ -5406,10 +5409,11 @@ class _Game {
     for(var n in things) { 
 
       // Attach its z-value for easy sorting; this will lead to duplicate z-values
-      if(things[n]._z_target == undefined) {
-        VGT.log("WEIRD: No z-target on piece", things.id_piece);
+      // JACK: Setting this to always get_z_value for safety at the expense of speed.
+      //if(things[n]._z_target == undefined) {
+      //  VGT.log("ZZZ WEIRD: No z-target on piece", things.id_piece);
         things[n]._z_target = things[n].get_z_value(); // ZZZ
-      } 
+      //} 
 
       // If we don't have a list for this layer yet, make an empty one
       layer = things[n].settings.layer;
