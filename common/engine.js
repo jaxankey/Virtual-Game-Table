@@ -540,10 +540,10 @@ class _Net {
     // JACK: This hack shouldn't be necessary! I don't understand why full updates before
     // the pingback z packet negates the action
     // of the next on_z action in the for loop above!
-    if(identical(self.waiting_for_my_z, data)) {
-      VGT.log('  ZZZ unlocking waiting for my z')
-      this.waiting_for_my_z = false;
-    }
+    // if(identical(self.waiting_for_my_z, data)) {
+    //   VGT.log('  ZZZ unlocking waiting for my z')
+    //   this.waiting_for_my_z = false;
+    // }
   }
 
   /** We receive a queue of piece information from the server. */
@@ -557,14 +557,14 @@ class _Net {
     // If this is a full update and we're supposed to skip the z information
     // strip away the z stuff!
     // JACK: The server data should come back time ordered, and it should determine z.
-    if(data[3] && this.waiting_for_my_z) {
+    // if(data[3] && this.waiting_for_my_z) {
 
-      // Loop over the pieces data[0] and strip all the z-info
-      for(var i in data[0]) {delete data[0][i].z}
+    //   // Loop over the pieces data[0] and strip all the z-info
+    //   for(var i in data[0]) {delete data[0][i].z}
       
-      // Just to be sure this eventually resets... JACK: wtf.
-      this.waiting_for_my_z = false;
-    }
+    //   // Just to be sure this eventually resets... JACK: wtf.
+    //   this.waiting_for_my_z = false;
+    // }
 
     // Update the q's
     this.transfer_to_q_in(data[0], this.q_pieces_in);
@@ -3167,7 +3167,7 @@ class _Thing {
     // time-ordered, representing the z-situation at each step.
     // z information is determined locally entirely by incoming
     // server commands. Comment out?
-    this.waiting_for_my_z = [...VGT.net.q_z_out];  
+    //this.waiting_for_my_z = [...VGT.net.q_z_out];  
 
     // For each piece, every time the server sends z information (process_q or process_z_q),
     // The pieces go through _set_z_target(), which shuffles them around and updates their 
