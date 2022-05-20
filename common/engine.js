@@ -547,7 +547,7 @@ class _Net {
   on_z(data) { if(!this.ready) return; VGT.log('ZZZ NETR_z', data);
 
     // Set the z locally
-    for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1]);
+    for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1], true);
   }
 
   /** We receive a queue of piece information from the server. */
@@ -3205,7 +3205,7 @@ class _Thing {
 
   // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
   // This is only called by process_queues (when a full state packet comes in) and on_z (when a partial z packet comes in)
-  _set_z_value(z) { VGT.log('  ZZZ _set_z_value', z)
+  _set_z_value(z, log) { if(log) VGT.log('  ZZZ _set_z_value', z)
     if(z == undefined) return;
 
     // Get the parent of the container
