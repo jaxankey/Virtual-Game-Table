@@ -533,7 +533,7 @@ class _Net {
   // Server relayed a z command [id,z,id,z,id,z,...]
   on_z(data) { if(!this.ready) return; VGT.log('ZZZ NETR_z', data);
 
-    // Set the z locally
+    // Set the z locally and immediately
     for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1], true);
 
     // If this is the packet I was waiting for, stop ignoring full updates. 
@@ -549,8 +549,6 @@ class _Net {
   /** We receive a queue of piece information from the server. */
   on_q(data) { if(!this.ready) return; VGT.log('NETR_q', data);
   
-    if(data[3]) VGT.log('ZZZ FULL UPDATE')
-
     // Incoming q's are objects with id-indexed objects containing piece parameters or changes in those.
     
     // Element 3 is true (not undefined) if it is a full update. 
@@ -570,7 +568,13 @@ class _Net {
     this.transfer_to_q_in(data[0], this.q_pieces_in);
     this.transfer_to_q_in(data[1], this.q_hands_in);
     this.transfer_to_q_in(data[2], this.q_nameplates_in);
-    
+  
+    // We process the full updates IMMEDIATELY to avoid async with the z order.
+    if(data[3]) {
+      VGT.log('ZZZ FULL UPDATE');
+      VGT.net.process_queues();
+    }
+  
   } // end of on_q
 
   on_sounds(data) { if(!this.ready) return; VGT.log('NETR_sounds', data);
@@ -5543,7 +5547,7 @@ class _Game {
         VGT.interaction._rolling[n].set_xyrs(VGT.interaction.xroll+d.x, VGT.interaction.yroll+d.y, d.r*4);
       }
 
-    // Process net queues.
+    // Process net queues. JACK ZZZ: The delay on processing the inbound queue causes the async z order.
     VGT.net.process_queues();
 
     // Custom housekeeping
