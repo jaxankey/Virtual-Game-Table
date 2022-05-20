@@ -544,7 +544,7 @@ class _Net {
   }
 
   // Server relayed a z command [id,z,id,z,id,z,...]
-  on_z(data) { if(!this.ready) return; VGT.log('ZZZ NETR_z', data.length);
+  on_z(data) { if(!this.ready) return; VGT.log('ZZZ NETR_z', data);
 
     // Set the z locally
     for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1]);
