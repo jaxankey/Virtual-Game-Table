@@ -509,13 +509,20 @@ class _Net {
       this.io.emit('z', this.q_z_out);
       this.q_z_out.length = 0;
       
-      // Order of operations matters for z, so we can't have 
+      // This packet contains partial z information.
+      // The order of operations matters for z, so we can't have 
       // the next full update ordering them before we receive
-      // the ping-back.
+      // the ping-back. 
       //
       // This flag causes the z-information to be stripped from the
       // next full update.
-      this.skip_next_z = true;  
+      //
+      // JACK: I think skipping the next z is a bad idea,
+      // because the packets coming from the server are correctly
+      // time-ordered, representing the z-situation at each step.
+      // z information is determined locally entirely by incoming
+      // server commands. I am commenting this out.
+      //this.skip_next_z = true;  
     }
   }
 
@@ -3134,9 +3141,10 @@ class _Thing {
     else       return -1;
   }
 
-  // User function for setting the z-index of this piece.
+  // THING User function for setting the z-index of this piece.
   // This will do NOTHING locally, waiting instead for the server
-  // to tell us what to do with it. Here we just send a z request to the server immediately.
+  // to tell us what to do with it, to preserve the server order of things. 
+  // Here we just send a z request to the server immediately.
   set_z_target(z) { 
     if(this.is_disabled) return
 
