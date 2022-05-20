@@ -3216,7 +3216,7 @@ class _Thing {
 
   // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
   // This is only called by process_queues (when a full state packet comes in) and on_z (when a partial z packet comes in)
-  _set_z_value(z, log) { if(log) VGT.log('  ZZZ _set_z_value', z)
+  _set_z_value(z, log) { if(log) VGT.log('  ZZZ _set_z_value', this.id_thing, z)
     if(z == undefined) return;
 
     // Get the parent of the container
@@ -3224,7 +3224,7 @@ class _Thing {
     
     // Get the current z index
     var z0 = this.get_z_value();
-    if(log) VGT.log('    z0=', z0)
+    if(log) VGT.log('    ZZZ z0=', z0)
 
     // If it's in the list, pop it out and stick it where it belongs
     // Note z0 is determined from the actual list of objects in pixijs's layer,
@@ -3239,6 +3239,7 @@ class _Thing {
       if(z < 0)                      z = 0;
 
       // stuff it back in
+      if(log) VGT.log('    ZZZ adding at', z)
       parent.addChildAt(c, z);
     }
     
