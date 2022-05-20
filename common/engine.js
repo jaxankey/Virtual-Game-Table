@@ -495,7 +495,7 @@ class _Net {
         Object.keys(this.q_hands_out).length,  'hands,  ', 
         Object.keys(this.q_nameplates_out).length, 'nameplates,  ', 
         Object.keys(this.q_sounds_out).length, 'sounds');
-      this.io.emit('q',                     [this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out]);
+      this.io.emit('q',  [this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out]);
       this.q_pieces_out     = {};
       this.q_hands_out      = {};
       this.q_nameplates_out = {};
@@ -553,16 +553,18 @@ class _Net {
   
     // Incoming q's are objects with id-indexed objects containing piece parameters or changes in those.
     
-    // Element 3 is true (not undefined). If this is a full update and we're supposed to skip the z information
+    // Element 3 is true (not undefined) if it is a full update. 
+    // If this is a full update and we're supposed to skip the z information
     // strip away the z stuff!
-    if(data[3] && this.skip_next_z) {
+    // JACK: The server data should come back time ordered, and it should determine z.
+    // if(data[3] && this.skip_next_z) {
 
-      // Loop over the pieces data[0] and strip all the z-info
-      for(var i in data[0]) {delete data[0][i].z}
+    //   // Loop over the pieces data[0] and strip all the z-info
+    //   for(var i in data[0]) {delete data[0][i].z}
       
-      // No need to do this again until we alter z.
-      this.skip_next_z = false;
-    }
+    //   // No need to do this again until we alter z.
+    //   this.skip_next_z = false;
+    // }
 
     // Update the q's
     this.transfer_to_q_in(data[0], this.q_pieces_in);
@@ -592,8 +594,8 @@ class _Net {
       for(var n in VGT.pieces.all) { p = VGT.pieces.all[n];
         p.update_q_out('z');
         p.update_q_out('l');
-        p._z_target = p.get_z_value();   // The other place this "engine tracking" z is set is when the server sends us info, in process_queues
-        //p.update_q_out('ih');            // Also update the holder so there's at least a number associated with the piece.
+        p._z_target = p.get_z_value();   // ZZZ The other place this "engine tracking" z is set is when the server sends us info, in process_queues
+        //p.update_q_out('ih');          // Also update the holder so there's at least a number associated with the piece.
       }
     }
 
@@ -3198,6 +3200,7 @@ class _Thing {
   } // End of set_z_target
 
   // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
+  // This is only called by process_queues (when a full state packet comes in) and on_z (when a partial z packet comes in)
   _set_z_value(z) {
     if(z == undefined) return;
 
@@ -3225,7 +3228,7 @@ class _Thing {
     var p;
     for(var n in VGT.tabletop.layers[this.settings.layer].children) {
       p = VGT.tabletop.layers[this.settings.layer].children[n].thing;
-      p._z_target = parseInt(n);
+      p._z_target = parseInt(n); // ZZZ
     }
   }
 
@@ -5388,7 +5391,7 @@ class _Game {
       // Attach its z-value for easy sorting; this will lead to duplicate z-values
       if(things[n]._z_target == undefined) {
         VGT.log("WEIRD: No z-target on piece", things.id_piece);
-        things[n]._z_target = things[n].get_z_value();
+        things[n]._z_target = things[n].get_z_value(); // ZZZ
       } 
 
       // If we don't have a list for this layer yet, make an empty one

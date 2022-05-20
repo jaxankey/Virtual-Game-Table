@@ -404,7 +404,7 @@ io.on('connection', function(socket) {
 
     } // End of loop over entries
 
-    // Relay this move to everyone, including the sender.
+    // Relay this move to everyone, including the sender (who is waiting for the ok to actually move z).
     delay_send(io, 'z', data);
   }
   socket.on('z', function(data) {delay_function(on_z, data)});
@@ -416,6 +416,9 @@ io.on('connection', function(socket) {
    */
   function handle_q_in(q, state_list) {
     var k, update_server_state; // Flag to reuse below
+
+    // Note that z information should never be sent by the users through this channel.
+    // It's sent separately to make it faster responding.
 
     // Loop over the incoming pieces q by id.
     for(var id in q) { 
@@ -466,6 +469,7 @@ io.on('connection', function(socket) {
   }
 
   // Client has sent a q of changes
+  // This should not contain z information, since that's via a separate, faster q.
   function on_q(data) { fun.log_date('NETR_q', Object.keys(data[0]).length, Object.keys(data[1]).length, Object.keys(data[2]).length);
     var q_pieces     = data[0];
     var q_hands      = data[1];
