@@ -506,7 +506,7 @@ class _Net {
   // Processes outbound z queues. Incoming z is handled immediately.
   process_q_z_out() {
     if(this.q_z_out.length) {
-      VGT.log('ZZZ sending', this.q_z_out)
+      //VGT.log('ZZZ sending', this.q_z_out)
 
       this.io.emit('z', this.q_z_out);
       
@@ -531,10 +531,10 @@ class _Net {
   }
 
   // Server relayed a z command [id,z,id,z,id,z,...]
-  on_z(data) { if(!this.ready) return; VGT.log('ZZZ NETR_z', data);
+  on_z(data) { if(!this.ready) return; VGT.log('NETR_z', data);
 
     // Set the z locally and immediately
-    for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1], true);
+    for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1]);
 
     // If this is the packet I was waiting for, stop ignoring full updates. 
     // JACK: This hack shouldn't be necessary! I don't understand why full updates before
@@ -571,7 +571,7 @@ class _Net {
   
     // We process the full updates IMMEDIATELY to avoid async with the z order.
     if(data[3]) {
-      VGT.log('ZZZ FULL UPDATE');
+      //VGT.log('ZZZ FULL UPDATE');
       VGT.net.process_queues();
     }
   
@@ -3220,7 +3220,7 @@ class _Thing {
 
   // Set the z-order index; only actually performed when server says it's ok (otherwise, ordering nightmare)
   // This is only called by process_queues (when a full state packet comes in) and on_z (when a partial z packet comes in)
-  _set_z_value(z, log) { if(log) VGT.log('  ZZZ _set_z_value', this.id_thing, z)
+  _set_z_value(z) { 
     if(z == undefined) return;
 
     // Get the parent of the container
@@ -3228,8 +3228,7 @@ class _Thing {
     
     // Get the current z index
     var z0 = this.get_z_value();
-    if(log) VGT.log('    ZZZ z0=', z0)
-
+    
     // If it's in the list, pop it out and stick it where it belongs
     // Note z0 is determined from the actual list of objects in pixijs's layer,
     // not some internal number structure I designed, so z0 should always be >=0...
@@ -3243,7 +3242,6 @@ class _Thing {
       if(z < 0)                      z = 0;
 
       // stuff it back in
-      if(log) VGT.log('    ZZZ adding at', z)
       parent.addChildAt(c, z);
     }
     

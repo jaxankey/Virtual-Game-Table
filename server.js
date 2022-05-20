@@ -25,7 +25,7 @@ var state = {
   nameplates : {},          // List of nameplate properties
   hands      : {},          // List of hand properties
   t_simulated_lag : 0,      // Simulated lag when routing packets. Be careful with this; this asynchronous nature causes some confusion.
-  t_full_update   : 1000,   // How often to send a full update
+  t_full_update   : 3000,   // How often to send a full update
 }; 
 
 // State keys that should not be set by clients with server commands (/set)
