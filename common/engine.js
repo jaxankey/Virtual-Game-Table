@@ -541,7 +541,7 @@ class _Net {
     // the pingback z packet negates the action
     // of the next on_z action in the for loop above!
     if(identical(self.waiting_for_my_z, data)) {
-      VGT.log('ZZZ unlocking waiting for my z')
+      VGT.log('  ZZZ unlocking waiting for my z')
       this.waiting_for_my_z = false;
     }
   }
@@ -3167,7 +3167,7 @@ class _Thing {
     // time-ordered, representing the z-situation at each step.
     // z information is determined locally entirely by incoming
     // server commands. Comment out?
-    this.waiting_for_my_z = [...this.q_z_out];  
+    this.waiting_for_my_z = [...VGT.net.q_z_out];  
 
     // For each piece, every time the server sends z information (process_q or process_z_q),
     // The pieces go through _set_z_target(), which shuffles them around and updates their 

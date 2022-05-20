@@ -103,10 +103,12 @@ exports.get_date_string = get_date_string;
 
 // Compares two arrays or objects of more than one dimension
 function identical(a1, a2, ignore) {
-    
+
     // If they're both undefined, null, e.g.
     if(a1==a2) return true;
     
+    if(a1==undefined || a2==undefined) return false;
+
     // Easy out: wrong lengths. For objects, both will be undefined.
     if(a1.length != a2.length) return false;
     
