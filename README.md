@@ -38,18 +38,18 @@ VGT.images = { paths: {
 }}
 
 // Create the Game instance
-var game  = new VGT.Game();
+var game = new VGT.Game();
 
 // Add the game board to layer 0, and allow only the manager to move it
 game.add_piece({layer:0, teams:['Manager']}, 'board');
 
-// Add some checkers with a king symbol on the "back side" to layer 1
+// Add some checkers with a king symbol on the back to layer 1
 game.add_pieces(12, {layer:1}, ['checker_red',   'king_red'  ])
 game.add_pieces(12, {layer:1}, ['checker_black', 'king_black'])
 
 // Define the function that is called when someone clicks the 'new game' button.
 // The file 'setup-standard.txt' was created by manually setting things up in the
-// browser and pushing the 'save' button
+// browser and then pushing the 'save' button.
 function new_game() { game.load_state_from_server('setup-standard.txt') }
 ```
 
@@ -81,7 +81,7 @@ You can do most things with the mouse and "shift" button, but it is *well* worth
  * Go: Stones and a board
  * Chess clock object for timed games
 
-Each of these games illustrate the functionalities of the main workhorse code in `browser.js` and `server.js`. So, if you're interested in writing your own games, I recommend playing with these to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented. In particular, I would monkey with `minimal/game.js` first, since it's by far the simplest (see below)! Then check out `checkers`, `chess`, and (quite complex) `poker` or `puerto-rico`.
+Each of these games illustrate the functionalities built into the workhorse code in `common/engine.js` and `server.js`. So, if you're interested in writing your own games, I recommend interacting with these examples to see what's possible, then looking at the `game.js` code for each to see how things are actually implemented. In particular, I would monkey with `minimal/game.js` first, since it's by far the simplest! Then check out `checkers`, `chess`, and (quite complex) `poker` or `puerto-rico`.
 
 
 ## Known issues
@@ -94,6 +94,6 @@ Feel free to pester me (jack.sankey@gmail.com) if something isn't clear. I will 
 
 Things I will _never_ do:
  * Hard-code any rules or anti-cheat measures. You will _always_ be able to look at your oponent's hidden pieces or move them around when they are taking a poo. 
- * Convince my friends and family that the games I invent are worth playing.
+ * Convince my friends and family that the games I personally invent are worth playing.
 
 More to come...
