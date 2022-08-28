@@ -535,15 +535,6 @@ class _Net {
 
     // Set the z locally and immediately
     for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1]);
-
-    // If this is the packet I was waiting for, stop ignoring full updates. 
-    // JACK: This hack shouldn't be necessary! I don't understand why full updates before
-    // the pingback z packet negates the action
-    // of the next on_z action in the for loop above!
-    // if(identical(self.waiting_for_my_z, data)) {
-    //   VGT.log('  unlocking waiting for my z')
-    //   this.waiting_for_my_z = false;
-    // }
   }
 
   /** We receive a queue of piece information from the server. */
@@ -554,14 +545,10 @@ class _Net {
     // Element 3 is true (not undefined) if it is a full update. 
     // If this is a full update and we're supposed to skip the z information
     // strip away the z stuff!
-    // JACK: The server data should come back time ordered, and it should determine z.
-    // if(data[3] && this.waiting_for_my_z) {
 
     //   // Loop over the pieces data[0] and strip all the z-info
     //   for(var i in data[0]) {delete data[0][i].z}
       
-    //   // Just to be sure this eventually resets... JACK: wtf.
-    //   this.waiting_for_my_z = false;
     // }
 
     // Update the q's
@@ -569,6 +556,7 @@ class _Net {
     this.transfer_to_q_in(data[1], this.q_hands_in);
     this.transfer_to_q_in(data[2], this.q_nameplates_in);
   
+    // JACK: Shouldn't we process all incoming data immediately?
     // We process the full updates IMMEDIATELY to avoid async with the z order.
     if(data[3]) {
       //VGT.log('ZZZ FULL UPDATE');
@@ -678,10 +666,13 @@ class _Net {
   
   } // End of on_chat
 
-  /** Someone kills our undos. Important for tantrums. */
+  /** Someone kills our undos. Important for tantrums. 
+   * Also unselects everything.
+  */
   on_kill_undos(data) {if(!VGT.net.ready) return;
     if(VGT.game._undos) VGT.game._undos.length = 0;
     if(VGT.game._redos) VGT.game._redos.length = 0;
+    VGT.game.unselect(undefined, VGT.clients.me.team);
   }
 
   // Server connection error; just reload so things don't get out of sync and the user is 
@@ -1013,7 +1004,8 @@ class _Animated {
     // the target velocity. Target velocity should be proportional to the distance.
     // We want it to arrive in t_transition / (16.7 ms) frames
     var a = (delta*16.7)/this.settings.t_transition; // inverse number of transition frames at max velocity 
-    var velocity_target = a*(this.target - this.value);
+    var d = this.target - this.value;
+    var velocity_target = a*d;
     
     // Adjust the velocity as per the acceleration
     var b = (delta*16.7)/this.settings.t_acceleration; // inverse number of frames to get to max velocity
@@ -1022,11 +1014,8 @@ class _Animated {
     // Increment the velocity
     this.velocity += acceleration-this.velocity*this.settings.damping;
 
-    // If the velocity is larger than the distance to the target, adjust
-    // Causes nasty jitters in hands etc.
-    /*if(  this.velocity > 0 && this.velocity >= this.target - this.value
-      || this.velocity < 0 && this.velocity <= this.target - this.value) 
-        this.velocity = 0.9*(this.target-this.value);*/
+    // JACK: To avoid overshoot, if the step (velocity) is larger than the distance to the target, reduce it
+    if( this.velocity / d > 1 ) this.velocity = d*0.9
 
     // Send it.
     this.value += this.velocity;
@@ -1704,7 +1693,7 @@ class _Interaction {
       // unselect everything.
       if(!e.shiftKey && thing.team_select != VGT.clients.me.team) VGT.game.unselect(undefined, VGT.clients.me.team);
       
-      // If we're holding shift and it's already selected, and we're not deselect
+      // If we're holding shift and it's already selected, unselect
       if(e.shiftKey && thing.team_select == VGT.clients.me.team) thing.unselect()
       //
       // Otherwise, select it and hold everything, sending it to the top or bottom.
@@ -3147,7 +3136,8 @@ class _Thing {
     else       return -1;
   }
 
-  // THING User function for setting the z-index of this piece.
+  // THING 
+  // User function for setting the z-index of this piece.
   // This will do NOTHING locally, waiting instead for the server
   // to tell us what to do with it, to preserve the server order of things. 
   // Here we just send a z request to the server immediately.
@@ -3157,62 +3147,6 @@ class _Thing {
     // Add it to the quick q
     VGT.net.q_z_out.push(this.id_piece);
     VGT.net.q_z_out.push(z);
-
-    // This packet contains partial z information.
-    // The order of operations matters for z, so we can't have 
-    // the next full update ordering them before we receive
-    // the ping-back. 
-    //
-    // This flag causes the z-information to be stripped from the
-    // next full update.
-    //
-    // JACK: I think skipping the next z is a bad idea,
-    // because the packets coming from the server are correctly
-    // time-ordered, representing the z-situation at each step.
-    // z information is determined locally entirely by incoming
-    // server commands. Comment out?
-    //this.waiting_for_my_z = [...VGT.net.q_z_out];  
-
-    // For each piece, every time the server sends z information (process_q or process_z_q),
-    // The pieces go through _set_z_target(), which shuffles them around and updates their 
-    // this._z_target values to a well-ordered list. Before the server has data, _z_target is also set well.
-    
-    // JACK: I thought the point was to have no local z ordering happen at the request of the user
-    //       only from teh server, so I commented all this out.
-    // // Get this piece's zi (initial / current value) and zf (setpoint)
-    // var zi = this._z_target
-    // var zf = parseInt(z);
-
-    // // We follow the same numbering logic of the server:
-    // //
-    // // If zf > zi 
-    // //   p.z < zi         no change
-    // //   p.z == zi        set to zf
-    // //   zi < p.z <= zf   subtract one
-    // //   p.z > zf         no change
-    
-    // // If zi > zf
-    // //   p.z < zf         no change
-    // //   zf <= p.z < zi   add one
-    // //   p.z == zi        set to zf
-    // //   p.x > zi         no change
-
-    // // Now that we have the zi and zf, loop over the pieces in this layer and update the z's according to the above.
-    // var p;
-    // for(var i in this.container.parent.children) { p = this.container.parent.children[i].thing;
-
-    //   // Do different numbering depending on where the z is relative to the initial and final values.
-      
-    //   // No matter what, if the z matches the initial z (i.e., it is this piece), this is the one to set
-    //   if(p == this) { p._z_target = zf; }
-      
-    //   // If zf > zi, we're moving it up in z order, so the middle numbers shift down.
-    //   else if(zi < p._z_target && p._z_target <= zf) { p._z_target--; }
-
-    //   // If zi > zf, we're moving it lower, so the middle numbers shift up
-    //   else if(zf <= p._z_target && p._z_target < zi) { p._z_target++; }
-    
-    // } // End of _z_target update loop
   
     return this;
 
@@ -3245,14 +3179,6 @@ class _Thing {
       parent.addChildAt(c, z);
     }
     
-    // Update the z-values to a well-ordered list for this layer
-    // JACK: Commenting this out because _z_target is only used for sorting,
-    //       and we can instead just get the actual z value to avoid confusion.
-    // var p;
-    // for(var n in VGT.tabletop.layers[this.settings.layer].children) {
-    //   p = VGT.tabletop.layers[this.settings.layer].children[n].thing;
-    //   p._z_target = parseInt(n); // ZZZ
-    // }
   }
 
   send_to_top() { 
@@ -4207,7 +4133,7 @@ class _NamePlate extends _Thing {
   // Called after set_xyrs(); here we just save our location with a cookie
   after_set_xyrs(x, y, r, s, immediate, do_not_update_q_out, do_not_reset_R) {
     
-    // JACK: This happens many times for one xyrs call.
+    // JACK: This can happen many times for one xyrs call.
     // If it's associated with MY nameplate, save it
     if(this.hand && VGT.clients.me && this.hand.id_client == VGT.clients.me.id_client) 
         VGT.html.save_cookie('my_nameplate_xyrs', [this.x.target,this.y.target,this.r.target+this.R.target,this.s.target]);
@@ -4445,7 +4371,7 @@ class _Clients {
       // Set the hand id_client
       this.all[c.id].hand.id_client = c.id;
       
-      // Show all hands but my own: JACK: this is where the checkbox check happens for showing my own hand.
+      // Show all hands but my own
       if(c.id == VGT.net.id) this.all[c.id].hand.hide();
       else                   this.all[c.id].hand.show();
 
@@ -5412,12 +5338,9 @@ class _Game {
     for(var n in things) { 
 
       // Attach its z-value for easy sorting; this will lead to duplicate z-values
-      // JACK: Setting this to always get_z_value for safety at the expense of speed.
-      //if(things[n]._z_target == undefined) {
-      //  VGT.log("ZZZ WEIRD: No z-target on piece", things.id_piece);
-        things[n]._z_target = things[n].get_z_value(); // ZZZ
-      //} 
-
+      // Setting this to always get_z_value for safety at the expense of speed.
+      things[n]._z_target = things[n].get_z_value(); 
+      
       // If we don't have a list for this layer yet, make an empty one
       layer = things[n].settings.layer;
       if(!sorted[layer]) sorted[layer] = []; 
@@ -5545,7 +5468,7 @@ class _Game {
         VGT.interaction._rolling[n].set_xyrs(VGT.interaction.xroll+d.x, VGT.interaction.yroll+d.y, d.r*4);
       }
 
-    // Process net queues. JACK ZZZ: The delay on processing the inbound queue causes the async z order.
+    // Process net queues. 
     VGT.net.process_queues();
 
     // Custom housekeeping
