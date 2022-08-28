@@ -516,8 +516,8 @@ function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
     if(this.v_last != undefined) {
       var dx = v[0]-this.v_last[0]
       var dy = v[1]-this.v_last[1]
-      if(dx*dx+dy*dy < Math.pow(32*0.25,2)) {
-        dv = rotate_vector([32*0.25,0], Math.random()*360)
+      if(dx*dx+dy*dy < Math.pow(32*0.3,2)) {
+        dv = rotate_vector([32*0.3,0], Math.random()*360)
         v[0] += dv[0]
         v[1] += dv[1]
       }

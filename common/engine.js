@@ -5067,7 +5067,7 @@ class _Game {
   }
 
   // Expand these into a grid
-  expand(things, x, y, r, r_stack, sort) { VGT.log('expand()', things.length, x, y, r, sort);
+  expand(things, x, y, r, r_stack, sort, image_index) { VGT.log('expand()', things.length, x, y, r, sort);
     
     // If we're supposed to sort by z; this sends the request for z sorting,
     // but delayed by the server's response to actually do it.
@@ -5108,6 +5108,7 @@ class _Game {
     for(var i in expanded) for(var j in expanded[i]) {
       v = rotate_vector([-(expanded[i].length-1)*0.5*dx+j*dx, y0+i*dy], r_stack);
       expanded[i][j].set_xyrs(x+v[0], y+v[1], r);
+      if(image_index != undefined) expanded[i][j].set_image_index(image_index)
     }
       
   }
