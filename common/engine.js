@@ -1015,7 +1015,7 @@ class _Animated {
     this.velocity += acceleration-this.velocity*this.settings.damping;
 
     // JACK: To avoid overshoot, if the step (velocity) is larger than the distance to the target, reduce it
-    if( this.velocity / d > 1 ) this.velocity = d*0.9
+    if( this.velocity / d > 1 ) this.velocity = d
 
     // Send it.
     this.value += this.velocity;
