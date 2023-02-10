@@ -24,6 +24,8 @@ METHODOLOGY
 
 3. These queues are dealt with all at once every quarter second or so. 
    First the inbound queue is processed, then outbound is sent to the server.
+   In some situations the inbound queue is processed immediately. I think this should
+   actually be the default behavior but haven't changed it yet.
 
 4. The server adds all such updates to a master list, then relays each incoming queue packet to everyone.
    This includes returning it to the sender, to avoid lag-induced desync; the latest server state is sent to EVERYONE
@@ -534,7 +536,8 @@ class _Net {
   on_z(data) { if(!this.ready) return; VGT.log('NETR_z', data);
 
     // Set the z locally and immediately
-    for(var n=0; n<data.length; n+=2) VGT.pieces.all[data[n]]._set_z_value(data[n+1]);
+    for(var n=0; n<data.length; n+=2) 
+      if(VGT.pieces.all[data[n]]) VGT.pieces.all[data[n]]._set_z_value(data[n+1]);
   }
 
   /** We receive a queue of piece information from the server. */
@@ -5067,8 +5070,10 @@ class _Game {
   }
 
   // Expand these into a grid
-  expand(things, x, y, r, r_stack, sort, image_index) { VGT.log('expand()', things.length, x, y, r, sort);
+  expand(things, x, y, r, r_stack, sort, image_index, Nx) { VGT.log('expand()', things.length, x, y, r, sort);
     
+    if (things && things.length==0) return
+
     // If we're supposed to sort by z; this sends the request for z sorting,
     // but delayed by the server's response to actually do it.
     if(sort) var sorted = this.sort_z_by_id(things);
@@ -5078,7 +5083,7 @@ class _Game {
 
     // Get the row count from the first element
     var n = sorted.length-1;
-    var Nx = sorted[n].settings.expand_Nx;
+    if(!Nx) var Nx = sorted[n].settings.expand_Nx;
     var dx = sorted[n].settings.expand_dx;
     var dy = sorted[n].settings.expand_dy;
     if(!Nx) Nx = 10;
@@ -5162,14 +5167,15 @@ class _Game {
    * @param {float} center_on_top whether to center the stack by the top card
    * @param {function} f    (optional) function to call after shuffling
    */
-  start_shuffle(things, x, y, r, r_stack, center_on_top, f) { VGT.log('start_shuffle()', things.length);
+  start_shuffle(things, x, y, r, r_stack, center_on_top, f, shuffle_radius) { VGT.log('start_shuffle()', things.length);
     if(r_stack == undefined) r_stack = r;  
 
     // Shuffle z; doing this here helps with the visual popping
     things = VGT.game.shuffle_z(things);
 
     // Send out the cards
-    this.pile(things, x, y, 30); 
+    if(!shuffle_radius) shuffle_radius = 30;
+    this.pile(things, x, y, shuffle_radius); 
 
     // Process the q immediately so z doesn't arrive very soon.
     VGT.net.process_queues();

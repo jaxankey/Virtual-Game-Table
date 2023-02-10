@@ -110,7 +110,6 @@ var N = Object.keys(game.settings.teams).length - 2
 
 
 /////////////////////////////////////// PIECES
-
 var settings = {
   layer:  2,            // Layer of the piece
   groups: ['cards'],    // Groups to which this piece belongs
@@ -330,7 +329,7 @@ function pull_chips_to_middle() {
 }
 
 // Deals a card to everyone. e.shiftKey makes it face up.
-function deal_to_all(e) { log('deal_to_all()', e) 
+function deal_to_all(e, force_up) { log('deal_to_all()', e) 
 
   // Get a sorted list of participating team indices
   var teams = []
@@ -370,13 +369,13 @@ function deal_to_all(e) { log('deal_to_all()', e)
     // Get the coordinates to send it to and send it
     v = rotate_vector([
       (Math.random()-0.5)*cards[0].width*1.5,
-      (Math.random()-0.5)*cards[0].width*0.7 + y1-175], r);
+      (Math.random()-0.5)*cards[0].width*0.7 + y1-193], r);
     
     // If this is the first q, make sure it's immediate
     if(q_dealing.length == 0) n_housekeeping = 1;
 
     // Add it to the q
-    q_dealing.push([...v, e.shiftKey]);
+    q_dealing.push([...v, e.shiftKey || force_up]);
   }
 }
 
@@ -407,12 +406,12 @@ function get_shuffle_deck(e,team,all_cards) { log('get_shuffle_deck()', e, team,
   if(r == null) { r = 0; var v = [0,0]; }
 
   // Otherwise, use a nice dealer spot for our team
-  else { var v = rotate_vector([x1-60, y1-48], r ) }
+  else { var v = rotate_vector([x1-92, y1-22], r ) }
 
   // Set the dealer paddle and collect the cards on top of it
-  dealer.set_xyrs(v[0],v[1], r);
+  dealer.set_xyrs(v[0],v[1], r-90);
   game.unselect_all_teams(cs);
-  game.start_shuffle(cs, v[0], v[1], r, r, false);
+  game.start_shuffle(cs, v[0], v[1], r-90, r, false, undefined, 20);
   game.set_image_indices(cs, 0);
 
   // Distribute the bars
@@ -443,7 +442,7 @@ function collect_pot() {
   game.select(pot)
 
   // Get the place to collect them
-  var v = rotate_vector([0,y1+150], get_team_angle(team))
+  var v = rotate_vector([0,y1+157], get_team_angle(team))
   game.pile(pot, v[0], v[1], 30)
 
   // Count it
@@ -457,7 +456,7 @@ function collect_pot() {
 
 // Folds from bar number n
 function fold(n) { log('fold()', n) 
-  if(typeof n != 'number') n = game.get_my_team_index()-1;
+  if(typeof n != 'number') n = game.get_my_team_index()-1
   if(n < 0 || n > 7) return;
   
   // Unselect everything I'm holding
@@ -492,16 +491,51 @@ function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
 
   // Get the piece at the mouse position
   var p = game.get_top_thing_at(game.mouse.x, game.mouse.y)
-  if(!p) return
+  
+  // If there's no piece, then sort your cards.
+  if(!VGT.pieces.all.includes(p)) {
+
+    // Get the wedge / user index
+    n = game.get_my_team_index()-1
+
+    // Get all the cards in our zone except the dealer cards
+    var dealer_cards = dealer.get_shoveled()
+    var up_cards   = []
+    var down_cards = []
+    var p, dv;
+    for(var i in cards) 
+      if(wedges[n].contains(cards[i].x.value, cards[i].y.value)
+      && !dealer_cards.includes(cards[i])) { p = cards[i];
+        
+        // Sort them by whether they are face up or down
+        if(p.get_image_index() == 0) down_cards.push(p)
+        else                           up_cards.push(p)
+      }
+    
+    // Get our area vector
+    var a = get_team_angle(n+1)
+    var vu = rotate_vector([0,y1-100-0.5*70*Math.floor((  up_cards.length-1)/8)], a)
+    var vd = rotate_vector([0,y1+55 +0.5*70*Math.floor((down_cards.length-1)/10)], a)
+    
+    // Spread out the up cards in front of our zone
+    // things, x, y, r, r_stack, sort, image_index, Nx
+    VGT.game.expand(  up_cards, vu[0], vu[1], a, a, undefined, undefined, 8)
+    VGT.game.expand(down_cards, vd[0], vd[1], a, a)
+  }
 
   // If it's a bar, fold
-  if(bars.includes(p)) {
+  else if(bars.includes(p)) {
     if(e.shiftKey) fold_with_noise(bars.indexOf(p));
     else           fold           (bars.indexOf(p));
   }
 
+  // If it's the dealer plate, deal to all
+  else if (p == dealer || VGT.pieces.all.includes(p) && dealer.contains(p.x.value, p.y.value)) {
+    deal_to_all(e, p==dealer)
+  }
+
   // Otherwise toss it to the top of the pile or back to me
-  else {
+  else if (VGT.pieces.all.includes(p)) {
     
     // Get the toss location
     if(polygon_inner.contains(p.x.value, p.y.value)) var v = rotate_vector([0,y1+150], get_team_angle())
