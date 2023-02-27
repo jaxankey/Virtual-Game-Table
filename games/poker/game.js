@@ -338,6 +338,7 @@ function deal_to_all(e, force_up) { log('deal_to_all()', e)
 
   // If I'm playing, reorder the list so that the player to my left is first
   if(my_team > 0) {
+
     // Find the index of the team that is me or next (if I'm not participating)
     var i = -1; 
     for(var j=0; j<teams.length; j++) {
@@ -492,8 +493,8 @@ function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
   // Get the piece at the mouse position
   var p = game.get_top_thing_at(game.mouse.x, game.mouse.y)
   
-  // If there's no piece, then sort your cards.
-  if(!VGT.pieces.all.includes(p)) {
+  // If it's a nameplate that is ours
+  if(VGT.nameplates.all.includes(p) && p.hand.id_client == VGT.clients.me.id_client) {
 
     // Get the wedge / user index
     n = game.get_my_team_index()-1
@@ -504,7 +505,7 @@ function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
     var down_cards = []
     var p, dv;
     for(var i in cards) 
-      if(wedges[n].contains(cards[i].x.value, cards[i].y.value)
+      if(wedges[n].contains(cards[i].x.target, cards[i].y.target)
       && !dealer_cards.includes(cards[i])) { p = cards[i];
         
         // Sort them by whether they are face up or down
@@ -615,7 +616,10 @@ function new_game() {
   }
 } // End of new_game()
 
-
+function tantrum() {
+  game.sounds.play('tantrum')
+  setTimeout(VGT.interaction.tantrum, 580)
+}
 
 
 
@@ -627,6 +631,7 @@ game.bind_key('Shift|End|Down', fold_with_noise)
 game.bind_key(['KeyL|Down', 'Shift|KeyL|Down'], deal_to_all)
 game.bind_key(['KeyO|Down', 'Shift|KeyO|Down'], deal_one_to_mouse)
 game.bind_key(['Shift|KeyB|Down', 'KeyB|Down', 'Shift|KeyT|Down', 'KeyT|Down'], toss);
+game.bind_key('Shift|Escape|Down', tantrum)
 game.bind_pointerdown_button([1,3,4,5], toss);
 
 
