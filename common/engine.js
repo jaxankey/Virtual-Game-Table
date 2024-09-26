@@ -1646,7 +1646,7 @@ class _Interaction {
   }
 
   // Pointer touches the underlying surface.
-  onpointerdown(e) { VGT.log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd, thing);
+  onpointerdown(e) {
 
     e.preventDefault();
     this.last_pointerdown = e;
@@ -1748,12 +1748,6 @@ class _Interaction {
   onpointermove(e) { //VGT.log('onpointermove()', e.button);
     this.last_pointermove_e = e; // Used to draw the location of the hand etc
     
-    // If the chat box is active, ignore pointer moving.
-    if(document.activeElement == VGT.html.input_chat) return
-
-    // Let the body take focus
-    document.activeElement.blur();
-
     // Get the tabletop coordinates
     var v = VGT.tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
     
@@ -1766,7 +1760,13 @@ class _Interaction {
 
     // And for the user
     VGT.game.mouse = {x:v.x, y:v.y, r:this.rm_tabletop}
-    
+
+    // If the chat box is active, ignore pointer moving.
+    if(document.activeElement == VGT.html.input_chat) return
+
+    // Let the body take focus
+    document.activeElement.blur();
+
     // Whether we are dragging the table
     var dragging_table = false;
     
