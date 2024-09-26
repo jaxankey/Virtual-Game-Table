@@ -1741,8 +1741,11 @@ class _Interaction {
 
   // Pointer has moved around.
   onpointermove(e) { //VGT.log('onpointermove()', e.button);
-    this.last_pointermove_e = e;
+    this.last_pointermove_e = e; // Used to draw the location of the hand etc
     
+    // If the chat box is active, ignore pointer moving.
+    if(document.activeElement == VGT.html.input_chat) return
+
     // Let the body take focus
     document.activeElement.blur();
 
