@@ -1647,11 +1647,11 @@ class _Interaction {
 
   // Pointer touches the underlying surface.
   onpointerdown(e) { 
-    e.preventDefault();
-    this.last_pointerdown = e;
-
     // Let the body take focus
     document.activeElement.blur();
+
+    e.preventDefault();
+    this.last_pointerdown = e;
 
     // Get the tabletop coordinates
     var v = VGT.tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
