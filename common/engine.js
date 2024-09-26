@@ -1406,7 +1406,7 @@ class _Interaction {
    * @param {function} f 
    */
   bind_pointerdown_button(buttons, f) {
-    if(typeof keys == 'number') buttons = [buttons];
+    if(typeof buttons == 'number') buttons = [buttons];
     for(var n in buttons) this._pointerdown_functions[buttons[n]] = f;
   }
   
@@ -1646,7 +1646,8 @@ class _Interaction {
   }
 
   // Pointer touches the underlying surface.
-  onpointerdown(e) { VGT.log('onpointerdown',e)
+  onpointerdown(e) { VGT.log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd, thing);
+
     e.preventDefault();
     this.last_pointerdown = e;
 
@@ -1675,7 +1676,8 @@ class _Interaction {
       if(VGT.interaction._pointerdown_functions[e.button]) VGT.interaction._pointerdown_functions[e.button](e);
       return
     }
-    // The rest is for right and left clicks
+
+    // The rest of this function is for right (2) and left (1) clicks
 
     // Close fist
     var hand=null;
