@@ -1650,6 +1650,9 @@ class _Interaction {
     e.preventDefault();
     this.last_pointerdown = e;
 
+    // Let the body take focus
+    document.activeElement.blur();
+
     // Get the tabletop coordinates
     var v = VGT.tabletop.xy_stage_to_tabletop(e.clientX, e.clientY);
     
