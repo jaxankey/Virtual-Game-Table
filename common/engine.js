@@ -1762,7 +1762,7 @@ class _Interaction {
     VGT.game.mouse = {x:v.x, y:v.y, r:this.rm_tabletop}
 
     // If the chat box is active, ignore pointer moving.
-    if(document.activeElement == VGT.html.input_chat) return
+    if(['name', 'chat-box'].includes(document.activeElement.id)) return
 
     // Let the body take focus
     document.activeElement.blur();
