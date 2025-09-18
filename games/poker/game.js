@@ -630,7 +630,9 @@ game.bind_key('End|Down', fold)
 game.bind_key('Shift|End|Down', fold_with_noise)
 game.bind_key(['KeyL|Down', 'Shift|KeyL|Down'], deal_to_all)
 game.bind_key(['KeyO|Down', 'Shift|KeyO|Down'], deal_one_to_mouse)
-game.bind_key(['Shift|KeyB|Down', 'KeyB|Down', 'Shift|KeyT|Down', 'KeyT|Down'], toss);
+game.bind_key(['Shift|KeyB|Down', 'KeyB|Down', 
+               'Shift|KeyT|Down', 'KeyT|Down', 
+               'Shift|Space|Down', 'Space|Down'], toss);
 game.bind_key('Shift|Escape|Down', tantrum)
 game.bind_pointerdown_button([1,3,4,5], toss);
 
