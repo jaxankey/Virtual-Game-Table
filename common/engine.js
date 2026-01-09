@@ -1674,6 +1674,8 @@ class _Interaction {
     // Check for non-standard mouse buttons
     if(!([0,2].includes(e.button))) {
       if(VGT.interaction._pointerdown_functions[e.button]) VGT.interaction._pointerdown_functions[e.button](e);
+      
+      this.after_onpointerdown(e);
       return
     }
 
@@ -1735,14 +1737,19 @@ class _Interaction {
       }
     }
 
+    this.after_onpointerdown(e);
   } // End of onpointerdown
+  after_onpointerdown(e) {} // Dummy function to override
 
   // Double click
   ondblclick(e) { VGT.log('ondblclick()', e);
     e.preventDefault();
 
     this.increment_selected_images(e);
+
+    this.after_ondblclick(e);
   }
+  after_ondblclick(e) {} // Dummy function to override
 
   // Pointer has moved around.
   onpointermove(e) { //VGT.log('onpointermove()', e.button);
@@ -1762,8 +1769,10 @@ class _Interaction {
     VGT.game.mouse = {x:v.x, y:v.y, r:this.rm_tabletop}
 
     // If the chat box is active, ignore pointer moving.
-    if(['name', 'chat-box'].includes(document.activeElement.id)) return
-
+    if(['name', 'chat-box'].includes(document.activeElement.id)) {
+      this.after_onpointermove(e);
+      return
+    }
     // Let the body take focus
     document.activeElement.blur();
 
@@ -1852,7 +1861,9 @@ class _Interaction {
     if(!dragging_table && VGT.clients && VGT.clients.me && VGT.clients.me.hand)
       VGT.clients.me.hand.set_xyrs(this.xm_tabletop, this.ym_tabletop, -this.rm_tabletop, 1.0/VGT.tabletop.s.value, true);
 
+    this.after_onpointermove(e);
   } // End of onpointermove
+  after_onpointermove(e) {} // Dummy function to override
 
   onpointerup(e) { VGT.log('onpointerup()', e.button);
 
@@ -1893,7 +1904,10 @@ class _Interaction {
       hand._newly_selected      = {};
       hand._originally_selected = [];
     }
+
+    this.after_onpointerup(e);
   }
+  after_onpointerup(e) {} // Dummy function to override
   
   onwheel(e) {VGT.log('_Interaction.onwheel()', e);
 
@@ -1912,7 +1926,9 @@ class _Interaction {
       else             VGT.tabletop.zoom_in();
     }
 
+    this.after_onwheel(e);
   }
+  after_onwheel(e) {} // Dummy function to override
 
   // Whenever a key is pressed or released.
   onkey(e) {
