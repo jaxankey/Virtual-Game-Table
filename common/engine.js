@@ -492,7 +492,7 @@ class _Net {
 
       // Send the outbound information and clear it.
       //VGT.log(    'NETS_q_'+String(VGT.net.id), this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out);
-      VGT.log('NETS_q_'+String(VGT.net.id), this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out, '\n  ',
+      //VGT.log('NETS_q_'+String(VGT.net.id), this.q_pieces_out, this.q_hands_out, this.q_nameplates_out, this.q_sounds_out, '\n  ',
         Object.keys(this.q_pieces_out).length, 'pieces,  ',
         Object.keys(this.q_hands_out).length,  'hands,  ', 
         Object.keys(this.q_nameplates_out).length, 'nameplates,  ', 
