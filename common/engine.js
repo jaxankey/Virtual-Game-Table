@@ -533,7 +533,7 @@ class _Net {
   }
 
   // Server relayed a z command [id,z,id,z,id,z,...]
-  on_z(data) { if(!this.ready) return; VGT.log('NETR_z', data);
+  on_z(data) { if(!this.ready) return; //VGT.log('NETR_z', data);
 
     // Set the z locally and immediately
     for(var n=0; n<data.length; n+=2) 
@@ -541,7 +541,7 @@ class _Net {
   }
 
   /** We receive a queue of piece information from the server. */
-  on_q(data) { if(!this.ready) return; VGT.log('NETR_q', data);
+  on_q(data) { if(!this.ready) return; //VGT.log('NETR_q', data);
   
     // Incoming q's are objects with id-indexed objects containing piece parameters or changes in those.
     
