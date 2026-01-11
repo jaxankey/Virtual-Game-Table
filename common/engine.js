@@ -1688,7 +1688,7 @@ class _Interaction {
     // Find a thing under the pointer if there is one.
     var thing = VGT.game.get_top_thing_at(v.x,v.y);
 
-    VGT.log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd, thing);
+    VGT.log('onpointerdown()', [e.clientX, e.clientY], '->', v, 'or', this, e.button, this.tabletop_xd, this.tabletop_yd, thing);
 
     // If it's not null and we can grab it
     if(thing != null && thing.is_grabbable_by_me()) {
@@ -1742,7 +1742,7 @@ class _Interaction {
   after_onpointerdown(e) {} // Dummy function to override
 
   // Double click
-  ondblclick(e) { VGT.log('ondblclick()', e);
+  ondblclick(e) { VGT.log('ondblclick()', e, this);
     e.preventDefault();
 
     this.increment_selected_images(e);
