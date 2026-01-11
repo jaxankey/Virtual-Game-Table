@@ -138,8 +138,15 @@ settings.collect_dy = -2;
 chips = []; 
 bars  = [];
 for(var n=0; n<N; n++) {
-    bars[n] = game.add_piece(settings, ['out','in'])
-    chips[n] = [] 
+  
+  // Bars  
+  bars[n] = game.add_piece(settings, ['out','in'])
+  bars[n].after_set_image_index = function(n, do_not_update_q_out) {
+    console.log('PANTS', n)
+  }
+
+  // Chips
+  chips[n] = [] 
 }
 // Add the stacks in descending order, so the sorting function works by chip value
 for(var n=0; n<N; n++) chips[n][0] = game.add_pieces(5, {...settings, worth:1,    worth_prefix:'$', shape:'circle'}, 'black')
