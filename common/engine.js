@@ -3395,13 +3395,9 @@ class _Thing {
     // Record the time of this switch for animation purposes
     this.t_last_image = Date.now();
 
-    // Run the after party
-    this.after_set_image_index(n, do_not_update_q_out)
-
     // Finish this function for function finishing purposes
   }
 
-  after_set_image_index(n, do_not_update_q_out) {} // Dummy function to overload
 
   // Returns the image index
   get_image_index() {return this._n;}
