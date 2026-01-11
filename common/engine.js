@@ -1688,7 +1688,7 @@ class _Interaction {
     // Find a thing under the pointer if there is one.
     var thing = VGT.game.get_top_thing_at(v.x,v.y);
 
-    VGT.log('onpointerdown()', [e.clientX, e.clientY], '->', v, 'or', this, e.button, this.tabletop_xd, this.tabletop_yd, thing);
+    VGT.log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd, 'thing1', thing,'thing2',this);
 
     // If it's not null and we can grab it
     if(thing != null && thing.is_grabbable_by_me()) {
