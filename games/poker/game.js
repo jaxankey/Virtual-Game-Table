@@ -634,14 +634,11 @@ VGT.interaction.after_ondblclick = function(e) {
   // First selected piece
   var p = ps[Object.keys(ps)[0]]
 
-  console.log('PANTS', p, p.get_image_index())
-  // Bar index
-  //var n = bars.indexOf(p);
+  // Bar / player index
+  var n = bars.indexOf(p);
 
   // If it's a bar, do the fold thing
-  //if(n >= 0 && p.image_index) {fold(bars.indexOf(p));}
-
-
+  if(n >= 0 && p.get_image_index() == 0) {fold(n);}
 }
 
 
