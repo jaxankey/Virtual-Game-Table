@@ -622,7 +622,7 @@ function tantrum() {
 }
 
 
-//////////////////////////////////////// OTHER EVENTS
+// Fold by double clicking the bar
 VGT.interaction.after_ondblclick = function(e) {
 
   // Get the first selected piece
@@ -638,7 +638,10 @@ VGT.interaction.after_ondblclick = function(e) {
   var n = bars.indexOf(p);
 
   // If it's a bar, do the fold thing
-  if(n >= 0 && p.get_image_index() == 0) {fold(n);}
+  if(n >= 0 && p.get_image_index() == 0) {
+    if(e.shiftKey) fold_with_noise(n);
+    else           fold(n)
+  }
 }
 
 
