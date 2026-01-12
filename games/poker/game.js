@@ -636,10 +636,10 @@ VGT.interaction.after_ondblclick = function(e) {console.log('PANTS',e)
 
   console.log('PANTS', p.image_index)
   // Bar index
-  var n = bars.indexOf(p);
+  //var n = bars.indexOf(p);
 
   // If it's a bar, do the fold thing
-  if(n >= 0 && p.image_index) {fold(bars.indexOf(p));}
+  //if(n >= 0 && p.image_index) {fold(bars.indexOf(p));}
 
 
 }
