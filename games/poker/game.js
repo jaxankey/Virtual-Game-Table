@@ -650,8 +650,8 @@ VGT.interaction.after_ondblclick = function(e) {
 
   // If it's a bar, do the fold thing
   if(n >= 0 && p.get_image_index() == 0) {
-    if(e.shiftKey) fold_with_noise(n);
-    else           fold(n)
+    if(e.ctrlKey) fold_with_noise(n);
+    else          fold(n)
     return;
   }
 
