@@ -519,10 +519,10 @@ function sort_cards() {
 }
 
 // Sends whatever's under the mouse to the pot
-function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
+function toss(e, p) { log('toss()', game.mouse.x, game.mouse.y, p)
 
   // Get the piece at the mouse position
-  var p = game.get_top_thing_at(game.mouse.x, game.mouse.y)
+  if(p==undefined) p = game.get_top_thing_at(game.mouse.x, game.mouse.y)
   
   // If it's a nameplate that is ours
   if(VGT.nameplates.all.includes(p) && p.hand.id_client == VGT.clients.me.id_client) sort_cards()
@@ -625,17 +625,25 @@ function tantrum() {
 }
 
 
-// Double clicking the table or bar
+// Double clicking the table, chips, or bar
 VGT.interaction.after_ondblclick = function(e) {
 
-  // Get the first selected piece
+  // Get an object containing the selected pieces (not an array)
   var ps = VGT.game.get_selected()
 
-  // If none selected, organize hand
+  // If none selected, we tapped the table, so organize hand
   if(Object.keys(ps).length == 0) {
     sort_cards()
     return
   }
+
+  // If any are chips, bet them
+  for(id in ps) {
+    if(ps[id].settings.worth > 0) toss(e,ps[id])
+  }
+
+
+
 
   // First selected piece
   var p = ps[Object.keys(ps)[0]]
