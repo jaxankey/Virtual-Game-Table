@@ -493,10 +493,10 @@ function sort_cards() {
   n = game.get_my_team_index()-1
 
   // Get all the cards in our zone except the dealer cards
-  var dealer_cards = dealer.get_shoveled();
-  var up_cards   = [];
-  var down_cards = [];
-  var p;
+  var dealer_cards = dealer.get_shoveled()
+  var up_cards   = []
+  var down_cards = []
+  var p
   for(var i in cards) 
     if(wedges[n].contains(cards[i].x.target, cards[i].y.target)
     && !dealer_cards.includes(cards[i])) { p = cards[i];
@@ -632,7 +632,10 @@ VGT.interaction.after_ondblclick = function(e) {
   var ps = VGT.game.get_selected()
 
   // If none selected, organize hand
-  if(Object.keys(ps).length == 0) {}
+  if(Object.keys(ps).length == 0) {
+    sort_cards()
+    return
+  }
 
   // First selected piece
   var p = ps[Object.keys(ps)[0]]
