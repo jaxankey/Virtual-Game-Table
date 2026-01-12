@@ -622,6 +622,10 @@ function tantrum() {
 }
 
 
+//////////////////////////////////////// OTHER EVENTS
+VGT.interaction.after_ondblclick = function(e) {console.log('PANTS',e,VGT.game.get_selected())}
+
+
 
 //////////////////////////////////////// KEY BINDINGS
 game.bind_key('Backspace|Down', get_shuffle_deck)
