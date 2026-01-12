@@ -623,26 +623,26 @@ function tantrum() {
 
 
 //////////////////////////////////////// OTHER EVENTS
-// VGT.interaction.after_ondblclick = function(e) {console.log('PANTS',e)
+VGT.interaction.after_ondblclick = function(e) {console.log('PANTS',e)
 
-//   // Get the first selected piece
-//   var ps = VGT.game.get_selected()
+  // Get the first selected piece
+  var ps = VGT.game.get_selected()
 
-//   // If any selected
-//   if(Object.keys(ps).length == 0) return
+  // If any selected
+  if(Object.keys(ps).length == 0) return
 
-//   // First selected piece
-//   var p = ps[Object.keys(ps)[0]]
+  // First selected piece
+  var p = ps[Object.keys(ps)[0]]
 
-//   console.log('PANTS', p.image_index)
-//   // Bar index
-//   //var n = bars.indexOf(p);
+  console.log('PANTS', p.image_index)
+  // Bar index
+  //var n = bars.indexOf(p);
 
-//   // If it's a bar, do the fold thing
-//   //if(n >= 0 && p.image_index) {fold(bars.indexOf(p));}
+  // If it's a bar, do the fold thing
+  //if(n >= 0 && p.image_index) {fold(bars.indexOf(p));}
 
 
-// }
+}
 
 
 
