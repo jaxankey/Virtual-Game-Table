@@ -640,7 +640,6 @@ VGT.interaction.after_ondblclick = function(e) {
   // If any are chips, bet them
   for(id in ps) {
     if(ps[id].settings.worth > 0) toss(e,ps[id])
-    return
   }
 
   // First selected piece
