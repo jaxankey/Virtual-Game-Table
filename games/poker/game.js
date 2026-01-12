@@ -643,9 +643,6 @@ VGT.interaction.after_ondblclick = function(e) {
     return
   }
 
-
-
-
   // First selected piece
   var p = ps[Object.keys(ps)[0]]
 
