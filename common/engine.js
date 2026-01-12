@@ -1646,9 +1646,7 @@ class _Interaction {
   }
 
   // Pointer touches the underlying surface.
-  onpointerdown(e) { VGT.log('onpointerdown()', e.button, this);
-
-    
+  onpointerdown(e) {
 
     e.preventDefault();
     this.last_pointerdown = e;
@@ -1689,6 +1687,8 @@ class _Interaction {
 
     // Find a thing under the pointer if there is one.
     var thing = VGT.game.get_top_thing_at(v.x,v.y);
+
+    VGT.log('onpointerdown()', [e.clientX, e.clientY], '->', v, e.button, this.tabletop_xd, this.tabletop_yd, thing);
 
     // If it's not null and we can grab it
     if(thing != null && thing.is_grabbable_by_me()) {
@@ -1742,7 +1742,7 @@ class _Interaction {
   after_onpointerdown(e) {} // Dummy function to override
 
   // Double click
-  ondblclick(e) { VGT.log('ondblclick()', e, this);
+  ondblclick(e) { VGT.log('ondblclick()', e);
     e.preventDefault();
 
     this.increment_selected_images(e);
@@ -2554,7 +2554,7 @@ class _Thing {
     this.t_last_image = 0;
     
     // image parameters
-    this.image_index = 0;             // Current image index
+    this._n = 0;             // Current image index
 
     // List of best guess for the server's packet numbers for each attribute
     this._N = { 
@@ -3386,7 +3386,7 @@ class _Thing {
     }
 
     // Remember the index we're on for cycling purposes
-    this.image_index = n_valid;
+    this._n = n_valid;
     //VGT.log('_Piece.set_image_index()', this._n, do_not_update_q_out);
 
     // If we're supposed to send an update, make sure there is an entry in the queue
@@ -3398,15 +3398,14 @@ class _Thing {
     // Finish this function for function finishing purposes
   }
 
-
   // Returns the image index
-  get_image_index() {return this.image_index;}
+  get_image_index() {return this._n;}
   
   // Increment the image by n (1 if not supplied)
   increment_image_index(n) {
     if(n==undefined) n = 1;
     //VGT.log('_Piece.increment_image_index()', this.id, this._n+n);
-    this.set_image_index(this.image_index+1);
+    this.set_image_index(this._n+1);
   }
 
   // Decrements the image by n (1 if not supplied)
@@ -4245,8 +4244,8 @@ class _Hand extends _Thing {
   open()  {this.set_image_index(0);}
   
   /** Whether the hand is open or closed. */
-  is_closed() {return this.image_index == 1;}
-  is_open()   {return this.image_index == 0;}
+  is_closed() {return this._n == 1;}
+  is_open()   {return this._n == 0;}
 
   /** Sets t_last_move to the current time to show the hand. */
   ping() {this.t_last_move = Date.now();}
