@@ -2555,6 +2555,7 @@ class _Thing {
     
     // image parameters
     this._n = 0;             // Current image index
+    this.image_index = this._n; // Easy handle
 
     // List of best guess for the server's packet numbers for each attribute
     this._N = { 
@@ -3387,6 +3388,7 @@ class _Thing {
 
     // Remember the index we're on for cycling purposes
     this._n = n_valid;
+    this.image_index = this._n; // Easy handle for coding games
     //VGT.log('_Piece.set_image_index()', this._n, do_not_update_q_out);
 
     // If we're supposed to send an update, make sure there is an entry in the queue

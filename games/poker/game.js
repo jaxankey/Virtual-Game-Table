@@ -634,7 +634,7 @@ VGT.interaction.after_ondblclick = function(e) {
   // First selected piece
   var p = ps[Object.keys(ps)[0]]
 
-  console.log('PANTS', ps, p.image_index)
+  console.log('PANTS', ps, p._n)
   // Bar index
   //var n = bars.indexOf(p);
 
