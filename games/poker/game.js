@@ -623,7 +623,22 @@ function tantrum() {
 
 
 //////////////////////////////////////// OTHER EVENTS
-VGT.interaction.after_ondblclick = function(e) {console.log('PANTS',e,VGT.game.get_selected())}
+VGT.interaction.after_ondblclick = function(e) {console.log('PANTS',e)
+
+  // Get the first selected piece
+  var ps = VGT.game.get_selected()
+
+  // If any selected
+  if(Object.keys(ps).length == 0) return
+
+  // First selected piece
+  p = ps[Object.keys(ps)[0]]
+
+  // If it's a bar, do the fold thing
+  if(bars.indexOf(p) >= 0) {fold(bars.indexOf(p));}
+
+
+}
 
 
 
