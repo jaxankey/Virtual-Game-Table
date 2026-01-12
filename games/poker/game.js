@@ -623,7 +623,7 @@ function tantrum() {
 
 
 //////////////////////////////////////// OTHER EVENTS
-VGT.interaction.after_ondblclick = function(e) {console.log('PANTS',e)
+VGT.interaction.after_ondblclick = function(e) {
 
   // Get the first selected piece
   var ps = VGT.game.get_selected()
@@ -634,7 +634,7 @@ VGT.interaction.after_ondblclick = function(e) {console.log('PANTS',e)
   // First selected piece
   var p = ps[Object.keys(ps)[0]]
 
-  console.log('PANTS', p.image_index)
+  console.log('PANTS', ps, p.image_index)
   // Bar index
   //var n = bars.indexOf(p);
 
