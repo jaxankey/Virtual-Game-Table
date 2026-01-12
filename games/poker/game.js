@@ -487,6 +487,37 @@ function fold_with_noise(n) {
 }
 
 
+function sort_cards() {
+
+  // Get the wedge / user index
+  n = game.get_my_team_index()-1
+
+  // Get all the cards in our zone except the dealer cards
+  var dealer_cards = dealer.get_shoveled();
+  var up_cards   = [];
+  var down_cards = [];
+  var p;
+  for(var i in cards) 
+    if(wedges[n].contains(cards[i].x.target, cards[i].y.target)
+    && !dealer_cards.includes(cards[i])) { p = cards[i];
+      
+      // Sort them by whether they are face up or down
+      if(p.get_image_index() == 0) down_cards.push(p)
+      else                           up_cards.push(p)
+    }
+  
+  // Get our area vector
+  var a = get_team_angle(n+1)
+  var vu = rotate_vector([0,y1-100-0.5*70*Math.floor((  up_cards.length-1)/8)], a)
+  var vd = rotate_vector([0,y1+55 +0.5*70*Math.floor((down_cards.length-1)/10)], a)
+  
+  // Spread out the up cards in front of our zone
+  // things, x, y, r, r_stack, sort, image_index, Nx
+  VGT.game.expand(  up_cards, vu[0], vu[1], a, a, undefined, undefined, 8)
+  VGT.game.expand(down_cards, vd[0], vd[1], a, a)
+
+}
+
 // Sends whatever's under the mouse to the pot
 function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
 
@@ -494,35 +525,7 @@ function toss(e) { log('toss()', game.mouse.x, game.mouse.y)
   var p = game.get_top_thing_at(game.mouse.x, game.mouse.y)
   
   // If it's a nameplate that is ours
-  if(VGT.nameplates.all.includes(p) && p.hand.id_client == VGT.clients.me.id_client) {
-
-    // Get the wedge / user index
-    n = game.get_my_team_index()-1
-
-    // Get all the cards in our zone except the dealer cards
-    var dealer_cards = dealer.get_shoveled()
-    var up_cards   = []
-    var down_cards = []
-    var p, dv;
-    for(var i in cards) 
-      if(wedges[n].contains(cards[i].x.target, cards[i].y.target)
-      && !dealer_cards.includes(cards[i])) { p = cards[i];
-        
-        // Sort them by whether they are face up or down
-        if(p.get_image_index() == 0) down_cards.push(p)
-        else                           up_cards.push(p)
-      }
-    
-    // Get our area vector
-    var a = get_team_angle(n+1)
-    var vu = rotate_vector([0,y1-100-0.5*70*Math.floor((  up_cards.length-1)/8)], a)
-    var vd = rotate_vector([0,y1+55 +0.5*70*Math.floor((down_cards.length-1)/10)], a)
-    
-    // Spread out the up cards in front of our zone
-    // things, x, y, r, r_stack, sort, image_index, Nx
-    VGT.game.expand(  up_cards, vu[0], vu[1], a, a, undefined, undefined, 8)
-    VGT.game.expand(down_cards, vd[0], vd[1], a, a)
-  }
+  if(VGT.nameplates.all.includes(p) && p.hand.id_client == VGT.clients.me.id_client) sort_cards()
 
   // If it's a bar, fold
   else if(bars.includes(p)) {
@@ -622,14 +625,14 @@ function tantrum() {
 }
 
 
-// Fold by double clicking the bar
+// Double clicking the table or bar
 VGT.interaction.after_ondblclick = function(e) {
 
   // Get the first selected piece
   var ps = VGT.game.get_selected()
 
-  // If any selected
-  if(Object.keys(ps).length == 0) return
+  // If none selected, organize hand
+  if(Object.keys(ps).length == 0) {}
 
   // First selected piece
   var p = ps[Object.keys(ps)[0]]
@@ -641,7 +644,10 @@ VGT.interaction.after_ondblclick = function(e) {
   if(n >= 0 && p.get_image_index() == 0) {
     if(e.shiftKey) fold_with_noise(n);
     else           fold(n)
+    return;
   }
+
+
 }
 
 
