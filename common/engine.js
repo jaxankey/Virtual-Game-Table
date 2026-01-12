@@ -2554,7 +2554,7 @@ class _Thing {
     this.t_last_image = 0;
     
     // image parameters
-    this._n = 0;             // Current image index
+    this.image_index = 0;             // Current image index
 
     // List of best guess for the server's packet numbers for each attribute
     this._N = { 
@@ -3386,7 +3386,7 @@ class _Thing {
     }
 
     // Remember the index we're on for cycling purposes
-    this._n = n_valid;
+    this.image_index = n_valid;
     //VGT.log('_Piece.set_image_index()', this._n, do_not_update_q_out);
 
     // If we're supposed to send an update, make sure there is an entry in the queue
@@ -3400,13 +3400,13 @@ class _Thing {
 
 
   // Returns the image index
-  get_image_index() {return this._n;}
+  get_image_index() {return this.image_index;}
   
   // Increment the image by n (1 if not supplied)
   increment_image_index(n) {
     if(n==undefined) n = 1;
     //VGT.log('_Piece.increment_image_index()', this.id, this._n+n);
-    this.set_image_index(this._n+1);
+    this.set_image_index(this.image_index+1);
   }
 
   // Decrements the image by n (1 if not supplied)
@@ -4245,8 +4245,8 @@ class _Hand extends _Thing {
   open()  {this.set_image_index(0);}
   
   /** Whether the hand is open or closed. */
-  is_closed() {return this._n == 1;}
-  is_open()   {return this._n == 0;}
+  is_closed() {return this.image_index == 1;}
+  is_open()   {return this.image_index == 0;}
 
   /** Sets t_last_move to the current time to show the hand. */
   ping() {this.t_last_move = Date.now();}
