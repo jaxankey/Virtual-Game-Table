@@ -375,8 +375,8 @@ function deal_to_all(e, force_up) { log('deal_to_all()', e)
     // If this is the first q, make sure it's immediate
     if(q_dealing.length == 0) n_housekeeping = 1;
 
-    // Add it to the q
-    q_dealing.push([...v, e.shiftKey || force_up]);
+    // Add it to the q (face up or face down)
+    q_dealing.push([...v, e.shiftKey || e.button == 2 || force_up]);
   }
 }
 
@@ -634,6 +634,7 @@ VGT.interaction.after_ondblclick = function(e) {
   // If none selected, we tapped the table, so organize hand
   if(Object.keys(ps).length == 0) {
     sort_cards()
+    //JACK
     return
   }
 

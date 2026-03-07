@@ -4753,91 +4753,6 @@ class _Game {
     return unheld;
   }
 
-  /** Adds an undo level if something has changed */
-  save_undo() {
-
-    // Make sure we have the last undo time
-    if(!this._t_last_save_undo) this._t_last_save_undo = Date.now();
-
-    // If it hasn't been long enough for an undo, don't bother
-    if(Date.now()-this._t_last_save_undo < 1000) return;
-
-    // First make sure we have a list
-    if(!this._undos) this._undos = [];
-
-    // Get the state string
-    var s = JSON.stringify(this.get_state());
-
-    // If this state is different from the last undo, add another undo and clear the redos
-    if(s != this._undos[0]) {
-
-      // Add the new undo at the beginning of the array and reset the redos
-      this._undos.splice(0, 0, s);
-      if(this._redos) this._redos.length = 0;
-
-      // Impose the maximum undos
-      this._undos.length = Math.min(this._undos.length, this.settings.undos);
-
-      // Prevent another undo for awhile
-      this._t_last_save_undo = Date.now();
-
-      VGT.log('save_undo()', this._undos.length, '(zero redos)');
-    }
-  }
-
-  /** Restores an undo */
-  undo() {
-
-    // When we do a redo, we set block_next_undo = false, so 
-    // the noticed changed state doesn't trigger one / remove the other redos
-    if(this.block_next_undo) {
-      this.block_next_undo = false;
-      return;
-    }
-
-    // First make sure we have a list
-    if(!this._undos) this._undos = [];
-
-    // poop out if we have none
-    if(!this._undos.length) return
-
-    // Make sure we have a redos list
-    if(!this._redos) this._redos = [];
-
-    // The usual state of affairs should be the 0'th undo matching the current state.
-
-    // Save the current state as a redo and trim the list
-    this._redos.splice(0,0,JSON.stringify(this.get_state()));
-    this._redos.length = Math.min(this._redos.length, this.settings.undos);
-
-    // Pop the first one and use the "top" one
-    if(this._undos.length > 1) this._undos.splice(0,1)[0];
-
-    // Set the state to the most recent undo
-    this.set_state(JSON.parse(this._undos[0]));
-
-    VGT.log('undo()', this._undos.length, 'undos, ', this._redos.length, 'redos');
-  }
-
-  /** Undoes an undo */
-  redo() {
-
-    // First make sure we have a redo list
-    if(!this._redos || !this._redos.length) return;
-
-    // Make sure we have an undo list
-    if(!this._undos) this._undos = [];
-
-    // Pop off the redo and stick it at the top of the undos
-    this._undos.splice(0,0,this._redos.splice(0,1));
-
-    // Restore the top of the undos to make them match
-    this.set_state(JSON.parse(this._undos[0]));
-    this.block_next_undo; // So the redo doesn't become an undo / reset the process.
-
-    VGT.log('redo()', this._undos.length, 'undos, ', this._redos.length, 'redos');
-  }
-
   /** Returns an object for the current state of pieces etc. */
   get_state() {
 
@@ -5479,9 +5394,6 @@ class _Game {
   /** Function called every quarter second to do housekeeping. */
   _housekeeping() {
     
-    // Save an undo if we're not holding pieces (and if it's been awhile, which is handled by the function itself)
-    if(VGT.things.held[VGT.net.id] == undefined) this.save_undo();
-
     // If Pixi has finally finished loading, we still haven't connected, 
     // and everything is loaded, connect to server
     if(VGT.pixi.ready && !VGT.net.ready && VGT.pixi.queue.length==0) VGT.net.connect_to_server();
